@@ -845,3 +845,60 @@ textarea {
   border: 1px solid var(--border);
   background: var(--surface-high);
 }
+
+/* ── Intention header ────────────────────────────────────────────────────────*/
+.intention-header {
+  font-size: 0.95rem;
+  font-style: italic;
+  color: var(--text-muted);
+  margin: -12px 0 20px;
+  padding-left: 2px;
+}
+
+/* ── Page action bar (sticky save) ──────────────────────────────────────────*/
+.page-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 0 0;
+  margin-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+/* On mobile, stick above the bottom nav */
+@media (max-width: 767px) {
+  .page-actions {
+    position: fixed;
+    bottom: calc(56px + env(safe-area-inset-bottom));
+    left: 0;
+    right: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    border-bottom: none;
+    padding: 10px 16px;
+    margin: 0;
+    z-index: 40;
+  }
+  /* Add space at bottom of page so content isn't hidden behind the action bar */
+  .page-content { padding-bottom: 180px; }
+}
+
+/* ── Date navigation ─────────────────────────────────────────────────────────*/
+.date-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.date-nav__link {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  padding: 6px 2px;
+  transition: color 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.date-nav__link:hover { color: var(--text); }

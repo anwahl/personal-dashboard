@@ -93,7 +93,12 @@ interface Props {
   ess:           EssEntryDetail | null;
   prescriptions: PrescriptionDetail[];
   reference:     ReferenceData;
-  defaultMode:   Mode;
+}
+
+/** Uses local browser date to avoid UTC/server timezone mismatch. */
+function localTodayISO(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 // ── State initialisers ────────────────────────────────────────────────────────
@@ -157,11 +162,12 @@ function initSymptomState(symptoms: SymptomEntryDetail | null): SymptomFormState
 
 export function DailyPageClient({
   entry, date, sleep, priorSleep, symptoms, ess,
-  prescriptions, reference, defaultMode,
+  prescriptions, reference,
 }: Props) {
   const supabase = createClient();
 
-  const [mode,        setMode]       = useState<Mode>(defaultMode);
+  const isToday = date === localTodayISO();
+  const [mode,        setMode]       = useState<Mode>(isToday ? 'input' : 'view');
   const [saveState,   setSaveState]  = useState<SaveState>('idle');
 
   // Whether child tables have ever had data persisted
