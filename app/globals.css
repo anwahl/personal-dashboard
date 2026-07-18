@@ -902,3 +902,167 @@ textarea {
   gap: 5px;
 }
 .date-nav__link:hover { color: var(--text); }
+
+/* ── List items ──────────────────────────────────────────────────────────────*/
+.list-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.list-item:hover { border-color: var(--border-focus); }
+.list-item--muted { opacity: 0.55; }
+.list-item__body  { flex: 1; min-width: 0; }
+.list-item__title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.list-item__title--strike { text-decoration: line-through; color: var(--text-muted); }
+.list-item__meta  {
+  font-size: 0.76rem;
+  color: var(--text-faint);
+  margin-top: 2px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.list-item__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* ── Badge (inline status/priority pill) ─────────────────────────────────────*/
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  background: var(--surface-high);
+  white-space: nowrap;
+}
+.badge--accent  { border-color: var(--accent);  color: var(--accent);  background: var(--accent-dim);  }
+.badge--success { border-color: var(--success); color: var(--success); background: var(--success-dim); }
+.badge--warn    { border-color: var(--warn);    color: var(--warn);    background: var(--warn-dim);    }
+.badge--danger  { border-color: var(--danger);  color: var(--danger);  background: var(--danger-dim);  }
+
+/* ── Priority dot ────────────────────────────────────────────────────────────*/
+.priority-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 6px;
+}
+.priority-dot--low    { background: var(--text-faint); }
+.priority-dot--normal { background: var(--accent); }
+.priority-dot--high   { background: var(--danger); }
+
+/* ── Inline quick-add form ───────────────────────────────────────────────────*/
+.quick-add {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  align-items: center;
+}
+.quick-add input { flex: 1; }
+
+/* ── Section divider ─────────────────────────────────────────────────────────*/
+.section-divider {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-faint);
+  padding: 12px 0 6px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 10px;
+}
+
+/* ── Sidebar calendar ────────────────────────────────────────────────────────*/
+.side-calendar {
+  padding: 12px 8px 8px;
+  border-top: 1px solid var(--border);
+  margin-top: 12px;
+}
+.side-calendar__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.side-calendar__month {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+.side-calendar__nav-btn {
+  background: none;
+  border: none;
+  color: var(--text-faint);
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: color 0.12s;
+}
+.side-calendar__nav-btn:hover { color: var(--text); }
+.side-calendar__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+}
+.side-calendar__day-label {
+  font-size: 0.6rem;
+  color: var(--text-faint);
+  text-align: center;
+  padding-bottom: 4px;
+  font-weight: 600;
+}
+.side-calendar__day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 3px 2px;
+  border-radius: 4px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.12s;
+  min-height: 28px;
+  justify-content: center;
+  position: relative;
+}
+.side-calendar__day:hover { background: var(--surface-high); }
+.side-calendar__day--today { background: var(--accent-dim); }
+.side-calendar__day--today .side-calendar__day-num { color: var(--accent); font-weight: 700; }
+.side-calendar__day-num {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  line-height: 1;
+}
+.side-calendar__day--other-month .side-calendar__day-num { color: var(--text-faint); opacity: 0.4; }
+.side-calendar__dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-top: 2px;
+}

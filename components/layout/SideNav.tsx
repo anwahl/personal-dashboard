@@ -1,7 +1,8 @@
 'use client';
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import Link              from 'next/link';
+import { usePathname }   from 'next/navigation';
+import { SideCalendar }  from './SideCalendar';
 
 const NAV = [
   { href: '/',             emoji: '🏠', label: 'Hub' },
@@ -46,6 +47,9 @@ export function SideNav() {
           );
         })}
       </ul>
+
+      {/* Calendar lives at the bottom of the sidebar */}
+      <SideCalendar />
     </nav>
   );
 }

@@ -29,6 +29,7 @@ CREATE TABLE diagnoses (
   diagnosis_name TEXT    NOT NULL,
   diagnosed_date DATE,
   notes          TEXT,
+  sort_order     SMALLINT DEFAULT 0,
   is_active      BOOLEAN NOT NULL DEFAULT TRUE,
   created_at     TIMESTAMPTZ DEFAULT NOW()
 );
@@ -54,6 +55,7 @@ CREATE TABLE habits (
 CREATE TABLE tags (
   id         SERIAL PRIMARY KEY,
   tag_value  TEXT     UNIQUE NOT NULL,
+  sort_order SMALLINT DEFAULT 0,
   is_active  BOOLEAN  NOT NULL DEFAULT TRUE,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -200,6 +202,7 @@ CREATE TABLE media_statuses (
 CREATE TABLE media_genres (
   id         SERIAL PRIMARY KEY,
   genre_name TEXT     UNIQUE NOT NULL,
+  sort_order SMALLINT DEFAULT 0,
   is_active  BOOLEAN  NOT NULL DEFAULT TRUE
 );
 
@@ -259,6 +262,8 @@ CREATE TABLE pharmacy (
   phone         TEXT,
   address       TEXT,
   portal_url    TEXT,
+  sort_order    SMALLINT DEFAULT 0,
+  is_active     BOOLEAN  NOT NULL DEFAULT TRUE,
   updated_at    TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -273,6 +278,7 @@ CREATE TABLE medications (
   id              SERIAL PRIMARY KEY,
   medication_name TEXT    NOT NULL,
   generic_name    TEXT,
+  sort_order      SMALLINT DEFAULT 0,
   is_active       BOOLEAN NOT NULL DEFAULT TRUE,
   created_at      TIMESTAMPTZ DEFAULT NOW()
 );
@@ -930,7 +936,7 @@ INSERT INTO ess_answer_types (answer_label, answer_value, sort_order) VALUES
   ('Never', 0, 0), ('Slight', 1, 1), ('Moderate', 2, 2), ('High', 3, 3);
 
 INSERT INTO timing_options (option_name, sort_order) VALUES
-  ('morning', 0), ('afternoon', 1), ('evening', 2), ('none', 3), ('n/a', 4);
+  ('morning', 0), ('afternoon', 1), ('evening', 2), ('none', 3);
 
 INSERT INTO timing_categories (category_name, sort_order) VALUES
   ('caffeine', 0), ('exercise', 1);
