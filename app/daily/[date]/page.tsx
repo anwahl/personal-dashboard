@@ -1,13 +1,12 @@
-import { notFound }             from 'next/navigation';
-import { createClient }          from '@/lib/supabase/server';
+import { notFound }               from 'next/navigation';
+import { createClient }            from '@/lib/supabase/server';
 import { ensureDailyEntry, getDailyEntry, todayISO } from '@/lib/dal/daily';
 import { getSleepEntry, getPriorSleepContext }        from '@/lib/dal/sleep';
-import { getSymptomEntry }       from '@/lib/dal/symptoms';
-import { getEssEntry }           from '@/lib/dal/ess';
-import { getActivePrescriptions } from '@/lib/dal/prescriptions';
-import { getReferenceData }      from '@/lib/dal/reference';
-import { DailyLog }              from '@/components/daily-log/DailyLog';
-import { HealthLog }             from '@/components/health-log/HealthLog';
+import { getSymptomEntry }         from '@/lib/dal/symptoms';
+import { getEssEntry }             from '@/lib/dal/ess';
+import { getActivePrescriptions }  from '@/lib/dal/prescriptions';
+import { getReferenceData }        from '@/lib/dal/reference';
+import { DailyPageClient }         from '@/components/daily-log/DailyPageClient';
 
 interface Props {
   params: Promise<{ date: string }>;
@@ -33,7 +32,6 @@ export default async function DailyPage({ params }: Props) {
 
   if (!entry) notFound();
 
-  // Find self person for prescriptions
   const reference = await getReferenceData(supabase);
   const self = reference.people.find(p => p.is_self);
 
@@ -52,31 +50,19 @@ export default async function DailyPage({ params }: Props) {
         <h1 className="page-header__title">
           {entry.icon ? `${entry.icon} ` : ''}{formatDate(date)}
         </h1>
-        {entry.intention && (
-          <p className="page-header__subtitle">"{entry.intention.value}"</p>
-        )}
       </div>
 
-      <div className="daily-grid">
-        <DailyLog
-          entry={entry}
-          date={date}
-          habits={reference.habits}
-          tags={reference.tags}
-          defaultMode={isToday ? 'input' : 'view'}
-        />
-        <HealthLog
-          entry={entry}
-          sleep={sleep}
-          priorSleep={priorSleep}
-          symptoms={symptoms}
-          ess={ess}
-          prescriptions={prescriptions}
-          reference={reference}
-          date={date}
-          defaultMode={isToday ? 'input' : 'view'}
-        />
-      </div>
+      <DailyPageClient
+        entry={entry}
+        date={date}
+        sleep={sleep}
+        priorSleep={priorSleep}
+        symptoms={symptoms}
+        ess={ess}
+        prescriptions={prescriptions}
+        reference={reference}
+        defaultMode={isToday ? 'input' : 'view'}
+      />
     </div>
   );
 }
