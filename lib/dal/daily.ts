@@ -260,7 +260,7 @@ export async function toggleHabitEntry(
   if (done) {
     await client
       .from('habit_entries')
-      .upsert({ entry_id: entryId, habit_id: habitId })
+      .upsert({ entry_id: entryId, habit_id: habitId }, { onConflict: 'entry_id,habit_id' })
       .throwOnError();
   } else {
     await client
@@ -296,7 +296,7 @@ export async function toggleTagEntry(
   if (active) {
     await client
       .from('tag_entries')
-      .upsert({ entry_id: entryId, tag_id: tagId })
+      .upsert({ entry_id: entryId, tag_id: tagId }, { onConflict: 'entry_id,tag_id' })
       .throwOnError();
   } else {
     await client
@@ -336,7 +336,7 @@ export async function togglePrescriptionEntry(
   if (taken) {
     await client
       .from('prescription_entries')
-      .upsert({ entry_id: entryId, prescription_id: prescriptionId })
+      .upsert({ entry_id: entryId, prescription_id: prescriptionId }, { onConflict: 'entry_id,prescription_id' })
       .throwOnError();
   } else {
     await client

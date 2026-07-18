@@ -78,7 +78,7 @@ export async function setEssResponse(
       ess_entry_id:     essEntry.id,
       question_type_id: questionTypeId,
       answer_type_id:   answerTypeId,
-    })
+    }, { onConflict: 'ess_entry_id,question_type_id' })
     .throwOnError();
 }
 

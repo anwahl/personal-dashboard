@@ -136,7 +136,7 @@ export async function toggleDailySymptomEntry(
         symptom_entry_id: symptomEntryId,
         symptom_type_id:  symptomTypeId,
         severity:         severity ?? null,
-      })
+      }, { onConflict: 'symptom_entry_id,symptom_type_id' })
       .throwOnError();
   } else {
     await client

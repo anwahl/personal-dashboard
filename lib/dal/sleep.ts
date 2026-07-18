@@ -255,7 +255,7 @@ export async function toggleSleepEvent(
   if (active) {
     await client
       .from('sleep_events')
-      .upsert({ sleep_entry_id: sleepEntryId, event_type_id: eventTypeId })
+      .upsert({ sleep_entry_id: sleepEntryId, event_type_id: eventTypeId }, { onConflict: 'sleep_entry_id,event_type_id' })
       .throwOnError();
   } else {
     await client
@@ -281,7 +281,7 @@ export async function setSleepTimingEntry(
       sleep_entry_id:      sleepEntryId,
       timing_category_id:  timingCategoryId,
       timing_option_id:    timingOptionId,
-    })
+    }, { onConflict: 'sleep_entry_id,timing_category_id' })
     .throwOnError();
 }
 
@@ -320,7 +320,7 @@ export async function toggleSleepConsumptionEntry(
   if (active) {
     await client
       .from('sleep_consumption_entries')
-      .upsert({ sleep_entry_id: sleepEntryId, consumption_type_id: consumptionTypeId })
+      .upsert({ sleep_entry_id: sleepEntryId, consumption_type_id: consumptionTypeId }, { onConflict: 'sleep_entry_id,consumption_type_id' })
       .throwOnError();
   } else {
     await client
