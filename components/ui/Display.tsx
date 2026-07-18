@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 // ── Save status ───────────────────────────────────────────────────────────────
 
-type SaveState = 'idle' | 'saving' | 'ok' | 'error';
+export type SaveState = 'idle' | 'saving' | 'ok' | 'error';
 
 interface SaveStatusProps {
   state:    SaveState;

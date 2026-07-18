@@ -4,3 +4,4 @@ export { Card, CardHeader, CardTitle, CardBody, CardFooter, CardSection, CardSec
 export { SliderField }               from './SliderField';
 export { Toggle, TabBar }            from './Controls';
 export { SaveStatus, Field, InputField } from './Display';
+export type { SaveState }            from './Display';

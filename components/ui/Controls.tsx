@@ -39,7 +39,7 @@ interface TabDef {
 }
 
 interface TabBarProps<T extends string> {
-  tabs:     TabDef[];
+  tabs:     readonly TabDef[];
   active:   T;
   onChange: (id: T) => void;
 }
