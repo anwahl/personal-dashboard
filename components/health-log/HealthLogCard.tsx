@@ -24,6 +24,27 @@ import type {
 type Mode = 'view' | 'input';
 type Tab  = 'sleep' | 'symptoms' | 'meds' | 'ess';
 
+/** Scale max for all 0–N severity/quality sliders. Change here to update everywhere. */
+const SEVERITY_MAX = 10;
+
+/** Converts a Postgres TIME string (HH:MM:SS or HH:MM) to 12-hour format. */
+function formatTime(t: string | null | undefined): string {
+  if (!t) return '';
+  const [h, m] = t.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${ampm}`;
+}
+
+/** Show a numeric rating as "value/MAX", or "–" if null. */
+function Rating({ value, max = SEVERITY_MAX }: { value: number | null | undefined; max?: number }) {
+  if (value == null) return <span className="metric-display__value metric-display__value--empty">–</span>;
+  return (
+    <span className="metric-display__value">
+      {value}<span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>/{max}</span>
+    </span>
+  );
+}
+
 const TABS = [
   { id: 'sleep',    label: '💤 Sleep'    },
   { id: 'symptoms', label: '🩺 Symptoms' },
@@ -66,14 +87,14 @@ function SleepContent({ mode, sleepState, setSleepState, priorSleep, hasSleepDat
       return <p className="empty-state">Sleep not logged yet.</p>;
     }
     const activeEvents = reference.sleepEventTypes.filter(t => sleepState.sleepEventIds.includes(t.id));
+
     return (
       <div>
+        {/* Core metrics */}
         <div className="metric-display">
           <span className="metric-display__emoji">⭐</span>
           <span className="metric-display__label">Quality</span>
-          <span className={`metric-display__value${sleepState.quality == null ? ' metric-display__value--empty' : ''}`}>
-            {sleepState.quality ?? '–'}<span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>/10</span>
-          </span>
+          <Rating value={sleepState.quality} />
         </div>
         <div className="metric-display">
           <span className="metric-display__emoji">🕐</span>
@@ -82,29 +103,144 @@ function SleepContent({ mode, sleepState, setSleepState, priorSleep, hasSleepDat
             {sleepState.hoursSlept || '–'}
           </span>
         </div>
-        {sleepState.bedtime && (
+        {(sleepState.bedtime || sleepState.wakeTime) && (
           <div className="metric-display">
             <span className="metric-display__emoji">🌙</span>
             <span className="metric-display__label">Bedtime → Wake</span>
             <span className="metric-display__value" style={{ fontSize: '0.9rem' }}>
-              {sleepState.bedtime} → {sleepState.wakeTime || '?'}
+              {formatTime(sleepState.bedtime)} → {formatTime(sleepState.wakeTime) || '?'}
             </span>
           </div>
         )}
+        {sleepState.latencyMin && (
+          <div className="metric-display">
+            <span className="metric-display__emoji">⏳</span>
+            <span className="metric-display__label">Latency</span>
+            <span className="metric-display__value" style={{ fontSize: '0.9rem' }}>{sleepState.latencyMin} min</span>
+          </div>
+        )}
+        {sleepState.inertiaSeverity != null && (
+          <div className="metric-display">
+            <span className="metric-display__emoji">😵</span>
+            <span className="metric-display__label">Inertia</span>
+            <Rating value={sleepState.inertiaSeverity} />
+          </div>
+        )}
+        {sleepState.osaCount && (
+          <div className="metric-display">
+            <span className="metric-display__emoji">📊</span>
+            <span className="metric-display__label">OSA events/hr</span>
+            <span className="metric-display__value" style={{ fontSize: '0.9rem' }}>{sleepState.osaCount}</span>
+          </div>
+        )}
+
+        {/* Nap */}
         {sleepState.hadNap && (
           <div className="metric-display">
             <span className="metric-display__emoji">🛋️</span>
             <span className="metric-display__label">Nap</span>
             <span className="metric-display__value" style={{ fontSize: '0.9rem' }}>
-              {sleepState.napDuration ? `${sleepState.napDuration}min` : 'Yes'}
+              {sleepState.napDuration ? `${sleepState.napDuration} min` : 'Yes'}
               {sleepState.napRefresh ? ' · refreshing' : ''}
             </span>
           </div>
         )}
+
+        {/* Wake events */}
+        {sleepState.wakeCount > 0 && (
+          <div className="metric-display">
+            <span className="metric-display__emoji">😤</span>
+            <span className="metric-display__label">Wake events</span>
+            <span className="metric-display__value" style={{ fontSize: '0.9rem' }}>
+              {sleepState.wakeCount}{sleepState.wakeMins ? ` · ${sleepState.wakeMins} min` : ''}
+            </span>
+          </div>
+        )}
+        {sleepState.wakeDetail && (
+          <p style={{ fontSize: '0.83rem', color: 'var(--text-muted)', margin: '4px 0 8px', fontStyle: 'italic' }}>
+            {sleepState.wakeDetail}
+          </p>
+        )}
+
+        {/* Sleep events */}
         {activeEvents.length > 0 && (
-          <ChipGroup>
-            {activeEvents.map(e => <Chip key={e.id} active small style={{ cursor: 'default' }}>{e.type_name}</Chip>)}
-          </ChipGroup>
+          <CardSection>
+            <CardSectionLabel>Events</CardSectionLabel>
+            <ChipGroup>
+              {activeEvents.map(e => (
+                <Chip key={e.id} active small style={{ cursor: 'default' }}>{e.type_name}</Chip>
+              ))}
+            </ChipGroup>
+          </CardSection>
+        )}
+
+        {/* Prior night context */}
+        {priorSleep && (
+          <CardSection>
+            <CardSectionLabel>Prior night</CardSectionLabel>
+            <div className="prior-context">
+              {priorSleep.today_pre_bed_activity && (
+                <p style={{ fontSize: '0.83rem', color: 'var(--text-muted)', margin: '0 0 6px' }}>
+                  Activity: {priorSleep.today_pre_bed_activity}
+                </p>
+              )}
+              {reference.timingCategories.map(cat => {
+                const te = priorSleep.timing_entries.find(e => e.timing_category_id === cat.id);
+                const opt = reference.timingOptions.find(o => o.id === te?.timing_option_id);
+                return opt ? (
+                  <p key={cat.id} style={{ fontSize: '0.83rem', color: 'var(--text-muted)', margin: '0 0 4px' }}>
+                    {cat.category_name}: {opt.option_name}
+                  </p>
+                ) : null;
+              })}
+              {priorSleep.consumption_ids.length > 0 && (
+                <ChipGroup>
+                  {reference.consumptionTypes
+                    .filter(t => priorSleep.consumption_ids.includes(t.id))
+                    .map(t => <Chip key={t.id} active small style={{ cursor: 'default' }}>{t.type_name}</Chip>)
+                  }
+                </ChipGroup>
+              )}
+            </div>
+          </CardSection>
+        )}
+
+        {/* Tonight's context */}
+        {(sleepState.preBedActivity || Object.keys(sleepState.timingMap).length > 0 || sleepState.consumptionIds.length > 0) && (
+          <CardSection>
+            <CardSectionLabel>Tonight</CardSectionLabel>
+            <div className="prior-context">
+              {sleepState.preBedActivity && (
+                <p style={{ fontSize: '0.83rem', color: 'var(--text-muted)', margin: '0 0 6px' }}>
+                  Activity: {sleepState.preBedActivity}
+                </p>
+              )}
+              {reference.timingCategories.map(cat => {
+                const optId = sleepState.timingMap[cat.id];
+                const opt = reference.timingOptions.find(o => o.id === optId);
+                return opt ? (
+                  <p key={cat.id} style={{ fontSize: '0.83rem', color: 'var(--text-muted)', margin: '0 0 4px' }}>
+                    {cat.category_name}: {opt.option_name}
+                  </p>
+                ) : null;
+              })}
+              {sleepState.consumptionIds.length > 0 && (
+                <ChipGroup>
+                  {reference.consumptionTypes
+                    .filter(t => sleepState.consumptionIds.includes(t.id))
+                    .map(t => <Chip key={t.id} active small style={{ cursor: 'default' }}>{t.type_name}</Chip>)
+                  }
+                </ChipGroup>
+              )}
+            </div>
+          </CardSection>
+        )}
+
+        {/* Notes */}
+        {sleepState.notes && (
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '8px 0 0', fontStyle: 'italic' }}>
+            {sleepState.notes}
+          </p>
         )}
       </div>
     );
@@ -143,7 +279,7 @@ function SleepContent({ mode, sleepState, setSleepState, priorSleep, hasSleepDat
       )}
 
       <CardSection>
-        <SliderField emoji="⭐" label="Sleep Quality" value={sleepState.quality} min={1} max={10} onChange={v => set('quality', v)} />
+        <SliderField emoji="⭐" label="Sleep Quality" value={sleepState.quality} min={1} max={SEVERITY_MAX} onChange={v => set('quality', v)} />
       </CardSection>
 
       <CardSection>
@@ -297,15 +433,14 @@ function SymptomsContent({ mode, symptomState, setSymptomState, hasSymptomData, 
     );
 
   if (mode === 'view') {
-    const anyData = symptomState.painLevel != null || symptomState.brainFogLevel != null || symptomState.fatigueLevel != null || symptomState.symptomTypeIds.length > 0;
+    const anyData = symptomState.painLevel != null || symptomState.brainFogLevel != null
+      || symptomState.fatigueLevel != null || symptomState.symptomTypeIds.length > 0
+      || symptomState.hadCrash || symptomState.hadAnxiety;
     if (!hasSymptomData && !anyData) return <p className="empty-state">Symptoms not logged yet.</p>;
-
-    const activeSymptoms = reference.symptomCategories.flatMap(cat =>
-      cat.types.filter(t => symptomState.symptomTypeIds.includes(t.id)).map(t => t.symptom_name)
-    );
 
     return (
       <div>
+        {/* Core severity ratings — consistent x/MAX format */}
         {[
           { emoji: '🤕', label: 'Pain',      v: symptomState.painLevel },
           { emoji: '🌫️', label: 'Brain Fog', v: symptomState.brainFogLevel },
@@ -314,19 +449,71 @@ function SymptomsContent({ mode, symptomState, setSymptomState, hasSymptomData, 
           <div key={m.label} className="metric-display">
             <span className="metric-display__emoji">{m.emoji}</span>
             <span className="metric-display__label">{m.label}</span>
-            <span className={`metric-display__value${m.v == null ? ' metric-display__value--empty' : ''}`}>{m.v ?? '–'}</span>
+            <Rating value={m.v} />
           </div>
         ))}
-        {symptomState.hadCrash && <p style={{ fontSize: '0.85rem', color: 'var(--danger)', marginTop: 8 }}>⚡ Crash{symptomState.crashSeverity != null ? ` (${symptomState.crashSeverity}/10)` : ''}</p>}
-        {symptomState.hadAnxiety && <p style={{ fontSize: '0.85rem', color: 'var(--warn)', margin: '4px 0 0' }}>😰 Anxiety{symptomState.anxietySeverity != null ? ` (${symptomState.anxietySeverity}/10)` : ''}</p>}
-        {activeSymptoms.length > 0 && (
-          <div style={{ marginTop: 10 }}>
-          <ChipGroup>
-            {activeSymptoms.map(n => <Chip key={n} active small style={{ cursor: 'default' }}>{n}</Chip>)}
-          </ChipGroup>
+
+        {/* Crash */}
+        {symptomState.hadCrash && (
+          <div style={{ marginTop: 8 }}>
+            <p style={{ fontSize: '0.85rem', color: 'var(--danger)', margin: 0 }}>
+              ⚡ Crash{symptomState.crashSeverity != null ? ` · ${symptomState.crashSeverity}/${SEVERITY_MAX}` : ''}
+              {symptomState.crashTiming ? ` · ${symptomState.crashTiming}` : ''}
+            </p>
           </div>
         )}
-        {symptomState.flagProvider && <p style={{ fontSize: '0.78rem', color: 'var(--accent)', marginTop: 8 }}>🚩 Flagged for provider</p>}
+
+        {/* Anxiety */}
+        {symptomState.hadAnxiety && (
+          <div style={{ marginTop: 6 }}>
+            <p style={{ fontSize: '0.85rem', color: 'var(--warn)', margin: 0 }}>
+              😰 Anxiety{symptomState.anxietySeverity != null ? ` · ${symptomState.anxietySeverity}/${SEVERITY_MAX}` : ''}
+            </p>
+            {symptomState.anxietyDetail && (
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '3px 0 0', fontStyle: 'italic' }}>
+                {symptomState.anxietyDetail}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Symptom types grouped by category */}
+        {reference.symptomCategories.map(cat => {
+          const activeInCat = cat.types.filter(t => symptomState.symptomTypeIds.includes(t.id));
+          if (activeInCat.length === 0) return null;
+          return (
+            <CardSection key={cat.id}>
+              <CardSectionLabel>{cat.category_name}</CardSectionLabel>
+              <ChipGroup>
+                {activeInCat.map(t => (
+                  <Chip key={t.id} active small style={{ cursor: 'default' }}>{t.symptom_name}</Chip>
+                ))}
+              </ChipGroup>
+            </CardSection>
+          );
+        })}
+
+        {/* Notes */}
+        {symptomState.backgroundNotes && (
+          <CardSection>
+            <CardSectionLabel>Background</CardSectionLabel>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0 }}>
+              {symptomState.backgroundNotes}
+            </p>
+          </CardSection>
+        )}
+        {symptomState.whatHelped && (
+          <CardSection>
+            <CardSectionLabel>What helped</CardSectionLabel>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0 }}>
+              {symptomState.whatHelped}
+            </p>
+          </CardSection>
+        )}
+
+        {symptomState.flagProvider && (
+          <p style={{ fontSize: '0.78rem', color: 'var(--accent)', marginTop: 8 }}>🚩 Flagged for provider</p>
+        )}
       </div>
     );
   }
@@ -400,7 +587,8 @@ function SymptomsContent({ mode, symptomState, setSymptomState, hasSymptomData, 
 
 // ── Meds tab ──────────────────────────────────────────────────────────────────
 
-function MedsContent({ entryId, prescriptions, prescriptionIds: initialIds }: {
+function MedsContent({ mode, entryId, prescriptions, prescriptionIds: initialIds }: {
+  mode: Mode;
   entryId: number;
   prescriptions: PrescriptionDetail[];
   prescriptionIds: number[];
@@ -424,6 +612,46 @@ function MedsContent({ entryId, prescriptions, prescriptionIds: initialIds }: {
   }, [supabase, entryId, takenIds, pending]);
 
   if (prescriptions.length === 0) return <p className="empty-state">No active prescriptions found.</p>;
+
+  if (mode === 'view') {
+    const taken    = prescriptions.filter(rx => takenIds.includes(rx.id));
+    const notTaken = prescriptions.filter(rx => !takenIds.includes(rx.id));
+    return (
+      <div>
+        {taken.length > 0 && (
+          <CardSection>
+            <CardSectionLabel>Taken</CardSectionLabel>
+            {taken.map(rx => (
+              <div key={rx.id} className="prescription-item prescription-item--taken" style={{ cursor: 'default' }}>
+                <div className="prescription-item__check">✓</div>
+                <div>
+                  <div className="prescription-item__name">{rx.alias ?? rx.medication.medication_name}</div>
+                  <div className="prescription-item__timing">{rx.dose ? `${rx.dose} · ` : ''}{rx.timing_type?.timing_name ?? ''}</div>
+                </div>
+              </div>
+            ))}
+          </CardSection>
+        )}
+        {notTaken.length > 0 && (
+          <CardSection>
+            <CardSectionLabel>Not taken</CardSectionLabel>
+            {notTaken.map(rx => (
+              <div key={rx.id} className="prescription-item" style={{ cursor: 'default', opacity: 0.5 }}>
+                <div className="prescription-item__check" />
+                <div>
+                  <div className="prescription-item__name">{rx.alias ?? rx.medication.medication_name}</div>
+                  <div className="prescription-item__timing">{rx.dose ? `${rx.dose} · ` : ''}{rx.timing_type?.timing_name ?? ''}</div>
+                </div>
+              </div>
+            ))}
+          </CardSection>
+        )}
+        {taken.length === 0 && notTaken.length === 0 && (
+          <p className="empty-state">No prescriptions logged.</p>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -583,6 +811,7 @@ export function HealthLogCard({
 
         {tab === 'meds' && (
           <MedsContent
+            mode={mode}
             entryId={entryId}
             prescriptions={prescriptions}
             prescriptionIds={prescriptionIds}
