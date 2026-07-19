@@ -81,3 +81,40 @@ export async function deleteMediaEntry(client: Client, id: number): Promise<void
   const { error } = await client.from('media_entries').delete().eq('id', id);
   if (error) throw new Error(`deleteMediaEntry: ${error.message}`);
 }
+
+// ── Media notes ───────────────────────────────────────────────────────────────
+
+import type { MediaNoteRow } from '@/types/schema';
+
+export async function getMediaNotes(
+  client: Client,
+  mediaEntryId: number
+): Promise<MediaNoteRow[]> {
+  const { data, error } = await client
+    .from('media_notes')
+    .select('*')
+    .eq('media_entry_id', mediaEntryId)
+    .order('note_date', { ascending: false });
+  if (error) throw new Error(`getMediaNotes: ${error.message}`);
+  return (data ?? []) as MediaNoteRow[];
+}
+
+export async function createMediaNote(
+  client: Client,
+  mediaEntryId: number,
+  noteDate: string,
+  bodyMd: string
+): Promise<MediaNoteRow> {
+  const { data, error } = await client
+    .from('media_notes')
+    .insert({ media_entry_id: mediaEntryId, note_date: noteDate, body_md: bodyMd })
+    .select()
+    .single();
+  if (error) throw new Error(`createMediaNote: ${error.message}`);
+  return data as MediaNoteRow;
+}
+
+export async function deleteMediaNote(client: Client, id: number): Promise<void> {
+  const { error } = await client.from('media_notes').delete().eq('id', id);
+  if (error) throw new Error(`deleteMediaNote: ${error.message}`);
+}
