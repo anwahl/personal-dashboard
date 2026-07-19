@@ -6,6 +6,7 @@ import { createClient }           from '@/lib/supabase/client';
 import { Button }                 from '@/components/ui/Button';
 import { TabBar }                 from '@/components/ui/Controls';
 import { InputField }             from '@/components/ui/Display';
+import { Markdown }               from '@/components/ui/Markdown';
 import type { MediaEntryDetail }  from '@/types/dal';
 import type { MediaTypeRow, MediaStatusRow, MediaGenreRow, MediaNoteRow } from '@/types/schema';
 import type { MediaSearchResult } from '@/app/api/media-search/route';
@@ -256,6 +257,13 @@ function MediaItemView({ entry, onEdit, onClose }: {
     setNotes(prev => prev.filter(n => n.id !== id));
   }, [supabase]);
 
+  function fmtNoteDate(d: string) {
+    const [y, m, day] = d.split('-').map(Number);
+    return new Date(y, m - 1, day).toLocaleDateString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric',
+    });
+  }
+
   return (
     <div className="expand-panel">
       {/* Core fields */}
@@ -268,21 +276,30 @@ function MediaItemView({ entry, onEdit, onClose }: {
         {entry.finished_date && <span style={{ fontSize: '0.76rem', color: 'var(--text-faint)' }}>Finished {entry.finished_date}</span>}
       </div>
 
-      {entry.notes  && <><p className="expand-panel__label">Notes</p><p className="expand-panel__text">{entry.notes}</p></>}
-      {entry.review && <><p className="expand-panel__label">Review</p><p className="expand-panel__text">{entry.review}</p></>}
+      {entry.notes  && <><p className="expand-panel__label">Notes</p><Markdown>{entry.notes}</Markdown></>}
+      {entry.review && <><p className="expand-panel__label" style={{ marginTop: 8 }}>Review</p><Markdown>{entry.review}</Markdown></>}
 
       {/* Additional notes */}
-      <p className="expand-panel__label" style={{ marginTop: 12 }}>Additional Notes</p>
+      <p className="expand-panel__label" style={{ marginTop: 14 }}>Additional Notes</p>
+      {!loadingNotes && notes.length === 0 && (
+        <p style={{ fontSize: '0.82rem', color: 'var(--text-faint)', fontStyle: 'italic', marginBottom: 8 }}>
+          No notes yet.
+        </p>
+      )}
       {!loadingNotes && notes.map(n => (
         <div key={n.id} className="media-note">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-            <p className="media-note__date">{n.note_date}</p>
-            <button type="button" onClick={() => deleteNote(n.id)}
-              style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', fontSize: '0.7rem', padding: 0 }}>
+          <div className="media-note__header">
+            <span className="media-note__date-badge">{fmtNoteDate(n.note_date)}</span>
+            <button
+              type="button"
+              className="media-note__delete"
+              onClick={() => deleteNote(n.id)}
+              title="Delete note"
+            >
               ✕
             </button>
           </div>
-          <p className="media-note__body">{n.body_md}</p>
+          <Markdown>{n.body_md}</Markdown>
         </div>
       ))}
 
