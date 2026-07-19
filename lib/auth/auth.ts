@@ -1,4 +1,17 @@
-import type { NextAuthOptions } from "next-auth"
+import NextAuth, { NextAuthOptions, DefaultSession } from "next-auth";
+import { JWT } from "next-auth/jwt";
+
+declare module "next-auth" {
+  interface Session extends DefaultSession {
+    accessToken?: string;
+  }
+}
+
+declare module "next-auth/jwt" {
+  interface JWT {
+    accessToken?: string;
+  }
+}
 
 export const authOptions: NextAuthOptions = {
   providers: [
