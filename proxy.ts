@@ -1,34 +1,25 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { getToken } from "next-auth/jwt";
 
-export function proxy(request: NextRequest) {
-  const requestHeaders = new Headers(request.headers);
-  const authUser = requestHeaders.get('Remote-User');
-
-  const url = request.nextUrl.pathname;
-  if (
-    url.startsWith('/_next') ||
-    url.startsWith('/api') ||
-    url.startsWith('/favicon.ico')
-  ) {
-    return NextResponse.next({
-      request: { headers: requestHeaders },
-    });
-  }
-
-  if (!authUser) {
-    return NextResponse.next({
-      request: { headers: requestHeaders },
-    });
-  }
-
-  return NextResponse.next({
-    request: {
-      headers: requestHeaders,
-    },
+export async function proxy(request: NextRequest) {
+  const session = await getToken({
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET,
   });
+
+  const { pathname } = request.nextUrl;
+
+  if (!session) {
+    const signInUrl = new URL("/api/auth/signin", request.url);
+    signInUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(signInUrl);
+  }
+
+  return NextResponse.next();
 }
 
+//  "/((?!_next/static|_next/image|favicon.ico).*)",
 export const config = {
   matcher: [
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
