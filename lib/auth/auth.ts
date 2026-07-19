@@ -19,6 +19,8 @@ export const authOptions: NextAuthOptions = {
       id: "authelia",
       name: "Authelia",
       type: "oauth",
+      wellKnown: `${process.env.AUTHELIA_ISSUER}/.well-known/openid-configuration`,
+      idToken: true,
       issuer: process.env.AUTHELIA_ISSUER, 
       clientId: process.env.AUTHELIA_CLIENT_ID,
       clientSecret: process.env.AUTHELIA_CLIENT_SECRET,
