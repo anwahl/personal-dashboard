@@ -143,34 +143,7 @@ export function SettingsClient({
 
         {/* ── PROVIDERS ─────────────────────────────────────────────────────────*/}
         {tab === 'providers' && (
-          <div className="settings-section">
-            <div className="settings-section__header">
-              <span className="settings-section__title">Providers</span>
-            </div>
-            <p className="settings-section__desc">
-              Healthcare providers linked to appointments and prescriptions.
-            </p>
-
-            {/* Existing providers */}
-            {providers.map((p: any) => (
-              <div key={p.id} className="manage-item">
-                <div style={{ flex: 1 }}>
-                  <span className="manage-item__name">{p.provider_name ?? p.practice_name ?? 'Unnamed'}</span>
-                  {p.practice_name && p.provider_name && (
-                    <span className="manage-item__meta" style={{ marginLeft: 8 }}>{p.practice_name}</span>
-                  )}
-                  <span className="badge" style={{ marginLeft: 8 }}>
-                    {providerTypes.find(t => t.id === p.provider_type_id)?.type_name ?? ''}
-                  </span>
-                </div>
-              </div>
-            ))}
-
-            {providers.length === 0 && <p className="empty-state">No providers yet.</p>}
-
-            {/* Add provider — inline mini-form */}
-            <AddProviderForm providerTypes={providerTypes} onAdded={() => {}} />
-          </div>
+          <ProviderSection providers={providers} providerTypes={providerTypes} />
         )}
 
         {/* ── PEOPLE ────────────────────────────────────────────────────────────*/}
@@ -189,11 +162,55 @@ export function SettingsClient({
   );
 }
 
+// ── Provider section (with local state for instant refresh) ──────────────────
+
+function ProviderSection({ providers: initial, providerTypes }: {
+  providers: any[];
+  providerTypes: ProviderTypeRow[];
+}) {
+  const [providers, setProviders] = useState<any[]>(initial);
+
+  return (
+    <div className="settings-section">
+      <div className="settings-section__header">
+        <span className="settings-section__title">Providers</span>
+      </div>
+      <p className="settings-section__desc">
+        Healthcare providers linked to appointments and prescriptions.
+      </p>
+
+      {providers.map((p: any) => (
+        <div key={p.id} className="manage-item">
+          <div style={{ flex: 1 }}>
+            <span className="manage-item__name">{p.provider_name ?? p.practice_name ?? 'Unnamed'}</span>
+            {p.practice_name && p.provider_name && (
+              <span className="manage-item__meta" style={{ marginLeft: 8 }}>{p.practice_name}</span>
+            )}
+            <span className="badge" style={{ marginLeft: 8 }}>
+              {providerTypes.find((t: ProviderTypeRow) => t.id === p.provider_type_id)?.type_name ?? ''}
+            </span>
+          </div>
+        </div>
+      ))}
+
+      {providers.length === 0 && <p className="empty-state">No providers yet.</p>}
+
+      <AddProviderForm
+        providerTypes={providerTypes}
+        onAdded={newProvider => setProviders(prev => [...prev, newProvider])}
+      />
+    </div>
+  );
+}
+
 // ── Add provider form (inline) ────────────────────────────────────────────────
 
 import { createClient as _createClient } from '@/lib/supabase/client';
 
-function AddProviderForm({ providerTypes, onAdded }: { providerTypes: ProviderTypeRow[]; onAdded: (p: unknown) => void }) {
+function AddProviderForm({ providerTypes, onAdded }: {
+  providerTypes: ProviderTypeRow[];
+  onAdded: (p: unknown) => void;
+}) {
   const supabase = _createClient();
   const [show,   setShow]   = useState(false);
   const [name,   setName]   = useState('');

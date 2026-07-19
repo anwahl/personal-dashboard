@@ -75,7 +75,11 @@ export function ManageableList({
           ? (newVals[f.key] ? parseFloat(newVals[f.key]) : null)
           : (newVals[f.key]?.trim() || null);
       }
-      payload.sort_order = items.length;
+      // Only inject sort_order if the table actually has that column
+      // (detected by checking if existing items have it)
+      if (items.length > 0 && 'sort_order' in items[0]) {
+        payload.sort_order = items.length;
+      }
 
       const { data, error } = await supabase.from(tableName).insert(payload).select().single();
       if (!error && data) {
@@ -83,7 +87,7 @@ export function ManageableList({
         setNewVals(Object.fromEntries(addFields.map(f => [f.key, ''])));
       }
     } finally { setSaving(false); }
-  }, [supabase, tableName, addFields, newVals, items.length]);
+  }, [supabase, tableName, addFields, newVals, items]);
 
   // ── Inline edit ───────────────────────────────────────────────────────────
 

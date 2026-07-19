@@ -92,7 +92,8 @@ export async function getPersonPageData(
 
     const fieldIds = allFields.map(f => f.id);
     const values = fieldIds.length > 0
-      ? await client.from('info_field_values').select('*').in('field_type_id', fieldIds)
+      ? await client.from('info_field_values').select('*')
+          .in('field_type_id', fieldIds).eq('person_id', pid)
           .then(r => (r.data ?? []) as InfoFieldValueRow[])
       : [];
 
@@ -119,7 +120,8 @@ export async function getPersonPageData(
         .in('id', listLinks).eq('is_active', true).order('sort_order')
         .then(r => (r.data ?? []) as ItemListRow[]),
       client.from('item_list_entries').select('*')
-        .in('list_id', listLinks).order('entry_date', { ascending: false })
+        .in('list_id', listLinks).eq('person_id', pid)
+        .order('entry_date', { ascending: false })
         .then(r => (r.data ?? []) as ItemListEntryRow[]),
     ]);
 
@@ -145,7 +147,8 @@ export async function getPersonPageData(
         .eq('is_active', true).order('sort_order')
         .then(r => (r.data ?? []) as LogSchemaFieldOptionRow[]),
       client.from('log_entries').select('*')
-        .in('log_id', logLinks).order('entry_date', { ascending: false }).limit(100)
+        .in('log_id', logLinks).eq('person_id', pid)
+        .order('entry_date', { ascending: false }).limit(100)
         .then(r => (r.data ?? []) as LogEntryRow[]),
     ]);
 
@@ -198,9 +201,19 @@ export async function getPersonPageData(
         .then(r => (r.data ?? []) as ChecklistItemRow[]),
     ]);
 
+    const itemIds = items.map(i => i.id);
+    const states = itemIds.length > 0
+      ? await client.from('checklist_item_states').select('item_id, is_checked')
+          .in('item_id', itemIds).eq('person_id', pid)
+          .then(r => (r.data ?? []) as { item_id: number; is_checked: boolean }[])
+      : [];
+    const stateMap = new Map(states.map(s => [s.item_id, s.is_checked]));
+
     checklists = lists.map(l => ({
       ...l,
-      items: items.filter(i => i.checklist_id === l.id),
+      items: items
+        .filter(i => i.checklist_id === l.id)
+        .map(i => ({ ...i, is_checked: stateMap.has(i.id) ? stateMap.get(i.id)! : i.is_checked })),
     }));
   }
 
@@ -209,40 +222,47 @@ export async function getPersonPageData(
 
 // ── Writes ────────────────────────────────────────────────────────────────────
 
-/** Upsert a single info field value */
+/** Upsert a single info field value for a specific person */
 export async function saveInfoFieldValue(
   client: Client,
   fieldTypeId: number,
   value: string,
-  existingValueId: number | null
+  existingValueId: number | null,
+  personId: number
 ): Promise<void> {
   if (existingValueId) {
     await client.from('info_field_values').update({ field_value: value }).eq('id', existingValueId).throwOnError();
   } else {
     await client.from('info_field_values').upsert(
-      { field_type_id: fieldTypeId, field_value: value },
-      { onConflict: 'field_type_id' }
+      { field_type_id: fieldTypeId, field_value: value, person_id: personId },
+      { onConflict: 'field_type_id,person_id' }
     ).throwOnError();
   }
 }
 
-export async function toggleChecklistItem(
+/** Toggle a checklist item's checked state for a specific person */
+export async function toggleChecklistItemState(
   client: Client,
-  itemId: number,
-  checked: boolean
+  itemId:   number,
+  personId: number,
+  checked:  boolean
 ): Promise<void> {
-  await client.from('checklist_items').update({ is_checked: checked }).eq('id', itemId).throwOnError();
+  await client.from('checklist_item_states').upsert(
+    { item_id: itemId, person_id: personId, is_checked: checked },
+    { onConflict: 'item_id,person_id' }
+  ).throwOnError();
 }
 
 export async function addItemListEntry(
   client: Client,
-  listId: number,
-  text: string,
-  date: string
+  listId:   number,
+  text:     string,
+  date:     string,
+  personId: number
 ): Promise<ItemListEntryRow> {
   const { data, error } = await client
     .from('item_list_entries')
-    .insert({ list_id: listId, entry_text: text, entry_date: date })
+    .insert({ list_id: listId, entry_text: text, entry_date: date, person_id: personId })
     .select().single();
   if (error) throw new Error(`addItemListEntry: ${error.message}`);
   return data as ItemListEntryRow;
@@ -254,13 +274,14 @@ export async function deleteItemListEntry(client: Client, id: number): Promise<v
 
 export async function addLogEntry(
   client: Client,
-  logId: number,
-  entryDate: string,
-  values: Record<number, string>   // field_id → value
+  logId:      number,
+  entryDate:  string,
+  values:     Record<number, string>,
+  personId:   number
 ): Promise<LogEntryWithValues> {
   const { data: entry, error } = await client
     .from('log_entries')
-    .insert({ log_id: logId, entry_date: entryDate })
+    .insert({ log_id: logId, entry_date: entryDate, person_id: personId })
     .select().single();
   if (error) throw new Error(`addLogEntry: ${error.message}`);
 

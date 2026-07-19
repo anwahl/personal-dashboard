@@ -113,12 +113,12 @@ function CreateInfoGroupForm({ onCreated }: { onCreated: (id: number, title: str
 function CreateLogForm({ onCreated }: { onCreated: (id: number, title: string) => void }) {
   const supabase = createClient();
   const [title,  setTitle]  = useState('');
-  const [fields, setFields] = useState<{ label: string; key: string; type: string }[]>([
-    { label: '', key: '', type: 'text' },
+  const [fields, setFields] = useState<{ label: string; key: string; type: string; options: string }[]>([
+    { label: '', key: '', type: 'text', options: '' },
   ]);
   const [saving, setSaving] = useState(false);
 
-  const addField = () => setFields(prev => [...prev, { label: '', key: '', type: 'text' }]);
+  const addField = () => setFields(prev => [...prev, { label: '', key: '', type: 'text', options: '' }]);
   const setField = (i: number, k: string, v: string) =>
     setFields(prev => prev.map((f, fi) => fi === i ? { ...f, [k]: v } : f));
 
@@ -132,18 +132,38 @@ function CreateLogForm({ onCreated }: { onCreated: (id: number, title: string) =
 
       const validFields = fields.filter(f => f.label.trim());
       if (validFields.length > 0) {
-        await supabase.from('log_schema_fields').insert(
+        const { data: createdFields } = await supabase.from('log_schema_fields').insert(
           validFields.map((f, i) => ({
-            log_id: schema.id,
+            log_id:      schema.id,
             field_label: f.label.trim(),
-            field_key: f.key.trim() || f.label.trim().toLowerCase().replace(/\s+/g, '_'),
-            field_type: f.type,
-            sort_order: i,
+            field_key:   f.key.trim() || f.label.trim().toLowerCase().replace(/\s+/g, '_'),
+            field_type:  f.type,
+            sort_order:  i,
           }))
-        );
+        ).select('id, field_type');
+
+        // Add options for select fields
+        if (createdFields) {
+          for (let i = 0; i < validFields.length; i++) {
+            const field = validFields[i];
+            const created = createdFields[i];
+            if (created && field.type === 'select' && field.options.trim()) {
+              const opts = field.options.split(',').map((o: string) => o.trim()).filter(Boolean);
+              if (opts.length > 0) {
+                await supabase.from('log_schema_field_options').insert(
+                  opts.map((opt: string, oi: number) => ({
+                    field_id:     created.id,
+                    option_value: opt,
+                    sort_order:   oi,
+                  }))
+                );
+              }
+            }
+          }
+        }
       }
       onCreated(schema.id, title.trim());
-      setTitle(''); setFields([{ label: '', key: '', type: 'text' }]);
+      setTitle(''); setFields([{ label: '', key: '', type: 'text', options: '' }]);
     } finally { setSaving(false); }
   }, [supabase, title, fields, onCreated]);
 
@@ -154,17 +174,28 @@ function CreateLogForm({ onCreated }: { onCreated: (id: number, title: string) =
       </InputField>
       <p style={{ fontSize: '0.75rem', color: 'var(--text-faint)', margin: '8px 0 6px' }}>Columns</p>
       {fields.map((f, i) => (
-        <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 6, flexWrap: 'wrap' }}>
-          <input type="text" value={f.label} onChange={e => setField(i, 'label', e.target.value)}
-            placeholder="Column label…" style={{ flex: '1 1 120px' }} />
-          <select value={f.type} onChange={e => setField(i, 'type', e.target.value)} style={{ width: 110 }}>
-            <option value="text">Text</option>
-            <option value="select">Select</option>
-            <option value="textarea">Textarea</option>
-          </select>
-          {fields.length > 1 && (
-            <button type="button" onClick={() => setFields(prev => prev.filter((_, fi) => fi !== i))}
-              style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer' }}>✕</button>
+        <div key={i} style={{ marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', gap: 6, marginBottom: f.type === 'select' ? 6 : 0, flexWrap: 'wrap' }}>
+            <input type="text" value={f.label} onChange={e => setField(i, 'label', e.target.value)}
+              placeholder="Column label…" style={{ flex: '1 1 120px' }} />
+            <select value={f.type} onChange={e => setField(i, 'type', e.target.value)} style={{ width: 110 }}>
+              <option value="text">Text</option>
+              <option value="select">Select</option>
+              <option value="textarea">Textarea</option>
+            </select>
+            {fields.length > 1 && (
+              <button type="button" onClick={() => setFields(prev => prev.filter((_, fi) => fi !== i))}
+                style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer' }}>✕</button>
+            )}
+          </div>
+          {f.type === 'select' && (
+            <input
+              type="text"
+              value={f.options}
+              onChange={e => setField(i, 'options', e.target.value)}
+              placeholder="Options (comma separated): e.g. Good, Okay, Rough"
+              style={{ width: '100%' }}
+            />
           )}
         </div>
       ))}

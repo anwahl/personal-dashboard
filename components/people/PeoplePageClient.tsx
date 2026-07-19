@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import { useRouter }             from 'next/navigation';
 import { createClient }          from '@/lib/supabase/client';
 import {
-  saveInfoFieldValue, toggleChecklistItem,
+  saveInfoFieldValue, toggleChecklistItemState,
   addItemListEntry, deleteItemListEntry,
   addLogEntry, deleteLogEntry,
 }                                from '@/lib/dal/people';
@@ -73,7 +73,7 @@ function InfoGroupSection({ group, mode, onValueChange }: {
 
 // ── Checklists ────────────────────────────────────────────────────────────────
 
-function ChecklistSection({ checklist, mode }: { checklist: ChecklistWithItems; mode: Mode }) {
+function ChecklistSection({ checklist, mode, personId }: { checklist: ChecklistWithItems; mode: Mode; personId: number }) {
   const supabase = createClient();
   const [items, setItems] = useState(checklist.items);
   const [newText, setNewText] = useState('');
@@ -81,8 +81,8 @@ function ChecklistSection({ checklist, mode }: { checklist: ChecklistWithItems; 
 
   const toggle = useCallback(async (itemId: number, checked: boolean) => {
     setItems(prev => prev.map(i => i.id === itemId ? { ...i, is_checked: checked } : i));
-    await toggleChecklistItem(supabase, itemId, checked);
-  }, [supabase]);
+    await toggleChecklistItemState(supabase, itemId, personId, checked);
+  }, [supabase, personId]);
 
   const addItem = useCallback(async () => {
     if (!newText.trim()) return;
@@ -180,7 +180,7 @@ function ChecklistSection({ checklist, mode }: { checklist: ChecklistWithItems; 
 
 // ── Item lists ────────────────────────────────────────────────────────────────
 
-function ItemListSection({ list, mode }: { list: ItemListWithEntries; mode: Mode }) {
+function ItemListSection({ list, mode, personId }: { list: ItemListWithEntries; mode: Mode; personId: number }) {
   const supabase   = createClient();
   const [entries, setEntries] = useState(list.entries);
   const [newText,  setNewText]  = useState('');
@@ -191,11 +191,11 @@ function ItemListSection({ list, mode }: { list: ItemListWithEntries; mode: Mode
     if (!newText.trim()) return;
     setAdding(true);
     try {
-      const entry = await addItemListEntry(supabase, list.id, newText.trim(), newDate);
+      const entry = await addItemListEntry(supabase, list.id, newText.trim(), newDate, personId);
       setEntries(prev => [entry, ...prev]);
       setNewText('');
     } finally { setAdding(false); }
-  }, [supabase, list.id, newText, newDate]);
+  }, [supabase, list.id, newText, newDate, personId]);
 
   const remove = useCallback(async (id: number) => {
     await deleteItemListEntry(supabase, id);
@@ -255,7 +255,7 @@ function ItemListSection({ list, mode }: { list: ItemListWithEntries; mode: Mode
 
 // ── Logs ──────────────────────────────────────────────────────────────────────
 
-function LogSection({ log, mode }: { log: LogWithSchemaAndEntries; mode: Mode }) {
+function LogSection({ log, mode, personId }: { log: LogWithSchemaAndEntries; mode: Mode; personId: number }) {
   const supabase = createClient();
   const [entries, setEntries] = useState(log.entries);
   const [showForm, setShowForm] = useState(false);
@@ -271,12 +271,12 @@ function LogSection({ log, mode }: { log: LogWithSchemaAndEntries; mode: Mode })
   const submit = useCallback(async () => {
     setAdding(true);
     try {
-      const entry = await addLogEntry(supabase, log.id, formDate, formValues);
+      const entry = await addLogEntry(supabase, log.id, formDate, formValues, personId);
       setEntries(prev => [entry, ...prev]);
       setFormValues(Object.fromEntries(log.fields.map(f => [f.id, ''])));
       setShowForm(false);
     } finally { setAdding(false); }
-  }, [supabase, log.id, formDate, formValues]);
+  }, [supabase, log.id, formDate, formValues, personId]);
 
   const remove = useCallback(async (id: number) => {
     await deleteLogEntry(supabase, id);
@@ -398,7 +398,7 @@ export function PeoplePageClient({ data }: { data: PersonPageData }) {
       for (const group of localGroups) {
         for (const field of group.fields) {
           if (field.value !== null) {
-            saves.push(saveInfoFieldValue(supabase, field.id, field.value, field.value_id));
+            saves.push(saveInfoFieldValue(supabase, field.id, field.value, field.value_id, person.id));
           }
         }
       }
@@ -408,7 +408,7 @@ export function PeoplePageClient({ data }: { data: PersonPageData }) {
     } catch {
       setSaveState('error');
     }
-  }, [supabase, localGroups]);
+  }, [supabase, localGroups, person.id]);
 
   const hasInfoGroups = localGroups.length > 0;
   const hasSections   = hasInfoGroups || checklists.length > 0 || itemLists.length > 0 || logs.length > 0;
@@ -498,7 +498,7 @@ export function PeoplePageClient({ data }: { data: PersonPageData }) {
         <Card style={{ marginTop: 16 }}>
           <CardBody>
             {checklists.map(cl => (
-              <ChecklistSection key={cl.id} checklist={cl} mode={mode} />
+              <ChecklistSection key={cl.id} checklist={cl} mode={mode} personId={person.id} />
             ))}
           </CardBody>
         </Card>
@@ -509,7 +509,7 @@ export function PeoplePageClient({ data }: { data: PersonPageData }) {
         <Card style={{ marginTop: 16 }}>
           <CardBody>
             {itemLists.map(list => (
-              <ItemListSection key={list.id} list={list} mode={mode} />
+              <ItemListSection key={list.id} list={list} mode={mode} personId={person.id} />
             ))}
           </CardBody>
         </Card>
@@ -520,7 +520,7 @@ export function PeoplePageClient({ data }: { data: PersonPageData }) {
         <Card style={{ marginTop: 16 }}>
           <CardBody>
             {logs.map(log => (
-              <LogSection key={log.id} log={log} mode={mode} />
+              <LogSection key={log.id} log={log} mode={mode} personId={person.id} />
             ))}
           </CardBody>
         </Card>
