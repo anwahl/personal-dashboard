@@ -12,7 +12,7 @@ const NAV = [
   { href: '/appointments', emoji: '🏥', label: 'Appointments' },
   { href: '/medications',  emoji: '💊', label: 'Medications' },
   { href: '/media',        emoji: '🎬', label: 'Media' },
-  { href: '/people/annie', emoji: '👤', label: 'People' },
+  { href: '/people', emoji: '👤', label: 'People' },
 ];
 
 function todayISO() {
@@ -50,6 +50,18 @@ export function SideNav() {
 
       {/* Calendar lives at the bottom of the sidebar */}
       <SideCalendar />
+
+      {/* Settings — bottom of nav */}
+      <div style={{ padding: '8px 16px', borderTop: '1px solid var(--border)', marginTop: 4 }}>
+        <a
+          href="/settings"
+          className={`side-nav__link${path === '/settings' ? ' side-nav__link--active' : ''}`}
+          style={{ minHeight: 'auto', padding: '7px 10px' }}
+        >
+          <span className="side-nav__link-icon">⚙️</span>
+          Settings
+        </a>
+      </div>
     </nav>
   );
 }

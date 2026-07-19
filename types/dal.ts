@@ -196,6 +196,83 @@ export interface MediaEntryDetail extends MediaEntryRow {
   genre_ids:  number[];
 }
 
+// ── People page data ─────────────────────────────────────────────────────────
+
+export interface InfoFieldTypeWithValue {
+  id:          number;
+  group_id:    number;
+  field_label: string;
+  field_type:  string;
+  sort_order:  number;
+  is_active:   boolean;
+  value:       string | null;   // from info_field_values.field_value
+  value_id:    number | null;   // from info_field_values.id (null if no row yet)
+}
+
+export interface InfoGroupWithFields {
+  id:          number;
+  group_title: string;
+  sort_order:  number;
+  is_active:   boolean;
+  fields:      InfoFieldTypeWithValue[];
+}
+
+export interface ItemListWithEntries {
+  id:         number;
+  list_title: string;
+  list_label: string | null;
+  sort_order: number;
+  is_active:  boolean;
+  entries:    import('./schema').ItemListEntryRow[];
+}
+
+export interface LogSchemaFieldWithOptions {
+  id:          number;
+  log_id:      number;
+  field_label: string;
+  field_key:   string;
+  field_type:  string;
+  sort_order:  number;
+  is_active:   boolean;
+  options:     import('./schema').LogSchemaFieldOptionRow[];
+}
+
+export interface LogEntryWithValues {
+  id:         number;
+  log_id:     number;
+  entry_date: string;
+  created_at: string;
+  values:     Record<number, string>;   // field_id → field_value
+}
+
+export interface LogWithSchemaAndEntries {
+  id:        number;
+  log_title: string;
+  sort_order: number;
+  is_active: boolean;
+  fields:    LogSchemaFieldWithOptions[];
+  entries:   LogEntryWithValues[];
+}
+
+export interface ChecklistWithItems {
+  id:              number;
+  checklist_title: string;
+  checklist_label: string | null;
+  sort_order:      number;
+  is_active:       boolean;
+  items:           import('./schema').ChecklistItemRow[];
+}
+
+export interface PersonPageData {
+  person:       import('./schema').PersonRow;
+  diagnoses:    import('./schema').DiagnosisRow[];
+  infoGroups:   InfoGroupWithFields[];
+  itemLists:    ItemListWithEntries[];
+  logs:         LogWithSchemaAndEntries[];
+  checklists:   ChecklistWithItems[];
+  prescriptions: PrescriptionDetail[];
+}
+
 // ── Weekly entry (enriched) ───────────────────────────────────────────────────
 
 export interface WeeklyEntryDetail extends WeeklyEntryRow {
