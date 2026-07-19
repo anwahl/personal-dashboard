@@ -530,6 +530,15 @@ export interface MediaGenreEntryRow {
   genre_id:       number;
 }
 
+export interface MediaNoteRow {
+  id:             number;
+  media_entry_id: number;
+  note_date:      string;
+  body_md:        string;
+  created_at:     string;
+  updated_at:     string;
+}
+
 // ── Last time ─────────────────────────────────────────────────────────────────
 
 export interface LastTimeActivityRow {
