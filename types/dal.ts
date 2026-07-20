@@ -367,4 +367,4 @@ export type MediaEntryInsert = Omit<MediaEntryRow, 'id' | 'created_at' | 'update
 export type MediaEntryUpdate = Partial<MediaEntryInsert>;
 
 export type BrainDumpInsert = { entry_id?: number | null; dump_date: string; body_md?: string };
-8export type BrainDumpUpdate = Partial<BrainDumpInsert>;
+export type BrainDumpUpdate = Partial<BrainDumpInsert>;
