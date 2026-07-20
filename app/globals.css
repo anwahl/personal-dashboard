@@ -1709,3 +1709,50 @@ textarea {
   background: var(--surface-high);
   color: var(--text-faint);
 }
+
+/* ── Analytics page ──────────────────────────────────────────────────────────*/
+
+.analytics-tabs {
+  margin-bottom: 20px;
+}
+
+/* ── ChartSettings type groups ───────────────────────────────────────────────*/
+
+.chart-settings-type-group {
+  margin-bottom: 24px;
+}
+
+.chart-settings-type-group__heading {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-faint);
+  margin: 0 0 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.chart-settings-card__category-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-size: 0.82rem;
+}
+
+.chart-settings-card__category-label {
+  color: var(--text-muted);
+  min-width: 60px;
+}
+
+/* ── Color input ─────────────────────────────────────────────────────────────*/
+
+input[type="color"] {
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  cursor: pointer;
+  height: 32px;
+}

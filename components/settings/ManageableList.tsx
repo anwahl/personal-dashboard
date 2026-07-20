@@ -7,7 +7,7 @@ import { Button }       from '@/components/ui/Button';
 export interface AddField {
   key:         string;
   label:       string;
-  type:        'text' | 'number';
+  type:        'text' | 'number' | 'color';
   placeholder?: string;
   required?:   boolean;
   width?:      number;   // px, for short fields like emoji

@@ -6,6 +6,7 @@ import {
   getSleepEventTypes,
   getTrackables,
   getChartDefinitions,
+  getChartCategories,
 } from '@/lib/dal/reference';
 import { getAllPeople }    from '@/lib/dal/people';
 import { SettingsClient } from '@/components/settings/SettingsClient';
@@ -15,7 +16,7 @@ export default async function SettingsPage() {
 
   const [
     symptomCategories, journalCategories, providerTypes,
-    sleepEventTypes, people, trackables, chartDefinitions,
+    sleepEventTypes, people, trackables, chartDefinitions, chartCategories,
   ] = await Promise.all([
     getSymptomCategoriesWithTypes(supabase, true),
     getJournalCategoriesWithPrompts(supabase, true),
@@ -24,6 +25,7 @@ export default async function SettingsPage() {
     getAllPeople(supabase),
     getTrackables(supabase, true),           // all trackables (active + inactive) for settings
     getChartDefinitions(supabase, true),     // all charts for settings
+    getChartCategories(supabase, true),      // all chart categories for settings
   ]);
 
   const [
@@ -68,6 +70,7 @@ export default async function SettingsPage() {
       <SettingsClient
         trackables={trackables}
         chartDefinitions={chartDefinitions}
+        chartCategories={chartCategories}
         tags={tags ?? []}
         intentions={intentions ?? []}
         symptomCategories={symptomCategories}

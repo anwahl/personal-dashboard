@@ -114,3 +114,43 @@ export async function getBooleanData(
     values: byEntry.get(e.id) ?? {},
   }));
 }
+
+// ── Combined data (numeric + boolean merged) ──────────────────────────────────
+
+/**
+ * Fetch all trackable data and merge into one TrackingDataPoint[] stream.
+ * Boolean trackables appear as value=1 on days they were completed.
+ * This single dataset is used by ALL chart types — no more split numeric/boolean.
+ */
+export async function getCombinedTrackingData(
+  client:             Client,
+  allTrackableIds:    number[],
+  booleanTrackableIds: number[],
+  fromDate:           string,
+  toDate:             string
+): Promise<TrackingDataPoint[]> {
+  if (!allTrackableIds.length) return [];
+
+  const numericIds = allTrackableIds.filter(id => !booleanTrackableIds.includes(id));
+
+  const [numericData, booleanData] = await Promise.all([
+    numericIds.length ? getTrackingData(client, numericIds, fromDate, toDate) : Promise.resolve([]),
+    booleanTrackableIds.length ? getBooleanData(client, booleanTrackableIds, fromDate, toDate) : Promise.resolve([]),
+  ]);
+
+  // Merge both into a single date-keyed map
+  const byDate = new Map<string, Record<number, number>>();
+
+  const merge = (dp: TrackingDataPoint) => {
+    if (!byDate.has(dp.date)) byDate.set(dp.date, {});
+    Object.assign(byDate.get(dp.date)!, dp.values);
+  };
+
+  numericData.forEach(merge);
+  // Only merge boolean dates that actually have values (don't inflate with empty days)
+  booleanData.filter(dp => Object.keys(dp.values).length > 0).forEach(merge);
+
+  return [...byDate.entries()]
+    .map(([date, values]) => ({ date, values }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+}

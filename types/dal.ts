@@ -53,12 +53,14 @@ import type {
   MediaEntryRow,
   WeeklyEntryRow,
   WeeklyIntentionRow,
+  ChartCategoryRow,
   ChartDefinitionRow,
   ChartTrackableLinkRow,
 } from './schema';
 
 // Re-export raw rows that components may need directly
 export type {
+  ChartCategoryRow,
   DailyTrackableRow,
   DailyNumericEntryRow,
   TagRow,
@@ -76,6 +78,7 @@ export type {
   TaskStatusRow,
   TaskPriorityRow,
   LastTimeLatestRow,
+  ChartCategoryRow,
   ChartDefinitionRow,
   ChartTrackableLinkRow,
 };
@@ -299,7 +302,8 @@ export interface ChartTrackableLinkDetail extends ChartTrackableLinkRow {
 }
 
 export interface ChartDefinitionDetail extends ChartDefinitionRow {
-  links: ChartTrackableLinkDetail[];
+  links:    ChartTrackableLinkDetail[];
+  category: ChartCategoryRow | null;
 }
 
 // ── Analytics ─────────────────────────────────────────────────────────────────

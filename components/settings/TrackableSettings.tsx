@@ -33,7 +33,7 @@ export function TrackableSettings({ trackables }: Props) {
         addFields={[
           { key: 'emoji',      label: 'Emoji',      type: 'text', placeholder: '💧', width: 64   },
           { key: 'name',       label: 'Habit name', type: 'text', placeholder: 'e.g. Water', required: true },
-          { key: 'color_hex',  label: 'Color',      type: 'text', placeholder: '#CF9893', width: 96 },
+          { key: 'color_hex',  label: 'Color',      type: 'color', width: 48 },
         ]}
         renderName={item => <><span style={{ marginRight: 6 }}>{String(item.emoji ?? '')}</span>{String(item.name)}</>}
       />
@@ -49,7 +49,7 @@ export function TrackableSettings({ trackables }: Props) {
         addFields={[
           { key: 'emoji',     label: 'Emoji',        type: 'text', placeholder: '😊', width: 64   },
           { key: 'name',      label: 'Metric name',  type: 'text', placeholder: 'e.g. Nausea', required: true },
-          { key: 'color_hex', label: 'Color',        type: 'text', placeholder: '#CF9893', width: 96 },
+          { key: 'color_hex', label: 'Color',        type: 'color', width: 48 },
         ]}
         renderName={item => <><span style={{ marginRight: 6 }}>{String(item.emoji ?? '')}</span>{String(item.name)}</>}
       />

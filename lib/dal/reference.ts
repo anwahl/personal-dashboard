@@ -30,6 +30,7 @@ import type {
   JournalCategoryRow,
   JournalPromptRow,
   PersonRow,
+  ChartCategoryRow,
   ChartDefinitionRow,
   ChartTrackableLinkRow,
 } from '@/types/schema';
@@ -40,6 +41,7 @@ import type {
   ChartTrackableLinkDetail,
   ChartDefinitionDetail,
 } from '@/types/dal';
+import type { ChartCategoryRow } from '@/types/schema';
 
 type Client = SupabaseClient;
 
@@ -180,6 +182,19 @@ export async function getRandomJournalPrompt(
   return data[Math.floor(Math.random() * data.length)] as JournalPromptRow;
 }
 
+// ── Chart categories ─────────────────────────────────────────────────────────
+
+export async function getChartCategories(
+  client: Client,
+  includeInactive = false
+): Promise<ChartCategoryRow[]> {
+  let q = client.from('chart_categories').select('*').order('sort_order');
+  if (!includeInactive) q = q.eq('is_active', true);
+  const { data, error } = await q;
+  if (error) throw new Error(`chart_categories: ${error.message}`);
+  return (data ?? []) as ChartCategoryRow[];
+}
+
 // ── Chart definitions (with trackable links) ──────────────────────────────────
 
 export async function getChartDefinitions(
@@ -194,20 +209,25 @@ export async function getChartDefinitions(
 
   const chartIds = (charts as ChartDefinitionRow[]).map(c => c.id);
 
-  const [{ data: links, error: lErr }, { data: trackables, error: tErr }] = await Promise.all([
+  const [{ data: links, error: lErr }, { data: trackables, error: tErr }, { data: categories, error: catErr }] = await Promise.all([
     client
       .from('chart_trackable_links')
       .select('*')
       .in('chart_id', chartIds)
       .order('sort_order'),
     client.from('daily_trackables').select('*').order('sort_order'),
+    client.from('chart_categories').select('*').order('sort_order'),
   ]);
 
-  if (lErr) throw new Error(`chart_trackable_links: ${lErr.message}`);
-  if (tErr) throw new Error(`daily_trackables: ${tErr.message}`);
+  if (lErr)    throw new Error(`chart_trackable_links: ${lErr.message}`);
+  if (tErr)    throw new Error(`daily_trackables: ${tErr.message}`);
+  if (catErr)  throw new Error(`chart_categories: ${catErr.message}`);
 
   const trackableById = new Map(
     ((trackables ?? []) as DailyTrackableRow[]).map(t => [t.id, t])
+  );
+  const categoryById = new Map(
+    ((categories ?? []) as ChartCategoryRow[]).map(c => [c.id, c])
   );
 
   return (charts as ChartDefinitionRow[]).map(chart => ({
@@ -219,6 +239,7 @@ export async function getChartDefinitions(
         trackable: trackableById.get(l.trackable_id)!,
       }))
       .filter(l => l.trackable),
+    category: chart.category_id ? (categoryById.get(chart.category_id) ?? null) : null,
   }));
 }
 

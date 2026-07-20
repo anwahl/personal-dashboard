@@ -9,6 +9,8 @@ import { TrackableSettings }     from './TrackableSettings';
 import { ChartSettings }         from './ChartSettings';
 import type { SymptomCategoryWithTypes, JournalCategoryWithPrompts, ChartDefinitionDetail } from '@/types/dal';
 import type { PersonRow, ProviderTypeRow, DailyTrackableRow } from '@/types/schema';
+import type { ChartCategoryRow } from '@/types/dal';
+import type { ChartCategoryRow } from '@/types/dal';
 
 // Re-export TabBar from ui for convenience
 function TabBarLocal({ tabs, active, onChange }: {
@@ -48,6 +50,7 @@ interface Props {
   // Tracking
   trackables:        DailyTrackableRow[];
   chartDefinitions:  ChartDefinitionDetail[];
+  chartCategories:   ChartCategoryRow[];
   // Daily
   tags:              any[];
   intentions:        any[];
@@ -69,7 +72,7 @@ interface Props {
 }
 
 export function SettingsClient({
-  trackables, chartDefinitions,
+  trackables, chartDefinitions, chartCategories,
   tags, intentions,
   symptomCategories, sleepEventTypes,
   journalCategories,
@@ -122,6 +125,7 @@ export function SettingsClient({
           <ChartSettings
             chartDefinitions={chartDefinitions}
             trackables={trackables.filter(t => t.is_active)}
+            categories={chartCategories}
           />
         )}
 

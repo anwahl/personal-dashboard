@@ -420,11 +420,12 @@ export type ChartType  = 'scatter' | 'line' | 'heatmap' | 'timeline' | 'bar';
 export type MetricRole = 'x_axis'  | 'y_axis' | 'series';
 
 export interface ChartDefinitionRow {
-  id:         number;
-  title:      string;
-  chart_type: ChartType;
-  sort_order: number;
-  is_active:  boolean;
+  id:          number;
+  title:       string;
+  chart_type:  ChartType;
+  sort_order:  number;
+  is_active:   boolean;
+  category_id: number | null;
 }
 
 export interface ChartTrackableLinkRow {
@@ -433,6 +434,13 @@ export interface ChartTrackableLinkRow {
   trackable_id: number;
   metric_role:  MetricRole;
   sort_order:   number;
+}
+
+export interface ChartCategoryRow {
+  id:         number;
+  name:       string;
+  sort_order: number;
+  is_active:  boolean;
 }
 
 // ── Weekly entries ────────────────────────────────────────────────────────────
