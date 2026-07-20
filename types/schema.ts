@@ -416,7 +416,7 @@ export interface DailySymptomEntryRow {
 
 // ── Chart definitions ─────────────────────────────────────────────────────────
 
-export type ChartType  = 'scatter' | 'line' | 'heatmap' | 'timeline';
+export type ChartType  = 'scatter' | 'line' | 'heatmap' | 'timeline' | 'bar';
 export type MetricRole = 'x_axis'  | 'y_axis' | 'series';
 
 export interface ChartDefinitionRow {

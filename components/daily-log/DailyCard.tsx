@@ -21,6 +21,7 @@ import { SliderField }     from '@/components/ui/SliderField';
 import { Chip, ChipGroup } from '@/components/ui/Chip';
 import { InputField, Field } from '@/components/ui/Display';
 
+import { TagSelector }   from '@/components/ui/TagSelector';
 import type {
   DailyEntryDetail, SleepEntryDetail, DailySymptomData,
   EssEntryDetail, PrescriptionDetail, PriorSleepContext, ReferenceData,
@@ -78,7 +79,6 @@ function OverviewTab({
   toggleTag: (id: number) => void;
   addNewTag: (v: string) => Promise<void>;
 }) {
-  const [newTag, setNewTag] = useState('');
   const set = <K extends keyof DailyOverviewState>(k: K, v: DailyOverviewState[K]) =>
     setState(prev => ({ ...prev, [k]: v }));
 
@@ -199,24 +199,12 @@ function OverviewTab({
 
       <CardSection>
         <CardSectionLabel>Tags</CardSectionLabel>
-        <ChipGroup>
-          {tags.map(t => (
-            <Chip key={t.id} active={tagIds.includes(t.id)} small onClick={() => toggleTag(t.id)}>
-              {t.tag_value}
-            </Chip>
-          ))}
-        </ChipGroup>
-        <div className="quick-add">
-          <input
-            type="text"
-            value={newTag}
-            placeholder="Add tag…"
-            onChange={e => setNewTag(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === 'Enter') { addNewTag(newTag); setNewTag(''); }
-            }}
-          />
-        </div>
+        <TagSelector
+          allTags={tags}
+          selectedIds={tagIds}
+          onToggle={toggleTag}
+          onAdd={addNewTag}
+        />
       </CardSection>
 
       <CardSection>

@@ -1477,3 +1477,235 @@ textarea {
 .sleep-view__context-value {
   color: var(--text);
 }
+
+/* ── TagSelector ─────────────────────────────────────────────────────────────*/
+
+.tag-selector {
+  position: relative;
+}
+
+.tag-selector__input-wrap {
+  margin-top: 6px;
+}
+
+.tag-selector__input {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 0.875rem;
+  padding: 6px 10px;
+  box-sizing: border-box;
+}
+
+.tag-selector__input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.tag-selector__dropdown {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  background: var(--surface-high);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 50;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.tag-selector__option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 7px 12px;
+  font-size: 0.875rem;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.tag-selector__option:hover {
+  background: var(--surface);
+}
+
+.tag-selector__option--add {
+  color: var(--accent);
+  border-top: 1px solid var(--border);
+  font-weight: 500;
+}
+
+.tag-selector__remove {
+  margin-left: 4px;
+  opacity: 0.6;
+  font-size: 0.85em;
+}
+
+/* ── ChartSettings rework ────────────────────────────────────────────────────*/
+
+.chart-settings-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.chart-settings-topbar__left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.chart-settings-new-form {
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.chart-settings-new-form__fields {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.chart-settings-new-form__title-input {
+  flex: 1;
+  min-width: 160px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 0.875rem;
+  padding: 6px 10px;
+}
+
+.chart-settings-new-form__hint {
+  font-size: 0.78rem;
+  color: var(--text-faint);
+  margin: 0 0 10px;
+}
+
+.chart-settings-filter {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.chart-settings-filter__input {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 0.875rem;
+  padding: 6px 10px;
+}
+
+.chart-settings-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+
+.chart-settings-card--inactive {
+  opacity: 0.6;
+}
+
+.chart-settings-card--warn {
+  border-color: var(--warn);
+}
+
+.chart-settings-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.chart-settings-card__title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chart-settings-card__title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.chart-settings-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.chart-settings-card__warnings {
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  margin-bottom: 10px;
+}
+
+.chart-settings-card__warning {
+  font-size: 0.82rem;
+  color: var(--warn);
+  margin: 2px 0;
+}
+
+.chart-settings-card__links {
+  margin-bottom: 10px;
+}
+
+.chart-settings-card__link-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.chart-settings-card__link-row:last-child {
+  border-bottom: none;
+}
+
+.chart-settings-card__link-name {
+  flex: 1;
+  font-size: 0.875rem;
+  color: var(--text);
+}
+
+.chart-settings-card__add-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.badge--warn {
+  background: color-mix(in srgb, var(--warn) 20%, transparent);
+  color: var(--warn);
+}
+
+.badge--muted {
+  background: var(--surface-high);
+  color: var(--text-faint);
+}

@@ -13,6 +13,7 @@ import { ScatterChart }  from './charts/ScatterChart';
 import { LineTrendChart } from './charts/LineTrendChart';
 import { HabitHeatmap }         from './HabitHeatmap';
 import { TimelineScatterChart } from './charts/TimelineScatterChart';
+import { BarChart }             from './charts/BarChart';
 import type { ChartDefinitionDetail, TrackingDataPoint } from '@/types/dal';
 
 interface Props {
@@ -73,6 +74,9 @@ export function HealthAnalyticsClient({
           )}
           {chart.chart_type === 'timeline' && (
             <TimelineScatterChart chart={chart} data={numericData} />
+          )}
+          {chart.chart_type === 'bar' && (
+            <BarChart chart={chart} data={numericData} />
           )}
         </div>
       ))}
