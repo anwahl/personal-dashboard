@@ -391,8 +391,6 @@ export async function getBrainDumps(
   };
 }
 
-import type { BrainDumpRow } from '@/types/schema';
-
 export async function updateBrainDump(
   client: SupabaseClient,
   id:     number,
