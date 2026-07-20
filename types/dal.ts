@@ -52,6 +52,9 @@ import type {
   AppointmentRow,
   TaskRow,
   LastTimeLatestRow,
+  LastTimeMediaRow,
+  LastTimeBooleanRow,
+  LastTimeCustomRow,
   MediaEntryRow,
   WeeklyEntryRow,
   WeeklyIntentionRow,
@@ -82,7 +85,7 @@ export type {
   PrescriptionRow,
   TaskStatusRow,
   TaskPriorityRow,
-  LastTimeLatestRow,
+  LastTimeLatestRow,,
   ChartDefinitionRow,
   ChartTrackableLinkRow,
 };
@@ -364,4 +367,4 @@ export type MediaEntryInsert = Omit<MediaEntryRow, 'id' | 'created_at' | 'update
 export type MediaEntryUpdate = Partial<MediaEntryInsert>;
 
 export type BrainDumpInsert = { entry_id?: number | null; dump_date: string; body_md?: string };
-export type BrainDumpUpdate = Partial<BrainDumpInsert>;
+8export type BrainDumpUpdate = Partial<BrainDumpInsert>;
