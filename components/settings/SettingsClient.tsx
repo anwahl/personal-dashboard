@@ -11,7 +11,6 @@ import { LastTimeSettings }      from '../last-time/LastTimeSettings';
 import type { SymptomCategoryWithTypes, JournalCategoryWithPrompts, ChartDefinitionDetail } from '@/types/dal';
 import type { PersonRow, ProviderTypeRow, DailyTrackableRow } from '@/types/schema';
 import type { ChartCategoryRow } from '@/types/dal';
-import type { ChartCategoryRow } from '@/types/dal';
 
 // Re-export TabBar from ui for convenience
 function TabBarLocal({ tabs, active, onChange }: {
