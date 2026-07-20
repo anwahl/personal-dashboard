@@ -85,7 +85,7 @@ export type {
   PrescriptionRow,
   TaskStatusRow,
   TaskPriorityRow,
-  LastTimeLatestRow,,
+  LastTimeLatestRow,
   ChartDefinitionRow,
   ChartTrackableLinkRow,
 };
