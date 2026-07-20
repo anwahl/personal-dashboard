@@ -114,6 +114,26 @@ export async function deleteTask(client: Client, id: number): Promise<void> {
   if (error) throw new Error(`deleteTask: ${error.message}`);
 }
 
+
+// ── Single-record fetch ───────────────────────────────────────────────────────
+
+export async function getTaskById(
+  client: Client,
+  id: number
+): Promise<TaskDetail | null> {
+  const { data, error } = await client
+    .from('tasks')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error) throw new Error(`getTaskById(${id}): ${error.message}`);
+  if (!data) return null;
+
+  const enriched = await enrich(client, [data as TaskRow]);
+  return enriched[0] ?? null;
+}
+
 // ── Date-context queries ──────────────────────────────────────────────────────
 
 export interface TaskContextData {

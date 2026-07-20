@@ -118,3 +118,20 @@ export async function deleteAppointment(client: Client, id: number): Promise<voi
   const { error } = await client.from('appointments').delete().eq('id', id);
   if (error) throw new Error(`deleteAppointment: ${error.message}`);
 }
+
+export async function getAppointmentById(
+  client: Client,
+  id: number
+): Promise<AppointmentDetail | null> {
+  const { data, error } = await client
+    .from('appointments')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error) throw new Error(`getAppointmentById(${id}): ${error.message}`);
+  if (!data) return null;
+
+  const enriched = await enrich(client, [data as AppointmentRow]);
+  return enriched[0] ?? null;
+}

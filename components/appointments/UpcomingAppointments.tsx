@@ -65,29 +65,31 @@ export function UpcomingAppointments({ appointments, contextDate }: Props) {
       <CardHeader><CardTitle>📅 Appointments</CardTitle></CardHeader>
       <CardBody>
         {/* Primary card */}
-        <div className={`appt-primary${isToday ? ' appt-primary--today' : ''}`}>
-          <div className="appt-primary__type">{apptLabel(primary)}</div>
-          {primary.person && (
-            <div className="appt-primary__person">For {primary.person.person_name}</div>
-          )}
-          <div className={`appt-primary__countdown${isToday ? ' appt-primary__countdown--today' : isTomorrow ? ' appt-primary__countdown--tomorrow' : ''}`}>
-            {countdown}
+        <a href={`/appointments/${primary.id}`} className="appt-primary">
+          <div className={`appt-primary__inner${isToday ? ' appt-primary__inner--today' : ''}`}>
+            <div className="appt-primary__type">{apptLabel(primary)}</div>
+            {primary.person && (
+              <div className="appt-primary__person">For {primary.person.person_name}</div>
+            )}
+            <div className={`appt-primary__countdown${isToday ? ' appt-primary__countdown--today' : isTomorrow ? ' appt-primary__countdown--tomorrow' : ''}`}>
+              {countdown}
+            </div>
+            <div className="appt-primary__date">
+              {fmtDate(primary.appointment_date)}{fmtTime(primary.appointment_time)}
+            </div>
           </div>
-          <div className="appt-primary__date">
-            {fmtDate(primary.appointment_date)}{fmtTime(primary.appointment_time)}
-          </div>
-        </div>
+        </a>
 
         {/* Secondary list */}
         {rest.length > 0 && (
           <CardSection>
             {rest.slice(0, 4).map(appt => (
-              <div key={appt.id} className="appt-secondary">
+              <a key={appt.id} href={`/appointments/${appt.id}`} className="appt-secondary">
                 <span className="appt-secondary__label">{apptLabel(appt)}</span>
                 <span className="appt-secondary__countdown">
                   {daysUntil(appt.appointment_date, contextDate)}
                 </span>
-              </div>
+              </a>
             ))}
           </CardSection>
         )}

@@ -2164,3 +2164,179 @@ input[type="color"] {
   margin: 0;
   white-space: pre-wrap;
 }
+
+/* ── QuickAdd date input fix ─────────────────────────────────────────────────*/
+
+.task-quickadd__date {
+  width: 130px;
+  flex: none;
+}
+
+/* ── Task item body as link ──────────────────────────────────────────────────*/
+
+.task-item__body-link {
+  flex: 1;
+  min-width: 0;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.task-item__body-link:hover .task-item__title {
+  color: var(--accent);
+}
+
+/* ── Appointment cards as links ──────────────────────────────────────────────*/
+
+a.appt-primary {
+  display: block;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s;
+}
+
+a.appt-primary:hover {
+  border-color: var(--accent);
+}
+
+.appt-primary__inner {
+  padding: 14px 16px;
+}
+
+.appt-primary__inner--today {
+  border-color: var(--accent);
+}
+
+a.appt-secondary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.85rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+a.appt-secondary:hover .appt-secondary__label {
+  color: var(--accent);
+}
+
+a.appt-secondary:last-child { border-bottom: none; }
+
+/* ── Detail pages ─────────────────────────────────────────────────────────────*/
+
+.page-back-link {
+  display: inline-block;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  margin-bottom: 6px;
+}
+
+.page-back-link:hover { color: var(--accent); }
+
+.detail-page__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.detail-page__title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 2px;
+}
+
+.detail-page__subtitle {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.detail-page__actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.detail-page__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0 0 20px;
+  padding: 0;
+}
+
+.detail-page__field {
+  display: flex;
+  gap: 16px;
+  align-items: baseline;
+  font-size: 0.9rem;
+}
+
+.detail-page__field dt {
+  width: 72px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.detail-page__field dd {
+  margin: 0;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.detail-page__field-note {
+  font-size: 0.78rem;
+  color: var(--text-faint);
+}
+
+.detail-page__body {
+  margin-bottom: 16px;
+}
+
+.detail-page__body-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+  margin: 0 0 6px;
+}
+
+.detail-page__body-text {
+  white-space: pre-wrap;
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: var(--text);
+  margin: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+.appt-detail-countdown {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 16px;
+}
+
+.appt-detail-countdown--past {
+  color: var(--text-faint);
+}
