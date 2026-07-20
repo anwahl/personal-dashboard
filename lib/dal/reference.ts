@@ -42,7 +42,6 @@ import type {
   ChartTrackableLinkDetail,
   ChartDefinitionDetail,
 } from '@/types/dal';
-import type { ChartCategoryRow } from '@/types/schema';
 
 type Client = SupabaseClient;
 
