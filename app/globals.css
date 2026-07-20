@@ -1402,11 +1402,43 @@ textarea {
   -webkit-overflow-scrolling: touch;
 }
 
-.chart-controls {
+.chart-panel {
+  margin-bottom: 28px;
+}
+
+.chart-panel__controls {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
-  margin-bottom: 20px;
+  margin-bottom: 8px;
+  justify-content: flex-end;
+}
+
+.chart-range-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-faint);
+  font-size: 0.72rem;
+  font-weight: 500;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.chart-range-btn:hover:not(:disabled) {
+  border-color: var(--text-muted);
+  color: var(--text-muted);
+}
+
+.chart-range-btn--active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.chart-range-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 /* ── Settings additions ─────────────────────────────────────────────────────*/

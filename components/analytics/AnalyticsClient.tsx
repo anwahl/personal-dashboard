@@ -3,61 +3,25 @@
 /**
  * AnalyticsClient
  *
- * Tabbed analytics page. Each tab = one chart category.
- * An "All" tab always shows everything.
- * Chart data is a single merged TrackingDataPoint[] covering all trackable types.
+ * Tabbed by chart category. Each chart renders inside a ChartPanel
+ * which owns its own date range state and client-side data fetching.
+ * No global range selector — each chart is independent.
  */
 
-import { useState }              from 'react';
-import { useRouter }             from 'next/navigation';
-import { Button }                from '@/components/ui/Button';
-import { TabBar }                from '@/components/ui/Controls';
-import { ScatterChart }          from './charts/ScatterChart';
-import { LineTrendChart }        from './charts/LineTrendChart';
-import { BarChart }              from './charts/BarChart';
-import { TimelineScatterChart }  from './charts/TimelineScatterChart';
-import { ChainChart }           from './charts/ChainChart';
-import { HabitHeatmap }          from './HabitHeatmap';
+import { useState }         from 'react';
+import { TabBar }           from '@/components/ui/Controls';
+import { ChartPanel }       from './ChartPanel';
 import type { ChartDefinitionDetail, TrackingDataPoint } from '@/types/dal';
 
 interface Props {
-  charts:    ChartDefinitionDetail[];
-  data:      TrackingDataPoint[];
-  fromDate:  string;
-  toDate:    string;
-  rangeDays: number;
+  charts:      ChartDefinitionDetail[];
+  data:        TrackingDataPoint[];   // initial server-fetched data (default range)
+  fromDate:    string;
+  toDate:      string;
 }
 
-const RANGE_OPTIONS = [
-  { label: '7d',   value: 7   },
-  { label: '21d',  value: 21  },
-  { label: '30d',  value: 30  },
-  { label: '90d',  value: 90  },
-  { label: '180d', value: 180 },
-  { label: '1yr',  value: 365 },
-];
-
-function ChartRenderer({ chart, data, fromDate, toDate }: {
-  chart:    ChartDefinitionDetail;
-  data:     TrackingDataPoint[];
-  fromDate: string;
-  toDate:   string;
-}) {
-  switch (chart.chart_type) {
-    case 'scatter':  return <ScatterChart chart={chart} data={data} />;
-    case 'line':     return <LineTrendChart chart={chart} data={data} />;
-    case 'bar':      return <BarChart chart={chart} data={data} />;
-    case 'chain':    return <ChainChart chart={chart} data={data} fromDate={fromDate} toDate={toDate} />;
-    case 'timeline': return <TimelineScatterChart chart={chart} data={data} />;
-    case 'heatmap':  return <HabitHeatmap chart={chart} data={data} fromDate={fromDate} toDate={toDate} />;
-    default:         return null;
-  }
-}
-
-export function AnalyticsClient({ charts, data, fromDate, toDate, rangeDays }: Props) {
-  const router = useRouter();
-
-  // Build category tabs from charts — preserve category sort_order
+export function AnalyticsClient({ charts, data, fromDate, toDate }: Props) {
+  // Build category tabs from charts
   const categoryOrder = new Map<string, number>();
   categoryOrder.set('All', -1);
   for (const chart of charts) {
@@ -81,32 +45,12 @@ export function AnalyticsClient({ charts, data, fromDate, toDate, rangeDays }: P
     ? charts
     : charts.filter(c => (c.category?.name ?? 'Uncategorised') === activeTab);
 
-  const setRange = (days: number) => router.push(`/analytics?range=${days}`);
-
   return (
     <div>
-      {/* Range selector */}
-      <div className="chart-controls">
-        {RANGE_OPTIONS.map(opt => (
-          <Button
-            key={opt.value}
-            variant={rangeDays === opt.value ? 'accent' : 'ghost'}
-            size="sm"
-            onClick={() => setRange(opt.value)}
-          >
-            {opt.label}
-          </Button>
-        ))}
-      </div>
-
-      {/* Category tabs (only if more than one category exists) */}
+      {/* Category tabs (only when more than one category) */}
       {tabs.length > 2 && (
         <div className="analytics-tabs">
-          <TabBar
-            tabs={tabs}
-            active={activeTab}
-            onChange={setActiveTab}
-          />
+          <TabBar tabs={tabs} active={activeTab} onChange={setActiveTab} />
         </div>
       )}
 
@@ -119,9 +63,13 @@ export function AnalyticsClient({ charts, data, fromDate, toDate, rangeDays }: P
       )}
 
       {visibleCharts.map(chart => (
-        <div key={chart.id} className="chart-block">
-          <ChartRenderer chart={chart} data={data} fromDate={fromDate} toDate={toDate} />
-        </div>
+        <ChartPanel
+          key={chart.id}
+          chart={chart}
+          initialData={data}
+          fromDate={fromDate}
+          toDate={toDate}
+        />
       ))}
     </div>
   );
