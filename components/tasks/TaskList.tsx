@@ -123,14 +123,19 @@ function QuickAdd({
 
   return (
     <div className="task-quickadd">
-      <input
-        type="text"
-        className="task-quickadd__input"
-        value={title}
-        placeholder={placeholder}
-        onChange={e => setTitle(e.target.value)}
-        onKeyDown={e => { if (e.key === 'Enter') submit(); }}
-      />
+      <div className="task-quickadd__row">
+        <input
+          type="text"
+          className="task-quickadd__input"
+          value={title}
+          placeholder={placeholder}
+          onChange={e => setTitle(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') submit(); }}
+        />
+        <Button variant="accent" size="sm" onClick={submit} disabled={!title.trim() || saving}>
+          +
+        </Button>
+      </div>
       {showDatePicker && (
         <input
           type="date"
@@ -139,9 +144,6 @@ function QuickAdd({
           onChange={e => setDate(e.target.value)}
         />
       )}
-      <Button variant="accent" size="sm" onClick={submit} disabled={!title.trim() || saving}>
-        +
-      </Button>
     </div>
   );
 }

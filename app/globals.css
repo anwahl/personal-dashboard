@@ -1928,10 +1928,16 @@ input[type="color"] {
 
 .task-quickadd {
   display: flex;
-  gap: 8px;
-  align-items: center;
+  flex-direction: column;
+  gap: 6px;
   padding-top: 10px;
   border-top: 1px solid var(--border);
+}
+
+.task-quickadd__row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
 .task-quickadd__input {
@@ -1956,6 +1962,7 @@ input[type="color"] {
   color: var(--text);
   font-size: 0.8rem;
   padding: 6px 8px;
+  width: 160px;
 }
 
 /* ── Appointments ─────────────────────────────────────────────────────────────*/
@@ -2165,12 +2172,6 @@ input[type="color"] {
   white-space: pre-wrap;
 }
 
-/* ── QuickAdd date input fix ─────────────────────────────────────────────────*/
-
-.task-quickadd__date {
-  width: 130px;
-  flex: none;
-}
 
 /* ── Task item body as link ──────────────────────────────────────────────────*/
 
