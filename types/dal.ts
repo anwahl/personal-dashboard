@@ -25,6 +25,8 @@ import type {
   TaskPriorityRow,
   MediaTypeRow,
   MediaStatusRow,
+  MediaStatusEntryRow,
+  MediaStatusTypeLinkRow,
   MediaGenreRow,
   IntentionRow,
   JournalCategoryRow,
@@ -78,6 +80,7 @@ export type {
   TaskStatusRow,
   TaskPriorityRow,
   LastTimeLatestRow,
+  ChartCategoryRow,
   ChartDefinitionRow,
   ChartTrackableLinkRow,
 };
@@ -198,9 +201,10 @@ export interface TaskDetail extends TaskRow {
 // ── Media entry (enriched) ────────────────────────────────────────────────────
 
 export interface MediaEntryDetail extends MediaEntryRow {
-  media_type: MediaTypeRow;
-  status:     MediaStatusRow | null;
-  genre_ids:  number[];
+  media_type:          MediaTypeRow;
+  current_status:      MediaStatusRow | null;  // derived from latest media_status_entries row
+  latest_status_date:  string | null;
+  genre_ids:           number[];
 }
 
 // ── People page data ─────────────────────────────────────────────────────────

@@ -2027,3 +2027,140 @@ input[type="color"] {
   font-size: 0.78rem;
   flex-shrink: 0;
 }
+
+/* ── Brain Dump ──────────────────────────────────────────────────────────────*/
+
+.brain-dump-quickadd {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin-bottom: 16px;
+}
+
+.brain-dump-quickadd__date-row {
+  margin-bottom: 8px;
+}
+
+.brain-dump-quickadd__date {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 0.8rem;
+  padding: 4px 8px;
+}
+
+.brain-dump-quickadd__textarea {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 0.9rem;
+  padding: 8px 10px;
+  resize: vertical;
+  box-sizing: border-box;
+  display: block;
+}
+
+.brain-dump-quickadd__textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.brain-dump-quickadd__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.brain-dump-quickadd__hint {
+  font-size: 0.75rem;
+  color: var(--text-faint);
+}
+
+.brain-dump-quickadd--compact {
+  padding: 8px 10px;
+}
+
+/* Landing page */
+
+.brain-dump-page__quickadd {
+  margin-bottom: 20px;
+}
+
+.brain-dump-page__controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.brain-dump-page__search {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 0.875rem;
+  padding: 6px 10px;
+}
+
+.brain-dump-page__more {
+  text-align: center;
+  margin-top: 16px;
+}
+
+.brain-dump-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.brain-dump-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+}
+
+.brain-dump-card__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.brain-dump-card__date {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  flex: 1;
+}
+
+.brain-dump-card__entry-link {
+  font-size: 0.75rem;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.brain-dump-card__entry-link:hover { text-decoration: underline; }
+
+.brain-dump-card__actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.brain-dump-card__body { font-size: 0.88rem; }
+
+.brain-dump-card__preview {
+  color: var(--text-muted);
+  font-style: italic;
+  margin: 0;
+  white-space: pre-wrap;
+}

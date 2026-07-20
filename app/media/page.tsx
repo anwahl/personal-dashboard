@@ -1,15 +1,17 @@
-import { createClient }     from '@/lib/supabase/server';
-import { getMediaEntries }  from '@/lib/dal/media';
-import { getMediaTypes, getMediaStatuses, getMediaGenres } from '@/lib/dal/reference';
-import { MediaClient }      from '@/components/media/MediaClient';
+import { createClient }            from '@/lib/supabase/server';
+import { getMediaEntries }         from '@/lib/dal/media';
+import { getMediaTypes, getMediaStatuses, getMediaGenres,
+         getMediaStatusTypeLinks } from '@/lib/dal/reference';
+import { MediaClient }             from '@/components/media/MediaClient';
 
 export default async function MediaPage() {
   const supabase = await createClient();
-  const [entries, mediaTypes, mediaStatuses, genres] = await Promise.all([
+  const [entries, mediaTypes, mediaStatuses, genres, statusTypeLinks] = await Promise.all([
     getMediaEntries(supabase),
     getMediaTypes(supabase),
     getMediaStatuses(supabase),
     getMediaGenres(supabase),
+    getMediaStatusTypeLinks(supabase),
   ]);
 
   return (
@@ -22,6 +24,7 @@ export default async function MediaPage() {
         mediaTypes={mediaTypes}
         mediaStatuses={mediaStatuses}
         genres={genres}
+        statusTypeLinks={statusTypeLinks}
       />
     </div>
   );

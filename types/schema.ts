@@ -173,11 +173,28 @@ export interface MediaTypeRow {
   is_active:  boolean;
 }
 
+export type MediaStatusType = 'planned' | 'in_progress' | 'completed' | 'abandoned';
+
 export interface MediaStatusRow {
   id:          number;
   status_name: string;
+  status_type: MediaStatusType;
   sort_order:  number;
   is_active:   boolean;
+}
+
+export interface MediaStatusTypeLinkRow {
+  id:            number;
+  status_id:     number;
+  media_type_id: number;
+}
+
+export interface MediaStatusEntryRow {
+  id:             number;
+  media_entry_id: number;
+  status_id:      number;
+  status_date:    string;
+  created_at:     string;
 }
 
 export interface MediaGenreRow {
@@ -536,10 +553,7 @@ export interface MediaEntryRow {
   id:            number;
   media_type_id: number;
   title:         string;
-  status_id:     number | null;
   rating:        number | null;
-  started_date:  string | null;
-  finished_date: string | null;
   platform:      string | null;
   creator:       string | null;
   notes:         string | null;

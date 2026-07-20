@@ -33,6 +33,7 @@ import type {
   ChartCategoryRow,
   ChartDefinitionRow,
   ChartTrackableLinkRow,
+  MediaStatusTypeLinkRow,
 } from '@/types/schema';
 import type {
   ReferenceData,
@@ -40,7 +41,8 @@ import type {
   JournalCategoryWithPrompts,
   ChartTrackableLinkDetail,
   ChartDefinitionDetail,
-  } from '@/types/dal';
+} from '@/types/dal';
+import type { ChartCategoryRow } from '@/types/schema';
 
 type Client = SupabaseClient;
 
@@ -240,6 +242,16 @@ export async function getChartDefinitions(
       .filter(l => l.trackable),
     category: chart.category_id ? (categoryById.get(chart.category_id) ?? null) : null,
   }));
+}
+
+// ── Media status type links ──────────────────────────────────────────────────
+
+export async function getMediaStatusTypeLinks(
+  client: Client
+): Promise<MediaStatusTypeLinkRow[]> {
+  const { data, error } = await client.from('media_status_type_links').select('*');
+  if (error) throw new Error(`media_status_type_links: ${error.message}`);
+  return (data ?? []) as MediaStatusTypeLinkRow[];
 }
 
 // ── Full reference data bundle ────────────────────────────────────────────────

@@ -338,3 +338,72 @@ export async function getRecentIntention(
 
   return intention ? { value: intention.value as string, entry_date: entry.entry_date as string } : null;
 }
+
+// ── Brain Dump queries ────────────────────────────────────────────────────────
+
+export interface BrainDumpWithEntry {
+  id:         number;
+  entry_id:   number | null;
+  dump_date:  string;
+  body_md:    string | null;
+  created_at: string;
+  updated_at: string;
+  entry_date: string | null;  // from joined daily_entries, if linked
+}
+
+export async function getBrainDumps(
+  client: SupabaseClient,
+  opts?: {
+    search?:  string;
+    limit?:   number;
+    offset?:  number;
+    ascending?: boolean;
+  }
+): Promise<{ dumps: BrainDumpWithEntry[]; hasMore: boolean }> {
+  const limit  = opts?.limit  ?? 20;
+  const offset = opts?.offset ?? 0;
+  const asc    = opts?.ascending ?? false;
+
+  // Fetch one extra to detect whether there are more pages
+  let q = client
+    .from('brain_dumps')
+    .select('*, daily_entries(entry_date)')
+    .order('dump_date', { ascending: asc })
+    .order('created_at', { ascending: asc })
+    .range(offset, offset + limit);   // range is inclusive, so this fetches limit+1 rows
+
+  if (opts?.search?.trim()) {
+    q = q.ilike('body_md', `%${opts.search.trim()}%`);
+  }
+
+  const { data, error } = await q;
+  if (error) throw new Error(`getBrainDumps: ${error.message}`);
+
+  const rows = (data ?? []) as (BrainDumpRow & { daily_entries: { entry_date: string } | null })[];
+  const hasMore = rows.length > limit;
+
+  return {
+    dumps: rows.slice(0, limit).map(r => ({
+      ...r,
+      entry_date: r.daily_entries?.entry_date ?? null,
+    })),
+    hasMore,
+  };
+}
+
+import type { BrainDumpRow } from '@/types/schema';
+
+export async function updateBrainDump(
+  client: SupabaseClient,
+  id:     number,
+  bodyMd: string
+): Promise<void> {
+  await client.from('brain_dumps').update({ body_md: bodyMd }).eq('id', id).throwOnError();
+}
+
+export async function deleteBrainDump(
+  client: SupabaseClient,
+  id: number
+): Promise<void> {
+  await client.from('brain_dumps').delete().eq('id', id).throwOnError();
+}
