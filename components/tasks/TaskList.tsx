@@ -74,7 +74,7 @@ function TaskItem({
         {busy ? '…' : '○'}
       </button>
 
-      <div className="task-item__body">
+      <a href={`/tasks/${task.id}`} className="task-item__body-link">
         <span className="task-item__title">{task.title}</span>
         <div className="task-item__meta">
           {showDueDate && task.due_date && (
@@ -86,7 +86,7 @@ function TaskItem({
             <span className="task-item__person">{task.person.person_name}</span>
           )}
         </div>
-      </div>
+      </a>
 
       <span className={`task-item__dot ${priorityDotClass(task.priority.priority_name)}`}
         title={task.priority.priority_name} />
