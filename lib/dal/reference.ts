@@ -40,8 +40,7 @@ import type {
   JournalCategoryWithPrompts,
   ChartTrackableLinkDetail,
   ChartDefinitionDetail,
-} from '@/types/dal';
-import type { ChartCategoryRow } from '@/types/schema';
+  } from '@/types/dal';
 
 type Client = SupabaseClient;
 
