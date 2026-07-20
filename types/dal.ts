@@ -78,7 +78,6 @@ export type {
   TaskStatusRow,
   TaskPriorityRow,
   LastTimeLatestRow,
-  ChartCategoryRow,
   ChartDefinitionRow,
   ChartTrackableLinkRow,
 };
