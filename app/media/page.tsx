@@ -5,7 +5,6 @@ import { getMediaTypes, getMediaStatuses, getMediaGenres,
 import { MediaClient }             from '@/components/media/MediaClient';
 import { QuickMediaLog }           from '@/components/media/QuickMediaLog';
 import { getInProgressMediaEntries } from '@/lib/dal/media';
-import { getMediaStatusTypeLinks }   from '@/lib/dal/reference';
 
 export default async function MediaPage() {
   const supabase = await createClient();
