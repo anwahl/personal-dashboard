@@ -52,7 +52,7 @@ export function HabitHeatmap({ chart, data, fromDate, toDate }: Props) {
     <div className="chart-block">
       <h3 className="chart-block__title">{chart.title}</h3>
       <div className="chart-scroll">
-        <svg width={svgW} height={svgH} className="chart-svg">
+        <svg width={svgW} height={svgH} style={{ display: 'block' }}>
           {/* Month labels on the top axis */}
           {dates.map((date, i) => {
             if (date.endsWith('-01') || i === 0) {
@@ -82,7 +82,7 @@ export function HabitHeatmap({ chart, data, fromDate, toDate }: Props) {
                 </text>
                 {/* Cells */}
                 {dates.map((date, colIdx) => {
-                  const done = byDate.get(date)?.[id] === 1;
+                  const done = (byDate.get(date)?.[id] ?? 0) >= 1;
                   return (
                     <rect key={date}
                       x={LABEL_W + colIdx * CELL + 1}

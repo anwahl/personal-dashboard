@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { createClient }          from '@/lib/supabase/client';
 import { Button }                from '@/components/ui/Button';
+import { ManageableList }        from './ManageableList';
 import type { ChartDefinitionDetail, ChartCategoryRow } from '@/types/dal';
 import type { DailyTrackableRow, ChartType, MetricRole } from '@/types/schema';
 
@@ -315,6 +316,18 @@ export function ChartSettings({ chartDefinitions, trackables, categories }: Prop
 
   return (
     <div>
+      {/* ── Category management ── */}
+      <ManageableList
+        title="Categories"
+        description="Group charts into tabs on the Analytics page. Each active category becomes a tab."
+        tableName="chart_categories"
+        nameColumn="name"
+        items={categories}
+        addFields={[
+          { key: 'name', label: 'Category name', type: 'text', placeholder: 'e.g. Sleep', required: true },
+        ]}
+      />
+
       {/* Top bar */}
       <div className="chart-settings-topbar">
         <div className="chart-settings-topbar__left">

@@ -1385,15 +1385,20 @@ textarea {
   margin: 0 0 10px;
 }
 
+/* chart-svg: only for viewBox-based charts (scatter, line, timeline).
+   Do NOT apply to absolute-pixel SVGs (heatmap, bar) — they use style={{ display:'block' }} directly. */
 .chart-svg {
   width: 100%;
   height: auto;
+  min-width: 380px;   /* scroll rather than squish on narrow screens */
   overflow: visible;
 }
 
+/* chart-scroll: wrapper for any chart that may need horizontal or vertical scroll.
+   overflow-x: auto is enough — the div expands vertically to fit its content
+   as long as no ancestor constrains the height. */
 .chart-scroll {
   overflow-x: auto;
-  overflow-y: visible;
   -webkit-overflow-scrolling: touch;
 }
 

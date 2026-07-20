@@ -60,7 +60,7 @@ export function BarChart({ chart, data }: Props) {
     <div className="chart-block">
       <h3 className="chart-block__title">{chart.title}</h3>
       <div className="chart-scroll">
-        <svg width={SVG_W} height={CHART_H} className="chart-svg">
+        <svg width={SVG_W} height={CHART_H} style={{ display: 'block' }}>
 
           {/* Y grid + tick labels */}
           {Y_TICKS.map(t => (
