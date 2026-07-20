@@ -28,21 +28,37 @@ export interface DiagnosisRow {
   created_at:     string;
 }
 
-// ── Reference / Type tables ───────────────────────────────────────────────────
+// ── Daily trackables ──────────────────────────────────────────────────────────
+// Replaces the former `habits` table.
+// track_type: 'boolean' = habit-style done/not-done
+//             'numeric' = severity/quality slider (0-10)
+//             'aggregate' = computed from another source (e.g. ESS survey total)
 
-export interface HabitRow {
+export type TrackType = 'boolean' | 'numeric' | 'aggregate';
+
+export interface DailyTrackableRow {
   id:         number;
-  habit_name: string;
+  track_type: TrackType;
+  name:       string;
   emoji:      string | null;
+  color_hex:  string | null;
   sort_order: number;
   is_active:  boolean;
-  created_at: string;
 }
 
+export interface DailyNumericEntryRow {
+  id:           number;
+  entry_id:     number;
+  trackable_id: number;
+  metric_value: number;
+}
+
+// ── Reference / Type tables ───────────────────────────────────────────────────
+
 export interface TagRow {
-  id:        number;
-  tag_value: string;
-  is_active: boolean;
+  id:         number;
+  tag_value:  string;
+  is_active:  boolean;
   created_at: string;
 }
 
@@ -62,10 +78,11 @@ export interface SymptomTypeRow {
 }
 
 export interface EssQuestionTypeRow {
-  id:             number;
+  id:            number;
   question_label: string;
-  sort_order:     number;
-  is_active:      boolean;
+  sort_order:    number;
+  is_active:     boolean;
+  trackable_id:  number | null;  // FK → daily_trackables (the aggregate trackable)
 }
 
 export interface EssAnswerTypeRow {
@@ -91,39 +108,39 @@ export interface TimingCategoryRow {
 }
 
 export interface PreBedConsumptionTypeRow {
-  id:        number;
-  type_name: string;
+  id:         number;
+  type_name:  string;
   sort_order: number;
-  is_active: boolean;
+  is_active:  boolean;
 }
 
 export interface SleepEventTypeRow {
-  id:        number;
-  type_name: string;
+  id:         number;
+  type_name:  string;
   sort_order: number;
-  is_active: boolean;
+  is_active:  boolean;
 }
 
 export interface ProviderTypeRow {
-  id:        number;
-  type_name: string;
+  id:         number;
+  type_name:  string;
   sort_order: number;
-  is_active: boolean;
+  is_active:  boolean;
 }
 
 export interface AppointmentTypeRow {
-  id:        number;
-  type_name: string;
+  id:         number;
+  type_name:  string;
   sort_order: number;
-  is_active: boolean;
+  is_active:  boolean;
 }
 
 export interface MedicationTimingTypeRow {
-  id:                  number;
-  timing_name:         string;
-  dose_interval_days:  number | null;
-  sort_order:          number;
-  is_active:           boolean;
+  id:                 number;
+  timing_name:        string;
+  dose_interval_days: number | null;
+  sort_order:         number;
+  is_active:          boolean;
 }
 
 export interface TaskStatusRow {
@@ -142,18 +159,18 @@ export interface TaskPriorityRow {
 }
 
 export interface TimelineEventTypeRow {
-  id:        number;
-  type_name: string;
-  color_hex: string | null;
+  id:         number;
+  type_name:  string;
+  color_hex:  string | null;
   sort_order: number;
-  is_active: boolean;
+  is_active:  boolean;
 }
 
 export interface MediaTypeRow {
-  id:        number;
-  type_name: string;
+  id:         number;
+  type_name:  string;
   sort_order: number;
-  is_active: boolean;
+  is_active:  boolean;
 }
 
 export interface MediaStatusRow {
@@ -170,9 +187,9 @@ export interface MediaGenreRow {
 }
 
 export interface IntentionRow {
-  id:        number;
-  value:     string;
-  is_active: boolean;
+  id:         number;
+  value:      string;
+  is_active:  boolean;
   created_at: string;
 }
 
@@ -259,8 +276,6 @@ export interface DailyEntryRow {
   id:           number;
   entry_date:   string;
   icon:         string | null;
-  mood:         number | null;
-  energy:       number | null;
   word:         string | null;
   daily_emoji:  string | null;
   intention_id: number | null;
@@ -271,9 +286,9 @@ export interface DailyEntryRow {
 }
 
 export interface HabitEntryRow {
-  id:       number;
-  entry_id: number;
-  habit_id: number;
+  id:           number;
+  entry_id:     number;
+  trackable_id: number;    // FK → daily_trackables (track_type = 'boolean')
 }
 
 export interface TagEntryRow {
@@ -289,10 +304,10 @@ export interface PrescriptionEntryRow {
 }
 
 export interface BrainDumpRow {
-  id:        number;
-  entry_id:  number | null;
-  dump_date: string;
-  body_md:   string | null;
+  id:         number;
+  entry_id:   number | null;
+  dump_date:  string;
+  body_md:    string | null;
   created_at: string;
   updated_at: string;
 }
@@ -347,10 +362,10 @@ export interface SleepEventRow {
 }
 
 export interface SleepTimingEntryRow {
-  id:                  number;
-  sleep_entry_id:      number;
-  timing_category_id:  number;
-  timing_option_id:    number;
+  id:                 number;
+  sleep_entry_id:     number;
+  timing_category_id: number;
+  timing_option_id:   number;
 }
 
 export interface SleepConsumptionEntryRow {
@@ -362,8 +377,8 @@ export interface SleepConsumptionEntryRow {
 // ── ESS ───────────────────────────────────────────────────────────────────────
 
 export interface EssEntryRow {
-  id:        number;
-  entry_id:  number;
+  id:         number;
+  entry_id:   number;
   created_at: string;
   updated_at: string;
 }
@@ -375,27 +390,8 @@ export interface EssQuestionResponseRow {
   answer_type_id:   number;
 }
 
-/** Matches the ess_entry_totals VIEW */
-export interface EssEntryTotalRow {
-  ess_entry_id: number;
-  entry_id:     number;
-  total:        number;
-}
-
 // ── Symptoms ──────────────────────────────────────────────────────────────────
-
-export interface SymptomEntryRow {
-  id:                number;
-  entry_id:          number;
-  pain_level:        number | null;
-  brain_fog_level:   number | null;
-  fatigue_level:     number | null;
-  background_notes:  string | null;
-  what_helped:       string | null;
-  flag_for_provider: boolean;
-  created_at:        string;
-  updated_at:        string;
-}
+// symptom_entries table is removed. Crash and anxiety remain on entry_id directly.
 
 export interface CrashRow {
   id:       number;
@@ -412,10 +408,31 @@ export interface AnxietyEntryRow {
 }
 
 export interface DailySymptomEntryRow {
-  id:               number;
-  symptom_entry_id: number;
-  symptom_type_id:  number;
-  severity:         number | null;
+  id:              number;
+  entry_id:        number;    // FK → daily_entries (direct, no longer via symptom_entries)
+  symptom_type_id: number;
+  severity:        number | null;
+}
+
+// ── Chart definitions ─────────────────────────────────────────────────────────
+
+export type ChartType  = 'scatter' | 'line' | 'heatmap';
+export type MetricRole = 'x_axis'  | 'y_axis' | 'series';
+
+export interface ChartDefinitionRow {
+  id:         number;
+  title:      string;
+  chart_type: ChartType;
+  sort_order: number;
+  is_active:  boolean;
+}
+
+export interface ChartTrackableLinkRow {
+  id:           number;
+  chart_id:     number;
+  trackable_id: number;
+  metric_role:  MetricRole;
+  sort_order:   number;
 }
 
 // ── Weekly entries ────────────────────────────────────────────────────────────
@@ -558,7 +575,6 @@ export interface LastTimeLogRow {
   created_at:  string;
 }
 
-/** Matches the last_time_latest VIEW */
 export interface LastTimeLatestRow {
   id:               number;
   activity_name:    string;
@@ -611,10 +627,10 @@ export interface ItemListEntryRow {
 }
 
 export interface LogSchemaRow {
-  id:        number;
-  log_title: string;
+  id:         number;
+  log_title:  string;
   sort_order: number;
-  is_active: boolean;
+  is_active:  boolean;
 }
 
 export interface LogSchemaFieldRow {

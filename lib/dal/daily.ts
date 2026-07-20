@@ -1,18 +1,22 @@
 /**
  * lib/dal/daily.ts
  *
- * CRUD for daily_entries and all related junction/child tables.
+ * CRUD for daily_entries and related junction/child tables.
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { DailyEntryRow, HabitEntryRow, TagEntryRow, PrescriptionEntryRow, BrainDumpRow } from '@/types/schema';
+import type {
+  DailyEntryRow,
+  HabitEntryRow,
+  TagEntryRow,
+  PrescriptionEntryRow,
+  BrainDumpRow,
+  DailyNumericEntryRow,
+} from '@/types/schema';
 import type {
   DailyEntryDetail,
-  DailyEntryInsert,
   DailyEntryUpdate,
   WeekDayData,
-  BrainDumpInsert,
-  BrainDumpUpdate,
 } from '@/types/dal';
 import { getRandomIntention } from './reference';
 
@@ -20,6 +24,13 @@ type Client = SupabaseClient;
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
 
+/** Local date — avoids UTC/server timezone mismatch. */
+export function localTodayISO(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/** Server-side ISO — use only where timezone drift doesn't matter (DAL range queries). */
 export function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -32,10 +43,10 @@ export function addDays(dateStr: string, n: number): string {
 
 export function getWeekDates(anchorDate: string): string[] {
   const d = new Date(anchorDate + 'T12:00:00');
-  const dayOfWeek = d.getDay(); // 0 = Sunday
+  const dow = d.getDay();
   return Array.from({ length: 7 }, (_, i) => {
     const wd = new Date(d);
-    wd.setDate(d.getDate() - dayOfWeek + i);
+    wd.setDate(d.getDate() - dow + i);
     return wd.toISOString().slice(0, 10);
   });
 }
@@ -46,13 +57,13 @@ async function assembleDailyEntryDetail(
   client: Client,
   row: DailyEntryRow
 ): Promise<DailyEntryDetail> {
-  const [habitEntries, tagEntries, prescriptionEntries, brainDump, intention] =
+  const [booleanEntries, tagEntries, prescriptionEntries, numericEntries, brainDump, intention] =
     await Promise.all([
       client
         .from('habit_entries')
-        .select('habit_id')
+        .select('trackable_id')
         .eq('entry_id', row.id)
-        .then(r => (r.data ?? []) as Pick<HabitEntryRow, 'habit_id'>[]),
+        .then(r => (r.data ?? []) as Pick<HabitEntryRow, 'trackable_id'>[]),
 
       client
         .from('tag_entries')
@@ -65,6 +76,12 @@ async function assembleDailyEntryDetail(
         .select('prescription_id')
         .eq('entry_id', row.id)
         .then(r => (r.data ?? []) as Pick<PrescriptionEntryRow, 'prescription_id'>[]),
+
+      client
+        .from('daily_numeric_entries')
+        .select('*')
+        .eq('entry_id', row.id)
+        .then(r => (r.data ?? []) as DailyNumericEntryRow[]),
 
       client
         .from('brain_dumps')
@@ -86,10 +103,11 @@ async function assembleDailyEntryDetail(
   return {
     ...row,
     intention,
-    habit_ids:        habitEntries.map(h => h.habit_id),
-    tag_ids:          tagEntries.map(t => t.tag_id),
-    prescription_ids: prescriptionEntries.map(p => p.prescription_id),
-    brain_dump:       brainDump,
+    checked_trackable_ids: booleanEntries.map(h => h.trackable_id),
+    tag_ids:               tagEntries.map(t => t.tag_id),
+    prescription_ids:      prescriptionEntries.map(p => p.prescription_id),
+    numeric_entries:       numericEntries,
+    brain_dump:            brainDump,
   };
 }
 
@@ -105,11 +123,9 @@ export async function getDailyEntry(
 
   if (error) throw new Error(`getDailyEntry(${date}): ${error.message}`);
   if (!data) return null;
-
   return assembleDailyEntryDetail(client, data as DailyEntryRow);
 }
 
-/** Fetch the raw row — used for analytics where joins aren't needed. */
 export async function getDailyEntryRow(
   client: Client,
   date: string
@@ -123,7 +139,6 @@ export async function getDailyEntryRow(
   return data as DailyEntryRow | null;
 }
 
-/** Fetch raw rows for a date range (analytics, sparklines, heatmaps). */
 export async function getDailyEntryRows(
   client: Client,
   fromDate: string,
@@ -140,59 +155,42 @@ export async function getDailyEntryRows(
   return (data ?? []) as DailyEntryRow[];
 }
 
-/** Fetch a week's worth of data for the weekly strip widget. */
 export async function getWeekData(
   client: Client,
   anchorDate: string
 ): Promise<WeekDayData[]> {
   const dates = getWeekDates(anchorDate);
-  const [fromDate, toDate] = [dates[0], dates[6]];
-
-  const [rows, habitEntries] = await Promise.all([
-    getDailyEntryRows(client, fromDate, toDate),
-    client
-      .from('habit_entries')
-      .select('entry_id, habit_id')
-      .gte('entry_id', 0) // will refine below after getting entry IDs
-      .then(r => (r.data ?? []) as Pick<HabitEntryRow, 'entry_id' | 'habit_id'>[]),
-  ]);
-
+  const rows = await getDailyEntryRows(client, dates[0], dates[6]);
   const rowsByDate = new Map(rows.map(r => [r.entry_date, r]));
 
-  // Re-fetch habit_entries filtered to relevant entry IDs
   const entryIds = rows.map(r => r.id);
-  let filteredHabits: Pick<HabitEntryRow, 'entry_id' | 'habit_id'>[] = [];
+  let booleanEntries: Pick<HabitEntryRow, 'entry_id' | 'trackable_id'>[] = [];
 
   if (entryIds.length > 0) {
-    const { data: he } = await client
+    const { data } = await client
       .from('habit_entries')
-      .select('entry_id, habit_id')
+      .select('entry_id, trackable_id')
       .in('entry_id', entryIds);
-    filteredHabits = (he ?? []) as typeof filteredHabits;
+    booleanEntries = (data ?? []) as typeof booleanEntries;
   }
 
-  const habitsByEntry = filteredHabits.reduce<Record<number, number[]>>(
-    (acc, h) => {
-      if (!acc[h.entry_id]) acc[h.entry_id] = [];
-      acc[h.entry_id].push(h.habit_id);
-      return acc;
-    },
-    {}
-  );
+  const byEntry = booleanEntries.reduce<Record<number, number[]>>((acc, h) => {
+    (acc[h.entry_id] ??= []).push(h.trackable_id);
+    return acc;
+  }, {});
 
   return dates.map(date => {
     const entry = rowsByDate.get(date) ?? null;
     return {
       date,
       entry,
-      habit_ids: entry ? (habitsByEntry[entry.id] ?? []) : [],
+      checked_trackable_ids: entry ? (byEntry[entry.id] ?? []) : [],
     };
   });
 }
 
 // ── Create / Update ───────────────────────────────────────────────────────────
 
-/** Ensures a row exists for the given date. Creates one with a random intention if missing. */
 export async function ensureDailyEntry(
   client: Client,
   date: string
@@ -204,15 +202,11 @@ export async function ensureDailyEntry(
 
   const { data, error } = await client
     .from('daily_entries')
-    .insert({
-      entry_date:   date,
-      intention_id: intention?.id ?? null,
-    })
+    .insert({ entry_date: date, intention_id: intention?.id ?? null })
     .select()
     .single();
 
   if (error) throw new Error(`ensureDailyEntry(${date}): ${error.message}`);
-
   return assembleDailyEntryDetail(client, data as DailyEntryRow);
 }
 
@@ -228,64 +222,7 @@ export async function updateDailyEntry(
   if (error) throw new Error(`updateDailyEntry(${entryId}): ${error.message}`);
 }
 
-// ── Habit entries ─────────────────────────────────────────────────────────────
-
-/** Replace the full set of completed habits for an entry. */
-export async function setHabitEntries(
-  client: Client,
-  entryId: number,
-  habitIds: number[]
-): Promise<void> {
-  // Delete existing then insert new (idiomatic for small junction sets)
-  const { error: delErr } = await client
-    .from('habit_entries')
-    .delete()
-    .eq('entry_id', entryId);
-  if (delErr) throw new Error(`setHabitEntries delete: ${delErr.message}`);
-
-  if (habitIds.length === 0) return;
-
-  const { error: insErr } = await client.from('habit_entries').insert(
-    habitIds.map(habit_id => ({ entry_id: entryId, habit_id }))
-  );
-  if (insErr) throw new Error(`setHabitEntries insert: ${insErr.message}`);
-}
-
-export async function toggleHabitEntry(
-  client: Client,
-  entryId: number,
-  habitId: number,
-  done: boolean
-): Promise<void> {
-  if (done) {
-    await client
-      .from('habit_entries')
-      .upsert({ entry_id: entryId, habit_id: habitId }, { onConflict: 'entry_id,habit_id' })
-      .throwOnError();
-  } else {
-    await client
-      .from('habit_entries')
-      .delete()
-      .eq('entry_id', entryId)
-      .eq('habit_id', habitId)
-      .throwOnError();
-  }
-}
-
 // ── Tag entries ───────────────────────────────────────────────────────────────
-
-export async function setTagEntries(
-  client: Client,
-  entryId: number,
-  tagIds: number[]
-): Promise<void> {
-  await client.from('tag_entries').delete().eq('entry_id', entryId).throwOnError();
-  if (tagIds.length === 0) return;
-  await client
-    .from('tag_entries')
-    .insert(tagIds.map(tag_id => ({ entry_id: entryId, tag_id })))
-    .throwOnError();
-}
 
 export async function toggleTagEntry(
   client: Client,
@@ -310,23 +247,6 @@ export async function toggleTagEntry(
 
 // ── Prescription entries ──────────────────────────────────────────────────────
 
-export async function setPrescriptionEntries(
-  client: Client,
-  entryId: number,
-  prescriptionIds: number[]
-): Promise<void> {
-  await client
-    .from('prescription_entries')
-    .delete()
-    .eq('entry_id', entryId)
-    .throwOnError();
-  if (prescriptionIds.length === 0) return;
-  await client
-    .from('prescription_entries')
-    .insert(prescriptionIds.map(prescription_id => ({ entry_id: entryId, prescription_id })))
-    .throwOnError();
-}
-
 export async function togglePrescriptionEntry(
   client: Client,
   entryId: number,
@@ -336,7 +256,10 @@ export async function togglePrescriptionEntry(
   if (taken) {
     await client
       .from('prescription_entries')
-      .upsert({ entry_id: entryId, prescription_id: prescriptionId }, { onConflict: 'entry_id,prescription_id' })
+      .upsert(
+        { entry_id: entryId, prescription_id: prescriptionId },
+        { onConflict: 'entry_id,prescription_id' }
+      )
       .throwOnError();
   } else {
     await client
@@ -349,19 +272,6 @@ export async function togglePrescriptionEntry(
 }
 
 // ── Brain dumps ───────────────────────────────────────────────────────────────
-
-export async function getBrainDump(
-  client: Client,
-  entryId: number
-): Promise<BrainDumpRow | null> {
-  const { data, error } = await client
-    .from('brain_dumps')
-    .select('*')
-    .eq('entry_id', entryId)
-    .maybeSingle();
-  if (error) throw new Error(`getBrainDump: ${error.message}`);
-  return data as BrainDumpRow | null;
-}
 
 export async function upsertBrainDump(
   client: Client,
@@ -376,11 +286,7 @@ export async function upsertBrainDump(
     .maybeSingle();
 
   if (existing) {
-    await client
-      .from('brain_dumps')
-      .update({ body_md: bodyMd })
-      .eq('id', existing.id)
-      .throwOnError();
+    await client.from('brain_dumps').update({ body_md: bodyMd }).eq('id', existing.id).throwOnError();
   } else {
     await client
       .from('brain_dumps')
@@ -389,7 +295,6 @@ export async function upsertBrainDump(
   }
 }
 
-/** Create a standalone brain dump (not linked to a daily entry). */
 export async function createStandaloneBrainDump(
   client: Client,
   dumpDate: string,

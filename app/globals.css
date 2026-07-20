@@ -1259,3 +1259,186 @@ textarea {
   color: var(--text-faint);
   margin-bottom: 10px;
 }
+
+/* ── Health analytics charts ─────────────────────────────────────────────────*/
+
+/* Add to :root for customisable chart colours:
+   --chart-fog:     #b8aed4;
+   --chart-fatigue: #7aaec9;
+*/
+
+.chart-info-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 7px 12px;
+  margin-bottom: 12px;
+  min-height: 34px;
+}
+
+.chart-tick {
+  font-size: 8px;
+  fill: var(--text-faint);
+  font-family: var(--font-sans);
+}
+
+.chart-axis-label {
+  font-size: 9.5px;
+  fill: var(--text-muted);
+  font-family: var(--font-sans);
+}
+
+.chart-legend {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.chart-legend__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.chart-legend__swatch {
+  display: inline-block;
+  width: 18px;
+  height: 3px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* ── DailyCard merged card ────────────────────────────────────────────────────*/
+
+.daily-card__summary-text {
+  font-size: 0.9rem;
+  color: var(--text);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.daily-card__brain-dump-preview {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  font-style: italic;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.daily-card__crash-line {
+  color: var(--danger);
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin: 4px 0;
+}
+
+.daily-card__anxiety-line {
+  color: var(--warn);
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin: 4px 0;
+}
+
+.daily-card__anxiety-detail {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 2px 0 8px 20px;
+}
+
+.daily-card__ess-footnote {
+  font-size: 0.8rem;
+  color: var(--text-faint);
+  margin: 8px 0 0;
+}
+
+.daily-card__timing-group {
+  margin-bottom: 10px;
+}
+
+/* ── Metric display ─────────────────────────────────────────────────────────*/
+
+.metric-display__value-denom {
+  font-size: 0.75em;
+  color: var(--text-muted);
+  margin-left: 1px;
+}
+
+/* ── Chart layout ─────────────────────────────────────────────────────────────*/
+
+.chart-block {
+  margin-bottom: 32px;
+}
+
+.chart-block__title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 10px;
+}
+
+.chart-svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.chart-scroll {
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+}
+
+.chart-controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+/* ── Settings additions ─────────────────────────────────────────────────────*/
+
+.settings-section-heading {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 20px 0 6px;
+}
+
+.settings-section-desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0 0 14px;
+}
+
+.settings-select {
+  appearance: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 0.85rem;
+  padding: 5px 8px;
+  cursor: pointer;
+}
+
+.settings-select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.manage-add-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 10px;
+}

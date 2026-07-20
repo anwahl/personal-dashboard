@@ -4,6 +4,8 @@ import {
   getJournalCategoriesWithPrompts,
   getProviderTypes,
   getSleepEventTypes,
+  getTrackables,
+  getChartDefinitions,
 } from '@/lib/dal/reference';
 import { getAllPeople }    from '@/lib/dal/people';
 import { SettingsClient } from '@/components/settings/SettingsClient';
@@ -11,21 +13,20 @@ import { SettingsClient } from '@/components/settings/SettingsClient';
 export default async function SettingsPage() {
   const supabase = await createClient();
 
-  // Fetch ALL items (active + inactive) for settings — use includeInactive=true
   const [
     symptomCategories, journalCategories, providerTypes,
-    sleepEventTypes, people,
+    sleepEventTypes, people, trackables, chartDefinitions,
   ] = await Promise.all([
     getSymptomCategoriesWithTypes(supabase, true),
     getJournalCategoriesWithPrompts(supabase, true),
     getProviderTypes(supabase, true),
     getSleepEventTypes(supabase, true),
     getAllPeople(supabase),
+    getTrackables(supabase, true),           // all trackables (active + inactive) for settings
+    getChartDefinitions(supabase, true),     // all charts for settings
   ]);
 
-  // Fetch simple reference tables with all rows (active + inactive)
   const [
-    { data: habits },
     { data: tags },
     { data: intentions },
     { data: providers },
@@ -38,7 +39,6 @@ export default async function SettingsPage() {
     { data: logLinks },
     { data: clLinks },
   ] = await Promise.all([
-    supabase.from('habits').select('*').order('sort_order'),
     supabase.from('tags').select('*').order('tag_value'),
     supabase.from('intentions').select('*').order('id'),
     supabase.from('providers').select('*').order('provider_name'),
@@ -66,7 +66,8 @@ export default async function SettingsPage() {
         <h1 className="page-header__title">⚙️ Settings</h1>
       </div>
       <SettingsClient
-        habits={habits ?? []}
+        trackables={trackables}
+        chartDefinitions={chartDefinitions}
         tags={tags ?? []}
         intentions={intentions ?? []}
         symptomCategories={symptomCategories}

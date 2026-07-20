@@ -2,18 +2,12 @@
  * lib/dal/reference.ts
  *
  * All reference / type table queries.
- *
- * These are the tables that define what the UI presents —
- * habit names, symptom types, ESS questions, etc.
- * The frontend NEVER hardcodes these values; it always fetches them here.
- *
- * include_inactive: when true, returns all rows (for admin/settings);
- *                   when false (default), returns only is_active = true.
+ * includeInactive=true for settings pages; false (default) for normal use.
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
-  HabitRow,
+  DailyTrackableRow,
   TagRow,
   SymptomCategoryRow,
   SymptomTypeRow,
@@ -36,36 +30,41 @@ import type {
   JournalCategoryRow,
   JournalPromptRow,
   PersonRow,
+  ChartDefinitionRow,
+  ChartTrackableLinkRow,
 } from '@/types/schema';
 import type {
   ReferenceData,
   SymptomCategoryWithTypes,
   JournalCategoryWithPrompts,
+  ChartTrackableLinkDetail,
+  ChartDefinitionDetail,
 } from '@/types/dal';
-
-// ── Shared helper ─────────────────────────────────────────────────────────────
 
 type Client = SupabaseClient;
 
 async function fetchRef<T>(
   client: Client,
   table: string,
-  includeInactive = false
+  includeInactive = false,
+  orderCol = 'sort_order'
 ): Promise<T[]> {
-  let q = client.from(table).select('*').order('sort_order');
+  let q = client.from(table).select('*').order(orderCol);
   if (!includeInactive) q = q.eq('is_active', true);
   const { data, error } = await q;
   if (error) throw new Error(`${table}: ${error.message}`);
   return (data ?? []) as T[];
 }
 
-// ── Individual reference fetchers ─────────────────────────────────────────────
+// ── Trackables (replaces getHabits) ──────────────────────────────────────────
 
-export const getHabits = (c: Client, includeInactive = false) =>
-  fetchRef<HabitRow>(c, 'habits', includeInactive);
+export const getTrackables = (c: Client, includeInactive = false) =>
+  fetchRef<DailyTrackableRow>(c, 'daily_trackables', includeInactive);
+
+// ── Other reference tables ────────────────────────────────────────────────────
 
 export const getTags = (c: Client, includeInactive = false) =>
-  fetchRef<TagRow>(c, 'tags', includeInactive);
+  fetchRef<TagRow>(c, 'tags', includeInactive, 'tag_value');
 
 export const getEssQuestionTypes = (c: Client, includeInactive = false) =>
   fetchRef<EssQuestionTypeRow>(c, 'ess_question_types', includeInactive);
@@ -110,12 +109,12 @@ export const getMediaStatuses = (c: Client, includeInactive = false) =>
   fetchRef<MediaStatusRow>(c, 'media_statuses', includeInactive);
 
 export const getMediaGenres = (c: Client, includeInactive = false) =>
-  fetchRef<MediaGenreRow>(c, 'media_genres', includeInactive);
+  fetchRef<MediaGenreRow>(c, 'media_genres', includeInactive, 'genre_name');
 
 export const getPeople = (c: Client, includeInactive = false) =>
   fetchRef<PersonRow>(c, 'people', includeInactive);
 
-// ── Symptom categories with their types (nested) ──────────────────────────────
+// ── Symptom categories with their types ──────────────────────────────────────
 
 export async function getSymptomCategoriesWithTypes(
   client: Client,
@@ -125,7 +124,6 @@ export async function getSymptomCategoriesWithTypes(
     fetchRef<SymptomCategoryRow>(client, 'symptom_categories', includeInactive),
     fetchRef<SymptomTypeRow>(client, 'symptom_types', includeInactive),
   ]);
-
   return categories.map(cat => ({
     ...cat,
     types: types.filter(t => t.category_id === cat.id),
@@ -135,61 +133,38 @@ export async function getSymptomCategoriesWithTypes(
 // ── Intentions ────────────────────────────────────────────────────────────────
 
 export async function getActiveIntentions(client: Client): Promise<IntentionRow[]> {
-  const { data, error } = await client
-    .from('intentions')
-    .select('*')
-    .eq('is_active', true);
+  const { data, error } = await client.from('intentions').select('*').eq('is_active', true);
   if (error) throw new Error(`getActiveIntentions: ${error.message}`);
   return (data ?? []) as IntentionRow[];
 }
 
 export async function getRandomIntention(client: Client): Promise<IntentionRow | null> {
-  // Postgres random row selection — efficient for small tables
   const { data, error } = await client
-    .from('intentions')
-    .select('*')
-    .eq('is_active', true)
-    .order('id'); // deterministic order first so LIMIT+OFFSET is consistent
-
+    .from('intentions').select('*').eq('is_active', true).order('id');
   if (error) throw new Error(`getRandomIntention: ${error.message}`);
-  if (!data || data.length === 0) return null;
-
-  const idx = Math.floor(Math.random() * data.length);
-  return data[idx] as IntentionRow;
+  if (!data?.length) return null;
+  return data[Math.floor(Math.random() * data.length)] as IntentionRow;
 }
 
-// ── Journal categories with their prompts ─────────────────────────────────────
+// ── Journal categories with prompts ──────────────────────────────────────────
 
 export async function getJournalCategoriesWithPrompts(
   client: Client,
   includeInactive = false
 ): Promise<JournalCategoryWithPrompts[]> {
-  const categoriesQ = client
-    .from('journal_categories')
-    .select('*')
-    .order('sort_order');
-
-  const promptsQ = client
-    .from('journal_prompts')
-    .select('*')
-    .order('id');
-
-  if (!includeInactive) {
-    categoriesQ.eq('is_active', true);
-    promptsQ.eq('is_active', true);
-  }
+  const catsQ    = client.from('journal_categories').select('*').order('sort_order');
+  const promptsQ = client.from('journal_prompts').select('*').order('id');
+  if (!includeInactive) { catsQ.eq('is_active', true); promptsQ.eq('is_active', true); }
 
   const [{ data: cats, error: cErr }, { data: prompts, error: pErr }] =
-    await Promise.all([categoriesQ, promptsQ]);
+    await Promise.all([catsQ, promptsQ]);
 
   if (cErr) throw new Error(`journal_categories: ${cErr.message}`);
   if (pErr) throw new Error(`journal_prompts: ${pErr.message}`);
 
   return (cats ?? []).map((cat: JournalCategoryRow) => ({
     ...cat,
-    prompts: ((prompts ?? []) as JournalPromptRow[]).filter(
-      p => p.category_id === cat.id
-    ),
+    prompts: ((prompts ?? []) as JournalPromptRow[]).filter(p => p.category_id === cat.id),
   }));
 }
 
@@ -199,39 +174,67 @@ export async function getRandomJournalPrompt(
 ): Promise<JournalPromptRow | null> {
   let q = client.from('journal_prompts').select('*').eq('is_active', true);
   if (categoryId != null) q = q.eq('category_id', categoryId);
-
   const { data, error } = await q;
   if (error) throw new Error(`getRandomJournalPrompt: ${error.message}`);
-  if (!data || data.length === 0) return null;
-
+  if (!data?.length) return null;
   return data[Math.floor(Math.random() * data.length)] as JournalPromptRow;
 }
 
-// ── Full reference data bundle (for pages that need everything) ───────────────
+// ── Chart definitions (with trackable links) ──────────────────────────────────
+
+export async function getChartDefinitions(
+  client: Client,
+  includeInactive = false
+): Promise<ChartDefinitionDetail[]> {
+  let q = client.from('chart_definitions').select('*').order('sort_order');
+  if (!includeInactive) q = q.eq('is_active', true);
+  const { data: charts, error: cErr } = await q;
+  if (cErr) throw new Error(`chart_definitions: ${cErr.message}`);
+  if (!charts?.length) return [];
+
+  const chartIds = (charts as ChartDefinitionRow[]).map(c => c.id);
+
+  const [{ data: links, error: lErr }, { data: trackables, error: tErr }] = await Promise.all([
+    client
+      .from('chart_trackable_links')
+      .select('*')
+      .in('chart_id', chartIds)
+      .order('sort_order'),
+    client.from('daily_trackables').select('*').order('sort_order'),
+  ]);
+
+  if (lErr) throw new Error(`chart_trackable_links: ${lErr.message}`);
+  if (tErr) throw new Error(`daily_trackables: ${tErr.message}`);
+
+  const trackableById = new Map(
+    ((trackables ?? []) as DailyTrackableRow[]).map(t => [t.id, t])
+  );
+
+  return (charts as ChartDefinitionRow[]).map(chart => ({
+    ...chart,
+    links: ((links ?? []) as ChartTrackableLinkRow[])
+      .filter(l => l.chart_id === chart.id)
+      .map(l => ({
+        ...l,
+        trackable: trackableById.get(l.trackable_id)!,
+      }))
+      .filter(l => l.trackable),
+  }));
+}
+
+// ── Full reference data bundle ────────────────────────────────────────────────
 
 export async function getReferenceData(client: Client): Promise<ReferenceData> {
   const [
-    habits,
-    tags,
-    symptomCategories,
-    essQuestionTypes,
-    essAnswerTypes,
-    timingOptions,
-    timingCategories,
-    consumptionTypes,
-    sleepEventTypes,
-    appointmentTypes,
-    providerTypes,
-    medicationTimings,
-    taskStatuses,
-    taskPriorities,
-    mediaTypes,
-    mediaStatuses,
-    mediaGenres,
-    journalCategories,
-    people,
+    trackables, tags, symptomCategories,
+    essQuestionTypes, essAnswerTypes,
+    timingOptions, timingCategories, consumptionTypes, sleepEventTypes,
+    appointmentTypes, providerTypes, medicationTimings,
+    taskStatuses, taskPriorities,
+    mediaTypes, mediaStatuses, mediaGenres,
+    journalCategories, people,
   ] = await Promise.all([
-    getHabits(client),
+    getTrackables(client),
     getTags(client),
     getSymptomCategoriesWithTypes(client),
     getEssQuestionTypes(client),
@@ -253,24 +256,12 @@ export async function getReferenceData(client: Client): Promise<ReferenceData> {
   ]);
 
   return {
-    habits,
-    tags,
-    symptomCategories,
-    essQuestionTypes,
-    essAnswerTypes,
-    timingOptions,
-    timingCategories,
-    consumptionTypes,
-    sleepEventTypes,
-    appointmentTypes,
-    providerTypes,
-    medicationTimings,
-    taskStatuses,
-    taskPriorities,
-    mediaTypes,
-    mediaStatuses,
-    mediaGenres,
-    journalCategories,
-    people,
+    trackables, tags, symptomCategories,
+    essQuestionTypes, essAnswerTypes,
+    timingOptions, timingCategories, consumptionTypes, sleepEventTypes,
+    appointmentTypes, providerTypes, medicationTimings,
+    taskStatuses, taskPriorities,
+    mediaTypes, mediaStatuses, mediaGenres,
+    journalCategories, people,
   };
 }

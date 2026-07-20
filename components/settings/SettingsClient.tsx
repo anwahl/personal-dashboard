@@ -5,8 +5,10 @@ import { ManageableList }        from './ManageableList';
 import { SymptomSettings }       from './SymptomSettings';
 import { JournalSettings }       from './JournalSettings';
 import { PeopleStructureSettings } from './PeopleStructureSettings';
-import type { SymptomCategoryWithTypes, JournalCategoryWithPrompts } from '@/types/dal';
-import type { PersonRow, ProviderTypeRow } from '@/types/schema';
+import { TrackableSettings }     from './TrackableSettings';
+import { ChartSettings }         from './ChartSettings';
+import type { SymptomCategoryWithTypes, JournalCategoryWithPrompts, ChartDefinitionDetail } from '@/types/dal';
+import type { PersonRow, ProviderTypeRow, DailyTrackableRow } from '@/types/schema';
 
 // Re-export TabBar from ui for convenience
 function TabBarLocal({ tabs, active, onChange }: {
@@ -30,10 +32,12 @@ function TabBarLocal({ tabs, active, onChange }: {
   );
 }
 
-type TabId = 'daily' | 'health' | 'journal' | 'providers' | 'people';
+type TabId = 'daily' | 'tracking' | 'charts' | 'health' | 'journal' | 'providers' | 'people';
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'daily',     label: '📅 Daily'     },
+  { id: 'tracking',  label: '📊 Tracking'  },
+  { id: 'charts',    label: '📈 Charts'    },
   { id: 'health',    label: '🩺 Health'    },
   { id: 'journal',   label: '📔 Journal'   },
   { id: 'providers', label: '🏥 Providers' },
@@ -41,8 +45,10 @@ const TABS: { id: TabId; label: string }[] = [
 ];
 
 interface Props {
+  // Tracking
+  trackables:        DailyTrackableRow[];
+  chartDefinitions:  ChartDefinitionDetail[];
   // Daily
-  habits:            any[];
   tags:              any[];
   intentions:        any[];
   // Health
@@ -63,7 +69,8 @@ interface Props {
 }
 
 export function SettingsClient({
-  habits, tags, intentions,
+  trackables, chartDefinitions,
+  tags, intentions,
   symptomCategories, sleepEventTypes,
   journalCategories,
   providers, providerTypes,
@@ -80,19 +87,6 @@ export function SettingsClient({
         {/* ── DAILY ─────────────────────────────────────────────────────────────*/}
         {tab === 'daily' && (
           <>
-            <ManageableList
-              title="Habits"
-              description="Tracked daily on the log page. Add emoji for quick recognition."
-              tableName="habits"
-              nameColumn="habit_name"
-              items={habits}
-              addFields={[
-                { key: 'emoji',      label: 'Emoji', type: 'text', placeholder: '💧', width: 64 },
-                { key: 'habit_name', label: 'Habit name', type: 'text', placeholder: 'e.g. Water', required: true },
-              ]}
-              renderName={item => <>{item.emoji} {String(item.habit_name)}</>}
-            />
-
             <ManageableList
               title="Tags"
               description="Applied to daily entries. Use kebab-case (e.g. aquatic-rehab)."
@@ -116,6 +110,19 @@ export function SettingsClient({
               renderName={item => <em>"{String(item.value)}"</em>}
             />
           </>
+        )}
+
+        {/* ── TRACKING ──────────────────────────────────────────────────────────*/}
+        {tab === 'tracking' && (
+          <TrackableSettings trackables={trackables} />
+        )}
+
+        {/* ── CHARTS ────────────────────────────────────────────────────────────*/}
+        {tab === 'charts' && (
+          <ChartSettings
+            chartDefinitions={chartDefinitions}
+            trackables={trackables.filter(t => t.is_active)}
+          />
         )}
 
         {/* ── HEALTH ────────────────────────────────────────────────────────────*/}

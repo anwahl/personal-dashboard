@@ -27,6 +27,7 @@ interface Props {
   items:       Item[];
   addFields:   AddField[];       // fields shown in the Add form
   renderName?: (item: Item) => React.ReactNode;  // custom display
+  extraDefaultFields?: Record<string, string | boolean | number>;  // hidden defaults merged into insert
 }
 
 /**
@@ -38,6 +39,7 @@ interface Props {
  */
 export function ManageableList({
   title, description, tableName, nameColumn, items: initialItems, addFields, renderName,
+  extraDefaultFields = {},
 }: Props) {
   const supabase = createClient();
 
@@ -80,6 +82,8 @@ export function ManageableList({
       if (items.length > 0 && 'sort_order' in items[0]) {
         payload.sort_order = items.length;
       }
+      // Merge caller-supplied hidden defaults (e.g. track_type for daily_trackables)
+      Object.assign(payload, extraDefaultFields);
 
       const { data, error } = await supabase.from(tableName).insert(payload).select().single();
       if (!error && data) {
