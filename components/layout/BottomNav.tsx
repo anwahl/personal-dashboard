@@ -4,11 +4,15 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const NAV = [
-  { href: '/',      emoji: '🏠', label: 'Hub' },
-  { href: '/daily', emoji: '📅', label: 'Today' },
-  { href: '/health',emoji: '🩺', label: 'Health' },
-  { href: '/tasks', emoji: '✅', label: 'Tasks' },
-  { href: '/media', emoji: '🎬', label: 'Media' },
+  { href: '/',             emoji: '🏠', label: 'Hub' },
+  { href: '/daily',        emoji: '📅', label: 'Today' },
+  { href: '/tasks',        emoji: '✅', label: 'Tasks' },
+  { href: '/appointments', emoji: '🏥', label: 'Appointments' },
+  { href: '/brain-dump',   emoji: '🧠', label: 'Brain Dump' },
+  { href: '/medications',  emoji: '💊', label: 'Medications' },
+  { href: '/media',        emoji: '🎬', label: 'Media' },
+  { href: '/people',       emoji: '👤', label: 'People' },
+  { href: '/analytics',    emoji: '📊', label: 'Analytics' },
 ];
 
 function todayISO() {
