@@ -16,7 +16,7 @@ import { ScatterChart }          from './charts/ScatterChart';
 import { LineTrendChart }        from './charts/LineTrendChart';
 import { BarChart }              from './charts/BarChart';
 import { TimelineScatterChart }  from './charts/TimelineScatterChart';
-import { HabitHeatmap }          from './HabitHeatmap';
+import { HabitHeatmap }          from './charts/HabitHeatmap';
 import type { ChartDefinitionDetail, TrackingDataPoint } from '@/types/dal';
 
 interface Props {
