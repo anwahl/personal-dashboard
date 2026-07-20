@@ -20,6 +20,7 @@ const CHART_TYPE_META: Record<ChartType, ChartTypeMeta> = {
   line:     { label: '📈 Line',             validRoles: ['series'],            requirement: 'Needs at least one series metric'       },
   timeline: { label: '🗓 Timeline scatter', validRoles: ['series'],            requirement: 'Needs at least one series metric'       },
   bar:      { label: '📊 Bar',             validRoles: ['series'],            requirement: 'Needs at least one series metric'       },
+  chain:    { label: '🔗 Chain',           validRoles: ['series'],            requirement: 'Needs at least one boolean series metric' },
   heatmap:  { label: '🟦 Heatmap',         validRoles: ['series'],            requirement: 'Needs at least one series metric'       },
 };
 
@@ -47,6 +48,8 @@ function getWarnings(chartType: ChartType, links: { metric_role: MetricRole }[])
     if (roles.includes('x_axis') || roles.includes('y_axis'))
       warns.push(`${CHART_TYPE_META[chartType].label} uses "series" role, not axis roles`);
   }
+  // Chain charts should only have boolean trackables
+  // (We can't check track_type here without links — callers should validate in UI)
   return warns;
 }
 

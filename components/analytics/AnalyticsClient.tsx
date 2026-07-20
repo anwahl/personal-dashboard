@@ -16,7 +16,8 @@ import { ScatterChart }          from './charts/ScatterChart';
 import { LineTrendChart }        from './charts/LineTrendChart';
 import { BarChart }              from './charts/BarChart';
 import { TimelineScatterChart }  from './charts/TimelineScatterChart';
-import { HabitHeatmap }          from './charts/HabitHeatmap';
+import { ChainChart }           from './charts/ChainChart';
+import { HabitHeatmap }          from './HabitHeatmap';
 import type { ChartDefinitionDetail, TrackingDataPoint } from '@/types/dal';
 
 interface Props {
@@ -28,6 +29,8 @@ interface Props {
 }
 
 const RANGE_OPTIONS = [
+  { label: '7d',   value: 7   },
+  { label: '21d',  value: 21  },
   { label: '30d',  value: 30  },
   { label: '90d',  value: 90  },
   { label: '180d', value: 180 },
@@ -44,6 +47,7 @@ function ChartRenderer({ chart, data, fromDate, toDate }: {
     case 'scatter':  return <ScatterChart chart={chart} data={data} />;
     case 'line':     return <LineTrendChart chart={chart} data={data} />;
     case 'bar':      return <BarChart chart={chart} data={data} />;
+    case 'chain':    return <ChainChart chart={chart} data={data} fromDate={fromDate} toDate={toDate} />;
     case 'timeline': return <TimelineScatterChart chart={chart} data={data} />;
     case 'heatmap':  return <HabitHeatmap chart={chart} data={data} fromDate={fromDate} toDate={toDate} />;
     default:         return null;
