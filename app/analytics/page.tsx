@@ -1,7 +1,7 @@
 import { createClient }           from '@/lib/supabase/server';
 import { getChartDefinitions }    from '@/lib/dal/reference';
 import { getCombinedTrackingData } from '@/lib/dal/analytics';
-import { AnalyticsClient }        from '@/components/health/AnalyticsClient';
+import { AnalyticsClient }        from '@/components/analytics/AnalyticsClient';
 import type { TrackType }         from '@/types/schema';
 
 interface Props {
