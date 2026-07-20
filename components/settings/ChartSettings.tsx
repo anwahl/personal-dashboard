@@ -19,9 +19,10 @@ interface Props {
 }
 
 const CHART_TYPE_OPTIONS: { value: ChartType; label: string }[] = [
-  { value: 'line',    label: '📈 Line'    },
-  { value: 'scatter', label: '✦ Scatter' },
-  { value: 'heatmap', label: '🟦 Heatmap' },
+  { value: 'line',     label: '📈 Line'             },
+  { value: 'scatter',  label: '✦ Scatter'           },
+  { value: 'timeline', label: '🗓 Timeline scatter'  },
+  { value: 'heatmap',  label: '🟦 Heatmap'          },
 ];
 
 const ROLE_OPTIONS: { value: MetricRole; label: string }[] = [

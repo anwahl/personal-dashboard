@@ -589,8 +589,39 @@ function SleepTab({
     const noData = !hasSleepData && sleepState.quality == null && !sleepState.hoursSlept;
     if (noData) return <p className="empty-state">Sleep not logged.</p>;
 
+    // Lookup helpers
+    const eventNames   = sleepState.sleepEventIds.map(id =>
+      reference.sleepEventTypes.find(t => t.id === id)?.type_name ?? String(id)
+    );
+    const consumeNames = sleepState.consumptionIds.map(id =>
+      reference.consumptionTypes.find(t => t.id === id)?.type_name ?? String(id)
+    );
+    const timingRows = Object.entries(sleepState.timingMap).map(([catIdStr, optId]) => {
+      const catId = Number(catIdStr);
+      const cat   = reference.timingCategories.find(c => c.id === catId);
+      const opt   = reference.timingOptions.find(o => o.id === optId);
+      return cat && opt ? { cat: cat.category_name, opt: opt.option_name } : null;
+    }).filter(Boolean) as { cat: string; opt: string }[];
+
+    const hasTonightContext =
+      timingRows.length > 0 || consumeNames.length > 0 || sleepState.preBedActivity;
+
+    // Prior night lookups
+    const priorConsumeNames = priorSleep?.consumption_ids.map(id =>
+      reference.consumptionTypes.find(t => t.id === id)?.type_name ?? String(id)
+    ) ?? [];
+    const priorTimingRows = (priorSleep?.timing_entries ?? []).map(te => {
+      const cat = reference.timingCategories.find(c => c.id === te.timing_category_id);
+      const opt = reference.timingOptions.find(o => o.id === te.timing_option_id);
+      return cat && opt ? { cat: cat.category_name, opt: opt.option_name } : null;
+    }).filter(Boolean) as { cat: string; opt: string }[];
+    const hasPriorContext =
+      priorTimingRows.length > 0 || priorConsumeNames.length > 0 ||
+      !!priorSleep?.today_pre_bed_activity;
+
     return (
       <div>
+        {/* ── Core metrics ── */}
         <div className="metric-display">
           <span className="metric-display__emoji">⭐</span>
           <span className="metric-display__label">Quality</span>
@@ -608,9 +639,123 @@ function SleepTab({
             <span className="metric-display__emoji">🌙</span>
             <span className="metric-display__label">Bedtime → Wake</span>
             <span className="metric-display__value">
-              {formatTime(sleepState.bedtime)} → {formatTime(sleepState.wakeTime) || '?'}
+              {formatTime(sleepState.bedtime) || '?'} → {formatTime(sleepState.wakeTime) || '?'}
             </span>
           </div>
+        )}
+        {sleepState.latencyMin && (
+          <div className="metric-display">
+            <span className="metric-display__emoji">💤</span>
+            <span className="metric-display__label">Latency</span>
+            <span className="metric-display__value">{sleepState.latencyMin} min</span>
+          </div>
+        )}
+        {sleepState.osaCount && (
+          <div className="metric-display">
+            <span className="metric-display__emoji">😮‍💨</span>
+            <span className="metric-display__label">OSA events/hr</span>
+            <span className="metric-display__value">{sleepState.osaCount}</span>
+          </div>
+        )}
+        {sleepState.inertiaSeverity != null && (
+          <div className="metric-display">
+            <span className="metric-display__emoji">😵</span>
+            <span className="metric-display__label">Morning inertia</span>
+            <Rating value={sleepState.inertiaSeverity} />
+          </div>
+        )}
+
+        {/* ── Wake events ── */}
+        {sleepState.wakeCount > 0 && (
+          <CardSection>
+            <CardSectionLabel>Wake events</CardSectionLabel>
+            <div className="sleep-view__detail-row">
+              <span>Count: {sleepState.wakeCount}</span>
+              {sleepState.wakeMins && <span>· {sleepState.wakeMins} min total</span>}
+            </div>
+            {sleepState.wakeDetail && (
+              <p className="sleep-view__detail-text">{sleepState.wakeDetail}</p>
+            )}
+          </CardSection>
+        )}
+
+        {/* ── Nap ── */}
+        {sleepState.hadNap && (
+          <CardSection>
+            <CardSectionLabel>Nap</CardSectionLabel>
+            <div className="sleep-view__detail-row">
+              {sleepState.napDuration && <span>{sleepState.napDuration} min</span>}
+              <span>· {sleepState.napRefresh ? 'refreshing' : 'not refreshing'}</span>
+            </div>
+          </CardSection>
+        )}
+
+        {/* ── Sleep events ── */}
+        {eventNames.length > 0 && (
+          <CardSection>
+            <CardSectionLabel>Sleep events</CardSectionLabel>
+            <ChipGroup>
+              {eventNames.map(name => <Chip key={name} active small>{name}</Chip>)}
+            </ChipGroup>
+          </CardSection>
+        )}
+
+        {/* ── Tonight's context ── */}
+        {hasTonightContext && (
+          <CardSection>
+            <CardSectionLabel>Tonight's context</CardSectionLabel>
+            {timingRows.map(r => (
+              <div key={r.cat} className="sleep-view__context-row">
+                <span className="sleep-view__context-label">{r.cat}</span>
+                <span className="sleep-view__context-value">{r.opt}</span>
+              </div>
+            ))}
+            {consumeNames.length > 0 && (
+              <div className="sleep-view__context-row">
+                <span className="sleep-view__context-label">Consumed</span>
+                <span className="sleep-view__context-value">{consumeNames.join(', ')}</span>
+              </div>
+            )}
+            {sleepState.preBedActivity && (
+              <div className="sleep-view__context-row">
+                <span className="sleep-view__context-label">Activity</span>
+                <span className="sleep-view__context-value">{sleepState.preBedActivity}</span>
+              </div>
+            )}
+          </CardSection>
+        )}
+
+        {/* ── Notes ── */}
+        {sleepState.notes && (
+          <CardSection>
+            <CardSectionLabel>Notes</CardSectionLabel>
+            <p className="daily-card__summary-text">{sleepState.notes}</p>
+          </CardSection>
+        )}
+
+        {/* ── Previous night context ── */}
+        {hasPriorContext && (
+          <CardSection>
+            <CardSectionLabel>Previous night</CardSectionLabel>
+            {priorTimingRows.map(r => (
+              <div key={r.cat} className="sleep-view__context-row">
+                <span className="sleep-view__context-label">{r.cat}</span>
+                <span className="sleep-view__context-value">{r.opt}</span>
+              </div>
+            ))}
+            {priorConsumeNames.length > 0 && (
+              <div className="sleep-view__context-row">
+                <span className="sleep-view__context-label">Consumed</span>
+                <span className="sleep-view__context-value">{priorConsumeNames.join(', ')}</span>
+              </div>
+            )}
+            {priorSleep?.today_pre_bed_activity && (
+              <div className="sleep-view__context-row">
+                <span className="sleep-view__context-label">Activity</span>
+                <span className="sleep-view__context-value">{priorSleep.today_pre_bed_activity}</span>
+              </div>
+            )}
+          </CardSection>
         )}
       </div>
     );

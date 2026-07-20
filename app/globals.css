@@ -1442,3 +1442,38 @@ textarea {
   align-items: center;
   margin-top: 10px;
 }
+
+/* ── Sleep tab view mode ─────────────────────────────────────────────────────*/
+
+.sleep-view__detail-row {
+  display: flex;
+  gap: 8px;
+  font-size: 0.88rem;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.sleep-view__detail-text {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 2px 0 0;
+}
+
+.sleep-view__context-row {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  font-size: 0.88rem;
+  margin-bottom: 3px;
+}
+
+.sleep-view__context-label {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  min-width: 72px;
+  flex-shrink: 0;
+}
+
+.sleep-view__context-value {
+  color: var(--text);
+}

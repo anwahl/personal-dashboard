@@ -11,7 +11,8 @@ import { useRouter }     from 'next/navigation';
 import { Button }        from '@/components/ui/Button';
 import { ScatterChart }  from './charts/ScatterChart';
 import { LineTrendChart } from './charts/LineTrendChart';
-import { HabitHeatmap }  from './HabitHeatmap';
+import { HabitHeatmap }         from './HabitHeatmap';
+import { TimelineScatterChart } from './charts/TimelineScatterChart';
 import type { ChartDefinitionDetail, TrackingDataPoint } from '@/types/dal';
 
 interface Props {
@@ -69,6 +70,9 @@ export function HealthAnalyticsClient({
           )}
           {chart.chart_type === 'heatmap' && (
             <HabitHeatmap chart={chart} data={booleanData} fromDate={fromDate} toDate={toDate} />
+          )}
+          {chart.chart_type === 'timeline' && (
+            <TimelineScatterChart chart={chart} data={numericData} />
           )}
         </div>
       ))}
