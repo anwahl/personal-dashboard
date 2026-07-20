@@ -2543,3 +2543,51 @@ a.appt-secondary:last-child { border-bottom: none; }
   font-size: 0.875rem;
   padding: 6px 10px;
 }
+
+/* ── Last Time media form (Option A multi-filter) ────────────────────────────*/
+
+.last-time-media-form {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.last-time-media-form__row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.last-time-media-form__emoji {
+  width: 52px;
+  flex: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 0.875rem;
+  padding: 6px 8px;
+}
+
+.last-time-media-form__label {
+  flex: 1;
+  min-width: 180px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 0.875rem;
+  padding: 6px 10px;
+}
+
+.last-time-media-form__row--filters {
+  flex-wrap: wrap;
+}
+
+.last-time-media-form__hint {
+  font-size: 0.78rem;
+  color: var(--warn);
+  margin: 0;
+}

@@ -17,6 +17,7 @@ export default async function SettingsPage() {
   const [
     symptomCategories, journalCategories, providerTypes,
     sleepEventTypes, people, trackables, chartDefinitions, chartCategories,
+    mediaTypes, mediaGenres, mediaStatuses,
   ] = await Promise.all([
     getSymptomCategoriesWithTypes(supabase, true),
     getJournalCategoriesWithPrompts(supabase, true),
@@ -26,6 +27,9 @@ export default async function SettingsPage() {
     getTrackables(supabase, true),           // all trackables (active + inactive) for settings
     getChartDefinitions(supabase, true),     // all charts for settings
     getChartCategories(supabase, true),      // all chart categories for settings
+    supabase.from('media_types').select('*').order('sort_order').then(r => r.data ?? []),
+    supabase.from('media_genres').select('*').order('genre_name').then(r => r.data ?? []),
+    supabase.from('media_statuses').select('*').order('sort_order').then(r => r.data ?? []),
   ]);
 
   const [
@@ -71,6 +75,9 @@ export default async function SettingsPage() {
         trackables={trackables}
         chartDefinitions={chartDefinitions}
         chartCategories={chartCategories}
+        mediaTypes={mediaTypes}
+        mediaGenres={mediaGenres}
+        mediaStatuses={mediaStatuses}
         tags={tags ?? []}
         intentions={intentions ?? []}
         symptomCategories={symptomCategories}

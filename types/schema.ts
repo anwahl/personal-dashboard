@@ -463,16 +463,15 @@ export interface ChartCategoryRow {
 
 // ── Last Time Tracker ─────────────────────────────────────────────────────────
 
-export type LastTimeMediaFlag = 'type' | 'genre' | 'status';
-
 export interface LastTimeMediaRow {
-  id:              number;
-  last_time_flag:  LastTimeMediaFlag;
-  flag_value:      number;
-  emoji:           string | null;
-  label:           string | null;
-  sort_order:      number;
-  is_active:       boolean;
+  id:         number;
+  type_id:    number | null;   // FK → media_types   (optional filter)
+  genre_id:   number | null;   // FK → media_genres  (optional filter)
+  status_id:  number | null;   // FK → media_statuses (optional filter)
+  label:      string;          // required; can't auto-derive from multi-filter
+  emoji:      string | null;
+  sort_order: number;
+  is_active:  boolean;
 }
 
 export interface LastTimeBooleanRow {

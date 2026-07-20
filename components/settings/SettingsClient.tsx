@@ -7,8 +7,10 @@ import { JournalSettings }       from './JournalSettings';
 import { PeopleStructureSettings } from './PeopleStructureSettings';
 import { TrackableSettings }     from './TrackableSettings';
 import { ChartSettings }         from './ChartSettings';
+import { LastTimeSettings }      from '../last-time/LastTimeSettings';
 import type { SymptomCategoryWithTypes, JournalCategoryWithPrompts, ChartDefinitionDetail } from '@/types/dal';
 import type { PersonRow, ProviderTypeRow, DailyTrackableRow } from '@/types/schema';
+import type { ChartCategoryRow } from '@/types/dal';
 import type { ChartCategoryRow } from '@/types/dal';
 
 // Re-export TabBar from ui for convenience
@@ -33,16 +35,17 @@ function TabBarLocal({ tabs, active, onChange }: {
   );
 }
 
-type TabId = 'daily' | 'tracking' | 'charts' | 'health' | 'journal' | 'providers' | 'people';
+type TabId = 'daily' | 'tracking' | 'charts' | 'health' | 'journal' | 'providers' | 'people' | 'lasttime';
 
 const TABS: { id: TabId; label: string }[] = [
-  { id: 'daily',     label: '📅 Daily'     },
-  { id: 'tracking',  label: '📊 Tracking'  },
-  { id: 'charts',    label: '📈 Charts'    },
-  { id: 'health',    label: '🩺 Health'    },
-  { id: 'journal',   label: '📔 Journal'   },
-  { id: 'providers', label: '🏥 Providers' },
-  { id: 'people',    label: '👤 People'    },
+  { id: 'daily',    label: '📅 Daily'     },
+  { id: 'tracking', label: '📊 Tracking'  },
+  { id: 'charts',   label: '📈 Charts'    },
+  { id: 'lasttime', label: '⏱ Last Time'  },
+  { id: 'health',   label: '🩺 Health'    },
+  { id: 'journal',  label: '📔 Journal'   },
+  { id: 'providers',label: '🏥 Providers' },
+  { id: 'people',   label: '👤 People'    },
 ];
 
 interface Props {
@@ -61,6 +64,10 @@ interface Props {
   // Providers
   providers:         any[];
   providerTypes:     ProviderTypeRow[];
+  // Last Time
+  mediaTypes:        any[];
+  mediaGenres:       any[];
+  mediaStatuses:     any[];
   // People structure
   people:            PersonRow[];
   personLinks:       any[];
@@ -76,6 +83,7 @@ export function SettingsClient({
   symptomCategories, sleepEventTypes,
   journalCategories,
   providers, providerTypes,
+  mediaTypes, mediaGenres, mediaStatuses,
   people, personLinks, infoGroups, itemLists, logSchemas, checklists,
 }: Props) {
   const [tab, setTab] = useState<TabId>('daily');
@@ -125,6 +133,16 @@ export function SettingsClient({
             chartDefinitions={chartDefinitions}
             trackables={trackables.filter(t => t.is_active)}
             categories={chartCategories}
+          />
+        )}
+
+        {/* ── LAST TIME ─────────────────────────────────────────────────────────*/}
+        {tab === 'lasttime' && (
+          <LastTimeSettings
+            trackables={trackables.filter(t => t.track_type === 'boolean' && t.is_active)}
+            mediaTypes={mediaTypes}
+            mediaGenres={mediaGenres}
+            mediaStatuses={mediaStatuses}
           />
         )}
 
