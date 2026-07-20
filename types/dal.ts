@@ -64,6 +64,9 @@ import type {
 export type {
   ChartCategoryRow,
   DailyTrackableRow,
+  LastTimeMediaRow,
+  LastTimeBooleanRow,
+  LastTimeCustomRow,
   DailyNumericEntryRow,
   TagRow,
   EssQuestionTypeRow,
@@ -314,6 +317,24 @@ export interface ChartDefinitionDetail extends ChartDefinitionRow {
 export interface TrackingDataPoint {
   date:   string;
   values: Record<number, number>;  // trackable_id → metric_value
+}
+
+
+// ── Last Time Tracker (enriched) ─────────────────────────────────────────────
+
+export type LastTimeCategory = 'media' | 'boolean' | 'custom';
+
+export interface LastTimeEntry {
+  id:           number;        // source row id
+  category:     LastTimeCategory;
+  emoji:        string | null;
+  label:        string;        // derived or custom label
+  last_date:    string | null; // ISO date, null = never
+  days_ago:     number | null; // null = never logged
+  sort_order:   number;
+  is_active:    boolean;
+  // Only set for 'custom' items (enables quick "log today" update)
+  custom_id?:   number;
 }
 
 // ── Inserts / Updates ─────────────────────────────────────────────────────────

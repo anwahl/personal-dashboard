@@ -460,6 +460,37 @@ export interface ChartCategoryRow {
   is_active:  boolean;
 }
 
+
+// ── Last Time Tracker ─────────────────────────────────────────────────────────
+
+export type LastTimeMediaFlag = 'type' | 'genre' | 'status';
+
+export interface LastTimeMediaRow {
+  id:              number;
+  last_time_flag:  LastTimeMediaFlag;
+  flag_value:      number;
+  emoji:           string | null;
+  label:           string | null;
+  sort_order:      number;
+  is_active:       boolean;
+}
+
+export interface LastTimeBooleanRow {
+  id:           number;
+  trackable_id: number;
+  emoji:        string | null;
+  sort_order:   number;
+  is_active:    boolean;
+}
+
+export interface LastTimeCustomRow {
+  id:           number;
+  custom_value: string;
+  emoji:        string | null;
+  sort_order:   number;
+  is_active:    boolean;
+  last_date:    string | null;
+}
 // ── Weekly entries ────────────────────────────────────────────────────────────
 
 export interface WeeklyEntryRow {
