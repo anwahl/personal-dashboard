@@ -308,3 +308,33 @@ export async function createStandaloneBrainDump(
   if (error) throw new Error(`createStandaloneBrainDump: ${error.message}`);
   return data as BrainDumpRow;
 }
+
+// ── Recent intention ─────────────────────────────────────────────────────────
+
+/**
+ * Finds the most recent daily entry on or before `fromDate` that has an
+ * intention set, and returns that intention's value + the entry date.
+ */
+export async function getRecentIntention(
+  client: SupabaseClient,
+  fromDate: string
+): Promise<{ value: string; entry_date: string } | null> {
+  const { data: entry } = await client
+    .from('daily_entries')
+    .select('entry_date, intention_id')
+    .lte('entry_date', fromDate)
+    .not('intention_id', 'is', null)
+    .order('entry_date', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!entry?.intention_id) return null;
+
+  const { data: intention } = await client
+    .from('intentions')
+    .select('value')
+    .eq('id', entry.intention_id)
+    .single();
+
+  return intention ? { value: intention.value as string, entry_date: entry.entry_date as string } : null;
+}

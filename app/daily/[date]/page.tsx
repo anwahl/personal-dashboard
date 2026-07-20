@@ -8,6 +8,11 @@ import { getEssEntry }                   from '@/lib/dal/ess';
 import { getActivePrescriptions }        from '@/lib/dal/prescriptions';
 import { getReferenceData }              from '@/lib/dal/reference';
 import { DailyPageClient }               from '@/components/daily-log/DailyPageClient';
+import { TaskList }                      from '@/components/tasks/TaskList';
+import { UpcomingAppointments }          from '@/components/appointments/UpcomingAppointments';
+import { getTasksByDateContext }          from '@/lib/dal/tasks';
+import { getUpcomingAppointments }       from '@/lib/dal/appointments';
+import { getTaskStatuses, getTaskPriorities } from '@/lib/dal/reference';
 
 interface Props {
   params: Promise<{ date: string }>;
@@ -37,12 +42,16 @@ export default async function DailyPage({ params }: Props) {
   const reference = await getReferenceData(supabase);
   const self      = reference.people.find(p => p.is_self);
 
-  const [sleep, symptoms, ess, prescriptions, priorSleep] = await Promise.all([
+  const [sleep, symptoms, ess, prescriptions, priorSleep, taskData, appointments, statuses, priorities] = await Promise.all([
     getSleepEntry(supabase, entry.id),
     getDailySymptomData(supabase, entry.id),
     getEssEntry(supabase, entry.id),
     self ? getActivePrescriptions(supabase, self.id) : Promise.resolve([]),
     getPriorSleepContext(supabase, date, entry.id),
+    getTasksByDateContext(supabase, date),
+    getUpcomingAppointments(supabase, date, 6),
+    getTaskStatuses(supabase, true),
+    getTaskPriorities(supabase),
   ]);
 
   const prevDate = addDays(date, -1);
@@ -75,6 +84,20 @@ export default async function DailyPage({ params }: Props) {
         prescriptions={prescriptions}
         reference={reference}
       />
+
+      <div className="daily-extras">
+        <TaskList
+          contextDate={date}
+          initialData={taskData}
+          statuses={statuses}
+          priorities={priorities}
+          people={reference.people}
+        />
+        <UpcomingAppointments
+          appointments={appointments}
+          contextDate={date}
+        />
+      </div>
     </div>
   );
 }

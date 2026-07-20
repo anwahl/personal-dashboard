@@ -113,3 +113,50 @@ export async function deleteTask(client: Client, id: number): Promise<void> {
   const { error } = await client.from('tasks').delete().eq('id', id);
   if (error) throw new Error(`deleteTask: ${error.message}`);
 }
+
+// ── Date-context queries ──────────────────────────────────────────────────────
+
+export interface TaskContextData {
+  today:       TaskDetail[];
+  tomorrow:    TaskDetail[];
+  upcoming:    TaskDetail[];
+  unscheduled: TaskDetail[];
+}
+
+/**
+ * Fetches all active tasks and buckets them relative to a "today" anchor date.
+ * - today:       due_date ≤ date (includes overdue)
+ * - tomorrow:    due_date = date + 1
+ * - upcoming:    due_date > date + 1
+ * - unscheduled: due_date IS NULL
+ */
+export async function getTasksByDateContext(
+  client: Client,
+  date: string
+): Promise<TaskContextData> {
+  const { addDays } = await import('./daily');
+  const tomorrow    = addDays(date, 1);
+  const terminalIds = await getTerminalStatusIds(client);
+
+  let q = client
+    .from('tasks')
+    .select('*')
+    .order('due_date', { ascending: true, nullsFirst: false })
+    .order('created_at', { ascending: false });
+
+  if (terminalIds.length > 0) {
+    q = q.not('status_id', 'in', `(${terminalIds.join(',')})`);
+  }
+
+  const { data, error } = await q;
+  if (error) throw new Error(`getTasksByDateContext: ${error.message}`);
+
+  const enriched = await enrich(client, (data ?? []) as TaskRow[]);
+
+  return {
+    today:       enriched.filter(t => t.due_date !== null && t.due_date <= date),
+    tomorrow:    enriched.filter(t => t.due_date === tomorrow),
+    upcoming:    enriched.filter(t => t.due_date !== null && t.due_date > tomorrow),
+    unscheduled: enriched.filter(t => t.due_date === null),
+  };
+}

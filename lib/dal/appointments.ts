@@ -47,13 +47,14 @@ async function enrich(
 
 export async function getUpcomingAppointments(
   client: Client,
+  fromDate?: string,
   limit = 10
 ): Promise<AppointmentDetail[]> {
-  const today = new Date().toISOString().slice(0, 10);
+  const from = fromDate ?? new Date().toISOString().slice(0, 10);
   const { data, error } = await client
     .from('appointments')
     .select('*')
-    .gte('appointment_date', today)
+    .gte('appointment_date', from)
     .order('appointment_date', { ascending: true })
     .order('appointment_time',  { ascending: true, nullsFirst: false })
     .limit(limit);
