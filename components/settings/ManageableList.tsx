@@ -24,10 +24,10 @@ interface Props {
   description?: string;
   tableName:   string;           // Supabase table name
   nameColumn:  string;           // which column is the display name
-  items:       Item[];
+  items:       any[];            // any[] — table-agnostic; typed row interfaces lack index signatures
   addFields:   AddField[];       // fields shown in the Add form
-  renderName?: (item: Item) => React.ReactNode;  // custom display
-  extraDefaultFields?: Record<string, string | boolean | number>;  // hidden defaults merged into insert
+  renderName?: (item: any) => React.ReactNode;
+  extraDefaultFields?: Record<string, string | boolean | number>;
 }
 
 /**
