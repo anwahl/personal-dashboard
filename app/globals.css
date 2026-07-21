@@ -32,6 +32,8 @@
   --font-sans: system-ui, -apple-system, sans-serif;
   
   --margin-standard: 16px;
+
+  --box-shadow-standard: 0 4px 16px rgba(0, 0, 0, 0.35);
 }
 
 /* ── Base ────────────────────────────────────────────────────────────────────*/
@@ -113,7 +115,7 @@ html, body {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--box-shadow-standard);
   overflow: hidden;
   margin: var(--margin-standard);
 }
@@ -352,7 +354,7 @@ html, body {
   height: 22px;
   border-radius: 50%;
   background: white;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--box-shadow-standard);
   transition: transform 0.2s;
 }
 
@@ -1411,7 +1413,10 @@ textarea {
 .chart-panel {
   margin-bottom: 28px;
   border: 1px solid var(--border);
+  border-radius: var(--radius);
   padding: 10px;
+  box-shadow: var(--box-shadow-standard)
+
 }
 
 .chart-panel__controls {
@@ -2383,6 +2388,14 @@ a.appt-secondary:last-child { border-bottom: none; }
 }
 
 /* ── Last Time Tracker ───────────────────────────────────────────────────────*/
+
+
+.last-time-tracker {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px;
+  box-shadow: var(--box-shadow-standard)
+}
 
 .last-time-tracker__controls {
   display: flex;
