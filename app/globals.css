@@ -30,6 +30,8 @@
   --tap:          44px;
 
   --font-sans: system-ui, -apple-system, sans-serif;
+  
+  --margin-standard: 8px;
 }
 
 /* ── Base ────────────────────────────────────────────────────────────────────*/
@@ -113,6 +115,7 @@ html, body {
   border-radius: var(--radius-lg);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
   overflow: hidden;
+  margin: var(--margin-standard);
 }
 
 .card__header {
@@ -356,7 +359,9 @@ html, body {
 .toggle__input:checked + .toggle__track::after { transform: translateX(20px); }
 
 /* ── Slider field ────────────────────────────────────────────────────────────*/
-.slider-field { margin-bottom: 12px; }
+.slider-field {
+    margin-bottom: 12px;
+}
 
 .slider-field__header {
   display: grid;
@@ -413,7 +418,7 @@ html, body {
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
   border: 2px solid var(--surface);
-  margin-top: -10.5px;
+  margin-top: -6.5px;
 }
 
 .slider-field__range::-moz-range-thumb {
