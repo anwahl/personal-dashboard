@@ -1248,7 +1248,15 @@ textarea {
 
 .settings-tab-content { display: flex; flex-direction: column; gap: 20px; }
 
-.settings-section { }
+.settings-section { 
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px;
+  box-shadow: var(--box-shadow-standard);
+  background: var(--surface);
+  margin: 25px auto;
+}
+
 .settings-section__header {
   display: flex;
   justify-content: space-between;
@@ -2394,7 +2402,8 @@ a.appt-secondary:last-child { border-bottom: none; }
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 10px;
-  box-shadow: var(--box-shadow-standard)
+  box-shadow: var(--box-shadow-standard);
+  background: var(--surface);
 }
 
 .last-time-tracker__controls {
