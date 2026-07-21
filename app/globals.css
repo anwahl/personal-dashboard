@@ -418,8 +418,8 @@ html, body {
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
   border: 2px solid var(--surface);
-  margin-top: 4px;
-  margin-bottom: 2px;
+  margin-top: 7px;
+  margin-bottom: 4px;
 }
 
 .slider-field__range::-moz-range-thumb {
