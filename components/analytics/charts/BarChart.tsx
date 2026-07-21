@@ -5,10 +5,11 @@
  *
  * Date on X axis, bars for each metric value on Y axis.
  * Multiple series = grouped side-by-side bars.
- * Distinct from timeline scatter (dots) and line (connected).
  */
 
-import { useState } from 'react';
+import { useState }          from 'react';
+import { ChartEmptyState }   from './ChartEmptyState';
+import { ChartLegend }       from './ChartLegend';
 import type { ChartDefinitionDetail, TrackingDataPoint } from '@/types/dal';
 
 interface Props {
@@ -24,21 +25,11 @@ export function BarChart({ chart, data }: Props) {
   const [hovered, setHovered] = useState<{ date: string; trackableId: number; value: number } | null>(null);
 
   if (!seriesLinks.length) {
-    return (
-      <div className="chart-block">
-        <h3 className="chart-block__title">{chart.title}</h3>
-        <p className="empty-state">No series configured. Add metrics in Settings → Charts.</p>
-      </div>
-    );
+    return <ChartEmptyState title={chart.title} message="No series configured. Add metrics in Settings → Charts." />;
   }
 
   if (!data.length) {
-    return (
-      <div className="chart-block">
-        <h3 className="chart-block__title">{chart.title}</h3>
-        <p className="empty-state">No data in this range.</p>
-      </div>
-    );
+    return <ChartEmptyState title={chart.title} message="No data in this range." />;
   }
 
   const PAD      = { top: 20, right: 16, bottom: 36, left: 36 };
@@ -49,12 +40,17 @@ export function BarChart({ chart, data }: Props) {
   const INNER_H  = CHART_H - PAD.top - PAD.bottom;
   const SVG_W    = PAD.left + data.length * GROUP_W + PAD.right;
 
-  const toY     = (v: number) => PAD.top + INNER_H - (v / TICK_MAX) * INNER_H;
-  const barH    = (v: number) => (v / TICK_MAX) * INNER_H;
-  const groupX  = (i: number) => PAD.left + i * GROUP_W + GROUP_W / 2;
+  const toY    = (v: number) => PAD.top + INNER_H - (v / TICK_MAX) * INNER_H;
+  const barH   = (v: number) => (v / TICK_MAX) * INNER_H;
+  const groupX = (i: number) => PAD.left + i * GROUP_W + GROUP_W / 2;
 
-  // Date labels: show roughly every nth label so they don't overlap
   const labelStep = Math.max(1, Math.ceil(data.length / 10));
+
+  const legendItems = seriesLinks.map(l => ({
+    id:    l.trackable_id,
+    name:  l.trackable.name,
+    color: l.trackable.color_hex,
+  }));
 
   return (
     <div className="chart-block">
@@ -81,21 +77,20 @@ export function BarChart({ chart, data }: Props) {
                 {seriesLinks.map((link, si) => {
                   const v = dp.values[link.trackable_id];
                   if (v == null) return null;
-                  const color  = link.trackable.color_hex ?? 'var(--accent)';
-                  const bx     = gx - (seriesLinks.length * (BAR_W + BAR_GAP)) / 2 + si * (BAR_W + BAR_GAP);
-                  const isHov  = hovered?.date === dp.date && hovered?.trackableId === link.trackable_id;
+                  const color = link.trackable.color_hex ?? 'var(--accent)';
+                  const bx    = gx - (seriesLinks.length * (BAR_W + BAR_GAP)) / 2 + si * (BAR_W + BAR_GAP);
+                  const isHov = hovered?.date === dp.date && hovered?.trackableId === link.trackable_id;
                   return (
                     <rect
                       key={link.trackable_id}
                       x={bx} y={toY(v)} width={BAR_W} height={barH(v)}
                       fill={color} fillOpacity={isHov ? 1 : 0.75} rx={1}
+                      className="chart-bar"
                       onMouseEnter={() => setHovered({ date: dp.date, trackableId: link.trackable_id, value: v })}
                       onMouseLeave={() => setHovered(null)}
-                      style={{ cursor: 'default' }}
                     />
                   );
                 })}
-                {/* Date label */}
                 {i % labelStep === 0 && (
                   <text x={gx} y={CHART_H - 4} className="chart-tick" textAnchor="middle">
                     {dp.date.slice(5)}
@@ -114,8 +109,7 @@ export function BarChart({ chart, data }: Props) {
               <g>
                 <rect x={gx + 6} y={toY(hovered.value) - 28} width={148} height={22}
                   rx={4} fill="var(--surface-high)" stroke="var(--border)" />
-                <text x={gx + 12} y={toY(hovered.value) - 12}
-                  style={{ fontSize: 10, fill: 'var(--text)' }}>
+                <text x={gx + 12} y={toY(hovered.value) - 12} className="chart-tooltip-text">
                   {hovered.date} · {link?.trackable.name}: {hovered.value}
                 </text>
               </g>
@@ -124,17 +118,7 @@ export function BarChart({ chart, data }: Props) {
         </svg>
       </div>
 
-      <div className="chart-info-bar">
-        <div className="chart-legend">
-          {seriesLinks.map(link => (
-            <span key={link.trackable_id} className="chart-legend__item">
-              <span className="chart-legend__swatch"
-                style={{ background: link.trackable.color_hex ?? 'var(--accent)', height: 10, borderRadius: 2 }} />
-              {link.trackable.name}
-            </span>
-          ))}
-        </div>
-      </div>
+      <ChartLegend items={legendItems} block />
     </div>
   );
 }

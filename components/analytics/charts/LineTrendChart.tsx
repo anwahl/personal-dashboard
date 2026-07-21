@@ -8,7 +8,9 @@
  * Colors from trackable.color_hex (inline — dynamic).
  */
 
-import { useState } from 'react';
+import { useState }          from 'react';
+import { ChartEmptyState }   from './ChartEmptyState';
+import { ChartLegend }       from './ChartLegend';
 import type { ChartDefinitionDetail, TrackingDataPoint } from '@/types/dal';
 
 interface Props {
@@ -21,46 +23,34 @@ export function LineTrendChart({ chart, data }: Props) {
   const [hoveredDate, setHoveredDate] = useState<string | null>(null);
 
   if (!seriesLinks.length) {
-    return (
-      <div className="chart-block">
-        <h3 className="chart-block__title">{chart.title}</h3>
-        <p className="empty-state">No series configured. Add metrics in Settings → Charts.</p>
-      </div>
-    );
+    return <ChartEmptyState title={chart.title} message="No series configured. Add metrics in Settings → Charts." />;
   }
-
   if (data.length < 2) {
-    return (
-      <div className="chart-block">
-        <h3 className="chart-block__title">{chart.title}</h3>
-        <p className="empty-state">Not enough data to draw a trend line.</p>
-      </div>
-    );
+    return <ChartEmptyState title={chart.title} message="Not enough data to draw a trend line." />;
   }
 
   const W = 600, H = 240, PAD = { top: 20, right: 16, bottom: 36, left: 36 };
   const INNER_W = W - PAD.left - PAD.right;
   const INNER_H = H - PAD.top  - PAD.bottom;
-
   const TICK_MAX = 10;
   const yTicks   = [0, 2, 4, 6, 8, 10];
 
-  // x axis: map date strings to pixel positions
   const toX = (date: string) => {
     const idx = data.findIndex(dp => dp.date === date);
     if (idx === -1) return null;
     return PAD.left + (idx / Math.max(data.length - 1, 1)) * INNER_W;
   };
-  const toY = (v: number) =>
-    PAD.top + INNER_H - (v / TICK_MAX) * INNER_H;
+  const toY = (v: number) => PAD.top + INNER_H - (v / TICK_MAX) * INNER_H;
 
-  // x-axis date labels (≤8 evenly spaced)
-  const dateLabels: string[] = [];
-  const labelStep = Math.ceil(data.length / 8);
-  data.forEach((dp, i) => { if (i % labelStep === 0) dateLabels.push(dp.date); });
-
-  // Which data point is being hovered
+  const labelStep  = Math.ceil(data.length / 8);
+  const dateLabels = data.filter((_, i) => i % labelStep === 0).map(dp => dp.date);
   const hoveredPoint = hoveredDate ? data.find(dp => dp.date === hoveredDate) : null;
+
+  const legendItems = seriesLinks.map(l => ({
+    id:    l.trackable_id,
+    name:  l.trackable.name,
+    color: l.trackable.color_hex,
+  }));
 
   return (
     <div className="chart-block">
@@ -70,7 +60,7 @@ export function LineTrendChart({ chart, data }: Props) {
         <svg viewBox={`0 0 ${W} ${H}`} className="chart-svg"
           onMouseLeave={() => setHoveredDate(null)}>
 
-          {/* Y grid lines + tick labels */}
+          {/* Y grid + tick labels */}
           {yTicks.map(t => (
             <g key={t}>
               <line
@@ -92,39 +82,32 @@ export function LineTrendChart({ chart, data }: Props) {
             );
           })}
 
-          {/* One polyline per series */}
+          {/* One polyline + dots per series */}
           {seriesLinks.map(link => {
             const id    = link.trackable_id;
             const color = link.trackable.color_hex ?? 'var(--accent)';
-
-            const pts = data
-              .filter(dp => dp.values[id] != null)
-              .map(dp => ({ date: dp.date, v: dp.values[id] }));
+            const pts   = data.filter(dp => dp.values[id] != null)
+                              .map(dp => ({ date: dp.date, v: dp.values[id] }));
 
             if (pts.length < 2) return null;
 
-            const pathD = pts
-              .map((pt, i) => {
-                const x = toX(pt.date);
-                if (x == null) return '';
-                const y = toY(pt.v);
-                return `${i === 0 ? 'M' : 'L'}${x},${y}`;
-              })
-              .filter(Boolean)
-              .join(' ');
+            const pathD = pts.map((pt, i) => {
+              const x = toX(pt.date);
+              if (x == null) return '';
+              return `${i === 0 ? 'M' : 'L'}${x},${toY(pt.v)}`;
+            }).filter(Boolean).join(' ');
 
             return (
               <g key={id}>
                 <path d={pathD} stroke={color} strokeWidth={2} fill="none" />
-                {/* Dots */}
                 {pts.map(pt => {
                   const x = toX(pt.date);
                   if (x == null) return null;
                   return (
                     <circle key={pt.date} cx={x} cy={toY(pt.v)} r={3}
                       fill={color} stroke="var(--bg)" strokeWidth={1}
+                      className="chart-dot"
                       onMouseEnter={() => setHoveredDate(pt.date)}
-                      style={{ cursor: 'crosshair' }}
                     />
                   );
                 })}
@@ -132,8 +115,8 @@ export function LineTrendChart({ chart, data }: Props) {
             );
           })}
 
-          {/* Hover line + values */}
-          {hoveredDate && (function() {
+          {/* Hover crosshair */}
+          {hoveredDate && (() => {
             const hx = toX(hoveredDate);
             if (hx == null) return null;
             return (
@@ -142,11 +125,12 @@ export function LineTrendChart({ chart, data }: Props) {
                   stroke="var(--text-faint)" strokeWidth={1} />
                 {seriesLinks.map(link => {
                   if (!hoveredPoint?.values[link.trackable_id]) return null;
-                  const v = hoveredPoint.values[link.trackable_id];
+                  const v     = hoveredPoint.values[link.trackable_id];
                   const color = link.trackable.color_hex ?? 'var(--accent)';
                   return (
-                    <text key={link.trackable_id} x={hx + 6}
-                      y={toY(v) - 4} style={{ fontSize: 10, fill: color }}>
+                    <text key={link.trackable_id} x={hx + 6} y={toY(v) - 4}
+                      className="chart-hover-label"
+                      style={{ fill: color }}>
                       {link.trackable.name}: {v}
                     </text>
                   );
@@ -157,16 +141,7 @@ export function LineTrendChart({ chart, data }: Props) {
         </svg>
       </div>
 
-      <div className="chart-info-bar">
-        <div className="chart-legend">
-          {seriesLinks.map(link => (
-            <span key={link.trackable_id} className="chart-legend__item">
-              <span className="chart-legend__swatch" style={{ background: link.trackable.color_hex ?? 'var(--accent)' }} />
-              {link.trackable.name}
-            </span>
-          ))}
-        </div>
-      </div>
+      <ChartLegend items={legendItems} />
     </div>
   );
 }

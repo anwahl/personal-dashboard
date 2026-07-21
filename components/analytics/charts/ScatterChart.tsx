@@ -8,7 +8,9 @@
  * Colors from trackable.color_hex (inline — dynamic values, per standards).
  */
 
-import { useState } from 'react';
+import { useState }          from 'react';
+import { ChartEmptyState }   from './ChartEmptyState';
+import { ChartLegend }       from './ChartLegend';
 import type { ChartDefinitionDetail, TrackingDataPoint } from '@/types/dal';
 
 interface Props {
@@ -32,16 +34,10 @@ function pearson(xs: number[], ys: number[]): number | null {
 export function ScatterChart({ chart, data }: Props) {
   const xLink = chart.links.find(l => l.metric_role === 'x_axis');
   const yLink = chart.links.find(l => l.metric_role === 'y_axis');
-
   const [hovered, setHovered] = useState<{ date: string; x: number; y: number } | null>(null);
 
   if (!xLink || !yLink) {
-    return (
-      <div className="chart-block">
-        <h3 className="chart-block__title">{chart.title}</h3>
-        <p className="empty-state">Chart needs an x_axis and y_axis metric. Configure in Settings → Charts.</p>
-      </div>
-    );
+    return <ChartEmptyState title={chart.title} message="Chart needs an x_axis and y_axis metric. Configure in Settings → Charts." />;
   }
 
   const xId    = xLink.trackable_id;
@@ -49,7 +45,6 @@ export function ScatterChart({ chart, data }: Props) {
   const xColor = xLink.trackable.color_hex ?? 'var(--accent)';
   const yColor = yLink.trackable.color_hex ?? 'var(--text-muted)';
 
-  // Build paired points (only dates where both are logged)
   const points: { date: string; x: number; y: number }[] = [];
   for (const dp of data) {
     if (dp.values[xId] != null && dp.values[yId] != null) {
@@ -58,12 +53,7 @@ export function ScatterChart({ chart, data }: Props) {
   }
 
   if (points.length < 2) {
-    return (
-      <div className="chart-block">
-        <h3 className="chart-block__title">{chart.title}</h3>
-        <p className="empty-state">Not enough paired data to display scatter chart.</p>
-      </div>
-    );
+    return <ChartEmptyState title={chart.title} message="Not enough paired data to display scatter chart." />;
   }
 
   const xs = points.map(p => p.x);
@@ -71,32 +61,41 @@ export function ScatterChart({ chart, data }: Props) {
   const r  = pearson(xs, ys);
 
   const W = 500, H = 320, PAD = 40, TICK_MAX = 10;
-
   const toSvgX = (v: number) => PAD + (v / TICK_MAX) * (W - PAD * 2);
   const toSvgY = (v: number) => H - PAD - (v / TICK_MAX) * (H - PAD * 2);
 
-  // Regression line end-points
   let lineEl: React.ReactNode = null;
   if (r != null) {
-    const xBar = xs.reduce((s, x) => s + x, 0) / xs.length;
-    const yBar = ys.reduce((s, y) => s + y, 0) / ys.length;
-    const slope = xs.reduce((s, x, i) => s + (x - xBar) * (ys[i] - yBar), 0) /
-                  xs.reduce((s, x) => s + (x - xBar) ** 2, 0);
+    const xBar      = xs.reduce((s, x) => s + x, 0) / xs.length;
+    const yBar      = ys.reduce((s, y) => s + y, 0) / ys.length;
+    const slope     = xs.reduce((s, x, i) => s + (x - xBar) * (ys[i] - yBar), 0) /
+                      xs.reduce((s, x) => s + (x - xBar) ** 2, 0);
     const intercept = yBar - slope * xBar;
-
-    const x1 = 0, y1 = intercept;
-    const x2 = TICK_MAX, y2 = slope * TICK_MAX + intercept;
-
     lineEl = (
       <line
-        x1={toSvgX(x1)} y1={toSvgY(y1)}
-        x2={toSvgX(x2)} y2={toSvgY(y2)}
+        x1={toSvgX(0)} y1={toSvgY(intercept)}
+        x2={toSvgX(TICK_MAX)} y2={toSvgY(slope * TICK_MAX + intercept)}
         stroke="var(--text-faint)" strokeWidth={1} strokeDasharray="4,3"
       />
     );
   }
 
   const ticks = [0, 2, 4, 6, 8, 10];
+
+  const legendItems = [
+    { id: xId, name: xLink.trackable.name, color: xColor, suffix: '(x)' },
+    { id: yId, name: yLink.trackable.name, color: yColor, suffix: '(y)' },
+  ];
+
+  const pearsonPrefix = r != null ? (
+    <>
+      <span>n = {points.length}</span>
+      <span>
+        r = <strong>{r.toFixed(2)}</strong>
+        {Math.abs(r) >= 0.5 ? (r > 0 ? ' ↑ positive' : ' ↓ negative') : ' weak'}
+      </span>
+    </>
+  ) : <span>n = {points.length}</span>;
 
   return (
     <div className="chart-block">
@@ -132,9 +131,9 @@ export function ScatterChart({ chart, data }: Props) {
               key={i}
               cx={toSvgX(p.x)} cy={toSvgY(p.y)} r={4}
               fill={yColor} fillOpacity={0.8}
+              className="chart-dot--pointer"
               onMouseEnter={() => setHovered(p)}
               onMouseLeave={() => setHovered(null)}
-              style={{ cursor: 'pointer' }}
             />
           ))}
 
@@ -147,7 +146,7 @@ export function ScatterChart({ chart, data }: Props) {
                 fill="var(--surface-high)" stroke="var(--border)"
               />
               <text x={toSvgX(hovered.x) + 14} y={toSvgY(hovered.y) - 12}
-                className="chart-tick" style={{ fontSize: 10 }}>
+                className="chart-tooltip-text">
                 {hovered.date} · {xLink.trackable.name}: {hovered.x} / {yLink.trackable.name}: {hovered.y}
               </text>
             </g>
@@ -155,26 +154,7 @@ export function ScatterChart({ chart, data }: Props) {
         </svg>
       </div>
 
-      {/* Info bar */}
-      <div className="chart-info-bar">
-        <span>n = {points.length}</span>
-        {r != null && (
-          <span>
-            r = <strong>{r.toFixed(2)}</strong>
-            {Math.abs(r) >= 0.5 ? (r > 0 ? ' ↑ positive' : ' ↓ negative') : ' weak'}
-          </span>
-        )}
-        <div className="chart-legend">
-          <span className="chart-legend__item">
-            <span className="chart-legend__swatch" style={{ background: xColor }} />
-            {xLink.trackable.name} (x)
-          </span>
-          <span className="chart-legend__item">
-            <span className="chart-legend__swatch" style={{ background: yColor }} />
-            {yLink.trackable.name} (y)
-          </span>
-        </div>
-      </div>
+      <ChartLegend items={legendItems} prefix={pearsonPrefix} />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { useRouter }             from 'next/navigation';
 import { createClient }          from '@/lib/supabase/client';
 import { updateAppointment, deleteAppointment } from '@/lib/dal/appointments';
 import { Button }                from '@/components/ui/Button';
+import { ConfirmButton }         from '@/components/ui/ConfirmButton';
 import { InputField }            from '@/components/ui/Display';
 import { SaveStatus }            from '@/components/ui/Display';
 import type { SaveState }        from '@/components/ui/Display';
@@ -47,7 +48,6 @@ export function AppointmentDetailClient({ appointment: appt, appointmentTypes, p
 
   const [mode,       setMode]       = useState<'view' | 'edit'>('view');
   const [saveState,  setSaveState]  = useState<SaveState>('idle');
-  const [confirming, setConfirming] = useState(false);
 
   const [date,    setDate]    = useState(appt.appointment_date);
   const [time,    setTime]    = useState(appt.appointment_time ?? '');
@@ -79,10 +79,9 @@ export function AppointmentDetailClient({ appointment: appt, appointmentTypes, p
   }, [supabase, appt.id, date, time, typeId, personId, provId, location, questions, notes, router]);
 
   const remove = useCallback(async () => {
-    if (!confirming) { setConfirming(true); return; }
     await deleteAppointment(supabase, appt.id);
     router.push('/appointments');
-  }, [supabase, appt.id, confirming, router]);
+  }, [supabase, appt.id, router]);
 
   if (mode === 'view') {
     const countdown = daysUntil(appt.appointment_date);
@@ -103,12 +102,7 @@ export function AppointmentDetailClient({ appointment: appt, appointmentTypes, p
           </div>
           <div className="detail-page__actions">
             <Button variant="ghost" size="sm" onClick={() => setMode('edit')}>✏️ Edit</Button>
-            <Button variant="danger" size="sm" onClick={remove}>
-              {confirming ? 'Sure?' : '✕ Delete'}
-            </Button>
-            {confirming && (
-              <Button variant="ghost" size="sm" onClick={() => setConfirming(false)}>Cancel</Button>
-            )}
+            <ConfirmButton onConfirm={remove}>✕ Delete</ConfirmButton>
           </div>
         </div>
 

@@ -5,6 +5,7 @@ import { useRouter }             from 'next/navigation';
 import { createClient }          from '@/lib/supabase/client';
 import { updateTask, completeTask, deleteTask } from '@/lib/dal/tasks';
 import { Button }                from '@/components/ui/Button';
+import { ConfirmButton }         from '@/components/ui/ConfirmButton';
 import { InputField }            from '@/components/ui/Display';
 import { SaveStatus }            from '@/components/ui/Display';
 import type { SaveState }        from '@/components/ui/Display';
@@ -34,7 +35,6 @@ export function TaskDetailClient({ task, statuses, priorities, people }: Props) 
   const [mode,      setMode]      = useState<'view' | 'edit'>('view');
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const [deleting,  setDeleting]  = useState(false);
-  const [confirming,setConfirming]= useState(false);
 
   const [title,      setTitle]      = useState(task.title);
   const [statusId,   setStatusId]   = useState(String(task.status_id));
@@ -72,13 +72,12 @@ export function TaskDetailClient({ task, statuses, priorities, people }: Props) 
   }, [supabase, task.id, doneStatus, router]);
 
   const remove = useCallback(async () => {
-    if (!confirming) { setConfirming(true); return; }
     setDeleting(true);
     try {
       await deleteTask(supabase, task.id);
       router.push('/tasks');
     } finally { setDeleting(false); }
-  }, [supabase, task.id, confirming, router]);
+  }, [supabase, task.id, router]);
 
   if (mode === 'view') {
     return (
@@ -90,12 +89,7 @@ export function TaskDetailClient({ task, statuses, priorities, people }: Props) 
               <Button variant="accent" size="sm" onClick={complete}>✓ Complete</Button>
             )}
             <Button variant="ghost" size="sm" onClick={() => setMode('edit')}>✏️ Edit</Button>
-            <Button variant="danger" size="sm" onClick={remove} disabled={deleting}>
-              {confirming ? 'Sure?' : '✕ Delete'}
-            </Button>
-            {confirming && (
-              <Button variant="ghost" size="sm" onClick={() => setConfirming(false)}>Cancel</Button>
-            )}
+            <ConfirmButton onConfirm={remove} disabled={deleting}>✕ Delete</ConfirmButton>
           </div>
         </div>
 

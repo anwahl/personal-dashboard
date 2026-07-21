@@ -8,6 +8,7 @@
 import { useState, useCallback } from 'react';
 import { createClient }           from '@/lib/supabase/client';
 import { Button }                 from '@/components/ui/Button';
+import { ConfirmButton }          from '@/components/ui/ConfirmButton';
 
 interface Props {
   trackables:    any[];   // boolean trackables
@@ -17,18 +18,19 @@ interface Props {
 }
 
 function ItemRow({ item, onDelete }: { item: any; onDelete: (id: number) => void }) {
-  const [confirming, setConfirming] = useState(false);
   return (
     <div className="manage-item">
       <span className="manage-item__name">
         {item.emoji ?? ''} {item.label}
       </span>
       {item.subtitle && <span className="badge badge--muted">{item.subtitle}</span>}
-      <Button variant="ghost" size="icon"
-        onClick={() => { if (confirming) onDelete(item.id); else setConfirming(true); }}
-        title={confirming ? 'Click again to confirm' : 'Remove'}>
-        {confirming ? '?' : '✕'}
-      </Button>
+      <ConfirmButton
+        onConfirm={() => onDelete(item.id)}
+        size="icon"
+        confirmLabel="?"
+        label="✕"
+        showCancel={false}
+      />
     </div>
   );
 }

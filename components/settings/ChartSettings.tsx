@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { createClient }          from '@/lib/supabase/client';
 import { Button }                from '@/components/ui/Button';
+import { ConfirmButton }         from '@/components/ui/ConfirmButton';
 import { ManageableList }        from './ManageableList';
 import type { ChartDefinitionDetail, ChartCategoryRow } from '@/types/dal';
 import type { DailyTrackableRow, ChartType, MetricRole } from '@/types/schema';
@@ -88,7 +89,6 @@ function ChartCard({
   const [selT,       setSelT]       = useState('');
   const [selRole,    setSelRole]    = useState<MetricRole>(CHART_TYPE_META[chart.chart_type].validRoles[0]);
   const [saving,     setSaving]     = useState(false);
-  const [confirming, setConfirming] = useState(false);
 
   const meta       = CHART_TYPE_META[chart.chart_type];
   const warnings   = getWarnings(chart.chart_type, links);
@@ -128,7 +128,6 @@ function ChartCard({
   };
 
   const handleDelete = async () => {
-    if (!confirming) { setConfirming(true); return; }
     await onDelete(chart.id);
   };
 
@@ -145,8 +144,7 @@ function ChartCard({
           <Button variant="ghost" size="icon" onClick={() => onMove(chart.id, 'up')}   disabled={idx === 0}            title="Move up">↑</Button>
           <Button variant="ghost" size="icon" onClick={() => onMove(chart.id, 'down')} disabled={idx === total - 1}    title="Move down">↓</Button>
           <Button variant="ghost" size="sm"   onClick={toggleActive}>{active ? '✓ Active' : '○ Inactive'}</Button>
-          <Button variant="danger" size="sm"  onClick={handleDelete}>{confirming ? 'Sure?' : '✕'}</Button>
-          {confirming && <Button variant="ghost" size="sm" onClick={() => setConfirming(false)}>Cancel</Button>}
+          <ConfirmButton onConfirm={handleDelete} size="sm" label="✕" />
         </div>
       </div>
 
