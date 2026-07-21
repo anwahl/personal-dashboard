@@ -192,7 +192,7 @@ function OverviewTab({
             value={state.summary}
             placeholder="How did today go?"
             onChange={e => set('summary', e.target.value)}
-            style={{ minHeight: 60 }}
+            className="textarea--short"
           />
         </InputField>
       </CardSection>
@@ -214,7 +214,6 @@ function OverviewTab({
             value={state.brainDump}
             placeholder="Anything on your mind…"
             onChange={e => set('brainDump', e.target.value)}
-            style={{ minHeight: 80 }}
           />
         </InputField>
       </CardSection>
@@ -354,7 +353,7 @@ function SymptomsTab({
             <InputField label="Detail" id="anxiety-detail">
               <textarea id="anxiety-detail" value={state.anxietyDetail}
                 onChange={e => set('anxietyDetail', e.target.value)}
-                placeholder="What triggered it…" style={{ minHeight: 60 }} />
+                placeholder="What triggered it…" className="textarea--short" />
             </InputField>
           </div>
         )}
@@ -430,7 +429,7 @@ function MedsTab({
           <CardSection>
             <CardSectionLabel>Not taken</CardSectionLabel>
             {notTaken.map(rx => (
-              <div key={rx.id} className="prescription-item" style={{ opacity: 0.5 }}>
+              <div key={rx.id} className="prescription-item prescription-item--dim">
                 <div className="prescription-item__check" />
                 <div>
                   <div className="prescription-item__name">{rx.alias ?? rx.medication.medication_name}</div>
@@ -865,7 +864,7 @@ function SleepTab({
             </ChipGroup>
           </div>
         ))}
-        <p className="card__section-label" style={{ marginTop: 8 }}>Pre-bed consumption</p>
+        <p className="card__section-label card__section-label--spaced">Pre-bed consumption</p>
         <ChipGroup>
           {reference.consumptionTypes.map(t => (
             <Chip key={t.id} active={sleepState.consumptionIds.includes(t.id)} small
@@ -890,7 +889,7 @@ function SleepTab({
       <CardSection>
         <CardSectionLabel>Notes</CardSectionLabel>
         <textarea value={sleepState.notes} onChange={e => set('notes', e.target.value)}
-          placeholder="Anything notable…" style={{ minHeight: 60 }} />
+          placeholder="Anything notable…" className="textarea--short" />
       </CardSection>
     </div>
   );

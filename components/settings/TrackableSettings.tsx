@@ -35,7 +35,7 @@ export function TrackableSettings({ trackables }: Props) {
           { key: 'name',       label: 'Habit name', type: 'text', placeholder: 'e.g. Water', required: true },
           { key: 'color_hex',  label: 'Color',      type: 'color', width: 48 },
         ]}
-        renderName={item => <><span style={{ marginRight: 6 }}>{String(item.emoji ?? '')}</span>{String(item.name)}</>}
+        renderName={item => <><span className="trackable-emoji">{String(item.emoji ?? '')}</span>{String(item.name)}</>}
       />
 
       {/* Numeric trackables — manageable (add / toggle active) */}
@@ -51,7 +51,7 @@ export function TrackableSettings({ trackables }: Props) {
           { key: 'name',      label: 'Metric name',  type: 'text', placeholder: 'e.g. Nausea', required: true },
           { key: 'color_hex', label: 'Color',        type: 'color', width: 48 },
         ]}
-        renderName={item => <><span style={{ marginRight: 6 }}>{String(item.emoji ?? '')}</span>{String(item.name)}</>}
+        renderName={item => <><span className="trackable-emoji">{String(item.emoji ?? '')}</span>{String(item.name)}</>}
       />
 
       {/* Aggregate trackables — read-only (computed by DB triggers) */}
@@ -66,7 +66,7 @@ export function TrackableSettings({ trackables }: Props) {
           {aggregate.map(t => (
             <div key={t.id} className="manage-item">
               <span className="manage-item__name">
-                <span style={{ marginRight: 6 }}>{t.emoji ?? ''}</span>{t.name}
+                <span className="trackable-emoji">{t.emoji ?? ''}</span>{t.name}
               </span>
               <span className="badge">aggregate</span>
             </div>

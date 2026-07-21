@@ -41,21 +41,19 @@ function InfoGroupSection({ group, mode, onValueChange }: {
   return (
     <CardSection>
       <CardSectionLabel>{group.group_title}</CardSectionLabel>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div className="info-field-grid">
         {group.fields.map(f => (
-          <div key={f.id} style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 8, alignItems: 'start' }}>
-            <span style={{ fontSize: '0.78rem', color: 'var(--text-faint)', paddingTop: 8 }}>
-              {f.field_label}
-            </span>
+          <div key={f.id} className="info-field-row">
+            <span className="info-field-label">{f.field_label}</span>
             {mode === 'view' ? (
-              <span style={{ fontSize: '0.88rem', color: f.value ? 'var(--text)' : 'var(--text-faint)', padding: '6px 0', fontStyle: f.value ? 'normal' : 'italic' }}>
+              <span className={`info-field-value${f.value ? '' : ' info-field-value--empty'}`}>
                 {f.value || '—'}
               </span>
             ) : f.field_type === 'textarea' ? (
               <textarea
                 value={f.value ?? ''}
                 onChange={e => onValueChange(f.id, e.target.value)}
-                style={{ minHeight: 60 }}
+                className="textarea--short"
               />
             ) : (
               <input
@@ -73,11 +71,15 @@ function InfoGroupSection({ group, mode, onValueChange }: {
 
 // ── Checklists ────────────────────────────────────────────────────────────────
 
-function ChecklistSection({ checklist, mode, personId }: { checklist: ChecklistWithItems; mode: Mode; personId: number }) {
+function ChecklistSection({ checklist, mode, personId }: {
+  checklist: ChecklistWithItems;
+  mode:      Mode;
+  personId:  number;
+}) {
   const supabase = createClient();
-  const [items, setItems] = useState(checklist.items);
+  const [items,   setItems]   = useState(checklist.items);
   const [newText, setNewText] = useState('');
-  const [adding, setAdding] = useState(false);
+  const [adding,  setAdding]  = useState(false);
 
   const toggle = useCallback(async (itemId: number, checked: boolean) => {
     setItems(prev => prev.map(i => i.id === itemId ? { ...i, is_checked: checked } : i));
@@ -101,7 +103,7 @@ function ChecklistSection({ checklist, mode, personId }: { checklist: ChecklistW
     setItems(prev => prev.filter(i => i.id !== itemId));
   }, [supabase]);
 
-  const done   = items.filter(i => i.is_checked);
+  const done   = items.filter(i =>  i.is_checked);
   const undone = items.filter(i => !i.is_checked);
 
   return (
@@ -109,48 +111,40 @@ function ChecklistSection({ checklist, mode, personId }: { checklist: ChecklistW
       <CardSectionLabel>
         {checklist.checklist_title}
         {checklist.checklist_label && (
-          <span style={{ fontWeight: 400, color: 'var(--text-faint)', marginLeft: 6 }}>
-            · {checklist.checklist_label}
-          </span>
+          <span className="section-label-sub">· {checklist.checklist_label}</span>
         )}
-        <span style={{ marginLeft: 8, fontWeight: 400, color: 'var(--text-faint)' }}>
-          {done.length}/{items.length}
-        </span>
+        <span className="section-label-sub">{done.length}/{items.length}</span>
       </CardSectionLabel>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div className="checklist-list">
         {undone.map(item => (
-          <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: 32 }}>
+          <div key={item.id} className="checklist-item">
             <input
               type="checkbox"
               checked={false}
               onChange={() => toggle(item.id, true)}
-              style={{ width: 16, height: 16, accentColor: 'var(--accent)', cursor: 'pointer', flexShrink: 0 }}
+              className="checklist-item__checkbox"
             />
-            <span style={{ fontSize: '0.88rem', color: 'var(--text)', flex: 1 }}>{item.item_text}</span>
+            <span className="checklist-item__text">{item.item_text}</span>
             {mode === 'edit' && (
-              <button type="button" onClick={() => removeItem(item.id)}
-                style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', fontSize: '0.75rem', padding: '2px 4px' }}>
-                ✕
-              </button>
+              <Button variant="ghost" size="icon" onClick={() => removeItem(item.id)}
+                title="Remove item">✕</Button>
             )}
           </div>
         ))}
 
         {done.length > 0 && (
-          <details style={{ marginTop: 4 }}>
-            <summary style={{ fontSize: '0.75rem', color: 'var(--text-faint)', cursor: 'pointer', padding: '2px 0' }}>
-              {done.length} completed
-            </summary>
+          <details className="checklist-done">
+            <summary className="checklist-done__summary">{done.length} completed</summary>
             {done.map(item => (
-              <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: 32, opacity: 0.6 }}>
+              <div key={item.id} className="checklist-item checklist-item--done">
                 <input
                   type="checkbox"
                   checked={true}
                   onChange={() => toggle(item.id, false)}
-                  style={{ width: 16, height: 16, accentColor: 'var(--accent)', cursor: 'pointer', flexShrink: 0 }}
+                  className="checklist-item__checkbox"
                 />
-                <span style={{ fontSize: '0.88rem', color: 'var(--text-muted)', flex: 1, textDecoration: 'line-through' }}>
+                <span className="checklist-item__text checklist-item__text--done">
                   {item.item_text}
                 </span>
               </div>
@@ -160,7 +154,7 @@ function ChecklistSection({ checklist, mode, personId }: { checklist: ChecklistW
       </div>
 
       {mode === 'edit' && (
-        <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+        <div className="manage-add-row" style={{ marginTop: 8 }}>
           <input
             type="text"
             value={newText}
@@ -180,12 +174,16 @@ function ChecklistSection({ checklist, mode, personId }: { checklist: ChecklistW
 
 // ── Item lists ────────────────────────────────────────────────────────────────
 
-function ItemListSection({ list, mode, personId }: { list: ItemListWithEntries; mode: Mode; personId: number }) {
-  const supabase   = createClient();
+function ItemListSection({ list, mode, personId }: {
+  list:     ItemListWithEntries;
+  mode:     Mode;
+  personId: number;
+}) {
+  const supabase  = createClient();
   const [entries, setEntries] = useState(list.entries);
-  const [newText,  setNewText]  = useState('');
-  const [newDate,  setNewDate]  = useState(localTodayISO());
-  const [adding,   setAdding]   = useState(false);
+  const [newText, setNewText] = useState('');
+  const [newDate, setNewDate] = useState(localTodayISO());
+  const [adding,  setAdding]  = useState(false);
 
   const add = useCallback(async () => {
     if (!newText.trim()) return;
@@ -207,46 +205,41 @@ function ItemListSection({ list, mode, personId }: { list: ItemListWithEntries; 
       <CardSectionLabel>
         {list.list_title}
         {list.list_label && (
-          <span style={{ fontWeight: 400, color: 'var(--text-faint)', marginLeft: 6 }}>· {list.list_label}</span>
+          <span className="section-label-sub">· {list.list_label}</span>
         )}
       </CardSectionLabel>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div className="list-entry-list">
         {entries.length === 0 && <p className="empty-state">No entries yet.</p>}
         {entries.map(e => (
-          <div key={e.id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
+          <div key={e.id} className="list-entry-row">
             {e.entry_date && (
-              <span style={{ fontSize: '0.72rem', color: 'var(--text-faint)', flexShrink: 0, paddingTop: 3, minWidth: 70 }}>
-                {fmtDate(e.entry_date)}
-              </span>
+              <span className="list-entry-date">{fmtDate(e.entry_date)}</span>
             )}
-            <span style={{ fontSize: '0.88rem', color: 'var(--text)', flex: 1 }}>{e.entry_text}</span>
+            <span className="list-entry-text">{e.entry_text}</span>
             {mode === 'edit' && (
-              <button type="button" onClick={() => remove(e.id)}
-                style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', fontSize: '0.75rem', padding: 0, flexShrink: 0 }}>
-                ✕
-              </button>
+              <Button variant="ghost" size="icon" onClick={() => remove(e.id)}
+                title="Remove entry">✕</Button>
             )}
           </div>
         ))}
       </div>
 
       {mode === 'edit' && (
-        <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <div style={{ display: 'flex', gap: 6 }}>
-            <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)} style={{ width: 150 }} />
-            <input
-              type="text"
-              value={newText}
-              onChange={e => setNewText(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && add()}
-              placeholder="New entry…"
-              style={{ flex: 1 }}
-            />
-            <Button size="sm" variant="accent" onClick={add} disabled={adding || !newText.trim()}>
-              {adding ? '…' : 'Add'}
-            </Button>
-          </div>
+        <div className="manage-add-row" style={{ marginTop: 10 }}>
+          <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
+            style={{ width: 150 }} />
+          <input
+            type="text"
+            value={newText}
+            onChange={e => setNewText(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && add()}
+            placeholder="New entry…"
+            style={{ flex: 1 }}
+          />
+          <Button size="sm" variant="accent" onClick={add} disabled={adding || !newText.trim()}>
+            {adding ? '…' : 'Add'}
+          </Button>
         </div>
       )}
     </CardSection>
@@ -255,11 +248,15 @@ function ItemListSection({ list, mode, personId }: { list: ItemListWithEntries; 
 
 // ── Logs ──────────────────────────────────────────────────────────────────────
 
-function LogSection({ log, mode, personId }: { log: LogWithSchemaAndEntries; mode: Mode; personId: number }) {
+function LogSection({ log, mode, personId }: {
+  log:      LogWithSchemaAndEntries;
+  mode:     Mode;
+  personId: number;
+}) {
   const supabase = createClient();
-  const [entries, setEntries] = useState(log.entries);
-  const [showForm, setShowForm] = useState(false);
-  const [formDate, setFormDate] = useState(localTodayISO());
+  const [entries,    setEntries]    = useState(log.entries);
+  const [showForm,   setShowForm]   = useState(false);
+  const [formDate,   setFormDate]   = useState(localTodayISO());
   const [formValues, setFormValues] = useState<Record<number, string>>(
     Object.fromEntries(log.fields.map(f => [f.id, '']))
   );
@@ -290,9 +287,10 @@ function LogSection({ log, mode, personId }: { log: LogWithSchemaAndEntries; mod
       {/* Add entry form */}
       {mode === 'edit' && (
         showForm ? (
-          <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '12px', marginBottom: 10 }}>
+          <div className="form-panel">
             <InputField label="Date" id={`log-date-${log.id}`}>
-              <input id={`log-date-${log.id}`} type="date" value={formDate} onChange={e => setFormDate(e.target.value)} />
+              <input id={`log-date-${log.id}`} type="date" value={formDate}
+                onChange={e => setFormDate(e.target.value)} />
             </InputField>
             {log.fields.map(f => (
               <InputField key={f.id} label={f.field_label} id={`lf-${f.id}`}>
@@ -302,13 +300,15 @@ function LogSection({ log, mode, personId }: { log: LogWithSchemaAndEntries; mod
                     {f.options.map(o => <option key={o.id} value={o.option_value}>{o.option_value}</option>)}
                   </select>
                 ) : f.field_type === 'textarea' ? (
-                  <textarea id={`lf-${f.id}`} value={formValues[f.id] ?? ''} onChange={e => setVal(f.id, e.target.value)} style={{ minHeight: 60 }} />
+                  <textarea id={`lf-${f.id}`} value={formValues[f.id] ?? ''}
+                    onChange={e => setVal(f.id, e.target.value)} className="textarea--short" />
                 ) : (
-                  <input id={`lf-${f.id}`} type="text" value={formValues[f.id] ?? ''} onChange={e => setVal(f.id, e.target.value)} />
+                  <input id={`lf-${f.id}`} type="text" value={formValues[f.id] ?? ''}
+                    onChange={e => setVal(f.id, e.target.value)} />
                 )}
               </InputField>
             ))}
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div className="form-row form-row--actions">
               <Button size="sm" variant="accent" onClick={submit} disabled={adding}>
                 {adding ? 'Saving…' : 'Add Entry'}
               </Button>
@@ -316,7 +316,7 @@ function LogSection({ log, mode, personId }: { log: LogWithSchemaAndEntries; mod
             </div>
           </div>
         ) : (
-          <div style={{ marginBottom: 8 }}>
+          <div className="manage-list">
             <Button size="sm" variant="ghost" onClick={() => setShowForm(true)}>+ Add Entry</Button>
           </div>
         )
@@ -326,38 +326,26 @@ function LogSection({ log, mode, personId }: { log: LogWithSchemaAndEntries; mod
       {entries.length === 0 ? (
         <p className="empty-state">No entries yet.</p>
       ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.83rem' }}>
+        <div className="log-table-wrap">
+          <table className="log-table">
             <thead>
               <tr>
-                <th style={{ textAlign: 'left', padding: '4px 8px 4px 0', color: 'var(--text-faint)', fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
-                  Date
-                </th>
-                {log.fields.map(f => (
-                  <th key={f.id} style={{ textAlign: 'left', padding: '4px 8px', color: 'var(--text-faint)', fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
-                    {f.field_label}
-                  </th>
-                ))}
-                {mode === 'edit' && <th style={{ borderBottom: '1px solid var(--border)' }} />}
+                <th>Date</th>
+                {log.fields.map(f => <th key={f.id}>{f.field_label}</th>)}
+                {mode === 'edit' && <th />}
               </tr>
             </thead>
             <tbody>
               {entries.map(e => (
-                <tr key={e.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                  <td style={{ padding: '6px 8px 6px 0', color: 'var(--text-faint)', whiteSpace: 'nowrap' }}>
-                    {fmtDate(e.entry_date)}
-                  </td>
+                <tr key={e.id}>
+                  <td>{fmtDate(e.entry_date)}</td>
                   {log.fields.map(f => (
-                    <td key={f.id} style={{ padding: '6px 8px', color: 'var(--text-muted)', verticalAlign: 'top' }}>
-                      {e.values[f.id] || '—'}
-                    </td>
+                    <td key={f.id}>{e.values[f.id] || '—'}</td>
                   ))}
                   {mode === 'edit' && (
-                    <td style={{ padding: '6px 4px', textAlign: 'right' }}>
-                      <button type="button" onClick={() => remove(e.id)}
-                        style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', fontSize: '0.75rem', padding: '2px 4px' }}>
-                        ✕
-                      </button>
+                    <td className="log-table__actions">
+                      <Button variant="ghost" size="icon" onClick={() => remove(e.id)}
+                        title="Delete entry">✕</Button>
                     </td>
                   )}
                 </tr>
@@ -376,10 +364,8 @@ export function PeoplePageClient({ data }: { data: PersonPageData }) {
   const { person, diagnoses, infoGroups, itemLists, logs, checklists, prescriptions } = data;
   const supabase = createClient();
 
-  const [mode,        setMode]       = useState<Mode>('view');
-  const [saveState,   setSaveState]  = useState<SaveState>('idle');
-
-  // Local copy of info group field values for batch save
+  const [mode,       setMode]      = useState<Mode>('view');
+  const [saveState,  setSaveState] = useState<SaveState>('idle');
   const [localGroups, setLocalGroups] = useState<InfoGroupWithFields[]>(infoGroups);
 
   const handleFieldChange = (groupIdx: number, fieldTypeId: number, value: string) => {
@@ -419,34 +405,31 @@ export function PeoplePageClient({ data }: { data: PersonPageData }) {
       <Card>
         <CardHeader>
           <div>
-            <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 700 }}>{person.person_name}</h2>
+            <h2 className="person-header__name">{person.person_name}</h2>
             {person.birth_date && (
-              <p style={{ margin: '3px 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                🎂 {fmtDate(person.birth_date)}
-              </p>
+              <p className="person-header__sub">🎂 {fmtDate(person.birth_date)}</p>
             )}
           </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div className="person-header__actions">
             {mode === 'edit' && hasInfoGroups && (
               <>
                 <SaveStatus state={saveState} />
-                <Button variant="accent" size="sm" onClick={saveInfoGroups} disabled={saveState === 'saving'}>
-                  💾 Save
-                </Button>
+                <Button variant="accent" size="sm" onClick={saveInfoGroups}
+                  disabled={saveState === 'saving'}>💾 Save</Button>
               </>
             )}
-            <Button variant="ghost" size="sm" onClick={() => setMode(m => m === 'view' ? 'edit' : 'view')}>
+            <Button variant="ghost" size="sm"
+              onClick={() => setMode(m => m === 'view' ? 'edit' : 'view')}>
               {mode === 'view' ? '✏️ Edit' : '← View'}
             </Button>
           </div>
         </CardHeader>
 
         <CardBody>
-          {/* Diagnoses */}
           {diagnoses.length > 0 && (
             <CardSection>
               <CardSectionLabel>Diagnoses</CardSectionLabel>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              <div className="chip-group">
                 {diagnoses.map(d => (
                   <span key={d.id} className="badge badge--accent">{d.diagnosis_name}</span>
                 ))}
@@ -454,11 +437,10 @@ export function PeoplePageClient({ data }: { data: PersonPageData }) {
             </CardSection>
           )}
 
-          {/* Active prescriptions */}
           {prescriptions.length > 0 && (
             <CardSection>
               <CardSectionLabel>Active Prescriptions</CardSectionLabel>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              <div className="chip-group">
                 {prescriptions.map(rx => (
                   <span key={rx.id} className="badge">
                     {rx.alias ?? rx.medication.medication_name}
@@ -479,7 +461,7 @@ export function PeoplePageClient({ data }: { data: PersonPageData }) {
 
       {/* Info groups */}
       {localGroups.length > 0 && (
-        <Card style={{ marginTop: 16 }}>
+        <Card>
           <CardBody>
             {localGroups.map((group, gi) => (
               <InfoGroupSection
@@ -495,7 +477,7 @@ export function PeoplePageClient({ data }: { data: PersonPageData }) {
 
       {/* Checklists */}
       {checklists.length > 0 && (
-        <Card style={{ marginTop: 16 }}>
+        <Card>
           <CardBody>
             {checklists.map(cl => (
               <ChecklistSection key={cl.id} checklist={cl} mode={mode} personId={person.id} />
@@ -506,7 +488,7 @@ export function PeoplePageClient({ data }: { data: PersonPageData }) {
 
       {/* Item lists */}
       {itemLists.length > 0 && (
-        <Card style={{ marginTop: 16 }}>
+        <Card>
           <CardBody>
             {itemLists.map(list => (
               <ItemListSection key={list.id} list={list} mode={mode} personId={person.id} />
@@ -517,7 +499,7 @@ export function PeoplePageClient({ data }: { data: PersonPageData }) {
 
       {/* Logs */}
       {logs.length > 0 && (
-        <Card style={{ marginTop: 16 }}>
+        <Card>
           <CardBody>
             {logs.map(log => (
               <LogSection key={log.id} log={log} mode={mode} personId={person.id} />

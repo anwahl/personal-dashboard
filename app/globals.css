@@ -32,6 +32,8 @@
   --font-sans: system-ui, -apple-system, sans-serif;
   
   --margin-standard: 16px;
+
+  --box-shadow-standard: 0 4px 16px rgba(0, 0, 0, 0.35);
 }
 
 /* ── Base ────────────────────────────────────────────────────────────────────*/
@@ -113,7 +115,7 @@ html, body {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--box-shadow-standard);
   overflow: hidden;
   margin: var(--margin-standard);
 }
@@ -352,7 +354,7 @@ html, body {
   height: 22px;
   border-radius: 50%;
   background: white;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--box-shadow-standard);
   transition: transform 0.2s;
 }
 
@@ -1098,24 +1100,6 @@ textarea {
   margin: 0 0 10px;
 }
 
-/* ── Media note item ─────────────────────────────────────────────────────────*/
-.media-note {
-  border-left: 2px solid var(--border);
-  padding: 6px 10px;
-  margin-bottom: 8px;
-}
-.media-note__date {
-  font-size: 0.7rem;
-  color: var(--text-faint);
-  margin-bottom: 3px;
-}
-.media-note__body {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  white-space: pre-wrap;
-  margin: 0;
-}
-
 /* ── Search results ──────────────────────────────────────────────────────────*/
 .search-panel {
   background: var(--surface-high);
@@ -1246,7 +1230,15 @@ textarea {
 
 .settings-tab-content { display: flex; flex-direction: column; gap: 20px; }
 
-.settings-section { }
+.settings-section { 
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px;
+  box-shadow: var(--box-shadow-standard);
+  background: var(--surface);
+  margin: 25px auto;
+}
+
 .settings-section__header {
   display: flex;
   justify-content: space-between;
@@ -1411,7 +1403,10 @@ textarea {
 .chart-panel {
   margin-bottom: 28px;
   border: 1px solid var(--border);
+  border-radius: var(--radius);
   padding: 10px;
+  box-shadow: var(--box-shadow-standard)
+
 }
 
 .chart-panel__controls {
@@ -2384,6 +2379,15 @@ a.appt-secondary:last-child { border-bottom: none; }
 
 /* ── Last Time Tracker ───────────────────────────────────────────────────────*/
 
+
+.last-time-tracker {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px;
+  box-shadow: var(--box-shadow-standard);
+  background: var(--surface);
+}
+
 .last-time-tracker__controls {
   display: flex;
   gap: 8px;
@@ -2630,4 +2634,365 @@ a.appt-secondary:last-child { border-bottom: none; }
   font-size: 0.78rem;
   color: var(--warn);
   margin: 0;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   NEW CLASSES — Styling sweep 2026-07-21
+   Replaces all static inline styles throughout components.
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Form panel (create-form box used in Settings) ───────────────────────────*/
+.form-panel {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+/* ── Form rows ───────────────────────────────────────────────────────────────*/
+.form-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.form-row--actions {
+  margin-top: 4px;
+}
+
+.form-row--cols {
+  /* field input rows that need top alignment for multiline inputs */
+  align-items: flex-start;
+}
+
+/* Divider between repeating form sub-sections (e.g. log columns) */
+.form-sub-section {
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.form-sub-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+/* Small faint label above field list in a create form */
+.form-section-label {
+  font-size: 0.75rem;
+  color: var(--text-faint);
+  margin: 8px 0 6px;
+}
+
+/* ── Structure create buttons row ────────────────────────────────────────────*/
+.structure-create-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+/* ── Per-person block in PeopleStructureSettings ─────────────────────────────*/
+.person-block {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.person-block:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.person-block__name {
+  margin: 0 0 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Sub-section label within person blocks ("Info Groups", "Lists", etc.) */
+.structure-sub-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+  margin: 0 0 6px;
+}
+
+/* ── Link item (structure name + toggle button pair) ─────────────────────────*/
+.link-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.link-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.link-item__name {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+/* ── Info field grid (PeoplePageClient — label : value rows) ─────────────────*/
+.info-field-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.info-field-row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 8px;
+  align-items: start;
+}
+
+.info-field-label {
+  font-size: 0.78rem;
+  color: var(--text-faint);
+  padding-top: 8px;
+}
+
+.info-field-value {
+  font-size: 0.88rem;
+  color: var(--text);
+  padding: 6px 0;
+}
+
+.info-field-value--empty {
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+/* ── Checklist items ─────────────────────────────────────────────────────────*/
+.checklist-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.checklist-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+}
+
+.checklist-item--done {
+  opacity: 0.6;
+}
+
+.checklist-item__checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.checklist-item__text {
+  font-size: 0.88rem;
+  color: var(--text);
+  flex: 1;
+}
+
+.checklist-item__text--done {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+/* ── Collapsed "done items" section inside a checklist ───────────────────────*/
+.checklist-done {
+  margin-top: 4px;
+}
+
+.checklist-done__summary {
+  font-size: 0.75rem;
+  color: var(--text-faint);
+  cursor: pointer;
+  padding: 2px 0;
+  user-select: none;
+  list-style: none;
+}
+
+/* ── List entry rows (ItemListSection) ───────────────────────────────────────*/
+.list-entry-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.list-entry-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.list-entry-row:last-child { border-bottom: none; }
+
+.list-entry-date {
+  font-size: 0.72rem;
+  color: var(--text-faint);
+  flex-shrink: 0;
+  padding-top: 3px;
+  min-width: 70px;
+}
+
+.list-entry-text {
+  font-size: 0.88rem;
+  color: var(--text);
+  flex: 1;
+}
+
+/* ── Log entry table ─────────────────────────────────────────────────────────*/
+.log-table-wrap {
+  overflow-x: auto;
+}
+
+.log-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.83rem;
+}
+
+.log-table th {
+  text-align: left;
+  padding: 4px 8px;
+  color: var(--text-faint);
+  font-weight: 600;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.log-table th:first-child { padding-left: 0; }
+
+.log-table td {
+  padding: 6px 8px;
+  color: var(--text-muted);
+  vertical-align: top;
+}
+
+.log-table td:first-child {
+  color: var(--text-faint);
+  white-space: nowrap;
+  padding-left: 0;
+}
+
+.log-table tr { border-bottom: 1px solid var(--border); }
+.log-table tr:last-child { border-bottom: none; }
+
+.log-table__actions {
+  padding: 6px 4px !important;
+  text-align: right;
+}
+
+/* ── Person page card header elements ────────────────────────────────────────*/
+.person-header__name {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.person-header__sub {
+  margin: 3px 0 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.person-header__actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* ── Manageable list internals ───────────────────────────────────────────────*/
+.manage-list {
+  margin-bottom: 12px;
+}
+
+.manage-inactive {
+  margin-bottom: 10px;
+}
+
+.manage-inactive__summary {
+  font-size: 0.75rem;
+  color: var(--text-faint);
+  cursor: pointer;
+  padding: 4px 0;
+  user-select: none;
+  list-style: none;
+}
+
+.manage-inactive__body {
+  margin-top: 6px;
+}
+
+/* ── Inline delete / small icon button (ghost, no border) ────────────────────*/
+/* Use sparingly — prefer <Button variant="ghost" size="icon"> when possible.  */
+/* Only needed where Button would introduce layout issues (e.g. table cells).  */
+.icon-btn {
+  background: none;
+  border: none;
+  color: var(--text-faint);
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 2px 4px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: color 0.12s;
+  flex-shrink: 0;
+}
+
+.icon-btn:hover { color: var(--danger); }
+
+/* ── Trackable emoji prefix ──────────────────────────────────────────────────*/
+.trackable-emoji {
+  margin-right: 6px;
+}
+
+/* ── Textarea height modifiers ───────────────────────────────────────────────*/
+/* Default textarea already has min-height: 80px from global base styles.      */
+/* Use --short for compact contexts (60px) and --tall for large fields.         */
+.textarea--short { min-height: 60px; }
+.textarea--tall  { min-height: 120px; }
+
+/* ── Prescription not-taken (view mode dimmed) ───────────────────────────────*/
+.prescription-item--dim { opacity: 0.5; }
+
+/* ── card__section-label with extra top spacing ──────────────────────────────*/
+.card__section-label--spaced { margin-top: 8px; }
+
+/* ── chart-legend swatch variants ────────────────────────────────────────────*/
+/* Default swatch is a thin 3px line. --block is for bar/column chart legends. */
+.chart-legend__swatch--block {
+  height: 10px;
+  border-radius: 2px;
+}
+
+/* ── settings-section-heading — zero top margin variant ─────────────────────*/
+.settings-section-heading--flush {
+  margin-top: 0;
+}
+
+/* ── Card label subtitle (inline, faint, next to section label text) ─────────*/
+.section-label-sub {
+  font-weight: 400;
+  color: var(--text-faint);
+  margin-left: 6px;
 }

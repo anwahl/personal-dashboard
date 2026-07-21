@@ -40,6 +40,96 @@ function LinkToggle({ linked, onToggle }: { linked: boolean; onToggle: () => voi
   );
 }
 
+// ── Generic structure link group (label + chip-group of name+button pairs) ───
+
+function StructureLinkGroup<T extends { id: number }>({
+  label,
+  items,
+  linkedIds,
+  getName,
+  onToggle,
+}: {
+  label:     string;
+  items:     T[];
+  linkedIds: number[];
+  getName:   (item: T) => string;
+  onToggle:  (id: number) => void;
+}) {
+  if (items.length === 0) return null;
+  return (
+    <>
+      <p className="structure-sub-label">{label}</p>
+      <div className="link-group">
+        {items.map(item => (
+          <div key={item.id} className="link-item">
+            <span className="link-item__name">{getName(item)}</span>
+            <LinkToggle
+              linked={linkedIds.includes(item.id)}
+              onToggle={() => onToggle(item.id)}
+            />
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+// ── Per-person linking section ────────────────────────────────────────────────
+
+function PersonStructureLinks({
+  person, links, infoGroups, itemLists, logSchemas, checklists, onToggle,
+}: {
+  person:     PersonRow;
+  links:      PersonLinks;
+  infoGroups: InfoGroupRow[];
+  itemLists:  ItemListRow[];
+  logSchemas: LogSchemaRow[];
+  checklists: ChecklistRow[];
+  onToggle:   (type: StructureType, id: number) => void;
+}) {
+  const hasAny = infoGroups.length > 0 || itemLists.length > 0 ||
+                 logSchemas.length > 0  || checklists.length > 0;
+
+  return (
+    <div className="person-block">
+      <h4 className="person-block__name">{person.person_name}</h4>
+
+      <StructureLinkGroup
+        label="Info Groups"
+        items={infoGroups}
+        linkedIds={links.infoGroupIds}
+        getName={g => g.group_title}
+        onToggle={id => onToggle('info_group', id)}
+      />
+      <StructureLinkGroup
+        label="Lists"
+        items={itemLists}
+        linkedIds={links.listIds}
+        getName={l => l.list_title}
+        onToggle={id => onToggle('list', id)}
+      />
+      <StructureLinkGroup
+        label="Logs"
+        items={logSchemas}
+        linkedIds={links.logIds}
+        getName={l => l.log_title}
+        onToggle={id => onToggle('log', id)}
+      />
+      <StructureLinkGroup
+        label="Checklists"
+        items={checklists}
+        linkedIds={links.checklistIds}
+        getName={c => c.checklist_title}
+        onToggle={id => onToggle('checklist', id)}
+      />
+
+      {!hasAny && (
+        <p className="empty-state">Create some structures above to link them here.</p>
+      )}
+    </div>
+  );
+}
+
 // ── Create Info Group form ────────────────────────────────────────────────────
 
 interface NewField { label: string; type: string; }
@@ -50,10 +140,10 @@ function CreateInfoGroupForm({ onCreated }: { onCreated: (id: number, title: str
   const [fields, setFields] = useState<NewField[]>([{ label: '', type: 'text' }]);
   const [saving, setSaving] = useState(false);
 
-  const addField = () => setFields(prev => [...prev, { label: '', type: 'text' }]);
-  const setField = (i: number, key: keyof NewField, val: string) =>
-    setFields(prev => prev.map((f, fi) => fi === i ? { ...f, [key]: val } : f));
+  const addField    = () => setFields(prev => [...prev, { label: '', type: 'text' }]);
   const removeField = (i: number) => setFields(prev => prev.filter((_, fi) => fi !== i));
+  const setField    = (i: number, key: keyof NewField, val: string) =>
+    setFields(prev => prev.map((f, fi) => fi === i ? { ...f, [key]: val } : f));
 
   const save = useCallback(async () => {
     if (!title.trim()) return;
@@ -78,13 +168,14 @@ function CreateInfoGroupForm({ onCreated }: { onCreated: (id: number, title: str
   }, [supabase, title, fields, onCreated]);
 
   return (
-    <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 12, marginBottom: 10 }}>
+    <div className="form-panel">
       <InputField label="Group title" id="ig-title">
-        <input id="ig-title" type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Medical Info" />
+        <input id="ig-title" type="text" value={title}
+          onChange={e => setTitle(e.target.value)} placeholder="e.g. Medical Info" />
       </InputField>
-      <p style={{ fontSize: '0.75rem', color: 'var(--text-faint)', margin: '8px 0 6px' }}>Fields</p>
+      <p className="form-section-label">Fields</p>
       {fields.map((f, i) => (
-        <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+        <div key={i} className="form-row form-sub-section">
           <input type="text" value={f.label} onChange={e => setField(i, 'label', e.target.value)}
             placeholder="Field label…" style={{ flex: 1 }} />
           <select value={f.type} onChange={e => setField(i, 'type', e.target.value)} style={{ width: 110 }}>
@@ -93,15 +184,61 @@ function CreateInfoGroupForm({ onCreated }: { onCreated: (id: number, title: str
             <option value="textarea">Textarea</option>
           </select>
           {fields.length > 1 && (
-            <button type="button" onClick={() => removeField(i)}
-              style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', fontSize: '0.85rem' }}>✕</button>
+            <button type="button" onClick={() => removeField(i)} className="icon-btn">✕</button>
           )}
         </div>
       ))}
-      <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+      <div className="form-row form-row--actions">
         <Button size="sm" variant="ghost" onClick={addField}>+ Field</Button>
         <Button size="sm" variant="accent" onClick={save} disabled={saving || !title.trim()}>
           {saving ? 'Creating…' : 'Create Group'}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ── Create Item List form ─────────────────────────────────────────────────────
+
+function CreateListForm({
+  onCreated,
+}: {
+  onCreated: (id: number, title: string) => void;
+}) {
+  const supabase = createClient();
+  const [title, setTitle] = useState('');
+  const [label, setLabel] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const save = useCallback(async () => {
+    if (!title.trim()) return;
+    setSaving(true);
+    try {
+      const { data } = await supabase.from('item_lists')
+        .insert({ list_title: title.trim(), list_label: label.trim() || null })
+        .select('id, list_title, list_label, is_active').single();
+      if (data) {
+        onCreated((data as ItemListRow).id, title.trim());
+        setTitle(''); setLabel('');
+      }
+    } finally { setSaving(false); }
+  }, [supabase, title, label, onCreated]);
+
+  return (
+    <div className="form-panel">
+      <div className="field-grid">
+        <InputField label="List title" id="nl-title">
+          <input id="nl-title" type="text" value={title}
+            onChange={e => setTitle(e.target.value)} placeholder="e.g. Milestones" />
+        </InputField>
+        <InputField label="Label (optional)" id="nl-label">
+          <input id="nl-label" type="text" value={label}
+            onChange={e => setLabel(e.target.value)} placeholder="Short description" />
+        </InputField>
+      </div>
+      <div className="form-row form-row--actions">
+        <Button size="sm" variant="accent" onClick={save} disabled={saving || !title.trim()}>
+          {saving ? 'Creating…' : 'Create List'}
         </Button>
       </div>
     </div>
@@ -142,10 +279,9 @@ function CreateLogForm({ onCreated }: { onCreated: (id: number, title: string) =
           }))
         ).select('id, field_type');
 
-        // Add options for select fields
         if (createdFields) {
           for (let i = 0; i < validFields.length; i++) {
-            const field = validFields[i];
+            const field   = validFields[i];
             const created = createdFields[i];
             if (created && field.type === 'select' && field.options.trim()) {
               const opts = field.options.split(',').map((o: string) => o.trim()).filter(Boolean);
@@ -168,14 +304,15 @@ function CreateLogForm({ onCreated }: { onCreated: (id: number, title: string) =
   }, [supabase, title, fields, onCreated]);
 
   return (
-    <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 12, marginBottom: 10 }}>
+    <div className="form-panel">
       <InputField label="Log title" id="log-title">
-        <input id="log-title" type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. School Behavior Log" />
+        <input id="log-title" type="text" value={title}
+          onChange={e => setTitle(e.target.value)} placeholder="e.g. School Behavior Log" />
       </InputField>
-      <p style={{ fontSize: '0.75rem', color: 'var(--text-faint)', margin: '8px 0 6px' }}>Columns</p>
+      <p className="form-section-label">Columns</p>
       {fields.map((f, i) => (
-        <div key={i} style={{ marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', gap: 6, marginBottom: f.type === 'select' ? 6 : 0, flexWrap: 'wrap' }}>
+        <div key={i} className="form-sub-section">
+          <div className="form-row" style={{ marginBottom: f.type === 'select' ? 6 : 0 }}>
             <input type="text" value={f.label} onChange={e => setField(i, 'label', e.target.value)}
               placeholder="Column label…" style={{ flex: '1 1 120px' }} />
             <select value={f.type} onChange={e => setField(i, 'type', e.target.value)} style={{ width: 110 }}>
@@ -185,7 +322,7 @@ function CreateLogForm({ onCreated }: { onCreated: (id: number, title: string) =
             </select>
             {fields.length > 1 && (
               <button type="button" onClick={() => setFields(prev => prev.filter((_, fi) => fi !== i))}
-                style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer' }}>✕</button>
+                className="icon-btn">✕</button>
             )}
           </div>
           {f.type === 'select' && (
@@ -194,15 +331,61 @@ function CreateLogForm({ onCreated }: { onCreated: (id: number, title: string) =
               value={f.options}
               onChange={e => setField(i, 'options', e.target.value)}
               placeholder="Options (comma separated): e.g. Good, Okay, Rough"
-              style={{ width: '100%' }}
             />
           )}
         </div>
       ))}
-      <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+      <div className="form-row form-row--actions">
         <Button size="sm" variant="ghost" onClick={addField}>+ Column</Button>
         <Button size="sm" variant="accent" onClick={save} disabled={saving || !title.trim()}>
           {saving ? 'Creating…' : 'Create Log'}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ── Create Checklist form ─────────────────────────────────────────────────────
+
+function CreateChecklistForm({
+  onCreated,
+}: {
+  onCreated: (id: number, title: string) => void;
+}) {
+  const supabase = createClient();
+  const [title, setTitle] = useState('');
+  const [label, setLabel] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const save = useCallback(async () => {
+    if (!title.trim()) return;
+    setSaving(true);
+    try {
+      const { data } = await supabase.from('checklists')
+        .insert({ checklist_title: title.trim(), checklist_label: label.trim() || null })
+        .select('id, checklist_title, checklist_label, is_active').single();
+      if (data) {
+        onCreated((data as ChecklistRow).id, title.trim());
+        setTitle(''); setLabel('');
+      }
+    } finally { setSaving(false); }
+  }, [supabase, title, label, onCreated]);
+
+  return (
+    <div className="form-panel">
+      <div className="field-grid">
+        <InputField label="Checklist title" id="nc-title">
+          <input id="nc-title" type="text" value={title}
+            onChange={e => setTitle(e.target.value)} placeholder="e.g. Morning Routine" />
+        </InputField>
+        <InputField label="Label (optional)" id="nc-label">
+          <input id="nc-label" type="text" value={label}
+            onChange={e => setLabel(e.target.value)} placeholder="Short description" />
+        </InputField>
+      </div>
+      <div className="form-row form-row--actions">
+        <Button size="sm" variant="accent" onClick={save} disabled={saving || !title.trim()}>
+          {saving ? 'Creating…' : 'Create Checklist'}
         </Button>
       </div>
     </div>
@@ -223,38 +406,14 @@ export function PeopleStructureSettings({
   const [itemLists,  setItemLists]  = useState(initLists);
   const [logSchemas, setLogSchemas] = useState(initLogs);
   const [checklists, setChecklists] = useState(initChecklists);
-
-  const [creating, setCreating] = useState<StructureType | null>(null);
-
-  // ── Simple create forms ────────────────────────────────────────────────────
-
-  const [newListTitle,  setNewListTitle]  = useState('');
-  const [newListLabel,  setNewListLabel]  = useState('');
-  const [newClTitle,    setNewClTitle]    = useState('');
-  const [newClLabel,    setNewClLabel]    = useState('');
-
-  const createList = useCallback(async () => {
-    if (!newListTitle.trim()) return;
-    const { data } = await supabase.from('item_lists')
-      .insert({ list_title: newListTitle.trim(), list_label: newListLabel.trim() || null, sort_order: itemLists.length })
-      .select('id, list_title, list_label, is_active').single();
-    if (data) { setItemLists(prev => [...prev, data as ItemListRow]); setNewListTitle(''); setNewListLabel(''); setCreating(null); }
-  }, [supabase, newListTitle, newListLabel, itemLists.length]);
-
-  const createChecklist = useCallback(async () => {
-    if (!newClTitle.trim()) return;
-    const { data } = await supabase.from('checklists')
-      .insert({ checklist_title: newClTitle.trim(), checklist_label: newClLabel.trim() || null, sort_order: checklists.length })
-      .select('id, checklist_title, checklist_label, is_active').single();
-    if (data) { setChecklists(prev => [...prev, data as ChecklistRow]); setNewClTitle(''); setNewClLabel(''); setCreating(null); }
-  }, [supabase, newClTitle, newClLabel, checklists.length]);
+  const [creating,   setCreating]   = useState<StructureType | null>(null);
 
   // ── Link/unlink ────────────────────────────────────────────────────────────
 
   const toggleLink = useCallback(async (
     personId: number,
     structureType: StructureType,
-    structureId: number
+    structureId: number,
   ) => {
     const tableMap: Record<StructureType, { junction: string; idCol: string; idsKey: keyof PersonLinks }> = {
       info_group: { junction: 'person_info_group_links', idCol: 'info_group_id', idsKey: 'infoGroupIds' },
@@ -264,9 +423,9 @@ export function PeopleStructureSettings({
     };
 
     const { junction, idCol, idsKey } = tableMap[structureType];
-    const personLink = links.find(l => l.person.id === personId);
-    const currentIds = (personLink?.[idsKey] ?? []) as number[];
-    const isLinked = currentIds.includes(structureId);
+    const personLink  = links.find(l => l.person.id === personId);
+    const currentIds  = (personLink?.[idsKey] ?? []) as number[];
+    const isLinked    = currentIds.includes(structureId);
 
     if (isLinked) {
       await supabase.from(junction).delete().eq('person_id', personId).eq(idCol, structureId);
@@ -288,11 +447,12 @@ export function PeopleStructureSettings({
         <span className="settings-section__title">People Structure</span>
       </div>
       <p className="settings-section__desc">
-        Create info groups, lists, logs, and checklists, then link them to people. They'll appear on that person's page.
+        Create info groups, lists, logs, and checklists, then link them to people.
+        They'll appear on that person's page.
       </p>
 
       {/* Create buttons */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+      <div className="structure-create-bar">
         {(['info_group', 'list', 'log', 'checklist'] as StructureType[]).map(t => (
           <Button key={t} size="sm" variant={creating === t ? 'accent' : 'ghost'}
             onClick={() => setCreating(prev => prev === t ? null : t)}>
@@ -304,45 +464,35 @@ export function PeopleStructureSettings({
       {/* Create forms */}
       {creating === 'info_group' && (
         <CreateInfoGroupForm
-          onCreated={(id, title) => { setInfoGroups(prev => [...prev, { id, group_title: title, is_active: true }]); setCreating(null); }}
+          onCreated={(id, title) => {
+            setInfoGroups(prev => [...prev, { id, group_title: title, is_active: true }]);
+            setCreating(null);
+          }}
         />
       )}
       {creating === 'list' && (
-        <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 12, marginBottom: 10 }}>
-          <div className="field-grid">
-            <InputField label="List title" id="nl-title">
-              <input id="nl-title" type="text" value={newListTitle} onChange={e => setNewListTitle(e.target.value)} placeholder="e.g. Milestones" />
-            </InputField>
-            <InputField label="Label (optional)" id="nl-label">
-              <input id="nl-label" type="text" value={newListLabel} onChange={e => setNewListLabel(e.target.value)} placeholder="Short description" />
-            </InputField>
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <Button size="sm" variant="accent" onClick={createList} disabled={!newListTitle.trim()}>Create List</Button>
-            <Button size="sm" variant="ghost" onClick={() => setCreating(null)}>Cancel</Button>
-          </div>
-        </div>
+        <CreateListForm
+          onCreated={(id, title) => {
+            setItemLists(prev => [...prev, { id, list_title: title, list_label: null, is_active: true }]);
+            setCreating(null);
+          }}
+        />
       )}
       {creating === 'log' && (
         <CreateLogForm
-          onCreated={(id, title) => { setLogSchemas(prev => [...prev, { id, log_title: title, is_active: true }]); setCreating(null); }}
+          onCreated={(id, title) => {
+            setLogSchemas(prev => [...prev, { id, log_title: title, is_active: true }]);
+            setCreating(null);
+          }}
         />
       )}
       {creating === 'checklist' && (
-        <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 12, marginBottom: 10 }}>
-          <div className="field-grid">
-            <InputField label="Checklist title" id="nc-title">
-              <input id="nc-title" type="text" value={newClTitle} onChange={e => setNewClTitle(e.target.value)} placeholder="e.g. Morning Routine" />
-            </InputField>
-            <InputField label="Label (optional)" id="nc-label">
-              <input id="nc-label" type="text" value={newClLabel} onChange={e => setNewClLabel(e.target.value)} placeholder="Short description" />
-            </InputField>
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <Button size="sm" variant="accent" onClick={createChecklist} disabled={!newClTitle.trim()}>Create Checklist</Button>
-            <Button size="sm" variant="ghost" onClick={() => setCreating(null)}>Cancel</Button>
-          </div>
-        </div>
+        <CreateChecklistForm
+          onCreated={(id, title) => {
+            setChecklists(prev => [...prev, { id, checklist_title: title, checklist_label: null, is_active: true }]);
+            setCreating(null);
+          }}
+        />
       )}
 
       {/* Per-person linking */}
@@ -351,91 +501,16 @@ export function PeopleStructureSettings({
           ?? { person, infoGroupIds: [], listIds: [], logIds: [], checklistIds: [] };
 
         return (
-          <div key={person.id} style={{ marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid var(--border)' }}>
-            <h4 style={{ margin: '0 0 12px', fontSize: '0.95rem', color: 'var(--text)' }}>
-              {person.person_name}
-            </h4>
-
-            {infoGroups.length > 0 && (
-              <>
-                <p style={{ fontSize: '0.72rem', color: 'var(--text-faint)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 6px' }}>
-                  Info Groups
-                </p>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
-                  {infoGroups.map(g => (
-                    <div key={g.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{g.group_title}</span>
-                      <LinkToggle
-                        linked={pl.infoGroupIds.includes(g.id)}
-                        onToggle={() => toggleLink(person.id, 'info_group', g.id)}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {itemLists.length > 0 && (
-              <>
-                <p style={{ fontSize: '0.72rem', color: 'var(--text-faint)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 6px' }}>
-                  Lists
-                </p>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
-                  {itemLists.map(l => (
-                    <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{l.list_title}</span>
-                      <LinkToggle
-                        linked={pl.listIds.includes(l.id)}
-                        onToggle={() => toggleLink(person.id, 'list', l.id)}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {logSchemas.length > 0 && (
-              <>
-                <p style={{ fontSize: '0.72rem', color: 'var(--text-faint)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 6px' }}>
-                  Logs
-                </p>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
-                  {logSchemas.map(l => (
-                    <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{l.log_title}</span>
-                      <LinkToggle
-                        linked={pl.logIds.includes(l.id)}
-                        onToggle={() => toggleLink(person.id, 'log', l.id)}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {checklists.length > 0 && (
-              <>
-                <p style={{ fontSize: '0.72rem', color: 'var(--text-faint)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 6px' }}>
-                  Checklists
-                </p>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
-                  {checklists.map(c => (
-                    <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{c.checklist_title}</span>
-                      <LinkToggle
-                        linked={pl.checklistIds.includes(c.id)}
-                        onToggle={() => toggleLink(person.id, 'checklist', c.id)}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {infoGroups.length === 0 && itemLists.length === 0 && logSchemas.length === 0 && checklists.length === 0 && (
-              <p className="empty-state">Create some structures above to link them here.</p>
-            )}
-          </div>
+          <PersonStructureLinks
+            key={person.id}
+            person={person}
+            links={pl}
+            infoGroups={infoGroups}
+            itemLists={itemLists}
+            logSchemas={logSchemas}
+            checklists={checklists}
+            onToggle={(type, id) => toggleLink(person.id, type, id)}
+          />
         );
       })}
     </div>

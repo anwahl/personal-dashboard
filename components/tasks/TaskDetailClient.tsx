@@ -173,7 +173,7 @@ export function TaskDetailClient({ task, statuses, priorities, people }: Props) 
 
       <InputField label="Notes" id="td-body">
         <textarea id="td-body" value={bodyMd}
-          onChange={e => setBodyMd(e.target.value)} style={{ minHeight: 80 }} />
+          onChange={e => setBodyMd(e.target.value)} />
       </InputField>
 
       <div className="page-actions">

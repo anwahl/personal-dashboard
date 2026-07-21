@@ -173,7 +173,7 @@ function ChartCard({
       {/* Linked metrics */}
       <div className="chart-settings-card__links">
         {links.length === 0 && (
-          <p className="empty-state" style={{ fontSize: '0.82rem', margin: '4px 0' }}>
+          <p className="empty-state">
             No metrics linked. {meta.requirement}.
           </p>
         )}
@@ -334,7 +334,7 @@ export function ChartSettings({ chartDefinitions, trackables, categories }: Prop
       {/* Top bar */}
       <div className="chart-settings-topbar">
         <div className="chart-settings-topbar__left">
-          <h2 className="settings-section-heading" style={{ margin: 0 }}>Charts</h2>
+          <h2 className="settings-section-heading settings-section-heading--flush">Charts</h2>
           {invalidCount > 0 && <span className="badge badge--warn">{invalidCount} with issues</span>}
         </div>
         <Button variant="accent" size="sm" onClick={() => setShowNew(v => !v)}>

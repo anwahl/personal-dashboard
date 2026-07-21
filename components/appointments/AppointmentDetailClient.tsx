@@ -191,11 +191,11 @@ export function AppointmentDetailClient({ appointment: appt, appointmentTypes, p
       </InputField>
 
       <InputField label="Questions" id="ad-q">
-        <textarea id="ad-q" value={questions} onChange={e => setQs(e.target.value)} style={{ minHeight: 80 }} />
+        <textarea id="ad-q" value={questions} onChange={e => setQs(e.target.value)} />
       </InputField>
 
       <InputField label="Notes" id="ad-notes">
-        <textarea id="ad-notes" value={notes} onChange={e => setNotes(e.target.value)} style={{ minHeight: 80 }} />
+        <textarea id="ad-notes" value={notes} onChange={e => setNotes(e.target.value)} />
       </InputField>
 
       <div className="page-actions">

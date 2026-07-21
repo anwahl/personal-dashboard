@@ -5,12 +5,12 @@ import { createClient } from '@/lib/supabase/client';
 import { Button }       from '@/components/ui/Button';
 
 export interface AddField {
-  key:         string;
-  label:       string;
-  type:        'text' | 'number' | 'color';
+  key:          string;
+  label:        string;
+  type:         'text' | 'number' | 'color';
   placeholder?: string;
-  required?:   boolean;
-  width?:      number;   // px, for short fields like emoji
+  required?:    boolean;
+  width?:       number;   // px, for short fields like emoji
 }
 
 interface Item {
@@ -22,10 +22,10 @@ interface Item {
 interface Props {
   title:       string;
   description?: string;
-  tableName:   string;           // Supabase table name
-  nameColumn:  string;           // which column is the display name
-  items:       any[];            // any[] — table-agnostic; typed row interfaces lack index signatures
-  addFields:   AddField[];       // fields shown in the Add form
+  tableName:   string;
+  nameColumn:  string;
+  items:       any[];
+  addFields:   AddField[];
   renderName?: (item: any) => React.ReactNode;
   extraDefaultFields?: Record<string, string | boolean | number>;
 }
@@ -49,10 +49,9 @@ export function ManageableList({
   const [newVals,  setNewVals]  = useState<Record<string, string>>(
     Object.fromEntries(addFields.map(f => [f.key, '']))
   );
-  const [saving,   setSaving]   = useState(false);
-  const [showInactive, setShowInactive] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const active   = items.filter(i => i.is_active);
+  const active   = items.filter(i =>  i.is_active);
   const inactive = items.filter(i => !i.is_active);
 
   // ── Toggle active ─────────────────────────────────────────────────────────
@@ -77,12 +76,9 @@ export function ManageableList({
           ? (newVals[f.key] ? parseFloat(newVals[f.key]) : null)
           : (newVals[f.key]?.trim() || null);
       }
-      // Only inject sort_order if the table actually has that column
-      // (detected by checking if existing items have it)
       if (items.length > 0 && 'sort_order' in items[0]) {
         payload.sort_order = items.length;
       }
-      // Merge caller-supplied hidden defaults (e.g. track_type for daily_trackables)
       Object.assign(payload, extraDefaultFields);
 
       const { data, error } = await supabase.from(tableName).insert(payload).select().single();
@@ -91,7 +87,7 @@ export function ManageableList({
         setNewVals(Object.fromEntries(addFields.map(f => [f.key, ''])));
       }
     } finally { setSaving(false); }
-  }, [supabase, tableName, addFields, newVals, items]);
+  }, [supabase, tableName, addFields, newVals, items, extraDefaultFields]);
 
   // ── Inline edit ───────────────────────────────────────────────────────────
 
@@ -175,26 +171,25 @@ export function ManageableList({
       {description && <p className="settings-section__desc">{description}</p>}
 
       {/* Active items */}
-      <div style={{ marginBottom: 12 }}>
+      <div className="manage-list">
         {active.length === 0 && <p className="empty-state">None active.</p>}
         {active.map(renderItem)}
       </div>
 
       {/* Inactive */}
       {inactive.length > 0 && (
-        <details style={{ marginBottom: 10 }}>
-          <summary
-            style={{ fontSize: '0.75rem', color: 'var(--text-faint)', cursor: 'pointer', padding: '4px 0' }}
-            onClick={() => setShowInactive(s => !s)}
-          >
+        <details className="manage-inactive">
+          <summary className="manage-inactive__summary">
             {inactive.length} inactive
           </summary>
-          <div style={{ marginTop: 6 }}>{inactive.map(renderItem)}</div>
+          <div className="manage-inactive__body">
+            {inactive.map(renderItem)}
+          </div>
         </details>
       )}
 
       {/* Add form */}
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', paddingTop: 8, borderTop: '1px solid var(--border)' }}>
+      <div className="manage-add-row">
         {addFields.map(f => (
           <input
             key={f.key}
@@ -212,7 +207,7 @@ export function ManageableList({
           onClick={add}
           disabled={saving || !newVals[nameField.key]?.trim()}
         >
-          {saving ? '…' : `+ Add`}
+          {saving ? '…' : '+ Add'}
         </Button>
       </div>
     </div>

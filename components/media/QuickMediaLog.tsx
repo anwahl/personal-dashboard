@@ -224,7 +224,7 @@ export function QuickMediaLog({
       )}
 
       {inProgress.length === 0 && !showAdd && (
-        <p className="empty-state" style={{ fontSize: '0.85rem' }}>Nothing in progress.</p>
+        <p className="empty-state">Nothing in progress.</p>
       )}
 
       {Object.entries(grouped).map(([typeName, items]) => (
