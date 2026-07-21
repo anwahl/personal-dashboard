@@ -408,7 +408,7 @@ html, body {
   touch-action: pan-y;
   display: block;
   margin-top: 15px;
-  margin-bottom: 8px;
+  margin-bottom: 25px;
 }
 
 .slider-field__range::-webkit-slider-thumb {
@@ -1410,6 +1410,8 @@ textarea {
 
 .chart-panel {
   margin-bottom: 28px;
+  border: 1px solid var(--border);
+  padding: 10px;
 }
 
 .chart-panel__controls {
