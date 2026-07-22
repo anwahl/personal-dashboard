@@ -24,7 +24,7 @@ export function TrackableSettings({ trackables }: Props) {
     <div>
       {/* Boolean trackables (habits) — fully manageable */}
       <ManageableList
-        title="Habits"
+        title="Boolean Metrics"
         description="Boolean (done / not done) trackables shown on the Overview tab of the daily entry."
         tableName="daily_trackables"
         nameColumn="name"

@@ -40,7 +40,7 @@ interface Props {
 export function ManageableList({
   title, description, tableName, nameColumn, items: initialItems, addFields, renderName,
   extraDefaultFields = {},
-}: Props) {
+}: Readonly<Props>) {
   const supabase = createClient();
 
   const [items,    setItems]    = useState<Item[]>(initialItems);
@@ -73,7 +73,7 @@ export function ManageableList({
       const payload: Record<string, unknown> = {};
       for (const f of addFields) {
         payload[f.key] = f.type === 'number'
-          ? (newVals[f.key] ? parseFloat(newVals[f.key]) : null)
+          ? (newVals[f.key] ? Number.parseFloat(newVals[f.key]) : null)
           : (newVals[f.key]?.trim() || null);
       }
       if (items.length > 0 && 'sort_order' in items[0]) {
@@ -81,7 +81,7 @@ export function ManageableList({
       }
       Object.assign(payload, extraDefaultFields);
 
-      const { data, error } = await supabase.from(tableName).insert(payload).select().single();
+      const { data, error } = await supabase.from(tableName).upsert(payload).select().single();
       if (!error && data) {
         setItems(prev => [...prev, data as Item]);
         setNewVals(Object.fromEntries(addFields.map(f => [f.key, ''])));
@@ -105,13 +105,34 @@ export function ManageableList({
     const payload: Record<string, unknown> = {};
     for (const f of addFields) {
       payload[f.key] = f.type === 'number'
-        ? (editVals[f.key] ? parseFloat(editVals[f.key]) : null)
+        ? (editVals[f.key] ? Number.parseFloat(editVals[f.key]) : null)
         : (editVals[f.key]?.trim() || null);
     }
     const { data } = await supabase.from(tableName).update(payload).eq('id', editId).select().single();
     if (data) setItems(prev => prev.map(i => i.id === editId ? { ...i, ...data } : i));
     setEditId(null);
   }, [supabase, tableName, editId, editVals, addFields]);
+
+  const handleEditChange = useCallback((key: string, value: string) => {
+    setEditVals(prev => ({ ...prev, [key]: value }));
+  }, []);
+
+  const handleEditKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      saveEdit();
+    }
+    if (e.key === 'Escape') {
+      setEditId(null);
+    }
+  }, [saveEdit]);
+
+  const handleNewChange = useCallback((key: string, value: string) => {
+    setNewVals(prev => ({ ...prev, [key]: value }));
+  }, []);
+
+  const handleNewKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') add();
+  }, [add]);
 
   // ── Render item row ───────────────────────────────────────────────────────
 
@@ -127,10 +148,10 @@ export function ManageableList({
                 key={f.key}
                 type={f.type}
                 value={editVals[f.key] ?? ''}
-                onChange={e => setEditVals(prev => ({ ...prev, [f.key]: e.target.value }))}
+                onChange={e => handleEditChange(f.key, e.target.value)}
                 placeholder={f.placeholder}
                 style={{ flex: f.width ? 'none' : 1, width: f.width ?? undefined }}
-                onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditId(null); }}
+                onKeyDown={handleEditKeyDown}
                 autoFocus={f.key === nameColumn}
               />
             ))}
@@ -195,8 +216,8 @@ export function ManageableList({
             key={f.key}
             type={f.type}
             value={newVals[f.key] ?? ''}
-            onChange={e => setNewVals(prev => ({ ...prev, [f.key]: e.target.value }))}
-            onKeyDown={e => e.key === 'Enter' && add()}
+            onChange={e => handleNewChange(f.key, e.target.value)}
+            onKeyDown={handleNewKeyDown}
             placeholder={f.placeholder ?? f.label}
             style={{ flex: f.width ? 'none' : 1, width: f.width ?? undefined, minWidth: 80 }}
           />
