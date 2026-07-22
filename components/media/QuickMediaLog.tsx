@@ -192,7 +192,7 @@ export function QuickMediaLog({
     <div className="quick-media-log">
       <div className="quick-media-log__header">
         <span className="quick-media-log__title">
-          {compact ? '🎬 Now Playing' : '🎬 Now Playing'}
+          🎬 Now Playing
         </span>
         <Button variant="ghost" size="sm" onClick={() => setShowAdd(s => !s)}>
           {showAdd ? '✕' : '+ Add'}

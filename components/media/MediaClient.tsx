@@ -383,7 +383,7 @@ function MediaItem({ entry, isExpanded, onToggle }: {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
-export function MediaClient({ entries, mediaTypes, mediaStatuses, statusTypeLinks }: Props) {
+export function MediaClient({ entries, mediaTypes, mediaStatuses, genres, statusTypeLinks }: Props) {
   const supabase = createClient();
   const router   = useRouter();
 
