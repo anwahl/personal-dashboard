@@ -24,10 +24,9 @@ import { Button }      from '@/components/ui/Button';
 import { SaveStatus }  from '@/components/ui/Display';
 import type { SaveState } from '@/components/ui/Display';
 import { DailyCard }   from './DailyCard';
-import type { JournalCategoryWithPrompts }                   from '@/types/dal';
 
 import type {
-  DailyEntryDetail, SleepEntryDetail, DailySymptomData,
+  DailyEntryDetail, SleepEntryDetail, DailySymptomData, JournalCategoryWithPrompts,
   EssEntryDetail, PrescriptionDetail, PriorSleepContext, ReferenceData,
 } from '@/types/dal';
 import type { SleepEntryRow } from '@/types/schema';
