@@ -383,7 +383,7 @@ function MediaItem({ entry, isExpanded, onToggle }: Readonly<{
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
-export function MediaClient({ entries, mediaTypes, mediaStatuses, genres, statusTypeLinks }: Props) {
+export function MediaClient({ entries, mediaTypes, mediaStatuses, statusTypeLinks }: Readonly<Props>) {
   const supabase = createClient();
   const router   = useRouter();
 
@@ -415,9 +415,9 @@ export function MediaClient({ entries, mediaTypes, mediaStatuses, genres, status
     setSaving(true);
     try {
       const payload = {
-        media_type_id: parseInt(form.media_type_id),
+        media_type_id: Number.parseInt(form.media_type_id),
         title:         form.title,
-        rating:        form.rating  ? parseInt(form.rating)  : null,
+        rating:        form.rating  ? Number.parseInt(form.rating)  : null,
         platform:      form.platform || null,
         creator:       form.creator  || null,
         notes:         form.notes    || null,
@@ -439,7 +439,7 @@ export function MediaClient({ entries, mediaTypes, mediaStatuses, genres, status
       if (form.status_id && statusChanged) {
         await supabase.from('media_status_entries').insert({
           media_entry_id: entryId,
-          status_id:      parseInt(form.status_id),
+          status_id:      Number.parseInt(form.status_id),
           status_date:    form.status_date || localTodayISO(),
         });
       }
@@ -458,6 +458,33 @@ export function MediaClient({ entries, mediaTypes, mediaStatuses, genres, status
 
   const filtered = localEntries.filter(e => String(e.media_type_id) === activeTypeId);
 
+  const handleTypeChange = (id: string) => {
+    setActiveTypeId(id);
+    setExpandedId(null);
+    setShowAddForm(false);
+  };
+
+  const toggleExpandedEntry = (id: number) => {
+    setExpandedId(prev => prev === id ? null : id);
+  };
+
+  const closeExpandedEntry = () => setExpandedId(null);
+
+  const makeEntryToggle = (id: number) => () => toggleExpandedEntry(id);
+  const makeEntryEdit = (entry: MediaEntryDetail) => () => openEdit(entry);
+
+  const renderEntryRow = (entry: MediaEntryDetail) => {
+    const isExpanded = expandedId === entry.id;
+    return (
+      <div key={entry.id}>
+        <MediaItem entry={entry} isExpanded={isExpanded} onToggle={makeEntryToggle(entry.id)} />
+        {isExpanded && (
+          <MediaItemView entry={entry} onEdit={makeEntryEdit(entry)} onClose={closeExpandedEntry} />
+        )}
+      </div>
+    );
+  };
+
   // Group by current status
   const grouped = mediaStatuses.reduce<Record<string, MediaEntryDetail[]>>((acc, s) => {
     const inStatus = filtered.filter(e => e.current_status?.id === s.id);
@@ -470,8 +497,7 @@ export function MediaClient({ entries, mediaTypes, mediaStatuses, genres, status
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
         <div style={{ flex: 1 }}>
-          <TabBar tabs={typeTabs} active={activeTypeId}
-            onChange={id => { setActiveTypeId(id); setExpandedId(null); setShowAddForm(false); }} />
+          <TabBar tabs={typeTabs} active={activeTypeId} onChange={handleTypeChange} />
         </div>
         <Button variant="accent" size="sm" onClick={openAdd} style={{ marginLeft: 8, flexShrink: 0 }}>+ Add</Button>
       </div>
@@ -493,30 +519,14 @@ export function MediaClient({ entries, mediaTypes, mediaStatuses, genres, status
           <div className="section-divider">
             {STATUS_EMOJI[statusName] ?? ''} {capitalize(statusName)} ({items.length})
           </div>
-          {items.map(e => (
-            <div key={e.id}>
-              <MediaItem entry={e} isExpanded={expandedId === e.id}
-                onToggle={() => setExpandedId(prev => prev === e.id ? null : e.id)} />
-              {expandedId === e.id && (
-                <MediaItemView entry={e} onEdit={() => openEdit(e)} onClose={() => setExpandedId(null)} />
-              )}
-            </div>
-          ))}
+          {items.map(renderEntryRow)}
         </div>
       ))}
 
       {ungrouped.length > 0 && (
         <div style={{ marginBottom: 20 }}>
           <div className="section-divider">No status</div>
-          {ungrouped.map(e => (
-            <div key={e.id}>
-              <MediaItem entry={e} isExpanded={expandedId === e.id}
-                onToggle={() => setExpandedId(prev => prev === e.id ? null : e.id)} />
-              {expandedId === e.id && (
-                <MediaItemView entry={e} onEdit={() => openEdit(e)} onClose={() => setExpandedId(null)} />
-              )}
-            </div>
-          ))}
+          {ungrouped.map(renderEntryRow)}
         </div>
       )}
     </div>

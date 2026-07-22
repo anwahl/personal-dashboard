@@ -8,10 +8,10 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
-export default async function TaskDetailPage({ params }: Props) {
+export default async function TaskDetailPage({ params }: Readonly<Props>) {
   const { id } = await params;
-  const numId  = parseInt(id);
-  if (isNaN(numId)) notFound();
+  const numId  = Number.parseInt(id);
+  if (Number.isNaN(numId)) notFound();
 
   const supabase = await createClient();
   const task     = await getTaskById(supabase, numId);

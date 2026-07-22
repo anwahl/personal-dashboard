@@ -7,7 +7,7 @@ interface Props {
   params: Promise<{ slug: string }>;
 }
 
-export default async function PersonPage({ params }: Props) {
+export default async function PersonPage({ params }: Readonly<Props>) {
   const { slug }   = await params;
   const supabase   = await createClient();
 

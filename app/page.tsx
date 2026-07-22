@@ -1,18 +1,18 @@
-import Link                         from 'next/link';
-import { createClient }             from '@/lib/supabase/server';
-import { localTodayISO }            from '@/lib/dal/daily';
-import { getRecentIntention }       from '@/lib/dal/daily';
-import { getTasksByDateContext }     from '@/lib/dal/tasks';
-import { getUpcomingAppointments }  from '@/lib/dal/appointments';
-import { getTaskStatuses, getTaskPriorities, getPeople } from '@/lib/dal/reference';
-import { HubClock }                 from '@/components/hub/HubClock';
-import { LastTimeTracker }           from '@/components/last-time/LastTimeTracker';
-import { QuickMediaLog }             from '@/components/media/QuickMediaLog';
-import { getLastTimeEntries }        from '@/lib/dal/lasttime';
-import { getInProgressMediaEntries } from '@/lib/dal/media';
-import { getMediaTypes, getMediaStatuses, getMediaStatusTypeLinks } from '@/lib/dal/reference';
-import { TaskList }                 from '@/components/tasks/TaskList';
-import { UpcomingAppointments }     from '@/components/appointments/UpcomingAppointments';
+import Link                                     from 'next/link';
+import { createClient }                         from '@/lib/supabase/server';
+import { localTodayISO, getRecentIntention }    from '@/lib/dal/daily';
+import { getTasksByDateContext }                from '@/lib/dal/tasks';
+import { getUpcomingAppointments }              from '@/lib/dal/appointments';
+import {  getTaskStatuses, getTaskPriorities, getPeople,
+          getMediaTypes, getMediaStatuses, getMediaStatusTypeLinks } 
+                                                from '@/lib/dal/reference';
+import { HubClock }                             from '@/components/hub/HubClock';
+import { LastTimeTracker }                      from '@/components/last-time/LastTimeTracker';
+import { QuickMediaLog }                        from '@/components/media/QuickMediaLog';
+import { getLastTimeEntries }                   from '@/lib/dal/lasttime';
+import { getInProgressMediaEntries }            from '@/lib/dal/media';
+import { TaskList }                             from '@/components/tasks/TaskList';
+import { UpcomingAppointments }                 from '@/components/appointments/UpcomingAppointments';
 
 export default async function HubPage() {
   const today    = localTodayISO();
@@ -74,7 +74,6 @@ export default async function HubPage() {
           mediaTypes={mediaTypes}
           mediaStatuses={mediaStatuses}
           statusTypeLinks={statusTypeLinks}
-          compact
         />
       </div>
 

@@ -14,7 +14,6 @@ import { createClient }    from '@/lib/supabase/client';
 import { togglePrescriptionEntry } from '@/lib/dal/daily';
 import { setEssResponse }          from '@/lib/dal/ess';
 import { formatTime } from '@/lib/utils/dates';
-
 import { Card, CardHeader, CardTitle, CardBody, CardSection, CardSectionLabel } from '@/components/ui/Card';
 import { TabBar, Toggle }          from '@/components/ui/Controls';
 import { JournalTab }       from './JournalTab';
@@ -24,7 +23,7 @@ import { InputField, SaveState } from '@/components/ui/Display';
 
 import { TagSelector }   from '@/components/ui/TagSelector';
 import type {
-  JournalCategoryWithPrompts, DailyEntryDetail, SleepEntryDetail, DailySymptomData,
+  JournalCategoryWithPrompts, DailyEntryDetail,
   EssEntryDetail, PrescriptionDetail, PriorSleepContext, ReferenceData,
 } from '@/types/dal';
 import type {  JournalState, DailyOverviewState, SymptomFormState, SleepFormState, MetricState, } from './DailyPageClient';
@@ -46,7 +45,7 @@ type TabId = typeof TABS[number]['id'];
 
 const SEVERITY_MAX = 10;
 
-function Rating({ value, max = SEVERITY_MAX }: { value: number | null | undefined; max?: number }) {
+function Rating({ value, max = SEVERITY_MAX }: Readonly<{ value: number | null | undefined; max?: number }>) {
   if (value == null) return <span className="metric-display__value metric-display__value--empty">–</span>;
   return (
     <span className="metric-display__value">
@@ -61,7 +60,7 @@ function OverviewTab({
   mode, state, setState,
   trackables, checkedTrackableIds, toggleBoolean,
   tags, tagIds, toggleTag, addNewTag,
-}: {
+}: Readonly<{
   mode: Mode;
   state: DailyOverviewState;
   setState: React.Dispatch<React.SetStateAction<DailyOverviewState>>;
@@ -72,7 +71,7 @@ function OverviewTab({
   tagIds: number[];
   toggleTag: (id: number) => void;
   addNewTag: (v: string) => Promise<void>;
-}) {
+}>) {
   const set = <K extends keyof DailyOverviewState>(k: K, v: DailyOverviewState[K]) =>
     setState(prev => ({ ...prev, [k]: v }));
 
@@ -219,12 +218,12 @@ function OverviewTab({
 
 function MetricsTab({
   mode, trackables, metricState, setMetricState,
-}: {
+}: Readonly<{
   mode: Mode;
   trackables: ReferenceData['trackables'];
   metricState: MetricState;
   setMetricState: React.Dispatch<React.SetStateAction<MetricState>>;
-}) {
+}>) {
   const numericTrackables = trackables.filter(t => t.track_type === 'numeric');
 
   if (!numericTrackables.length) {
@@ -266,13 +265,13 @@ function MetricsTab({
 
 function SymptomsTab({
   mode, state, setState, hasSymptomData, reference,
-}: {
+}: Readonly<{
   mode: Mode;
   state: SymptomFormState;
   setState: React.Dispatch<React.SetStateAction<SymptomFormState>>;
   hasSymptomData: boolean;
   reference: ReferenceData;
-}) {
+}>) {
   const set = <K extends keyof SymptomFormState>(k: K, v: SymptomFormState[K]) =>
     setState(prev => ({ ...prev, [k]: v }));
 
@@ -374,12 +373,12 @@ function SymptomsTab({
 
 function MedsTab({
   mode, entryId, prescriptions, prescriptionIds: initialIds,
-}: {
+}: Readonly<{
   mode: Mode;
   entryId: number;
   prescriptions: PrescriptionDetail[];
   prescriptionIds: number[];
-}) {
+}>) {
   const supabase = createClient();
   const [takenIds, setTakenIds] = useState<number[]>(initialIds);
   const [pending,  setPending]  = useState<Set<number>>(new Set());
@@ -461,13 +460,13 @@ function MedsTab({
 
 function EssTab({
   entryId, ess, questionTypes, answerTypes, mode,
-}: {
+}: Readonly<{
   entryId: number;
   ess: EssEntryDetail | null;
   questionTypes: EssQuestionTypeRow[];
   answerTypes:   EssAnswerTypeRow[];
   mode: Mode;
-}) {
+}>) {
   const supabase = createClient();
   const initialResponses: Record<number, number> = {};
   ess?.responses.forEach(r => { initialResponses[r.question_type_id] = r.answer_type_id; });
@@ -555,14 +554,14 @@ function EssTab({
 
 function SleepTab({
   mode, sleepState, setSleepState, hasSleepData, priorSleep, reference,
-}: {
+}: Readonly<{
   mode: Mode;
   sleepState: SleepFormState;
   setSleepState: React.Dispatch<React.SetStateAction<SleepFormState>>;
   hasSleepData: boolean;
   priorSleep: PriorSleepContext | null;
   reference: ReferenceData;
-}) {
+}>) {
   const set = <K extends keyof SleepFormState>(k: K, v: SleepFormState[K]) =>
     setSleepState(prev => ({ ...prev, [k]: v }));
 
@@ -939,7 +938,7 @@ export function DailyCard({
   symptomState, setSymptomState, hasSymptomData,
   priorSleep, ess, prescriptions, reference,
   journalState, setJournalState, journalCategories, onSaveJournal, journalSaveState,
-}: Props) {
+}: Readonly<Props>) {
   const [tab, setTab] = useState<TabId>('overview');
 
   return (

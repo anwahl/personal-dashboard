@@ -2,7 +2,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
-  MediaEntryRow, MediaTypeRow, MediaStatusRow, MediaStatusEntryRow,
+  MediaEntryRow, MediaTypeRow, MediaStatusRow, MediaStatusEntryRow, MediaNoteRow
 } from '@/types/schema';
 import type { MediaEntryDetail, MediaEntryInsert, MediaEntryUpdate } from '@/types/dal';
 
@@ -52,7 +52,10 @@ async function enrich(client: Client, rows: MediaEntryRow[]): Promise<MediaEntry
   const typeMap   = new Map(types.map(t => [t.id, t]));
   const statusMap = new Map(statuses.map(s => [s.id, s]));
   const genreMap  = genreEntries.reduce<Record<number, number[]>>((acc, ge) => {
-    (acc[ge.media_entry_id] ??= []).push(ge.genre_id);
+    // Ensure an array exists for this media_entry_id and push the genre_id
+    const entryId = ge.media_entry_id;
+    const list = acc[entryId] ?? (acc[entryId] = []);
+    list.push(ge.genre_id);
     return acc;
   }, {});
 
@@ -152,7 +155,6 @@ export async function addMediaStatusEntry(
 
 // ── Media notes ───────────────────────────────────────────────────────────────
 
-import type { MediaNoteRow } from '@/types/schema';
 
 export async function getMediaNotes(
   client: Client,

@@ -10,13 +10,12 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { createClient }           from '@/lib/supabase/client';
-import { getBrainDumps }          from '@/lib/dal/daily';
-import { deleteBrainDump }        from '@/lib/dal/daily';
-import { BrainDumpQuickAdd }      from '@/components/brain-dump/BrainDumpQuickAdd';
-import { Button }                 from '@/components/ui/Button';
-import { Markdown }               from '@/components/ui/Markdown';
-import type { BrainDumpWithEntry } from '@/lib/dal/daily';
+import { createClient }                     from '@/lib/supabase/client';
+import { getBrainDumps, deleteBrainDump }   from '@/lib/dal/daily';
+import { BrainDumpQuickAdd }                from '@/components/brain-dump/BrainDumpQuickAdd';
+import { Button }                           from '@/components/ui/Button';
+import { Markdown }                         from '@/components/ui/Markdown';
+import type { BrainDumpWithEntry }          from '@/lib/dal/daily';
 
 function fmtDate(d: string) {
   const [y, m, day] = d.split('-').map(Number);
@@ -25,7 +24,9 @@ function fmtDate(d: string) {
   });
 }
 
-function BrainDumpCard({ dump, onDelete }: { dump: BrainDumpWithEntry; onDelete: (id: number) => void }) {
+function BrainDumpCard({ dump, onDelete }: Readonly<{ 
+    dump: BrainDumpWithEntry; 
+    onDelete: (id: number) => void }>) {
   const [expanded,   setExpanded]   = useState(false);
   const [confirming, setConfirming] = useState(false);
 

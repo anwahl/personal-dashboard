@@ -87,7 +87,7 @@ function entryToForm(e: MediaEntryDetail): FormState {
 
 export function MediaDetailClient({
   entry: initial, statusHistory, mediaTypes, mediaStatuses, statusTypeLinks,
-}: Props) {
+}: Readonly<Props>) {
   const supabase = createClient();
   const router   = useRouter();
 
@@ -141,7 +141,7 @@ export function MediaDetailClient({
         title:    form.title.trim(),
         creator:  form.creator.trim()  || null,
         platform: form.platform.trim() || null,
-        rating:   form.rating          ? parseInt(form.rating) : null,
+        rating:   form.rating          ? Number.parseInt(form.rating) : null,
         notes:    form.notes.trim()    || null,
         review:   form.review.trim()   || null,
       };
@@ -153,7 +153,7 @@ export function MediaDetailClient({
       if (form.status_id && statusChanged) {
         await supabase.from('media_status_entries').insert({
           media_entry_id: entry.id,
-          status_id:      parseInt(form.status_id),
+          status_id:      Number.parseInt(form.status_id),
           status_date:    form.status_date || localTodayISO(),
         }).throwOnError();
       }

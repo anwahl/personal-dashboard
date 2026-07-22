@@ -47,10 +47,15 @@ async function searchTmdb(
   return (data.results ?? []).slice(0, 8).map((r: Record<string, unknown>) => ({
     external_id: String(r.id),
     title:       (r.title ?? r.name ?? '') as string,
-    year:        r.release_date ? parseInt(String(r.release_date).slice(0, 4)) :
-                 r.first_air_date ? parseInt(String(r.first_air_date).slice(0, 4)) : undefined,
+    year:        typeof r.release_date === 'string'
+                    ? Number.parseInt(r.release_date.slice(0, 4))
+                    : typeof r.first_air_date === 'string'
+                      ? Number.parseInt(r.first_air_date.slice(0, 4))
+                      : undefined,
     overview:    (r.overview as string | undefined) ?? undefined,
-    poster_url:  r.poster_path ? `https://image.tmdb.org/t/p/w92${r.poster_path}` : undefined,
+    poster_url:  typeof r.poster_path === 'string' && r.poster_path
+            ? `https://image.tmdb.org/t/p/w92${r.poster_path}`
+            : undefined,
   }));
 }
 
@@ -70,7 +75,9 @@ async function searchOpenLibrary(query: string): Promise<MediaSearchResult[]> {
     title:       (r.title as string) ?? '',
     creator:     (r.author_name as string[] | undefined)?.[0],
     year:        r.first_publish_year as number | undefined,
-    poster_url:  r.cover_i ? `https://covers.openlibrary.org/b/id/${r.cover_i}-S.jpg` : undefined,
+    poster_url:  typeof r.cover_i === 'number'
+      ? `https://covers.openlibrary.org/b/id/${r.cover_i}-S.jpg`
+      : undefined,
   }));
 }
 
@@ -91,7 +98,9 @@ async function searchRawg(query: string): Promise<MediaSearchResult[]> {
   return (data.results ?? []).slice(0, 8).map((r: Record<string, unknown>) => ({
     external_id: String(r.id),
     title:       (r.name as string) ?? '',
-    year:        r.released ? parseInt(String(r.released).slice(0, 4)) : undefined,
+    year:        typeof r.released === 'string'
+                    ? Number.parseInt(r.released.slice(0, 4))
+                    : undefined,
     poster_url:  (r.background_image as string | undefined) ?? undefined,
     platform:    (r.platforms as { platform: { name: string } }[] | undefined)
       ?.slice(0, 3).map(p => p.platform.name).join(', '),

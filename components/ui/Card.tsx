@@ -6,15 +6,15 @@ interface CardProps {
   style?:     React.CSSProperties;
 }
 
-export function Card({ children, className, style }: CardProps) {
+export function Card({ children, className, style }: Readonly<CardProps>) {
   return <div className={['card', className].filter(Boolean).join(' ')} style={style}>{children}</div>;
 }
 
-export function CardHeader({ children, className }: CardProps) {
+export function CardHeader({ children, className }: Readonly<CardProps>) {
   return <div className={['card__header', className].filter(Boolean).join(' ')}>{children}</div>;
 }
 
-export function CardTitle({ children }: { children: ReactNode }) {
+export function CardTitle({ children }: Readonly<{ children: ReactNode }>) {
   return <span className="card__title">{children}</span>;
 }
 
@@ -25,14 +25,14 @@ export function CardBody({ children, flush, className }: CardProps & { flush?: b
   return <div className={classes}>{children}</div>;
 }
 
-export function CardFooter({ children, className }: CardProps) {
+export function CardFooter({ children, className }: Readonly<CardProps>) {
   return <div className={['card__footer', className].filter(Boolean).join(' ')}>{children}</div>;
 }
 
-export function CardSection({ children, className }: CardProps) {
+export function CardSection({ children, className }: Readonly<CardProps>) {
   return <div className={['card__section', className].filter(Boolean).join(' ')}>{children}</div>;
 }
 
-export function CardSectionLabel({ children }: { children: ReactNode }) {
+export function CardSectionLabel({ children }: Readonly<{ children: ReactNode }>) {
   return <p className="card__section-label">{children}</p>;
 }

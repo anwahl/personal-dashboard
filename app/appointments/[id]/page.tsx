@@ -1,17 +1,17 @@
 import { notFound }                from 'next/navigation';
 import { createClient }            from '@/lib/supabase/server';
 import { getAppointmentById }      from '@/lib/dal/appointments';
-import { getAppointmentTypes, getProviderTypes, getPeople } from '@/lib/dal/reference';
+import { getAppointmentTypes, getPeople } from '@/lib/dal/reference';
 import { AppointmentDetailClient } from '@/components/appointments/AppointmentDetailClient';
 
 interface Props {
   params: Promise<{ id: string }>;
 }
 
-export default async function AppointmentDetailPage({ params }: Props) {
+export default async function AppointmentDetailPage({ params }: Readonly<Props>) {
   const { id } = await params;
-  const numId  = parseInt(id);
-  if (isNaN(numId)) notFound();
+  const numId  = Number.parseInt(id);
+  if (Number.isNaN(numId)) notFound();
 
   const supabase = await createClient();
   const appt     = await getAppointmentById(supabase, numId);

@@ -20,7 +20,7 @@ interface Props {
 const TICK_MAX = 10;
 const Y_TICKS  = [0, 2, 4, 6, 8, 10];
 
-export function BarChart({ chart, data }: Props) {
+export function BarChart({ chart, data }: Readonly<Props>) {
   const seriesLinks = chart.links.filter(l => l.metric_role === 'series');
   const [hovered, setHovered] = useState<{ date: string; trackableId: number; value: number } | null>(null);
 

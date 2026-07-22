@@ -10,9 +10,7 @@ import type { CrashRow, AnxietyEntryRow, DailySymptomEntryRow } from '@/types/sc
 import type {
   DailySymptomData,
   CrashInsert,
-  CrashUpdate,
   AnxietyEntryInsert,
-  AnxietyEntryUpdate,
 } from '@/types/dal';
 
 type Client = SupabaseClient;
@@ -60,29 +58,32 @@ export async function setDailySymptomEntries(
     .throwOnError();
 }
 
-export async function toggleDailySymptomEntry(
+export async function addDailySymptomEntry(
   client: Client,
   entryId:       number,
   symptomTypeId: number,
-  active:        boolean,
   severity?:     number | null
 ): Promise<void> {
-  if (active) {
-    await client
-      .from('daily_symptom_entries')
-      .upsert(
-        { entry_id: entryId, symptom_type_id: symptomTypeId, severity: severity ?? null },
-        { onConflict: 'entry_id,symptom_type_id' }
-      )
-      .throwOnError();
-  } else {
-    await client
-      .from('daily_symptom_entries')
-      .delete()
-      .eq('entry_id', entryId)
-      .eq('symptom_type_id', symptomTypeId)
-      .throwOnError();
-  }
+  await client
+    .from('daily_symptom_entries')
+    .upsert(
+      { entry_id: entryId, symptom_type_id: symptomTypeId, severity: severity ?? null },
+      { onConflict: 'entry_id,symptom_type_id' }
+    )
+    .throwOnError();
+}
+
+export async function removeDailySymptomEntry(
+  client: Client,
+  entryId:       number,
+  symptomTypeId: number
+): Promise<void> {
+  await client
+    .from('daily_symptom_entries')
+    .delete()
+    .eq('entry_id', entryId)
+    .eq('symptom_type_id', symptomTypeId)
+    .throwOnError();
 }
 
 // ── Crashes ───────────────────────────────────────────────────────────────────

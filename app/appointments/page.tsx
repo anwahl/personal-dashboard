@@ -1,8 +1,7 @@
 import { createClient }        from '@/lib/supabase/server';
 import { getAllAppointments }   from '@/lib/dal/appointments';
-import { getAppointmentTypes, getProviderTypes, getPeople } from '@/lib/dal/reference';
+import { getAppointmentTypes, getPeople } from '@/lib/dal/reference';
 import { AppointmentsClient }  from '@/components/appointments/AppointmentsClient';
-import { getAllPrescriptions }  from '@/lib/dal/prescriptions';
 
 export default async function AppointmentsPage() {
   const supabase = await createClient();

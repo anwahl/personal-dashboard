@@ -80,27 +80,31 @@ export async function saveNumericEntries(
 
 // ── Boolean entries (habits) ──────────────────────────────────────────────────
 
-/** Toggle a single boolean trackable for an entry. */
-export async function toggleBooleanEntry(
+/** Upsert a single boolean trackable for an entry. */
+export async function upsertBooleanEntry(
   client: Client,
-  entryId:     number,
-  trackableId: number,
-  done:        boolean
+  entryId: number,
+  trackableId: number
 ): Promise<void> {
-  if (done) {
-    await client
-      .from('habit_entries')
-      .upsert(
-        { entry_id: entryId, trackable_id: trackableId },
-        { onConflict: 'entry_id,trackable_id' }
-      )
-      .throwOnError();
-  } else {
-    await client
-      .from('habit_entries')
-      .delete()
-      .eq('entry_id', entryId)
-      .eq('trackable_id', trackableId)
-      .throwOnError();
-  }
+  await client
+    .from('habit_entries')
+    .upsert(
+      { entry_id: entryId, trackable_id: trackableId },
+      { onConflict: 'entry_id,trackable_id' }
+    )
+    .throwOnError();
+}
+
+/** Delete a boolean trackable entry (= "not logged"). */
+export async function deleteBooleanEntry(
+  client: Client,
+  entryId: number,
+  trackableId: number
+): Promise<void> {
+  await client
+    .from('habit_entries')
+    .delete()
+    .eq('entry_id', entryId)
+    .eq('trackable_id', trackableId)
+    .throwOnError();
 }

@@ -6,14 +6,13 @@ import { getSleepEntry, getPriorSleepContext } from '@/lib/dal/sleep';
 import { getDailySymptomData }           from '@/lib/dal/symptoms';
 import { getEssEntry }                   from '@/lib/dal/ess';
 import { getActivePrescriptions }        from '@/lib/dal/prescriptions';
-import { getReferenceData }              from '@/lib/dal/reference';
 import { DailyPageClient }               from '@/components/daily-log/DailyPageClient';
 import { TaskList }                      from '@/components/tasks/TaskList';
 import { UpcomingAppointments }          from '@/components/appointments/UpcomingAppointments';
 import { getTasksByDateContext }          from '@/lib/dal/tasks';
 import { getJournalResponsesForEntry }    from '@/lib/dal/journal';
 import { getUpcomingAppointments }       from '@/lib/dal/appointments';
-import { getTaskStatuses, getTaskPriorities } from '@/lib/dal/reference';
+import { getTaskStatuses, getTaskPriorities, getReferenceData } from '@/lib/dal/reference';
 
 interface Props {
   params: Promise<{ date: string }>;
@@ -33,7 +32,7 @@ function formatShort(dateStr: string): string {
   });
 }
 
-export default async function DailyPage({ params }: Props) {
+export default async function DailyPage({ params }: Readonly<Props>) {
   const { date } = await params;
 
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) notFound();

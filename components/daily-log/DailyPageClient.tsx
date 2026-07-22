@@ -15,7 +15,7 @@ import { createClient }           from '@/lib/supabase/client';
 import { localTodayISO } from '@/lib/utils/dates';
 
 import { updateDailyEntry, toggleTagEntry, upsertBrainDump } from '@/lib/dal/daily';
-import { toggleBooleanEntry, saveNumericEntries }            from '@/lib/dal/trackables';
+import { saveNumericEntries, upsertBooleanEntry, deleteBooleanEntry }            from '@/lib/dal/trackables';
 import { upsertSleepEntry, upsertNap, deleteNap, upsertWakeEvents,
          setSleepEvents, setSleepTimingEntry, setSleepConsumptionEntries } from '@/lib/dal/sleep';
 import { setDailySymptomEntries, upsertCrash, deleteCrash,
@@ -199,7 +199,8 @@ export function DailyPageClient({
       nowDone ? [...prev, trackableId] : prev.filter(id => id !== trackableId)
     );
     try {
-      await toggleBooleanEntry(supabase, entry.id, trackableId, nowDone);
+      nowDone ? await upsertBooleanEntry(supabase, entry.id, trackableId) 
+              : await deleteBooleanEntry(supabase, entry.id, trackableId);
     } catch {
       setCheckedTrackableIds(prev =>
         nowDone ? prev.filter(id => id !== trackableId) : [...prev, trackableId]

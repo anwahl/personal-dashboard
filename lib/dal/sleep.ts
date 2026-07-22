@@ -13,7 +13,6 @@ import type {
 } from '@/types/schema';
 import type {
   SleepEntryDetail,
-  SleepEntryInsert,
   SleepEntryUpdate,
   PriorSleepContext,
 } from '@/types/dal';
@@ -246,25 +245,28 @@ export async function setSleepEvents(
     .throwOnError();
 }
 
-export async function toggleSleepEvent(
+export async function addSleepEvent(
   client: Client,
   sleepEntryId: number,
-  eventTypeId: number,
-  active: boolean
+  eventTypeId: number
 ): Promise<void> {
-  if (active) {
-    await client
-      .from('sleep_events')
-      .upsert({ sleep_entry_id: sleepEntryId, event_type_id: eventTypeId }, { onConflict: 'sleep_entry_id,event_type_id' })
-      .throwOnError();
-  } else {
-    await client
-      .from('sleep_events')
-      .delete()
-      .eq('sleep_entry_id', sleepEntryId)
-      .eq('event_type_id', eventTypeId)
-      .throwOnError();
-  }
+  await client
+    .from('sleep_events')
+    .upsert({ sleep_entry_id: sleepEntryId, event_type_id: eventTypeId }, { onConflict: 'sleep_entry_id,event_type_id' })
+    .throwOnError();
+}
+
+export async function removeSleepEvent(
+  client: Client,
+  sleepEntryId: number,
+  eventTypeId: number
+): Promise<void> {
+  await client
+    .from('sleep_events')
+    .delete()
+    .eq('sleep_entry_id', sleepEntryId)
+    .eq('event_type_id', eventTypeId)
+    .throwOnError();
 }
 
 // ── Timing entries ────────────────────────────────────────────────────────────
@@ -311,23 +313,26 @@ export async function setSleepConsumptionEntries(
     .throwOnError();
 }
 
-export async function toggleSleepConsumptionEntry(
+export async function addSleepConsumptionEntry(
   client: Client,
   sleepEntryId: number,
-  consumptionTypeId: number,
-  active: boolean
+  consumptionTypeId: number
 ): Promise<void> {
-  if (active) {
-    await client
-      .from('sleep_consumption_entries')
-      .upsert({ sleep_entry_id: sleepEntryId, consumption_type_id: consumptionTypeId }, { onConflict: 'sleep_entry_id,consumption_type_id' })
-      .throwOnError();
-  } else {
-    await client
-      .from('sleep_consumption_entries')
-      .delete()
-      .eq('sleep_entry_id', sleepEntryId)
-      .eq('consumption_type_id', consumptionTypeId)
-      .throwOnError();
-  }
+  await client
+    .from('sleep_consumption_entries')
+    .upsert({ sleep_entry_id: sleepEntryId, consumption_type_id: consumptionTypeId }, { onConflict: 'sleep_entry_id,consumption_type_id' })
+    .throwOnError();
+}
+
+export async function removeSleepConsumptionEntry(
+  client: Client,
+  sleepEntryId: number,
+  consumptionTypeId: number
+): Promise<void> {
+  await client
+    .from('sleep_consumption_entries')
+    .delete()
+    .eq('sleep_entry_id', sleepEntryId)
+    .eq('consumption_type_id', consumptionTypeId)
+    .throwOnError();
 }
