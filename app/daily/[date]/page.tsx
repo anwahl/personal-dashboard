@@ -11,6 +11,7 @@ import { DailyPageClient }               from '@/components/daily-log/DailyPageC
 import { TaskList }                      from '@/components/tasks/TaskList';
 import { UpcomingAppointments }          from '@/components/appointments/UpcomingAppointments';
 import { getTasksByDateContext }          from '@/lib/dal/tasks';
+import { getJournalResponsesForEntry }    from '@/lib/dal/journal';
 import { getUpcomingAppointments }       from '@/lib/dal/appointments';
 import { getTaskStatuses, getTaskPriorities } from '@/lib/dal/reference';
 
@@ -42,7 +43,7 @@ export default async function DailyPage({ params }: Props) {
   const reference = await getReferenceData(supabase);
   const self      = reference.people.find(p => p.is_self);
 
-  const [sleep, symptoms, ess, prescriptions, priorSleep, taskData, appointments, statuses, priorities] = await Promise.all([
+  const [sleep, symptoms, ess, prescriptions, priorSleep, taskData, appointments, statuses, priorities, journalResponses] = await Promise.all([
     getSleepEntry(supabase, entry.id),
     getDailySymptomData(supabase, entry.id),
     getEssEntry(supabase, entry.id),
@@ -52,6 +53,7 @@ export default async function DailyPage({ params }: Props) {
     getUpcomingAppointments(supabase, date, 6),
     getTaskStatuses(supabase, true),
     getTaskPriorities(supabase),
+    getJournalResponsesForEntry(supabase, entry.id),
   ]);
 
   const prevDate = addDays(date, -1);
@@ -83,6 +85,7 @@ export default async function DailyPage({ params }: Props) {
         ess={ess}
         prescriptions={prescriptions}
         reference={reference}
+        journalResponses={journalResponses}
       />
 
       <div className="daily-extras">

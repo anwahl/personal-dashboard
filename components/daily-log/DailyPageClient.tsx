@@ -17,11 +17,14 @@ import { upsertSleepEntry, upsertNap, deleteNap, upsertWakeEvents,
          setSleepEvents, setSleepTimingEntry, setSleepConsumptionEntries } from '@/lib/dal/sleep';
 import { setDailySymptomEntries, upsertCrash, deleteCrash,
          upsertAnxiety, deleteAnxiety }                      from '@/lib/dal/symptoms';
+import { saveJournalResponses }                              from '@/lib/dal/journal';
+import type { JournalResponseDetail }                        from '@/lib/dal/journal';
 
 import { Button }      from '@/components/ui/Button';
 import { SaveStatus }  from '@/components/ui/Display';
 import type { SaveState } from '@/components/ui/Display';
 import { DailyCard }   from './DailyCard';
+import type { JournalCategoryWithPrompts }                   from '@/types/dal';
 
 import type {
   DailyEntryDetail, SleepEntryDetail, DailySymptomData,
@@ -74,7 +77,20 @@ export interface SleepFormState {
   consumptionIds:  number[];
 }
 
-// ── State initialisers ────────────────────────────────────────────────────────
+// ── Journal card state ───────────────────────────────────────────────────────
+
+export interface JournalCard {
+  clientId:     string;    // browser-side key
+  categoryId:   number;
+  promptId:     number;
+  promptText:   string;
+  responseText: string;
+  dbId:         number | null;  // null = not yet saved to DB
+}
+
+export type JournalState = JournalCard[];
+
+// ── State initialisers ─────────────────────────────────────────────────────────
 
 function initOverviewState(entry: DailyEntryDetail): DailyOverviewState {
   return {
@@ -128,10 +144,22 @@ function initSleepState(sleep: SleepEntryDetail | null): SleepFormState {
   };
 }
 
+function initJournalState(responses: JournalResponseDetail[]): JournalState {
+  return responses.map((r, i) => ({
+    clientId:     `loaded-${i}`,
+    categoryId:   r.category_id,
+    promptId:     r.prompt_id,
+    promptText:   r.prompt_text,
+    responseText: r.response_text ?? '',
+    dbId:         r.id,
+  }));
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 interface Props {
   entry:         DailyEntryDetail;
+  journalResponses: JournalResponseDetail[];
   date:          string;
   sleep:         SleepEntryDetail | null;
   priorSleep:    PriorSleepContext | null;
@@ -147,7 +175,7 @@ function localTodayISO(): string {
 }
 
 export function DailyPageClient({
-  entry, date, sleep, priorSleep, symptoms, ess, prescriptions, reference,
+  entry, date, sleep, priorSleep, symptoms, ess, prescriptions, reference, journalResponses,
 }: Props) {
   const supabase = createClient();
   const router   = useRouter();
@@ -163,6 +191,9 @@ export function DailyPageClient({
   const [metricState,   setMetricState]   = useState<MetricState>(() => initMetricState(entry));
   const [symptomState,  setSymptomState]  = useState<SymptomFormState>(() => initSymptomState(symptoms));
   const [sleepState,    setSleepState]    = useState<SleepFormState>(() => initSleepState(sleep));
+
+  const [journalState,   setJournalState]   = useState<JournalState>(() => initJournalState(journalResponses));
+  const [journalSaveState, setJournalSaveState] = useState<SaveState>('idle');
 
   const [checkedTrackableIds, setCheckedTrackableIds] = useState<number[]>(entry.checked_trackable_ids);
   const [tagIds, setTagIds] = useState<number[]>(entry.tag_ids);
@@ -215,6 +246,23 @@ export function DailyPageClient({
       await toggleTagEntry(supabase, entry.id, tagId, true);
     }
   }, [tagIds, supabase, entry.id]);
+
+  // ── Journal-only save (tab Save button) ──────────────────────────────────
+
+  const saveJournal = async () => {
+    setJournalSaveState('saving');
+    try {
+      await saveJournalResponses(supabase, entry.id, journalState.map(c => ({
+        promptId:     c.promptId,
+        responseText: c.responseText,
+        dbId:         c.dbId,
+      })));
+      setJournalSaveState('ok');
+      setTimeout(() => setJournalSaveState('idle'), 2500);
+    } catch {
+      setJournalSaveState('error');
+    }
+  };
 
   // ── Batch save ────────────────────────────────────────────────────────────
 
@@ -304,6 +352,13 @@ export function DailyPageClient({
         setHasSymptomData(true);
       }
 
+      // 4. Journal responses
+      await saveJournalResponses(supabase, entry.id, journalState.map(c => ({
+        promptId:     c.promptId,
+        responseText: c.responseText,
+        dbId:         c.dbId,
+      })));
+
       setSaveState('ok');
       setTimeout(() => setSaveState('idle'), 2500);
       router.refresh();
@@ -313,7 +368,7 @@ export function DailyPageClient({
     }
   }, [
     supabase, router, entry.id, date,
-    overviewState, metricState, sleepState, symptomState, hasSymptomData,
+    overviewState, metricState, sleepState, symptomState, hasSymptomData, journalState,
   ]);
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -347,6 +402,11 @@ export function DailyPageClient({
         ess={ess}
         prescriptions={prescriptions}
         reference={reference}
+        journalState={journalState}
+        setJournalState={setJournalState}
+        journalCategories={reference.journalCategories}
+        onSaveJournal={saveJournal}
+        journalSaveState={journalSaveState}
       />
 
       <div className="page-actions">

@@ -16,12 +16,17 @@ import { setEssResponse }          from '@/lib/dal/ess';
 
 import { Card, CardHeader, CardTitle, CardBody, CardSection, CardSectionLabel } from '@/components/ui/Card';
 import { TabBar }          from '@/components/ui/Controls';
+import { JournalTab }       from './JournalTab';
 import { Toggle }          from '@/components/ui/Controls';
 import { SliderField }     from '@/components/ui/SliderField';
 import { Chip, ChipGroup } from '@/components/ui/Chip';
 import { InputField, Field } from '@/components/ui/Display';
 
 import { TagSelector }   from '@/components/ui/TagSelector';
+import type {
+  JournalCategoryWithPrompts,
+} from '@/types/dal';
+import type { JournalCard, JournalState } from './DailyPageClient';
 import type {
   DailyEntryDetail, SleepEntryDetail, DailySymptomData,
   EssEntryDetail, PrescriptionDetail, PriorSleepContext, ReferenceData,
@@ -40,6 +45,7 @@ const TABS = [
   { id: 'sleep',     label: '💤 Sleep'     },
   { id: 'meds',      label: '💊 Meds'      },
   { id: 'ess',       label: '😴 ESS'       },
+  { id: 'journal',   label: '📓 Journal'  },
 ] as const satisfies { id: string; label: string }[];
 
 type TabId = typeof TABS[number]['id'];
@@ -927,6 +933,12 @@ interface Props {
   ess: EssEntryDetail | null;
   prescriptions: PrescriptionDetail[];
   reference: ReferenceData;
+
+  journalState:        JournalState;
+  setJournalState:     React.Dispatch<React.SetStateAction<JournalState>>;
+  journalCategories:   JournalCategoryWithPrompts[];
+  onSaveJournal:       () => Promise<void>;
+  journalSaveState:    SaveState;
 }
 
 export function DailyCard({
@@ -938,6 +950,7 @@ export function DailyCard({
   sleepState, setSleepState, hasSleepData,
   symptomState, setSymptomState, hasSymptomData,
   priorSleep, ess, prescriptions, reference,
+  journalState, setJournalState, journalCategories, onSaveJournal, journalSaveState,
 }: Props) {
   const [tab, setTab] = useState<TabId>('overview');
 
@@ -1010,6 +1023,18 @@ export function DailyCard({
             questionTypes={reference.essQuestionTypes}
             answerTypes={reference.essAnswerTypes}
             mode={mode}
+          />
+        )}
+
+        {tab === 'journal' && (
+          <JournalTab
+            mode={mode}
+            entryId={entry.id}
+            categories={journalCategories}
+            state={journalState}
+            setState={setJournalState}
+            onSave={onSaveJournal}
+            saveState={journalSaveState}
           />
         )}
       </CardBody>

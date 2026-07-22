@@ -183,3 +183,17 @@ export async function deleteMediaNote(client: Client, id: number): Promise<void>
   const { error } = await client.from('media_notes').delete().eq('id', id);
   if (error) throw new Error(`deleteMediaNote: ${error.message}`);
 }
+
+// ── Single entry by ID ────────────────────────────────────────────────────────
+
+export async function getMediaEntryById(
+  client: Client,
+  id: number
+): Promise<MediaEntryDetail> {
+  const { data, error } = await client
+    .from('media_entries').select('*').eq('id', id).single();
+  if (error) throw new Error(`getMediaEntryById: ${error.message}`);
+  const [enriched] = await enrich(client, [data as MediaEntryRow]);
+  if (!enriched) throw new Error(`getMediaEntryById: entry ${id} not found`);
+  return enriched;
+}

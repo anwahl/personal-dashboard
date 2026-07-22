@@ -74,7 +74,7 @@ function TaskItem({
         {busy ? '…' : '○'}
       </button>
 
-      <a href={`/tasks/${task.id}`} className="task-item__body-link">
+      <a href={`/tasks/${task.id}`} className="item-body-link">
         <span className="task-item__title">{task.title}</span>
         <div className="task-item__meta">
           {showDueDate && task.due_date && (

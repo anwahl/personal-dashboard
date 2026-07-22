@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 /**
  * QuickMediaLog
  *
@@ -75,14 +77,16 @@ function NowPlayingItem({
 
   return (
     <div className="qml-item">
-      <div className="qml-item__body">
-        <span className="qml-item__title">{entry.title}</span>
-        <span className="qml-item__meta">
-          {STATUS_EMOJI[entry.current_status?.status_name ?? ''] ?? ''}
-          {entry.current_status?.status_name}
-          {entry.creator && ` · ${entry.creator}`}
-        </span>
-      </div>
+      <Link href={`/media/${entry.id}`} className="item-body-link">
+        <div className="qml-item__body">
+          <span className="qml-item__title">{entry.title}</span>
+          <span className="qml-item__meta">
+            {STATUS_EMOJI[entry.current_status?.status_name ?? ''] ?? ''}
+            {entry.current_status?.status_name}
+            {entry.creator && ` · ${entry.creator}`}
+          </span>
+        </div>
+      </Link>
       <div className="qml-item__actions">
         {terminalStatuses.map(s => (
           <Button key={s.id} variant="ghost" size="sm"
