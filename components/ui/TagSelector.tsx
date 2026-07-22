@@ -22,7 +22,7 @@ interface Props {
   placeholder?: string;
 }
 
-export function TagSelector({ allTags, selectedIds, onToggle, onAdd, placeholder = 'Search or add tag…' }: Props) {
+export function TagSelector({ allTags, selectedIds, onToggle, onAdd, placeholder = 'Search or add tag…' }: Readonly<Props>) {
   const [query,     setQuery]     = useState('');
   const [open,      setOpen]      = useState(false);
   const [adding,    setAdding]    = useState(false);

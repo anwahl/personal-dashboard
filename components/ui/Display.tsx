@@ -14,7 +14,7 @@ export function SaveStatus({
   state,
   okText  = '✓ Saved',
   errText = 'Save failed — try again',
-}: SaveStatusProps) {
+}: Readonly<SaveStatusProps>) {
   const cls = [
     'save-status',
     state === 'ok'    && 'save-status--ok',
@@ -39,7 +39,7 @@ interface FieldProps {
 }
 
 /** Read-only field display for View mode. */
-export function Field({ label, value, empty = '—', children }: FieldProps) {
+export function Field({ label, value, empty = '—', children }: Readonly<FieldProps>) {
   return (
     <div className="field">
       <span className="field__label">{label}</span>
@@ -57,11 +57,11 @@ export function InputField({
   label,
   id,
   children,
-}: {
+}: Readonly<{
   label:    string;
   id?:      string;
   children: ReactNode;
-}) {
+}>) {
   return (
     <div className="field">
       {id ? (

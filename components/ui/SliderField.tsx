@@ -9,7 +9,7 @@ interface Props {
   onChange: (value: number) => void;
 }
 
-export function SliderField({ emoji, label, value, min = 0, max = 10, onChange }: Props) {
+export function SliderField({ emoji, label, value, min = 0, max = 10, onChange }: Readonly<Props>) {
   const v   = value ?? min;
   const pct = ((v - min) / (max - min)) * 100;
 
@@ -31,7 +31,7 @@ export function SliderField({ emoji, label, value, min = 0, max = 10, onChange }
         style={{
           background: `linear-gradient(to right, var(--accent) ${pct}%, var(--border) 0%)`,
         }}
-        onChange={e => onChange(parseInt(e.target.value, 10))}
+        onChange={e => onChange(Number.parseInt(e.target.value, 10))}
       />
     </div>
   );

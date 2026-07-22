@@ -1,7 +1,5 @@
 'use client';
 
-import type { ReactNode } from 'react';
-
 // ── Toggle ────────────────────────────────────────────────────────────────────
 
 interface ToggleProps {
@@ -11,7 +9,7 @@ interface ToggleProps {
   id?:      string;
 }
 
-export function Toggle({ label, checked, onChange, id }: ToggleProps) {
+export function Toggle({ label, checked, onChange, id }: Readonly<ToggleProps>) {
   const inputId = id ?? `toggle-${label.toLowerCase().replace(/\s+/g, '-')}`;
 
   return (
@@ -44,7 +42,7 @@ interface TabBarProps<T extends string> {
   onChange: (id: T) => void;
 }
 
-export function TabBar<T extends string>({ tabs, active, onChange }: TabBarProps<T>) {
+export function TabBar<T extends string>({ tabs, active, onChange }: Readonly<TabBarProps<T>>) {
   return (
     <div className="tab-bar">
       {tabs.map(tab => (
