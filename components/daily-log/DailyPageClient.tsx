@@ -7,9 +7,12 @@
  * Passes state + setters down to DailyCard (merged card with 6 tabs).
  */
 
+import { SaveStatus, SaveState } from '@/components/ui/Display';
+import { saveJournalResponses, JournalResponseDetail } from '@/lib/dal/journal';
 import { useState, useCallback } from 'react';
 import { useRouter }              from 'next/navigation';
 import { createClient }           from '@/lib/supabase/client';
+import { localTodayISO } from '@/lib/utils/dates';
 
 import { updateDailyEntry, toggleTagEntry, upsertBrainDump } from '@/lib/dal/daily';
 import { toggleBooleanEntry, saveNumericEntries }            from '@/lib/dal/trackables';
@@ -17,12 +20,8 @@ import { upsertSleepEntry, upsertNap, deleteNap, upsertWakeEvents,
          setSleepEvents, setSleepTimingEntry, setSleepConsumptionEntries } from '@/lib/dal/sleep';
 import { setDailySymptomEntries, upsertCrash, deleteCrash,
          upsertAnxiety, deleteAnxiety }                      from '@/lib/dal/symptoms';
-import { saveJournalResponses }                              from '@/lib/dal/journal';
-import type { JournalResponseDetail }                        from '@/lib/dal/journal';
 
 import { Button }      from '@/components/ui/Button';
-import { SaveStatus }  from '@/components/ui/Display';
-import type { SaveState } from '@/components/ui/Display';
 import { DailyCard }   from './DailyCard';
 
 import type {
@@ -166,11 +165,6 @@ interface Props {
   ess:           EssEntryDetail | null;
   prescriptions: PrescriptionDetail[];
   reference:     ReferenceData;
-}
-
-function localTodayISO(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 export function DailyPageClient({

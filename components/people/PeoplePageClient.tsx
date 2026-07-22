@@ -1,35 +1,23 @@
 'use client';
 
+import { InputField, SaveStatus, SaveState } from '@/components/ui/Display';
 import { useState, useCallback } from 'react';
-import { useRouter }             from 'next/navigation';
 import { createClient }          from '@/lib/supabase/client';
+import { formatMediumDate, localTodayISO } from '@/lib/utils/dates';
 import {
   saveInfoFieldValue, toggleChecklistItemState,
   addItemListEntry, deleteItemListEntry,
   addLogEntry, deleteLogEntry,
 }                                from '@/lib/dal/people';
-import { Card, CardHeader, CardTitle, CardBody, CardSection, CardSectionLabel } from '@/components/ui/Card';
+import { Card, CardHeader, CardBody, CardSection, CardSectionLabel } from '@/components/ui/Card';
 import { Button }                from '@/components/ui/Button';
 import { Markdown }              from '@/components/ui/Markdown';
-import { InputField, SaveStatus } from '@/components/ui/Display';
-import type { SaveState }        from '@/components/ui/Display';
 import type {
   PersonPageData, InfoGroupWithFields, InfoFieldTypeWithValue,
   ItemListWithEntries, LogWithSchemaAndEntries, ChecklistWithItems,
 }                                from '@/types/dal';
 
 type Mode = 'view' | 'edit';
-
-function fmtDate(d: string | null) {
-  if (!d) return '';
-  const [y, m, day] = d.split('-').map(Number);
-  return new Date(y, m - 1, day).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-}
-
-function localTodayISO() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
 
 // ── Info groups ───────────────────────────────────────────────────────────────
 
@@ -214,7 +202,7 @@ function ItemListSection({ list, mode, personId }: {
         {entries.map(e => (
           <div key={e.id} className="list-entry-row">
             {e.entry_date && (
-              <span className="list-entry-date">{fmtDate(e.entry_date)}</span>
+              <span className="list-entry-date">{formatMediumDate(e.entry_date)}</span>
             )}
             <span className="list-entry-text">{e.entry_text}</span>
             {mode === 'edit' && (
@@ -338,7 +326,7 @@ function LogSection({ log, mode, personId }: {
             <tbody>
               {entries.map(e => (
                 <tr key={e.id}>
-                  <td>{fmtDate(e.entry_date)}</td>
+                  <td>{formatMediumDate(e.entry_date)}</td>
                   {log.fields.map(f => (
                     <td key={f.id}>{e.values[f.id] || '—'}</td>
                   ))}
@@ -407,7 +395,7 @@ export function PeoplePageClient({ data }: { data: PersonPageData }) {
           <div>
             <h2 className="person-header__name">{person.person_name}</h2>
             {person.birth_date && (
-              <p className="person-header__sub">🎂 {fmtDate(person.birth_date)}</p>
+              <p className="person-header__sub">🎂 {formatMediumDate(person.birth_date)}</p>
             )}
           </div>
           <div className="person-header__actions">

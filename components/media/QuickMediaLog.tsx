@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { localTodayISO } from '@/lib/utils/dates';
 
 /**
  * QuickMediaLog
@@ -15,7 +16,6 @@ import Link from 'next/link';
 import { useState, useCallback, useEffect } from 'react';
 import { createClient }              from '@/lib/supabase/client';
 import { Button }                    from '@/components/ui/Button';
-import { InputField }                from '@/components/ui/Display';
 import type { MediaEntryDetail }     from '@/types/dal';
 import type {
   MediaTypeRow, MediaStatusRow, MediaStatusTypeLinkRow,
@@ -30,11 +30,6 @@ const STATUS_EMOJI: Record<string, string> = {
 
 function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
-function localTodayISO() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 function validStatusesForType(
@@ -158,22 +153,22 @@ export function QuickMediaLog({
     try {
       const { data: entryData, error } = await supabase
         .from('media_entries')
-        .insert({ title: title.trim(), media_type_id: parseInt(typeId) })
+        .insert({ title: title.trim(), media_type_id: Number.parseInt(typeId) })
         .select().single();
       if (error || !entryData) throw new Error('Failed to create entry');
 
       if (statusId) {
         await supabase.from('media_status_entries').insert({
           media_entry_id: (entryData as any).id,
-          status_id:      parseInt(statusId),
+          status_id:      Number.parseInt(statusId),
           status_date:    localTodayISO(),
         });
       }
 
       // Add to local list as in-progress if applicable
-      const status = mediaStatuses.find(s => s.id === parseInt(statusId));
+      const status = mediaStatuses.find(s => s.id === Number.parseInt(statusId));
       if (status?.status_type === 'in_progress') {
-        const mediaType = mediaTypes.find(t => t.id === parseInt(typeId))!;
+        const mediaType = mediaTypes.find(t => t.id === Number.parseInt(typeId))!;
         const newEntry: MediaEntryDetail = {
           ...(entryData as any),
           media_type:         mediaType,
@@ -196,7 +191,7 @@ export function QuickMediaLog({
     <div className="quick-media-log">
       <div className="quick-media-log__header">
         <span className="quick-media-log__title">
-          {compact ? '🎬 Now Playing' : '🎬 Now Playing'}
+          🎬 Now Playing
         </span>
         <Button variant="ghost" size="sm" onClick={() => setShowAdd(s => !s)}>
           {showAdd ? '✕' : '+ Add'}

@@ -31,7 +31,9 @@ export function HabitHeatmap({ chart, data, fromDate, toDate }: Props) {
   const cursor = new Date(fromDate + 'T12:00:00');
   const end    = new Date(toDate   + 'T12:00:00');
   while (cursor <= end) {
-    dates.push(cursor.toISOString().slice(0, 10));
+    const [hy, hm, hd] = [cursor.getFullYear(), cursor.getMonth() + 1, cursor.getDate()];
+    dates.push(`${hy}-${String(hm).padStart(2, '0')}-${String(hd).padStart(2, '0')}`);
+
     cursor.setDate(cursor.getDate() + 1);
   }
 

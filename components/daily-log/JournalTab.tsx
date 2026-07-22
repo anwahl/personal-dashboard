@@ -17,10 +17,9 @@
  *   - Responses grouped by category, read-only
  */
 
+import { SaveStatus, SaveState } from '@/components/ui/Display';
 import { useId }       from 'react';
 import { Button }      from '@/components/ui/Button';
-import { SaveStatus }  from '@/components/ui/Display';
-import type { SaveState } from '@/components/ui/Display';
 import type { JournalCategoryWithPrompts } from '@/types/dal';
 import type { JournalCard, JournalState } from './DailyPageClient';
 

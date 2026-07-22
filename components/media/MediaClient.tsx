@@ -8,6 +8,7 @@ import { TabBar }                 from '@/components/ui/Controls';
 import { InputField }             from '@/components/ui/Display';
 import { Markdown }               from '@/components/ui/Markdown';
 import type { MediaEntryDetail }  from '@/types/dal';
+import { localTodayISO } from '@/lib/utils/dates';
 import type {
   MediaTypeRow, MediaStatusRow, MediaGenreRow,
   MediaNoteRow, MediaStatusTypeLinkRow,
@@ -31,11 +32,6 @@ const STATUS_EMOJI: Record<string, string> = {
 
 function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
-function localTodayISO() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 /** Returns statuses valid for a given media type.
@@ -291,7 +287,7 @@ function MediaItemView({ entry, onEdit, onClose }: {
     setNotes(prev => prev.filter(n => n.id !== id));
   }, [supabase]);
 
-  function fmtDate(d: string) {
+  function formatMediumDate(d: string) {
     const [y, m, day] = d.split('-').map(Number);
     return new Date(y, m - 1, day).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   }
@@ -328,7 +324,7 @@ function MediaItemView({ entry, onEdit, onClose }: {
       {!loading && notes.map(n => (
         <div key={n.id} className="media-note">
           <div className="media-note__header">
-            <span className="media-note__date-badge">{fmtDate(n.note_date)}</span>
+            <span className="media-note__date-badge">{formatMediumDate(n.note_date)}</span>
             <button type="button" className="media-note__delete" onClick={() => deleteNote(n.id)} title="Delete note">✕</button>
           </div>
           <Markdown>{n.body_md}</Markdown>

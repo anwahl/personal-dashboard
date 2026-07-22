@@ -13,7 +13,7 @@ import { useRouter }              from 'next/navigation';
 import { createClient }           from '@/lib/supabase/client';
 import { Button }                 from '@/components/ui/Button';
 import { ConfirmButton }          from '@/components/ui/ConfirmButton';
-import { InputField, SaveStatus } from '@/components/ui/Display';
+import { InputField } from '@/components/ui/Display';
 import { Markdown }               from '@/components/ui/Markdown';
 import { localTodayISO, formatShortDate } from '@/lib/utils/dates';
 import type { MediaEntryDetail }  from '@/types/dal';

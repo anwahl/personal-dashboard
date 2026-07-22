@@ -13,22 +13,22 @@ import { useState, useCallback } from 'react';
 import { createClient }    from '@/lib/supabase/client';
 import { togglePrescriptionEntry } from '@/lib/dal/daily';
 import { setEssResponse }          from '@/lib/dal/ess';
+import { formatTime } from '@/lib/utils/dates';
 
 import { Card, CardHeader, CardTitle, CardBody, CardSection, CardSectionLabel } from '@/components/ui/Card';
 import { TabBar, Toggle }          from '@/components/ui/Controls';
 import { JournalTab }       from './JournalTab';
 import { SliderField }     from '@/components/ui/SliderField';
 import { Chip, ChipGroup } from '@/components/ui/Chip';
-import { InputField, SaveState, Field } from '@/components/ui/Display';
+import { InputField, SaveState } from '@/components/ui/Display';
 
 import { TagSelector }   from '@/components/ui/TagSelector';
 import type {
   JournalCategoryWithPrompts, DailyEntryDetail, SleepEntryDetail, DailySymptomData,
   EssEntryDetail, PrescriptionDetail, PriorSleepContext, ReferenceData,
 } from '@/types/dal';
-import type { JournalCard, JournalState, DailyOverviewState, SymptomFormState, SleepFormState, MetricState, } from './DailyPageClient';
+import type {  JournalState, DailyOverviewState, SymptomFormState, SleepFormState, MetricState, } from './DailyPageClient';
 import type { EssQuestionTypeRow, EssAnswerTypeRow } from '@/types/schema';
-
 
 type Mode = 'view' | 'input';
 
@@ -45,12 +45,6 @@ const TABS = [
 type TabId = typeof TABS[number]['id'];
 
 const SEVERITY_MAX = 10;
-
-function formatTime(t: string | null | undefined): string {
-  if (!t) return '';
-  const [h, m] = t.split(':').map(Number);
-  return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
-}
 
 function Rating({ value, max = SEVERITY_MAX }: { value: number | null | undefined; max?: number }) {
   if (value == null) return <span className="metric-display__value metric-display__value--empty">–</span>;

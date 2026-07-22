@@ -1,16 +1,15 @@
 'use client';
 
+import { InputField, SaveStatus, SaveState } from '@/components/ui/Display';
 import { useState, useCallback } from 'react';
 import { useRouter }             from 'next/navigation';
 import { createClient }          from '@/lib/supabase/client';
 import { updateTask, completeTask, deleteTask } from '@/lib/dal/tasks';
 import { Button }                from '@/components/ui/Button';
 import { ConfirmButton }         from '@/components/ui/ConfirmButton';
-import { InputField }            from '@/components/ui/Display';
-import { SaveStatus }            from '@/components/ui/Display';
-import type { SaveState }        from '@/components/ui/Display';
 import type { TaskDetail, TaskStatusRow, TaskPriorityRow } from '@/types/dal';
 import type { PersonRow, TagRow }from '@/types/schema';
+import { formatMediumDate } from '@/lib/utils/dates';
 
 interface Props {
   task:       TaskDetail;
@@ -18,14 +17,6 @@ interface Props {
   priorities: TaskPriorityRow[];
   people:     PersonRow[];
   tags:       TagRow[];
-}
-
-function fmtDate(d: string | null) {
-  if (!d) return '—';
-  const [y, m, day] = d.split('-').map(Number);
-  return new Date(y, m - 1, day).toLocaleDateString('en-US', {
-    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
-  });
 }
 
 export function TaskDetailClient({ task, statuses, priorities, people }: Props) {
@@ -111,7 +102,7 @@ export function TaskDetailClient({ task, statuses, priorities, people }: Props) 
           </div>
           <div className="detail-page__field">
             <dt>Due</dt>
-            <dd>{fmtDate(task.due_date)}</dd>
+            <dd>{formatMediumDate(task.due_date)}</dd>
           </div>
           {task.person && (
             <div className="detail-page__field">

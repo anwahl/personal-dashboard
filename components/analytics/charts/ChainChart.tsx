@@ -12,6 +12,7 @@
 
 import { ChartEmptyState } from './ChartEmptyState';
 import type { ChartDefinitionDetail, TrackingDataPoint } from '@/types/dal';
+import { localTodayISO } from '@/lib/utils/dates';
 
 interface Props {
   chart:    ChartDefinitionDetail;
@@ -35,7 +36,9 @@ function buildDates(fromDate: string, toDate: string): string[] {
   const cursor = new Date(fromDate + 'T12:00:00');
   const end    = new Date(toDate   + 'T12:00:00');
   while (cursor <= end) {
-    dates.push(cursor.toISOString().slice(0, 10));
+    const [cy, cm, cd] = [cursor.getFullYear(), cursor.getMonth() + 1, cursor.getDate()];
+    dates.push(`${cy}-${String(cm).padStart(2, '0')}-${String(cd).padStart(2, '0')}`);
+
     cursor.setDate(cursor.getDate() + 1);
   }
   return dates;
@@ -48,7 +51,7 @@ export function ChainChart({ chart, data, fromDate, toDate }: Props) {
     return <ChartEmptyState title={chart.title} message="No series configured. Add boolean metrics in Settings → Charts." />;
   }
 
-  const today      = new Date().toISOString().slice(0, 10);
+  const today      = localTodayISO();
   const dates      = buildDates(fromDate, toDate);
   const entryDates = new Set(data.map(dp => dp.date));
   const valueByDate = new Map(data.map(dp => [dp.date, dp.values]));
