@@ -17,7 +17,7 @@ interface Props {
   data:  TrackingDataPoint[];
 }
 
-export function TimelineScatterChart({ chart, data }: Props) {
+export function TimelineScatterChart({ chart, data }: Readonly<Props>) {
   const seriesLinks = chart.links.filter(l => l.metric_role === 'series');
   const [hovered, setHovered] = useState<{ date: string; trackableId: number; value: number } | null>(null);
 

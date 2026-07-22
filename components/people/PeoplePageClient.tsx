@@ -11,9 +11,8 @@ import {
 }                                from '@/lib/dal/people';
 import { Card, CardHeader, CardBody, CardSection, CardSectionLabel } from '@/components/ui/Card';
 import { Button }                from '@/components/ui/Button';
-import { Markdown }              from '@/components/ui/Markdown';
 import type {
-  PersonPageData, InfoGroupWithFields, InfoFieldTypeWithValue,
+  PersonPageData, InfoGroupWithFields,
   ItemListWithEntries, LogWithSchemaAndEntries, ChecklistWithItems,
 }                                from '@/types/dal';
 
@@ -21,11 +20,11 @@ type Mode = 'view' | 'edit';
 
 // ── Info groups ───────────────────────────────────────────────────────────────
 
-function InfoGroupSection({ group, mode, onValueChange }: {
+function InfoGroupSection({ group, mode, onValueChange }: Readonly<{
   group:         InfoGroupWithFields;
   mode:          Mode;
   onValueChange: (fieldTypeId: number, value: string) => void;
-}) {
+}>) {
   return (
     <CardSection>
       <CardSectionLabel>{group.group_title}</CardSectionLabel>
@@ -59,11 +58,11 @@ function InfoGroupSection({ group, mode, onValueChange }: {
 
 // ── Checklists ────────────────────────────────────────────────────────────────
 
-function ChecklistSection({ checklist, mode, personId }: {
+function ChecklistSection({ checklist, mode, personId }: Readonly<{
   checklist: ChecklistWithItems;
   mode:      Mode;
   personId:  number;
-}) {
+}>) {
   const supabase = createClient();
   const [items,   setItems]   = useState(checklist.items);
   const [newText, setNewText] = useState('');
@@ -162,11 +161,11 @@ function ChecklistSection({ checklist, mode, personId }: {
 
 // ── Item lists ────────────────────────────────────────────────────────────────
 
-function ItemListSection({ list, mode, personId }: {
+function ItemListSection({ list, mode, personId }: Readonly<{
   list:     ItemListWithEntries;
   mode:     Mode;
   personId: number;
-}) {
+}>) {
   const supabase  = createClient();
   const [entries, setEntries] = useState(list.entries);
   const [newText, setNewText] = useState('');
@@ -236,11 +235,11 @@ function ItemListSection({ list, mode, personId }: {
 
 // ── Logs ──────────────────────────────────────────────────────────────────────
 
-function LogSection({ log, mode, personId }: {
+function LogSection({ log, mode, personId }: Readonly<{
   log:      LogWithSchemaAndEntries;
   mode:     Mode;
   personId: number;
-}) {
+}>) {
   const supabase = createClient();
   const [entries,    setEntries]    = useState(log.entries);
   const [showForm,   setShowForm]   = useState(false);
@@ -348,7 +347,7 @@ function LogSection({ log, mode, personId }: {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function PeoplePageClient({ data }: { data: PersonPageData }) {
+export function PeoplePageClient({ data }: Readonly<{ data: PersonPageData }>) {
   const { person, diagnoses, infoGroups, itemLists, logs, checklists, prescriptions } = data;
   const supabase = createClient();
 
@@ -356,13 +355,14 @@ export function PeoplePageClient({ data }: { data: PersonPageData }) {
   const [saveState,  setSaveState] = useState<SaveState>('idle');
   const [localGroups, setLocalGroups] = useState<InfoGroupWithFields[]>(infoGroups);
 
+  const updateFieldInGroup = (f: typeof infoGroups[0]['fields'][0], fieldTypeId: number, value: string) => 
+    f.id === fieldTypeId ? { ...f, value } : f;
+
+  const updateGroupFields = (g: InfoGroupWithFields, gi: number, groupIdx: number, fieldTypeId: number, value: string) =>
+    gi !== groupIdx ? g : { ...g, fields: g.fields.map(f => updateFieldInGroup(f, fieldTypeId, value)) };
+
   const handleFieldChange = (groupIdx: number, fieldTypeId: number, value: string) => {
-    setLocalGroups(prev => prev.map((g, gi) =>
-      gi !== groupIdx ? g : {
-        ...g,
-        fields: g.fields.map(f => f.id === fieldTypeId ? { ...f, value } : f),
-      }
-    ));
+    setLocalGroups(prev => prev.map((g, gi) => updateGroupFields(g, gi, groupIdx, fieldTypeId, value)));
   };
 
   const saveInfoGroups = useCallback(async () => {

@@ -25,7 +25,7 @@ import { Button }      from '@/components/ui/Button';
 import { DailyCard }   from './DailyCard';
 
 import type {
-  DailyEntryDetail, SleepEntryDetail, DailySymptomData, JournalCategoryWithPrompts,
+  DailyEntryDetail, SleepEntryDetail, DailySymptomData,
   EssEntryDetail, PrescriptionDetail, PriorSleepContext, ReferenceData,
 } from '@/types/dal';
 import type { SleepEntryRow } from '@/types/schema';
@@ -169,7 +169,7 @@ interface Props {
 
 export function DailyPageClient({
   entry, date, sleep, priorSleep, symptoms, ess, prescriptions, reference, journalResponses,
-}: Props) {
+}: Readonly<Props>) {
   const supabase = createClient();
   const router   = useRouter();
 
@@ -280,14 +280,14 @@ export function DailyPageClient({
       if (anySleepData) {
         const sleepFields: Partial<SleepEntryRow> = {
           sleep_quality:          sleepState.quality,
-          hours_slept:            sleepState.hoursSlept   ? parseFloat(sleepState.hoursSlept)  : null,
-          bedtime:                sleepState.bedtime       || null,
-          wake_time:              sleepState.wakeTime      || null,
-          sleep_latency_min:      sleepState.latencyMin   ? parseInt(sleepState.latencyMin)    : null,
+          hours_slept:            sleepState.hoursSlept       ? Number.parseFloat(sleepState.hoursSlept)  : null,
+          bedtime:                sleepState.bedtime          || null,
+          wake_time:              sleepState.wakeTime         || null,
+          sleep_latency_min:      sleepState.latencyMin       ? Number.parseInt(sleepState.latencyMin)    : null,
           sleep_inertia_min:      sleepState.inertiaSeverity,
-          osa_event_count:        sleepState.osaCount      ? parseFloat(sleepState.osaCount)   : null,
-          sleep_notes:            sleepState.notes         || null,
-          today_pre_bed_activity: sleepState.preBedActivity || null,
+          osa_event_count:        sleepState.osaCount         ? Number.parseFloat(sleepState.osaCount)    : null,
+          sleep_notes:            sleepState.notes            || null,
+          today_pre_bed_activity: sleepState.preBedActivity   || null,
         };
 
         const sleepRow = await upsertSleepEntry(supabase, entry.id, sleepFields);
@@ -296,13 +296,13 @@ export function DailyPageClient({
           sleepState.wakeCount > 0
             ? upsertWakeEvents(supabase, sleepRow.id, {
                 event_count:  sleepState.wakeCount,
-                duration_min: sleepState.wakeMins ? parseInt(sleepState.wakeMins) : 0,
+                duration_min: sleepState.wakeMins ? Number.parseInt(sleepState.wakeMins) : 0,
                 detail:       sleepState.wakeDetail || null,
               })
             : Promise.resolve(),
           sleepState.hadNap
             ? upsertNap(supabase, sleepRow.id, {
-                duration_min:   sleepState.napDuration ? parseInt(sleepState.napDuration) : null,
+                duration_min:   sleepState.napDuration ? Number.parseInt(sleepState.napDuration) : null,
                 was_refreshing: sleepState.napRefresh,
               })
             : deleteNap(supabase, sleepRow.id),
@@ -311,7 +311,7 @@ export function DailyPageClient({
         ]);
 
         for (const [catId, optId] of Object.entries(sleepState.timingMap)) {
-          await setSleepTimingEntry(supabase, sleepRow.id, parseInt(catId), optId);
+          await setSleepTimingEntry(supabase, sleepRow.id, Number.parseInt(catId), optId);
         }
 
         setHasSleepData(true);

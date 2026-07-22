@@ -24,21 +24,21 @@ function fmtTime(t: string | null) {
   return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
 }
 
-export function AppointmentDetailClient({ appointment: appt, appointmentTypes, people, providers }: Props) {
+export function AppointmentDetailClient({ appointment: appt, appointmentTypes, people, providers }: Readonly<Props>) {
   const supabase = createClient();
   const router   = useRouter();
 
   const [mode,       setMode]       = useState<'view' | 'edit'>('view');
   const [saveState,  setSaveState]  = useState<SaveState>('idle');
 
-  const [date,    setDate]    = useState(appt.appointment_date);
-  const [time,    setTime]    = useState(appt.appointment_time ?? '');
-  const [typeId,  setTypeId]  = useState(appt.appointment_type_id ? String(appt.appointment_type_id) : '');
-  const [personId,setPersonId]= useState(String(appt.person_id));
-  const [provId,  setProvId]  = useState(appt.provider_id ? String(appt.provider_id) : '');
-  const [location,setLocation]= useState(appt.location ?? '');
-  const [questions,setQs]     = useState(appt.questions ?? '');
-  const [notes,   setNotes]   = useState(appt.notes ?? '');
+  const [date,      setDate]      = useState(appt.appointment_date);
+  const [time,      setTime]      = useState(appt.appointment_time ?? '');
+  const [typeId,    setTypeId]    = useState(appt.appointment_type_id ? String(appt.appointment_type_id) : '');
+  const [personId,  setPersonId]  = useState(String(appt.person_id));
+  const [provId,    setProvId]    = useState(appt.provider_id ? String(appt.provider_id) : '');
+  const [location,  setLocation]  = useState(appt.location ?? '');
+  const [questions, setQuestions] = useState(appt.questions ?? '');
+  const [notes,     setNotes]     = useState(appt.notes ?? '');
 
   const save = useCallback(async () => {
     setSaveState('saving');
@@ -167,7 +167,7 @@ export function AppointmentDetailClient({ appointment: appt, appointmentTypes, p
       </InputField>
 
       <InputField label="Questions" id="ad-q">
-        <textarea id="ad-q" value={questions} onChange={e => setQs(e.target.value)} />
+        <textarea id="ad-q" value={questions} onChange={e => setQuestions(e.target.value)} />
       </InputField>
 
       <InputField label="Notes" id="ad-notes">

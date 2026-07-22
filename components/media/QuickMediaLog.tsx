@@ -52,12 +52,12 @@ function validStatusesForType(
 
 function NowPlayingItem({
   entry, allStatuses, statusTypeLinks, onStatusChange,
-}: {
+}: Readonly<{
   entry: MediaEntryDetail;
   allStatuses: MediaStatusRow[];
   statusTypeLinks: MediaStatusTypeLinkRow[];
   onStatusChange: (entryId: number, statusId: number) => Promise<void>;
-}) {
+}>) {
   const [changing, setChanging] = useState(false);
   const validStatuses = validStatusesForType(entry.media_type_id, allStatuses, statusTypeLinks);
   const terminalStatuses = validStatuses.filter(s =>
@@ -102,14 +102,13 @@ interface Props {
   mediaTypes:      MediaTypeRow[];
   mediaStatuses:   MediaStatusRow[];
   statusTypeLinks: MediaStatusTypeLinkRow[];
-  compact?:        boolean;
 }
 
 // ── QuickMediaLog ─────────────────────────────────────────────────────────────
 
 export function QuickMediaLog({
-  initialEntries, mediaTypes, mediaStatuses, statusTypeLinks, compact = false,
-}: Props) {
+  initialEntries, mediaTypes, mediaStatuses, statusTypeLinks,
+}: Readonly<Props>) {
   const supabase = createClient();
   const [entries, setEntries]     = useState<MediaEntryDetail[]>(initialEntries);
   const [showAdd, setShowAdd]     = useState(false);
