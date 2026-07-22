@@ -10,23 +10,17 @@
  * Each tab has a quickadd row. Upcoming tab shows an inline date picker.
  */
 
+import { createTask, completeTask, TaskContextData } from '@/lib/dal/tasks';
 import { useState, useCallback } from 'react';
 import { createClient }          from '@/lib/supabase/client';
-import { createTask, completeTask } from '@/lib/dal/tasks';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { TabBar }   from '@/components/ui/Controls';
 import { Button }   from '@/components/ui/Button';
-import type { TaskContextData } from '@/lib/dal/tasks';
 import type { TaskDetail, TaskStatusRow, TaskPriorityRow } from '@/types/dal';
 import type { PersonRow }       from '@/types/schema';
+import { addDays } from '@/lib/utils/dates';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-function addDays(dateStr: string, n: number): string {
-  const d = new Date(dateStr + 'T12:00:00');
-  d.setDate(d.getDate() + n);
-  return d.toISOString().slice(0, 10);
-}
 
 function fmtShortDate(d: string): string {
   const [y, m, day] = d.split('-').map(Number);
@@ -74,7 +68,7 @@ function TaskItem({
         {busy ? '…' : '○'}
       </button>
 
-      <a href={`/tasks/${task.id}`} className="task-item__body-link">
+      <a href={`/tasks/${task.id}`} className="item-body-link">
         <span className="task-item__title">{task.title}</span>
         <div className="task-item__meta">
           {showDueDate && task.due_date && (

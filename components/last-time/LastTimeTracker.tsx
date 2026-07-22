@@ -13,28 +13,11 @@ import { createClient }           from '@/lib/supabase/client';
 import { logCustomLastTime }       from '@/lib/dal/lasttime';
 import { Button }                  from '@/components/ui/Button';
 import type { LastTimeEntry }      from '@/types/dal';
+import { formatDaysAgo, formatMediumDate, localTodayISO } from '@/lib/utils/dates';
 
 interface Props {
   entries:  LastTimeEntry[];
   compact?: boolean;
-}
-
-function formatDaysAgo(days: number | null): string {
-  if (days === null) return 'Never';
-  if (days === 0)    return 'Today';
-  if (days === 1)    return 'Yesterday';
-  if (days < 7)     return `${days}d ago`;
-  if (days < 30)    return `${Math.floor(days / 7)}w ago`;
-  if (days < 365)   return `${Math.floor(days / 30)}mo ago`;
-  return `${Math.floor(days / 365)}y ago`;
-}
-
-function formatDate(d: string | null): string {
-  if (!d) return '';
-  const [y, m, day] = d.split('-').map(Number);
-  return new Date(y, m - 1, day).toLocaleDateString('en-US', {
-    month: 'short', day: 'numeric', year: 'numeric',
-  });
 }
 
 function daysAgoColor(days: number | null): string {
@@ -61,7 +44,7 @@ export function LastTimeTracker({ entries, compact = false }: Props) {
     if (!item.custom_id || logging.has(item.id)) return;
     setLogging(prev => new Set(prev).add(item.id));
     try {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = localTodayISO();
       await logCustomLastTime(supabase, item.custom_id, today);
       setItems(prev => prev.map(i =>
         i.id === item.id ? { ...i, last_date: today, days_ago: 0 } : i
@@ -103,7 +86,7 @@ export function LastTimeTracker({ entries, compact = false }: Props) {
             <div className="last-time-item__body">
               <span className="last-time-item__label">{item.label}</span>
               {!compact && item.last_date && (
-                <span className="last-time-item__date">{formatDate(item.last_date)}</span>
+                <span className="last-time-item__date">{formatMediumDate(item.last_date)}</span>
               )}
             </div>
             <span

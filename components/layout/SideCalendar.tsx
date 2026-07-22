@@ -4,13 +4,9 @@ import { useState, useEffect } from 'react';
 import Link                    from 'next/link';
 import { usePathname }         from 'next/navigation';
 import { createClient }        from '@/lib/supabase/client';
+import { localTodayISO } from '@/lib/utils/dates';
 
 const DAY_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-
-function localTodayISO() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
 
 function pad(n: number) { return String(n).padStart(2, '0'); }
 

@@ -13,23 +13,22 @@ import { useState, useCallback } from 'react';
 import { createClient }    from '@/lib/supabase/client';
 import { togglePrescriptionEntry } from '@/lib/dal/daily';
 import { setEssResponse }          from '@/lib/dal/ess';
+import { formatTime } from '@/lib/utils/dates';
 
 import { Card, CardHeader, CardTitle, CardBody, CardSection, CardSectionLabel } from '@/components/ui/Card';
-import { TabBar }          from '@/components/ui/Controls';
-import { Toggle }          from '@/components/ui/Controls';
+import { TabBar, Toggle }          from '@/components/ui/Controls';
+import { JournalTab }       from './JournalTab';
 import { SliderField }     from '@/components/ui/SliderField';
 import { Chip, ChipGroup } from '@/components/ui/Chip';
-import { InputField, Field } from '@/components/ui/Display';
+import { InputField, SaveState } from '@/components/ui/Display';
 
 import { TagSelector }   from '@/components/ui/TagSelector';
 import type {
-  DailyEntryDetail, SleepEntryDetail, DailySymptomData,
+  JournalCategoryWithPrompts, DailyEntryDetail, SleepEntryDetail, DailySymptomData,
   EssEntryDetail, PrescriptionDetail, PriorSleepContext, ReferenceData,
 } from '@/types/dal';
+import type {  JournalState, DailyOverviewState, SymptomFormState, SleepFormState, MetricState, } from './DailyPageClient';
 import type { EssQuestionTypeRow, EssAnswerTypeRow } from '@/types/schema';
-import type {
-  DailyOverviewState, SymptomFormState, SleepFormState, MetricState,
-} from './DailyPageClient';
 
 type Mode = 'view' | 'input';
 
@@ -40,17 +39,12 @@ const TABS = [
   { id: 'sleep',     label: '💤 Sleep'     },
   { id: 'meds',      label: '💊 Meds'      },
   { id: 'ess',       label: '😴 ESS'       },
+  { id: 'journal',   label: '📓 Journal'  },
 ] as const satisfies { id: string; label: string }[];
 
 type TabId = typeof TABS[number]['id'];
 
 const SEVERITY_MAX = 10;
-
-function formatTime(t: string | null | undefined): string {
-  if (!t) return '';
-  const [h, m] = t.split(':').map(Number);
-  return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
-}
 
 function Rating({ value, max = SEVERITY_MAX }: { value: number | null | undefined; max?: number }) {
   if (value == null) return <span className="metric-display__value metric-display__value--empty">–</span>;
@@ -927,6 +921,12 @@ interface Props {
   ess: EssEntryDetail | null;
   prescriptions: PrescriptionDetail[];
   reference: ReferenceData;
+
+  journalState:        JournalState;
+  setJournalState:     React.Dispatch<React.SetStateAction<JournalState>>;
+  journalCategories:   JournalCategoryWithPrompts[];
+  onSaveJournal:       () => Promise<void>;
+  journalSaveState:    SaveState;
 }
 
 export function DailyCard({
@@ -938,6 +938,7 @@ export function DailyCard({
   sleepState, setSleepState, hasSleepData,
   symptomState, setSymptomState, hasSymptomData,
   priorSleep, ess, prescriptions, reference,
+  journalState, setJournalState, journalCategories, onSaveJournal, journalSaveState,
 }: Props) {
   const [tab, setTab] = useState<TabId>('overview');
 
@@ -1010,6 +1011,18 @@ export function DailyCard({
             questionTypes={reference.essQuestionTypes}
             answerTypes={reference.essAnswerTypes}
             mode={mode}
+          />
+        )}
+
+        {tab === 'journal' && (
+          <JournalTab
+            mode={mode}
+            entryId={entry.id}
+            categories={journalCategories}
+            state={journalState}
+            setState={setJournalState}
+            onSave={onSaveJournal}
+            saveState={journalSaveState}
           />
         )}
       </CardBody>

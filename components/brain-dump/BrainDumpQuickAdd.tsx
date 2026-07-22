@@ -12,11 +12,7 @@ import { useState } from 'react';
 import { createClient }             from '@/lib/supabase/client';
 import { createStandaloneBrainDump } from '@/lib/dal/daily';
 import { Button }                   from '@/components/ui/Button';
-
-function localTodayISO() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
+import { localTodayISO } from '@/lib/utils/dates';
 
 interface Props {
   /** If provided, the dump will be linked to this entry */

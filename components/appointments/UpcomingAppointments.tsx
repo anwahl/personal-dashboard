@@ -8,29 +8,11 @@
 
 import { Card, CardHeader, CardTitle, CardBody, CardSection } from '@/components/ui/Card';
 import type { AppointmentDetail } from '@/types/dal';
+import { daysUntil, formatMediumDate } from '@/lib/utils/dates';
 
 interface Props {
   appointments: AppointmentDetail[];
   contextDate:  string;
-}
-
-function daysUntil(apptDate: string, contextDate: string): string {
-  const [ay, am, ad] = apptDate.split('-').map(Number);
-  const [cy, cm, cd] = contextDate.split('-').map(Number);
-  const diff = Math.round(
-    (new Date(ay, am - 1, ad).getTime() - new Date(cy, cm - 1, cd).getTime()) / 86_400_000
-  );
-  if (diff === 0) return 'Today';
-  if (diff === 1) return 'Tomorrow';
-  if (diff < 0)   return `${Math.abs(diff)}d ago`;
-  return `In ${diff}d`;
-}
-
-function fmtDate(d: string): string {
-  const [y, m, day] = d.split('-').map(Number);
-  return new Date(y, m - 1, day).toLocaleDateString('en-US', {
-    weekday: 'short', month: 'short', day: 'numeric',
-  });
 }
 
 function fmtTime(t: string | null): string {
@@ -75,7 +57,7 @@ export function UpcomingAppointments({ appointments, contextDate }: Props) {
               {countdown}
             </div>
             <div className="appt-primary__date">
-              {fmtDate(primary.appointment_date)}{fmtTime(primary.appointment_time)}
+              {formatMediumDate(primary.appointment_date)}{fmtTime(primary.appointment_time)}
             </div>
           </div>
         </a>

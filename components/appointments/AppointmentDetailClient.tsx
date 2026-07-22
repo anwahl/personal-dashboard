@@ -1,16 +1,15 @@
 'use client';
 
+import { InputField, SaveStatus, SaveState } from '@/components/ui/Display';
 import { useState, useCallback } from 'react';
 import { useRouter }             from 'next/navigation';
 import { createClient }          from '@/lib/supabase/client';
 import { updateAppointment, deleteAppointment } from '@/lib/dal/appointments';
 import { Button }                from '@/components/ui/Button';
 import { ConfirmButton }         from '@/components/ui/ConfirmButton';
-import { InputField }            from '@/components/ui/Display';
-import { SaveStatus }            from '@/components/ui/Display';
-import type { SaveState }        from '@/components/ui/Display';
 import type { AppointmentDetail }    from '@/types/dal';
 import type { AppointmentTypeRow, PersonRow, ProviderRow } from '@/types/schema';
+import { daysUntil, formatMediumDate, localTodayISO } from '@/lib/utils/dates';
 
 interface Props {
   appointment:      AppointmentDetail;
@@ -19,44 +18,27 @@ interface Props {
   providers:        ProviderRow[];
 }
 
-function fmtDate(d: string) {
-  const [y, m, day] = d.split('-').map(Number);
-  return new Date(y, m - 1, day).toLocaleDateString('en-US', {
-    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
-  });
-}
-
 function fmtTime(t: string | null) {
   if (!t) return null;
   const [h, m] = t.split(':').map(Number);
   return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
 }
 
-function daysUntil(d: string) {
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const [y, m, day] = d.split('-').map(Number);
-  const diff = Math.round((new Date(y, m - 1, day).getTime() - today.getTime()) / 86_400_000);
-  if (diff === 0) return 'Today';
-  if (diff === 1) return 'Tomorrow';
-  if (diff < 0)  return `${Math.abs(diff)} days ago`;
-  return `In ${diff} days`;
-}
-
-export function AppointmentDetailClient({ appointment: appt, appointmentTypes, people, providers }: Props) {
+export function AppointmentDetailClient({ appointment: appt, appointmentTypes, people, providers }: Readonly<Props>) {
   const supabase = createClient();
   const router   = useRouter();
 
   const [mode,       setMode]       = useState<'view' | 'edit'>('view');
   const [saveState,  setSaveState]  = useState<SaveState>('idle');
 
-  const [date,    setDate]    = useState(appt.appointment_date);
-  const [time,    setTime]    = useState(appt.appointment_time ?? '');
-  const [typeId,  setTypeId]  = useState(appt.appointment_type_id ? String(appt.appointment_type_id) : '');
-  const [personId,setPersonId]= useState(String(appt.person_id));
-  const [provId,  setProvId]  = useState(appt.provider_id ? String(appt.provider_id) : '');
-  const [location,setLocation]= useState(appt.location ?? '');
-  const [questions,setQs]     = useState(appt.questions ?? '');
-  const [notes,   setNotes]   = useState(appt.notes ?? '');
+  const [date,      setDate]      = useState(appt.appointment_date);
+  const [time,      setTime]      = useState(appt.appointment_time ?? '');
+  const [typeId,    setTypeId]    = useState(appt.appointment_type_id ? String(appt.appointment_type_id) : '');
+  const [personId,  setPersonId]  = useState(String(appt.person_id));
+  const [provId,    setProvId]    = useState(appt.provider_id ? String(appt.provider_id) : '');
+  const [location,  setLocation]  = useState(appt.location ?? '');
+  const [questions, setQuestions] = useState(appt.questions ?? '');
+  const [notes,     setNotes]     = useState(appt.notes ?? '');
 
   const save = useCallback(async () => {
     setSaveState('saving');
@@ -64,9 +46,9 @@ export function AppointmentDetailClient({ appointment: appt, appointmentTypes, p
       await updateAppointment(supabase, appt.id, {
         appointment_date:    date,
         appointment_time:    time || null,
-        appointment_type_id: typeId   ? parseInt(typeId)   : null,
-        person_id:           parseInt(personId),
-        provider_id:         provId   ? parseInt(provId)   : null,
+        appointment_type_id: typeId   ? Number.parseInt(typeId)   : null,
+        person_id:           Number.parseInt(personId),
+        provider_id:         provId   ? Number.parseInt(provId)   : null,
         location:            location || null,
         questions:           questions || null,
         notes:               notes     || null,
@@ -85,7 +67,7 @@ export function AppointmentDetailClient({ appointment: appt, appointmentTypes, p
 
   if (mode === 'view') {
     const countdown = daysUntil(appt.appointment_date);
-    const isPast    = appt.appointment_date < new Date().toISOString().slice(0, 10);
+    const isPast    = appt.appointment_date < localTodayISO();
 
     return (
       <div>
@@ -113,7 +95,7 @@ export function AppointmentDetailClient({ appointment: appt, appointmentTypes, p
         <dl className="detail-page__fields">
           <div className="detail-page__field">
             <dt>Date</dt>
-            <dd>{fmtDate(appt.appointment_date)}{fmtTime(appt.appointment_time) ? ` at ${fmtTime(appt.appointment_time)}` : ''}</dd>
+            <dd>{formatMediumDate(appt.appointment_date)}{fmtTime(appt.appointment_time) ? ` at ${fmtTime(appt.appointment_time)}` : ''}</dd>
           </div>
           <div className="detail-page__field">
             <dt>For</dt>
@@ -185,7 +167,7 @@ export function AppointmentDetailClient({ appointment: appt, appointmentTypes, p
       </InputField>
 
       <InputField label="Questions" id="ad-q">
-        <textarea id="ad-q" value={questions} onChange={e => setQs(e.target.value)} />
+        <textarea id="ad-q" value={questions} onChange={e => setQuestions(e.target.value)} />
       </InputField>
 
       <InputField label="Notes" id="ad-notes">

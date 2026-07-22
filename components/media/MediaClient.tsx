@@ -8,8 +8,9 @@ import { TabBar }                 from '@/components/ui/Controls';
 import { InputField }             from '@/components/ui/Display';
 import { Markdown }               from '@/components/ui/Markdown';
 import type { MediaEntryDetail }  from '@/types/dal';
+import { formatMediumDate, localTodayISO } from '@/lib/utils/dates';
 import type {
-  MediaTypeRow, MediaStatusRow, MediaGenreRow,
+  MediaTypeRow, MediaStatusRow,
   MediaNoteRow, MediaStatusTypeLinkRow,
 } from '@/types/schema';
 import type { MediaSearchResult } from '@/app/api/media-search/route';
@@ -18,7 +19,6 @@ interface Props {
   entries:        MediaEntryDetail[];
   mediaTypes:     MediaTypeRow[];
   mediaStatuses:  MediaStatusRow[];
-  genres:         MediaGenreRow[];
   statusTypeLinks: MediaStatusTypeLinkRow[];
 }
 
@@ -31,11 +31,6 @@ const STATUS_EMOJI: Record<string, string> = {
 
 function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
-function localTodayISO() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 /** Returns statuses valid for a given media type.
@@ -92,10 +87,10 @@ function entryToForm(e: MediaEntryDetail): FormState {
 
 // ── Search panel ──────────────────────────────────────────────────────────────
 
-function SearchPanel({ mediaTypeSlug, onSelect }: {
+function SearchPanel({ mediaTypeSlug, onSelect }: Readonly<{
   mediaTypeSlug: string;
   onSelect: (r: MediaSearchResult) => void;
-}) {
+}>) {
   const [query,   setQuery]   = useState('');
   const [results, setResults] = useState<MediaSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -125,14 +120,20 @@ function SearchPanel({ mediaTypeSlug, onSelect }: {
         {loading && <span style={{ fontSize: '0.75rem', color: 'var(--text-faint)', marginTop: 4, display: 'block' }}>Searching…</span>}
       </div>
       {results.map(r => (
-        <div key={r.external_id} className="search-result" onClick={() => onSelect(r)}>
-          <div className="search-result__title">{r.title}</div>
-          <div className="search-result__meta">
+        <button
+          type="button"
+          key={r.external_id}
+          className="search-result"
+          onClick={() => onSelect(r)}
+          onTouchEnd={() => onSelect(r)}
+        >
+          <span className="search-result__title">{r.title}</span>
+          <span className="search-result__meta">
             {r.creator && <span>{r.creator} · </span>}
             {r.year    && <span>{r.year} · </span>}
             {r.platform && <span>{r.platform}</span>}
-          </div>
-        </div>
+          </span>
+        </button>
       ))}
       {query.trim() && !loading && results.length === 0 && (
         <div style={{ padding: '10px 14px', fontSize: '0.82rem', color: 'var(--text-faint)' }}>No results found.</div>
@@ -143,7 +144,7 @@ function SearchPanel({ mediaTypeSlug, onSelect }: {
 
 // ── Media form ────────────────────────────────────────────────────────────────
 
-function MediaForm({ form, setForm, mediaTypes, mediaStatuses, statusTypeLinks, onSave, onCancel, onDelete, editId, saving }: {
+function MediaForm({ form, setForm, mediaTypes, mediaStatuses, statusTypeLinks, onSave, onCancel, onDelete, editId, saving }: Readonly<{
   form: FormState;
   setForm: React.Dispatch<React.SetStateAction<FormState>>;
   mediaTypes:      MediaTypeRow[];
@@ -154,7 +155,7 @@ function MediaForm({ form, setForm, mediaTypes, mediaStatuses, statusTypeLinks, 
   onDelete?: () => void;
   editId?: number;
   saving: boolean;
-}) {
+}>) {
   const [showSearch, setShowSearch] = useState(false);
   const set = (k: keyof FormState, v: string) => setForm(p => ({ ...p, [k]: v }));
 
@@ -255,11 +256,11 @@ function MediaForm({ form, setForm, mediaTypes, mediaStatuses, statusTypeLinks, 
 
 // ── Media item view (expanded) ────────────────────────────────────────────────
 
-function MediaItemView({ entry, onEdit, onClose }: {
+function MediaItemView({ entry, onEdit, onClose }: Readonly<{
   entry: MediaEntryDetail;
   onEdit: () => void;
   onClose: () => void;
-}) {
+}>) {
   const supabase = createClient();
   const [notes,      setNotes]      = useState<MediaNoteRow[]>([]);
   const [newNote,    setNewNote]    = useState('');
@@ -290,11 +291,6 @@ function MediaItemView({ entry, onEdit, onClose }: {
     await supabase.from('media_notes').delete().eq('id', id);
     setNotes(prev => prev.filter(n => n.id !== id));
   }, [supabase]);
-
-  function fmtDate(d: string) {
-    const [y, m, day] = d.split('-').map(Number);
-    return new Date(y, m - 1, day).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  }
 
   return (
     <div className="expand-panel">
@@ -328,7 +324,7 @@ function MediaItemView({ entry, onEdit, onClose }: {
       {!loading && notes.map(n => (
         <div key={n.id} className="media-note">
           <div className="media-note__header">
-            <span className="media-note__date-badge">{fmtDate(n.note_date)}</span>
+            <span className="media-note__date-badge">{formatMediumDate(n.note_date)}</span>
             <button type="button" className="media-note__delete" onClick={() => deleteNote(n.id)} title="Delete note">✕</button>
           </div>
           <Markdown>{n.body_md}</Markdown>
@@ -355,13 +351,17 @@ function MediaItemView({ entry, onEdit, onClose }: {
 
 // ── Compact item row ──────────────────────────────────────────────────────────
 
-function MediaItem({ entry, isExpanded, onToggle }: {
+function MediaItem({ entry, isExpanded, onToggle }: Readonly<{
   entry: MediaEntryDetail;
   isExpanded: boolean;
   onToggle: () => void;
-}) {
+}>) {
+
   return (
-    <div className="list-item" onClick={onToggle}
+    <button
+      type="button"
+      className="list-item"
+      onClick={onToggle}
       style={{ borderRadius: isExpanded ? 'var(--radius-sm) var(--radius-sm) 0 0' : undefined }}>
       <div className="list-item__body">
         <div className="list-item__title">{entry.title}</div>
@@ -377,7 +377,7 @@ function MediaItem({ entry, isExpanded, onToggle }: {
         {entry.rating != null && <span className="badge">{entry.rating}/10</span>}
         <span style={{ color: 'var(--text-faint)', fontSize: '0.75rem' }}>{isExpanded ? '▲' : '▼'}</span>
       </div>
-    </div>
+    </button>
   );
 }
 

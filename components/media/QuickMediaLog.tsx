@@ -1,5 +1,8 @@
 'use client';
 
+import Link from 'next/link';
+import { localTodayISO } from '@/lib/utils/dates';
+
 /**
  * QuickMediaLog
  *
@@ -13,7 +16,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { createClient }              from '@/lib/supabase/client';
 import { Button }                    from '@/components/ui/Button';
-import { InputField }                from '@/components/ui/Display';
 import type { MediaEntryDetail }     from '@/types/dal';
 import type {
   MediaTypeRow, MediaStatusRow, MediaStatusTypeLinkRow,
@@ -28,11 +30,6 @@ const STATUS_EMOJI: Record<string, string> = {
 
 function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
-function localTodayISO() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 function validStatusesForType(
@@ -55,12 +52,12 @@ function validStatusesForType(
 
 function NowPlayingItem({
   entry, allStatuses, statusTypeLinks, onStatusChange,
-}: {
+}: Readonly<{
   entry: MediaEntryDetail;
   allStatuses: MediaStatusRow[];
   statusTypeLinks: MediaStatusTypeLinkRow[];
   onStatusChange: (entryId: number, statusId: number) => Promise<void>;
-}) {
+}>) {
   const [changing, setChanging] = useState(false);
   const validStatuses = validStatusesForType(entry.media_type_id, allStatuses, statusTypeLinks);
   const terminalStatuses = validStatuses.filter(s =>
@@ -75,14 +72,16 @@ function NowPlayingItem({
 
   return (
     <div className="qml-item">
-      <div className="qml-item__body">
-        <span className="qml-item__title">{entry.title}</span>
-        <span className="qml-item__meta">
-          {STATUS_EMOJI[entry.current_status?.status_name ?? ''] ?? ''}
-          {entry.current_status?.status_name}
-          {entry.creator && ` · ${entry.creator}`}
-        </span>
-      </div>
+      <Link href={`/media/${entry.id}`} className="item-body-link">
+        <div className="qml-item__body">
+          <span className="qml-item__title">{entry.title}</span>
+          <span className="qml-item__meta">
+            {STATUS_EMOJI[entry.current_status?.status_name ?? ''] ?? ''}
+            {entry.current_status?.status_name}
+            {entry.creator && ` · ${entry.creator}`}
+          </span>
+        </div>
+      </Link>
       <div className="qml-item__actions">
         {terminalStatuses.map(s => (
           <Button key={s.id} variant="ghost" size="sm"
@@ -103,14 +102,13 @@ interface Props {
   mediaTypes:      MediaTypeRow[];
   mediaStatuses:   MediaStatusRow[];
   statusTypeLinks: MediaStatusTypeLinkRow[];
-  compact?:        boolean;
 }
 
 // ── QuickMediaLog ─────────────────────────────────────────────────────────────
 
 export function QuickMediaLog({
-  initialEntries, mediaTypes, mediaStatuses, statusTypeLinks, compact = false,
-}: Props) {
+  initialEntries, mediaTypes, mediaStatuses, statusTypeLinks,
+}: Readonly<Props>) {
   const supabase = createClient();
   const [entries, setEntries]     = useState<MediaEntryDetail[]>(initialEntries);
   const [showAdd, setShowAdd]     = useState(false);
@@ -154,22 +152,22 @@ export function QuickMediaLog({
     try {
       const { data: entryData, error } = await supabase
         .from('media_entries')
-        .insert({ title: title.trim(), media_type_id: parseInt(typeId) })
+        .insert({ title: title.trim(), media_type_id: Number.parseInt(typeId) })
         .select().single();
       if (error || !entryData) throw new Error('Failed to create entry');
 
       if (statusId) {
         await supabase.from('media_status_entries').insert({
           media_entry_id: (entryData as any).id,
-          status_id:      parseInt(statusId),
+          status_id:      Number.parseInt(statusId),
           status_date:    localTodayISO(),
         });
       }
 
       // Add to local list as in-progress if applicable
-      const status = mediaStatuses.find(s => s.id === parseInt(statusId));
+      const status = mediaStatuses.find(s => s.id === Number.parseInt(statusId));
       if (status?.status_type === 'in_progress') {
-        const mediaType = mediaTypes.find(t => t.id === parseInt(typeId))!;
+        const mediaType = mediaTypes.find(t => t.id === Number.parseInt(typeId))!;
         const newEntry: MediaEntryDetail = {
           ...(entryData as any),
           media_type:         mediaType,
