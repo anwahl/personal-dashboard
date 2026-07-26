@@ -13,7 +13,8 @@ export type ManageableTable =
   | 'habits'
   | 'providers'
   | 'medications'
-  | 'chart_categories';
+  | 'chart_categories'
+  | 'daily_trackables';
 
 // ── Generic active toggle ─────────────────────────────────────────────────────
 
