@@ -36,16 +36,20 @@ function priorityDotClass(name: string): string {
   return 'task-item__dot--medium';
 }
 
+function formatLabel(base: string, count: number) {
+  return count ? `${base} (${count})` : base;
+}
+
 // ── TaskItem ──────────────────────────────────────────────────────────────────
 
 function TaskItem({
   task, contextDate, showDueDate, onComplete,
-}: {
+}: Readonly<{
   task:        TaskDetail;
   contextDate: string;
   showDueDate?: boolean;
   onComplete:  (id: number) => Promise<void>;
-}) {
+}>) {
   const [busy, setBusy] = useState(false);
 
   const handleComplete = async () => {
@@ -95,12 +99,12 @@ function QuickAdd({
   defaultDueDate,
   showDatePicker,
   onAdd,
-}: {
+}: Readonly<{
   placeholder:    string;
   defaultDueDate: string | null;
   showDatePicker?: boolean;
   onAdd: (title: string, dueDate: string | null) => Promise<void>;
-}) {
+}>) {
   const [title,   setTitle]   = useState('');
   const [date,    setDate]    = useState(defaultDueDate ?? '');
   const [saving,  setSaving]  = useState(false);
@@ -154,7 +158,7 @@ interface Props {
   people:       PersonRow[];
 }
 
-export function TaskList({ contextDate, initialData, statuses, priorities }: Props) {
+export function TaskList({ contextDate, initialData, statuses, priorities }: Readonly<Props>) {
   const supabase = createClient();
   const [data, setData] = useState<TaskContextData>(initialData);
   const [tab,  setTab]  = useState<TabId>('today');
@@ -167,11 +171,12 @@ export function TaskList({ contextDate, initialData, statuses, priorities }: Pro
   const doneStatus = statuses.find(s => s.is_terminal);
 
   const TABS: { id: TabId; label: string }[] = [
-    { id: 'today',       label: `Today${data.today.length       ? ` (${data.today.length})`       : ''}` },
-    { id: 'tomorrow',    label: `Tomorrow${data.tomorrow.length  ? ` (${data.tomorrow.length})`    : ''}` },
-    { id: 'upcoming',    label: `Upcoming${data.upcoming.length  ? ` (${data.upcoming.length})`    : ''}` },
-    { id: 'unscheduled', label: `No Date${data.unscheduled.length ? ` (${data.unscheduled.length})` : ''}` },
+    { id: 'today',       label: formatLabel('Today', data.today.length) },
+    { id: 'tomorrow',    label: formatLabel('Tomorrow', data.tomorrow.length) },
+    { id: 'upcoming',    label: formatLabel('Upcoming', data.upcoming.length) },
+    { id: 'unscheduled', label: formatLabel('No Date', data.unscheduled.length) },
   ];
+
 
   const bucket = data[tab];
 

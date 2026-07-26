@@ -44,10 +44,10 @@ function isOverdue(t: TaskDetail): boolean {
 
 // ── Task item ─────────────────────────────────────────────────────────────────
 
-function TaskItem({ task, doneStatusId, onComplete, onEdit }: {
+function TaskItem({ task, doneStatusId, onComplete, onEdit }: Readonly<{
   task: TaskDetail; doneStatusId: number;
   onComplete: (id: number) => void; onEdit: (t: TaskDetail) => void;
-}) {
+}>) {
   const done    = task.status.is_terminal;
   const overdue = isOverdue(task);
   const dueDate = task.due_date ?? task.scheduled_date;
@@ -106,10 +106,10 @@ function taskToEdit(t: TaskDetail): EditState {
   };
 }
 
-function EditPanel({ task, statuses, priorities, people, onSave, onDelete, onCancel, saving }: {
+function EditPanel({ task, statuses, priorities, people, onSave, onDelete, onCancel, saving }: Readonly<{
   task: TaskDetail; statuses: TaskStatusRow[]; priorities: TaskPriorityRow[]; people: PersonRow[];
   onSave: (d: EditState) => void; onDelete: () => void; onCancel: () => void; saving: boolean;
-}) {
+}>) {
   const [form, setForm] = useState<EditState>(taskToEdit(task));
   const set = (k: keyof EditState, v: string) => setForm(p => ({ ...p, [k]: v }));
 
@@ -157,11 +157,11 @@ function EditPanel({ task, statuses, priorities, people, onSave, onDelete, onCan
 
 // ── Full add form ─────────────────────────────────────────────────────────────
 
-function FullAddForm({ statuses, priorities, people, todoStatusId, normalPriorityId, onSave, onCancel, saving }: {
+function FullAddForm({ statuses, priorities, people, todoStatusId, normalPriorityId, onSave, onCancel, saving }: Readonly<{
   statuses: TaskStatusRow[]; priorities: TaskPriorityRow[]; people: PersonRow[];
   todoStatusId: number; normalPriorityId: number;
   onSave: (d: EditState) => void; onCancel: () => void; saving: boolean;
-}) {
+}>) {
   const [form, setForm] = useState<EditState>({
     title: '', status_id: String(todoStatusId), priority_id: String(normalPriorityId),
     due_date: '', scheduled_date: '', person_id: '', body_md: '',
@@ -210,7 +210,7 @@ function FullAddForm({ statuses, priorities, people, todoStatusId, normalPriorit
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
-export function TasksClient({ active, completed, statuses, priorities, people }: Props) {
+export function TasksClient({ active, completed, statuses, priorities, people }: Readonly<Props>) {
   const supabase = createClient();
   const router   = useRouter();
 
@@ -239,7 +239,7 @@ export function TasksClient({ active, completed, statuses, priorities, people }:
       await supabase.from('tasks').insert({
         title: newTitle.trim(), status_id: todoStatusId, priority_id: normalPriorityId,
         due_date: newDue || null,
-        person_id: newPerson ? parseInt(newPerson) : null,
+        person_id: newPerson ? Number.parseInt(newPerson) : null,
       });
       setNewTitle(''); setNewDue('');
       router.refresh();
@@ -251,11 +251,11 @@ export function TasksClient({ active, completed, statuses, priorities, people }:
     try {
       await supabase.from('tasks').insert({
         title:          data.title.trim(),
-        status_id:      parseInt(data.status_id),
-        priority_id:    parseInt(data.priority_id),
+        status_id:      Number.parseInt(data.status_id),
+        priority_id:    Number.parseInt(data.priority_id),
         due_date:       data.due_date       || null,
         scheduled_date: data.scheduled_date || null,
-        person_id:      data.person_id      ? parseInt(data.person_id) : null,
+        person_id:      data.person_id      ? Number.parseInt(data.person_id) : null,
         body_md:        data.body_md        || null,
       });
       setShowFull(false);
@@ -274,11 +274,11 @@ export function TasksClient({ active, completed, statuses, priorities, people }:
     try {
       await supabase.from('tasks').update({
         title:          data.title,
-        status_id:      parseInt(data.status_id),
-        priority_id:    parseInt(data.priority_id),
+        status_id:      Number.parseInt(data.status_id),
+        priority_id:    Number.parseInt(data.priority_id),
         due_date:       data.due_date       || null,
         scheduled_date: data.scheduled_date || null,
-        person_id:      data.person_id      ? parseInt(data.person_id) : null,
+        person_id:      data.person_id      ? Number.parseInt(data.person_id) : null,
         body_md:        data.body_md        || null,
       }).eq('id', editTask.id);
       setEditTask(null);

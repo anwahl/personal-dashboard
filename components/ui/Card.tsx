@@ -10,27 +10,27 @@ export function Card({ children, className, style }: Readonly<CardProps>) {
   return <div className={['card', className].filter(Boolean).join(' ')} style={style}>{children}</div>;
 }
 
-export function CardHeader({ children, className }: Readonly<CardProps>) {
-  return <div className={['card__header', className].filter(Boolean).join(' ')}>{children}</div>;
+export function CardHeader({ children, className, style }: Readonly<CardProps>) {
+  return <div className={['card__header', className].filter(Boolean).join(' ')} style={style}>{children}</div>;
 }
 
 export function CardTitle({ children }: Readonly<{ children: ReactNode }>) {
   return <span className="card__title">{children}</span>;
 }
 
-export function CardBody({ children, flush, className }: CardProps & { flush?: boolean }) {
+export function CardBody({ children, flush, className, style }: CardProps & { flush?: boolean }) {
   const classes = ['card__body', flush && 'card__body--flush', className]
     .filter(Boolean)
     .join(' ');
-  return <div className={classes}>{children}</div>;
+  return <div className={classes} style={style}>{children}</div>;
 }
 
-export function CardFooter({ children, className }: Readonly<CardProps>) {
-  return <div className={['card__footer', className].filter(Boolean).join(' ')}>{children}</div>;
+export function CardFooter({ children, className, style }: Readonly<CardProps>) {
+  return <div className={['card__footer', className].filter(Boolean).join(' ')} style={style}>{children}</div>;
 }
 
-export function CardSection({ children, className }: Readonly<CardProps>) {
-  return <div className={['card__section', className].filter(Boolean).join(' ')}>{children}</div>;
+export function CardSection({ children, className, style }: Readonly<CardProps>) {
+  return <div className={['card__section', className].filter(Boolean).join(' ')} style={style}>{children}</div>;
 }
 
 export function CardSectionLabel({ children }: Readonly<{ children: ReactNode }>) {

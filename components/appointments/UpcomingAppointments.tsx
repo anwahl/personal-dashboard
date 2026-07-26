@@ -27,7 +27,7 @@ function apptLabel(appt: AppointmentDetail): string {
   return provider ? `${type} · ${provider}` : type;
 }
 
-export function UpcomingAppointments({ appointments, contextDate }: Props) {
+export function UpcomingAppointments({ appointments, contextDate }: Readonly<Props>) {
   if (appointments.length === 0) {
     return (
       <Card>

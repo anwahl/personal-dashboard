@@ -73,7 +73,7 @@ function matchesFilter(chart: ChartDefinitionDetail, q: string): boolean {
 function ChartCard({
   chart, idx, total, trackables, categories,
   onMove, onDelete,
-}: {
+}: Readonly<{
   chart:      ChartDefinitionDetail;
   idx:        number;
   total:      number;
@@ -81,7 +81,7 @@ function ChartCard({
   categories: ChartCategoryRow[];
   onMove:    (id: number, dir: 'up' | 'down') => Promise<void>;
   onDelete:  (id: number) => Promise<void>;
-}) {
+}>) {
   const supabase = createClient();
   const [links,      setLinks]      = useState(chart.links);
   const [active,     setActive]     = useState(chart.is_active);
@@ -205,10 +205,10 @@ function ChartCard({
 
 // ── New chart form ────────────────────────────────────────────────────────────
 
-function NewChartForm({ categories, onCreated }: {
+function NewChartForm({ categories, onCreated }: Readonly<{
   categories: ChartCategoryRow[];
   onCreated:  (chart: ChartDefinitionDetail) => void;
-}) {
+}>) {
   const supabase  = createClient();
   const [title,    setTitle]    = useState('');
   const [type,     setType]     = useState<ChartType>('line');
@@ -262,7 +262,7 @@ interface Props {
   categories:       ChartCategoryRow[];
 }
 
-export function ChartSettings({ chartDefinitions, trackables, categories }: Props) {
+export function ChartSettings({ chartDefinitions, trackables, categories }: Readonly<Props>) {
   const supabase = createClient();
   const [charts, setCharts] = useState(
     [...chartDefinitions].sort((a, b) => a.sort_order - b.sort_order)

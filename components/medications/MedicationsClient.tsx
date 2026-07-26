@@ -41,7 +41,7 @@ const EMPTY_FORM: FormState = {
   prescriber_id: '', start_date: '', discontinued_date: '',
 };
 
-function RxItem({ rx, onEdit }: { rx: PrescriptionDetail; onEdit: () => void }) {
+function RxItem({ rx, onEdit }: Readonly<{ rx: PrescriptionDetail; onEdit: () => void }>) {
   const isActive = !rx.discontinued_date;
   return (
     <div className={`list-item${isActive ? '' : ' list-item--muted'}`} onClick={onEdit}>
@@ -67,7 +67,7 @@ function RxItem({ rx, onEdit }: { rx: PrescriptionDetail; onEdit: () => void }) 
   );
 }
 
-export function MedicationsClient({ prescriptionsByPerson, medications, timingTypes, people, providers }: Props) {
+export function MedicationsClient({ prescriptionsByPerson, medications, timingTypes, people, providers }: Readonly<Props>) {
   const supabase = createClient();
   const router   = useRouter();
   const [showForm,   setShowForm]   = useState(false);
@@ -108,7 +108,7 @@ export function MedicationsClient({ prescriptionsByPerson, medications, timingTy
   const save = useCallback(async () => {
     setSaving(true);
     try {
-      let medId = form.medication_id ? parseInt(form.medication_id) : null;
+      let medId = form.medication_id ? Number.parseInt(form.medication_id) : null;
 
       // Create new medication if needed
       if (useNewMed && form.new_medication_name.trim()) {
@@ -123,13 +123,13 @@ export function MedicationsClient({ prescriptionsByPerson, medications, timingTy
       if (!medId || !form.person_id) return;
 
       const payload = {
-        person_id:         parseInt(form.person_id),
+        person_id:         Number.parseInt(form.person_id),
         medication_id:     medId,
         alias:             form.alias             || null,
         dose:              form.dose              || null,
-        timing_type_id:    form.timing_type_id   ? parseInt(form.timing_type_id)   : null,
+        timing_type_id:    form.timing_type_id   ? Number.parseInt(form.timing_type_id)   : null,
         purpose:           form.purpose           || null,
-        prescriber_id:     form.prescriber_id    ? parseInt(form.prescriber_id)    : null,
+        prescriber_id:     form.prescriber_id    ? Number.parseInt(form.prescriber_id)    : null,
         start_date:        form.start_date        || null,
         discontinued_date: form.discontinued_date || null,
         is_active:         !form.discontinued_date,

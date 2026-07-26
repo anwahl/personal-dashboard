@@ -25,8 +25,6 @@ import type {
   TaskPriorityRow,
   MediaTypeRow,
   MediaStatusRow,
-  MediaStatusEntryRow,
-  MediaStatusTypeLinkRow,
   MediaGenreRow,
   IntentionRow,
   JournalCategoryRow,
@@ -37,13 +35,10 @@ import type {
   PrescriptionRow,
   PrescriptionRefillRow,
   DailyEntryRow,
-  HabitEntryRow,
   SleepEntryRow,
   NapRow,
   WakeEventRow,
-  SleepEventRow,
   SleepTimingEntryRow,
-  SleepConsumptionEntryRow,
   CrashRow,
   AnxietyEntryRow,
   DailySymptomEntryRow,
@@ -51,10 +46,6 @@ import type {
   EssQuestionResponseRow,
   AppointmentRow,
   TaskRow,
-  LastTimeLatestRow,
-  LastTimeMediaRow,
-  LastTimeBooleanRow,
-  LastTimeCustomRow,
   MediaEntryRow,
   WeeklyEntryRow,
   WeeklyIntentionRow,
@@ -67,9 +58,6 @@ import type {
 export type {
   ChartCategoryRow,
   DailyTrackableRow,
-  LastTimeMediaRow,
-  LastTimeBooleanRow,
-  LastTimeCustomRow,
   DailyNumericEntryRow,
   TagRow,
   EssQuestionTypeRow,
@@ -85,7 +73,6 @@ export type {
   PrescriptionRow,
   TaskStatusRow,
   TaskPriorityRow,
-  LastTimeLatestRow,
   ChartDefinitionRow,
   ChartTrackableLinkRow,
 };
@@ -368,3 +355,5 @@ export type MediaEntryUpdate = Partial<MediaEntryInsert>;
 
 export type BrainDumpInsert = { entry_id?: number | null; dump_date: string; body_md?: string };
 export type BrainDumpUpdate = Partial<BrainDumpInsert>;
+
+export {type LastTimeBooleanRow, type LastTimeMediaRow, type LastTimeCustomRow, type LastTimeLatestRow} from './schema';

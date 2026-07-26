@@ -18,7 +18,7 @@ interface Props {
   toDate:   string;
 }
 
-export function HabitHeatmap({ chart, data, fromDate, toDate }: Props) {
+export function HabitHeatmap({ chart, data, fromDate, toDate }: Readonly<Props>) {
   const seriesLinks = chart.links.filter(l => l.metric_role === 'series');
 
   if (!seriesLinks.length) {

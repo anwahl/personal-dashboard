@@ -32,7 +32,7 @@ type StructureType = 'info_group' | 'list' | 'log' | 'checklist';
 
 // ── Link/unlink toggle ────────────────────────────────────────────────────────
 
-function LinkToggle({ linked, onToggle }: { linked: boolean; onToggle: () => void }) {
+function LinkToggle({ linked, onToggle }: Readonly<{ linked: boolean; onToggle: () => void }>) {
   return (
     <Button size="sm" variant={linked ? 'accent' : 'ghost'} onClick={onToggle}>
       {linked ? '✓ Linked' : 'Link'}
@@ -48,13 +48,13 @@ function StructureLinkGroup<T extends { id: number }>({
   linkedIds,
   getName,
   onToggle,
-}: {
+}: Readonly<{
   label:     string;
   items:     T[];
   linkedIds: number[];
   getName:   (item: T) => string;
   onToggle:  (id: number) => void;
-}) {
+}>) {
   if (items.length === 0) return null;
   return (
     <>
@@ -78,7 +78,7 @@ function StructureLinkGroup<T extends { id: number }>({
 
 function PersonStructureLinks({
   person, links, infoGroups, itemLists, logSchemas, checklists, onToggle,
-}: {
+}: Readonly<{
   person:     PersonRow;
   links:      PersonLinks;
   infoGroups: InfoGroupRow[];
@@ -86,7 +86,7 @@ function PersonStructureLinks({
   logSchemas: LogSchemaRow[];
   checklists: ChecklistRow[];
   onToggle:   (type: StructureType, id: number) => void;
-}) {
+}>) {
   const hasAny = infoGroups.length > 0 || itemLists.length > 0 ||
                  logSchemas.length > 0  || checklists.length > 0;
 
@@ -134,7 +134,7 @@ function PersonStructureLinks({
 
 interface NewField { label: string; type: string; }
 
-function CreateInfoGroupForm({ onCreated }: { onCreated: (id: number, title: string) => void }) {
+function CreateInfoGroupForm({ onCreated }: Readonly<{ onCreated: (id: number, title: string) => void }>) {
   const supabase = createClient();
   const [title,  setTitle]  = useState('');
   const [fields, setFields] = useState<NewField[]>([{ label: '', type: 'text' }]);
@@ -202,9 +202,9 @@ function CreateInfoGroupForm({ onCreated }: { onCreated: (id: number, title: str
 
 function CreateListForm({
   onCreated,
-}: {
+}: Readonly<{
   onCreated: (id: number, title: string) => void;
-}) {
+}>) {
   const supabase = createClient();
   const [title, setTitle] = useState('');
   const [label, setLabel] = useState('');
@@ -247,7 +247,7 @@ function CreateListForm({
 
 // ── Create Log Schema form ────────────────────────────────────────────────────
 
-function CreateLogForm({ onCreated }: { onCreated: (id: number, title: string) => void }) {
+function CreateLogForm({ onCreated }: Readonly<{ onCreated: (id: number, title: string) => void }>) {
   const supabase = createClient();
   const [title,  setTitle]  = useState('');
   const [fields, setFields] = useState<{ label: string; key: string; type: string; options: string }[]>([
@@ -349,9 +349,9 @@ function CreateLogForm({ onCreated }: { onCreated: (id: number, title: string) =
 
 function CreateChecklistForm({
   onCreated,
-}: {
+}: Readonly<{
   onCreated: (id: number, title: string) => void;
-}) {
+}>) {
   const supabase = createClient();
   const [title, setTitle] = useState('');
   const [label, setLabel] = useState('');
@@ -398,7 +398,7 @@ export function PeopleStructureSettings({
   people, personLinks: initialLinks,
   infoGroups: initGroups, itemLists: initLists,
   logSchemas: initLogs, checklists: initChecklists,
-}: Props) {
+}: Readonly<Props>) {
   const supabase = createClient();
 
   const [links,      setLinks]      = useState<PersonLinks[]>(initialLinks);

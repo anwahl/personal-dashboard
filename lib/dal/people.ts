@@ -8,9 +8,9 @@ import type {
   ChecklistRow, ChecklistItemRow,
 } from '@/types/schema';
 import type {
-  PersonPageData, InfoGroupWithFields, InfoFieldTypeWithValue,
+  PersonPageData, InfoGroupWithFields,
   ItemListWithEntries, LogWithSchemaAndEntries, LogSchemaFieldWithOptions,
-  LogEntryWithValues, ChecklistWithItems, PrescriptionDetail,
+  LogEntryWithValues, ChecklistWithItems,
 } from '@/types/dal';
 import { getActivePrescriptions } from './prescriptions';
 
@@ -287,7 +287,7 @@ export async function addLogEntry(
 
   const fieldEntries = Object.entries(values).map(([fieldId, val]) => ({
     log_entry_id: entry.id,
-    field_id:     parseInt(fieldId),
+    field_id:     Number.parseInt(fieldId),
     field_value:  val,
   }));
 

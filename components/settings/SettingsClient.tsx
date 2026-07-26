@@ -8,16 +8,15 @@ import { PeopleStructureSettings } from './PeopleStructureSettings';
 import { TrackableSettings }     from './TrackableSettings';
 import { ChartSettings }         from './ChartSettings';
 import { LastTimeSettings }      from '../last-time/LastTimeSettings';
-import type { SymptomCategoryWithTypes, JournalCategoryWithPrompts, ChartDefinitionDetail } from '@/types/dal';
+import type { SymptomCategoryWithTypes, JournalCategoryWithPrompts, ChartDefinitionDetail, ChartCategoryRow } from '@/types/dal';
 import type { PersonRow, ProviderTypeRow, DailyTrackableRow } from '@/types/schema';
-import type { ChartCategoryRow } from '@/types/dal';
 
 // Re-export TabBar from ui for convenience
-function TabBarLocal({ tabs, active, onChange }: {
+function TabBarLocal({ tabs, active, onChange }: Readonly<{
   tabs: { id: string; label: string }[];
   active: string;
   onChange: (id: string) => void;
-}) {
+}>) {
   return (
     <div className="tab-bar">
       {tabs.map(t => (
@@ -84,7 +83,7 @@ export function SettingsClient({
   providers, providerTypes,
   mediaTypes, mediaGenres, mediaStatuses,
   people, personLinks, infoGroups, itemLists, logSchemas, checklists,
-}: Props) {
+}: Readonly<Props>) {
   const [tab, setTab] = useState<TabId>('daily');
 
   return (
@@ -191,10 +190,10 @@ export function SettingsClient({
 
 // ── Provider section (with local state for instant refresh) ──────────────────
 
-function ProviderSection({ providers: initial, providerTypes }: {
+function ProviderSection({ providers: initial, providerTypes }: Readonly<{
   providers: any[];
   providerTypes: ProviderTypeRow[];
-}) {
+}>) {
   const [providers, setProviders] = useState<any[]>(initial);
 
   return (
@@ -234,10 +233,10 @@ function ProviderSection({ providers: initial, providerTypes }: {
 
 import { createClient as _createClient } from '@/lib/supabase/client';
 
-function AddProviderForm({ providerTypes, onAdded }: {
+function AddProviderForm({ providerTypes, onAdded }: Readonly<{
   providerTypes: ProviderTypeRow[];
   onAdded: (p: unknown) => void;
-}) {
+}>) {
   const supabase = _createClient();
   const [show,   setShow]   = useState(false);
   const [name,   setName]   = useState('');
@@ -251,7 +250,7 @@ function AddProviderForm({ providerTypes, onAdded }: {
     setSaving(true);
     try {
       const { data } = await supabase.from('providers').insert({
-        provider_type_id: parseInt(typeId),
+        provider_type_id: Number.parseInt(typeId),
         provider_name:    name.trim()    || null,
         practice_name:    practice.trim() || null,
         phone:            phone.trim()   || null,
@@ -275,23 +274,23 @@ function AddProviderForm({ providerTypes, onAdded }: {
     <div style={{ paddingTop: 12, borderTop: '1px solid var(--border)' }}>
       <div className="field-grid">
         <div>
-          <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Type</label>
-          <select value={typeId} onChange={e => setTypeId(e.target.value)}>
+          <label htmlFor="provider-type" style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Type</label>
+          <select id="provider-type" value={typeId} onChange={e => setTypeId(e.target.value)}>
             <option value="">Select type…</option>
             {providerTypes.map(t => <option key={t.id} value={t.id}>{t.type_name}</option>)}
           </select>
         </div>
         <div>
-          <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Provider name</label>
-          <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Dr. Smith" />
+          <label htmlFor="provider-name" style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Provider name</label>
+          <input id="provider-name" type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Dr. Smith" />
         </div>
         <div>
-          <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Practice</label>
-          <input type="text" value={practice} onChange={e => setPractice(e.target.value)} placeholder="Helena Family Medicine" />
+          <label htmlFor="provider-practice" style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Practice</label>
+          <input id="provider-practice" type="text" value={practice} onChange={e => setPractice(e.target.value)} placeholder="Helena Family Medicine" />
         </div>
         <div>
-          <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Phone</label>
-          <input type="text" value={phone} onChange={e => setPhone(e.target.value)} placeholder="(406) 555-1234" />
+          <label htmlFor="provider-phone" style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Phone</label>
+          <input id="provider-phone" type="text" value={phone} onChange={e => setPhone(e.target.value)} placeholder="(406) 555-1234" />
         </div>
       </div>
       <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>

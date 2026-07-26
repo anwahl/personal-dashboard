@@ -17,7 +17,7 @@ interface Props {
   mediaStatuses: any[];
 }
 
-function ItemRow({ item, onDelete }: { item: any; onDelete: (id: number) => void }) {
+function ItemRow({ item, onDelete }: Readonly<{ item: any; onDelete: (id: number) => void }>) {
   return (
     <div className="manage-item">
       <span className="manage-item__name">
@@ -37,7 +37,7 @@ function ItemRow({ item, onDelete }: { item: any; onDelete: (id: number) => void
 
 // ── Media section ─────────────────────────────────────────────────────────────
 
-function MediaSection({ mediaTypes, mediaGenres, mediaStatuses }: Pick<Props, 'mediaTypes' | 'mediaGenres' | 'mediaStatuses'>) {
+function MediaSection({ mediaTypes, mediaGenres, mediaStatuses }: Readonly<Pick<Props, 'mediaTypes' | 'mediaGenres' | 'mediaStatuses'>>) {
   const supabase = createClient();
   const [items,    setItems]    = useState<any[]>([]);
   const [loaded,   setLoaded]   = useState(false);
@@ -80,9 +80,9 @@ function MediaSection({ mediaTypes, mediaGenres, mediaStatuses }: Pick<Props, 'm
       const payload = {
         label:     label.trim(),
         emoji:     emoji || null,
-        type_id:   typeId   ? parseInt(typeId)   : null,
-        genre_id:  genreId  ? parseInt(genreId)  : null,
-        status_id: statusId ? parseInt(statusId) : null,
+        type_id:   typeId   ? Number.parseInt(typeId)   : null,
+        genre_id:  genreId  ? Number.parseInt(genreId)  : null,
+        status_id: statusId ? Number.parseInt(statusId) : null,
         sort_order: items.length,
       };
       const { data } = await supabase.from('last_time_media').insert(payload).select().single();
@@ -157,7 +157,7 @@ function MediaSection({ mediaTypes, mediaGenres, mediaStatuses }: Pick<Props, 'm
 
 // ── Boolean section ───────────────────────────────────────────────────────────
 
-function BooleanSection({ trackables }: Pick<Props, 'trackables'>) {
+function BooleanSection({ trackables }: Readonly<Pick<Props, 'trackables'>>) {
   const supabase = createClient();
   const [items,   setItems]   = useState<any[]>([]);
   const [loaded,  setLoaded]  = useState(false);
@@ -187,10 +187,10 @@ function BooleanSection({ trackables }: Pick<Props, 'trackables'>) {
     setSaving(true);
     try {
       const { data } = await supabase.from('last_time_boolean')
-        .insert({ trackable_id: parseInt(trackId), emoji: emoji || null, sort_order: items.length })
+        .insert({ trackable_id: Number.parseInt(trackId), emoji: emoji || null, sort_order: items.length })
         .select().single();
       if (data) {
-        const t = trackables.find((t: any) => t.id === parseInt(trackId));
+        const t = trackables.find((t: any) => t.id === Number.parseInt(trackId));
         setItems(prev => [...prev, { ...data, label: t ? `${t.emoji ?? ''} ${t.name}`.trim() : `#${data.id}` }]);
       }
       setTrackId(''); setEmoji('');
@@ -296,7 +296,7 @@ function CustomSection() {
 
 // ── Main export ───────────────────────────────────────────────────────────────
 
-export function LastTimeSettings({ trackables, mediaTypes, mediaGenres, mediaStatuses }: Props) {
+export function LastTimeSettings({ trackables, mediaTypes, mediaGenres, mediaStatuses }: Readonly<Props>) {
   return (
     <div>
       <MediaSection mediaTypes={mediaTypes} mediaGenres={mediaGenres} mediaStatuses={mediaStatuses} />

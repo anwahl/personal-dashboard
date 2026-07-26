@@ -12,7 +12,7 @@ interface Props {
   message: string;
 }
 
-export function ChartEmptyState({ title, message }: Props) {
+export function ChartEmptyState({ title, message }: Readonly<Props>) {
   return (
     <div className="chart-block">
       <h3 className="chart-block__title">{title}</h3>

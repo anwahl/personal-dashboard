@@ -28,7 +28,7 @@ function daysAgoColor(days: number | null): string {
   return 'var(--danger)';
 }
 
-export function LastTimeTracker({ entries, compact = false }: Props) {
+export function LastTimeTracker({ entries, compact = false }: Readonly<Props>) {
   const supabase = createClient();
   const [items,   setItems]   = useState<LastTimeEntry[]>(entries);
   const [sortBy,  setSortBy]  = useState<'order' | 'recent'>('order');

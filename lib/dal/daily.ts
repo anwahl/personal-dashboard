@@ -175,7 +175,8 @@ export async function getWeekData(
   }
 
   const byEntry = booleanEntries.reduce<Record<number, number[]>>((acc, h) => {
-    (acc[h.entry_id] ??= []).push(h.trackable_id);
+    const trackables = (acc[h.entry_id] ??= []);
+    trackables.push(h.trackable_id);
     return acc;
   }, {});
 

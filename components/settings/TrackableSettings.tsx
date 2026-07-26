@@ -15,7 +15,7 @@ interface Props {
   trackables: DailyTrackableRow[];
 }
 
-export function TrackableSettings({ trackables }: Props) {
+export function TrackableSettings({ trackables }: Readonly<Props>) {
   const boolean   = trackables.filter(t => t.track_type === 'boolean');
   const numeric   = trackables.filter(t => t.track_type === 'numeric');
   const aggregate = trackables.filter(t => t.track_type === 'aggregate');

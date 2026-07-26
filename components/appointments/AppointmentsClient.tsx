@@ -41,7 +41,7 @@ function daysUntil(d: string) {
 
 // ── Appointment row (collapsible) ──────────────────────────────────────────────
 
-function ApptRow({ appt, onEdit }: { appt: AppointmentDetail; onEdit: () => void }) {
+function ApptRow({ appt, onEdit }: Readonly<{ appt: AppointmentDetail; onEdit: () => void }>) {
   const [expanded, setExpanded] = useState(false);
   const isPast = appt.appointment_date < new Date().toISOString().slice(0, 10);
 
@@ -123,12 +123,12 @@ function toForm(a: AppointmentDetail): FormState {
   };
 }
 
-function ApptForm({ form, setForm, people, appointmentTypes, providers, onSave, onCancel, onDelete, editId, saving }: {
+function ApptForm({ form, setForm, people, appointmentTypes, providers, onSave, onCancel, onDelete, editId, saving }: Readonly<{
   form: FormState; setForm: React.Dispatch<React.SetStateAction<FormState>>;
   people: PersonRow[]; appointmentTypes: AppointmentTypeRow[]; providers: ProviderRow[];
   onSave: () => void; onCancel: () => void; onDelete?: () => void;
   editId?: number; saving: boolean;
-}) {
+}>) {
   const set = (k: keyof FormState, v: string) => setForm(p => ({ ...p, [k]: v }));
 
   return (
@@ -186,7 +186,7 @@ function ApptForm({ form, setForm, people, appointmentTypes, providers, onSave, 
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
-export function AppointmentsClient({ upcoming, past, appointmentTypes, people, providers }: Props) {
+export function AppointmentsClient({ upcoming, past, appointmentTypes, people, providers }: Readonly<Props>) {
   const supabase = createClient();
   const router   = useRouter();
 
@@ -212,9 +212,9 @@ export function AppointmentsClient({ upcoming, past, appointmentTypes, people, p
       const payload = {
         appointment_date:    form.appointment_date,
         appointment_time:    form.appointment_time    || null,
-        person_id:           parseInt(form.person_id),
-        provider_id:         form.provider_id         ? parseInt(form.provider_id)         : null,
-        appointment_type_id: form.appointment_type_id ? parseInt(form.appointment_type_id) : null,
+        person_id:           Number.parseInt(form.person_id),
+        provider_id:         form.provider_id         ? Number.parseInt(form.provider_id)         : null,
+        appointment_type_id: form.appointment_type_id ? Number.parseInt(form.appointment_type_id) : null,
         location:  form.location  || null,
         questions: form.questions || null,
         notes:     form.notes     || null,

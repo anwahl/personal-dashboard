@@ -20,7 +20,7 @@ interface Props {
   toDate:      string;
 }
 
-export function AnalyticsClient({ charts, data, fromDate, toDate }: Props) {
+export function AnalyticsClient({ charts, data, fromDate, toDate }: Readonly<Props>) {
   // Build category tabs from charts
   const categoryOrder = new Map<string, number>();
   categoryOrder.set('All', -1);

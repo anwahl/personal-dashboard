@@ -43,7 +43,7 @@ export function ConfirmButton({
   size         = 'sm',
   disabled     = false,
   className,
-}: Props) {
+}: Readonly<Props>) {
   const [confirming, setConfirming] = useState(false);
 
   const handleClick = () => {

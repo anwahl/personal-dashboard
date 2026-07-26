@@ -49,7 +49,7 @@ export function SideCalendar() {
   const [entryDates, setEntryDates] = useState<Set<string>>(new Set());
 
   // Active date from URL
-  const urlMatch = pathname.match(/^\/daily\/(\d{4}-\d{2}-\d{2})$/);
+  const urlMatch = new RegExp(/^\/daily\/(\d{4}-\d{2}-\d{2})$/).exec(pathname);
   const activeDate = urlMatch ? urlMatch[1] : today;
 
   useEffect(() => {
@@ -100,7 +100,7 @@ export function SideCalendar() {
           const isToday    = date === today;
           const isActive   = date === activeDate;
           const hasEntry   = entryDates.has(date);
-          const dayNum     = parseInt(date.split('-')[2]);
+          const dayNum     = Number.parseInt(date.split('-')[2]);
 
           const cls = [
             'side-calendar__day',

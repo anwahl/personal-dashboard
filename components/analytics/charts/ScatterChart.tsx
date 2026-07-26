@@ -31,7 +31,7 @@ function pearson(xs: number[], ys: number[]): number | null {
   return den === 0 ? null : num / den;
 }
 
-export function ScatterChart({ chart, data }: Props) {
+export function ScatterChart({ chart, data }: Readonly<Props>) {
   const xLink = chart.links.find(l => l.metric_role === 'x_axis');
   const yLink = chart.links.find(l => l.metric_role === 'y_axis');
   const [hovered, setHovered] = useState<{ date: string; x: number; y: number } | null>(null);

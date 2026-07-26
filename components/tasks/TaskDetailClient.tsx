@@ -19,7 +19,7 @@ interface Props {
   tags:       TagRow[];
 }
 
-export function TaskDetailClient({ task, statuses, priorities, people }: Props) {
+export function TaskDetailClient({ task, statuses, priorities, people }: Readonly<Props>) {
   const supabase = createClient();
   const router   = useRouter();
 
@@ -41,10 +41,10 @@ export function TaskDetailClient({ task, statuses, priorities, people }: Props) 
     try {
       await updateTask(supabase, task.id, {
         title,
-        status_id:   parseInt(statusId),
-        priority_id: parseInt(priorityId),
+        status_id:   Number.parseInt(statusId),
+        priority_id: Number.parseInt(priorityId),
         due_date:    dueDate || null,
-        person_id:   personId ? parseInt(personId) : null,
+        person_id:   personId ? Number.parseInt(personId) : null,
         body_md:     bodyMd || null,
       });
       setSaveState('ok');

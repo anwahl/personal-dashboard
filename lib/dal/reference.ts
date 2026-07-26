@@ -39,7 +39,6 @@ import type {
   ReferenceData,
   SymptomCategoryWithTypes,
   JournalCategoryWithPrompts,
-  ChartTrackableLinkDetail,
   ChartDefinitionDetail,
 } from '@/types/dal';
 
@@ -145,7 +144,8 @@ export async function getRandomIntention(client: Client): Promise<IntentionRow |
     .from('intentions').select('*').eq('is_active', true).order('id');
   if (error) throw new Error(`getRandomIntention: ${error.message}`);
   if (!data?.length) return null;
-  return data[Math.floor(Math.random() * data.length)] as IntentionRow;
+  const randomIndex = crypto.getRandomValues(new Uint32Array(1))[0] % data.length;
+  return data[randomIndex] as IntentionRow;
 }
 
 // ── Journal categories with prompts ──────────────────────────────────────────
@@ -179,7 +179,8 @@ export async function getRandomJournalPrompt(
   const { data, error } = await q;
   if (error) throw new Error(`getRandomJournalPrompt: ${error.message}`);
   if (!data?.length) return null;
-  return data[Math.floor(Math.random() * data.length)] as JournalPromptRow;
+  const randomIndex = crypto.getRandomValues(new Uint32Array(1))[0] % data.length;
+  return data[randomIndex] as JournalPromptRow;
 }
 
 // ── Chart categories ─────────────────────────────────────────────────────────

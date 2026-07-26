@@ -31,7 +31,7 @@ export function BrainDumpQuickAdd({
   onSaved,
   placeholder = 'Brain dump…',
   compact = false,
-}: Props) {
+}: Readonly<Props>) {
   const supabase = createClient();
   const [body,   setBody]   = useState('');
   const [date,   setDate]   = useState(dumpDate ?? localTodayISO());

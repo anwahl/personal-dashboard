@@ -44,7 +44,7 @@ function buildDates(fromDate: string, toDate: string): string[] {
   return dates;
 }
 
-export function ChainChart({ chart, data, fromDate, toDate }: Props) {
+export function ChainChart({ chart, data, fromDate, toDate }: Readonly<Props>) {
   const seriesLinks = chart.links.filter(l => l.metric_role === 'series');
 
   if (!seriesLinks.length) {

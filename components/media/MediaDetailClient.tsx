@@ -91,7 +91,7 @@ export function MediaDetailClient({
   const supabase = createClient();
   const router   = useRouter();
 
-  const [entry,     setEntry]     = useState(initial);
+  const [entry]     = useState(initial);
   const [mode,      setMode]      = useState<'view' | 'edit'>('view');
   const [form,      setForm]      = useState<FormState>(() => entryToForm(initial));
   const [saving,    setSaving]    = useState(false);

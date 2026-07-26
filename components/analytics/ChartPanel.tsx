@@ -58,12 +58,12 @@ function toDateFromDays(days: number): { fromDate: string; toDate: string } {
 
 // ── Inner chart renderer (pure presentation) ──────────────────────────────────
 
-function ChartRenderer({ chart, data, fromDate, toDate }: {
+function ChartRenderer({ chart, data, fromDate, toDate }: Readonly<{
   chart:    ChartDefinitionDetail;
   data:     TrackingDataPoint[];
   fromDate: string;
   toDate:   string;
-}) {
+}>) {
   switch (chart.chart_type) {
     case 'scatter':  return <ScatterChart chart={chart} data={data} />;
     case 'line':     return <LineTrendChart chart={chart} data={data} />;
@@ -84,7 +84,7 @@ interface Props {
   toDate:      string;
 }
 
-export function ChartPanel({ chart, initialData, fromDate, toDate }: Props) {
+export function ChartPanel({ chart, initialData, fromDate, toDate }: Readonly<Props>) {
   const supabase = createClient();
 
   const defaultRange = DEFAULT_RANGE[chart.chart_type] ?? 90;

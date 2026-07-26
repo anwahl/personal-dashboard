@@ -9,7 +9,7 @@ interface Props {
   categories: JournalCategoryWithPrompts[];
 }
 
-export function JournalSettings({ categories: initial }: Props) {
+export function JournalSettings({ categories: initial }: Readonly<Props>) {
   const supabase = createClient();
   const [cats,   setCats]   = useState(initial);
   const [newCat, setNewCat] = useState('');

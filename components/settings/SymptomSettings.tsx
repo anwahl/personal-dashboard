@@ -5,11 +5,53 @@ import { createClient } from '@/lib/supabase/client';
 import { Button }       from '@/components/ui/Button';
 import type { SymptomCategoryWithTypes } from '@/types/dal';
 
+type SymptomType = SymptomCategoryWithTypes['types'][number];
+
+function updateCategoryActiveState(
+  categories: SymptomCategoryWithTypes[],
+  catId: number,
+  active: boolean
+) {
+  return categories.map(category =>
+    category.id === catId ? { ...category, is_active: active } : category
+  );
+}
+
+function appendTypeToCategory(
+  categories: SymptomCategoryWithTypes[],
+  catId: number,
+  type: SymptomType
+) {
+  return categories.map(category =>
+    category.id === catId
+      ? { ...category, types: [...category.types, type] }
+      : category
+  );
+}
+
+function setTypeActiveState(
+  categories: SymptomCategoryWithTypes[],
+  catId: number,
+  typeId: number,
+  active: boolean
+) {
+  return categories.map(category =>
+    category.id === catId
+      ? {
+          ...category,
+          types: category.types.map(type =>
+            type.id === typeId ? { ...type, is_active: active } : type
+          ),
+        }
+      : category
+  );
+}
+
 interface Props {
   categories: SymptomCategoryWithTypes[];
 }
 
-export function SymptomSettings({ categories: initial }: Props) {
+export function SymptomSettings({ categories: initial }: Readonly<Props>) {
   const supabase    = createClient();
   const [cats, setCats] = useState(initial);
 
@@ -32,7 +74,7 @@ export function SymptomSettings({ categories: initial }: Props) {
 
   const toggleCategory = useCallback(async (catId: number, active: boolean) => {
     await supabase.from('symptom_categories').update({ is_active: active }).eq('id', catId);
-    setCats(prev => prev.map(c => c.id === catId ? { ...c, is_active: active } : c));
+    setCats(prev => updateCategoryActiveState(prev, catId, active));
   }, [supabase]);
 
   // ── Types ─────────────────────────────────────────────────────────────────
@@ -51,10 +93,7 @@ export function SymptomSettings({ categories: initial }: Props) {
         .insert({ category_id: catId, symptom_name: name, sort_order: cat?.types.length ?? 0 })
         .select().single();
       if (data) {
-        setCats(prev => prev.map(c => c.id === catId
-          ? { ...c, types: [...c.types, data] }
-          : c
-        ));
+        setCats(prev => appendTypeToCategory(prev, catId, data));
         setNewTypeByCat(prev => ({ ...prev, [catId]: '' }));
       }
     } finally { setAddingType(null); }
@@ -62,10 +101,7 @@ export function SymptomSettings({ categories: initial }: Props) {
 
   const toggleType = useCallback(async (catId: number, typeId: number, active: boolean) => {
     await supabase.from('symptom_types').update({ is_active: active }).eq('id', typeId);
-    setCats(prev => prev.map(c => c.id === catId
-      ? { ...c, types: c.types.map(t => t.id === typeId ? { ...t, is_active: active } : t) }
-      : c
-    ));
+    setCats(prev => setTypeActiveState(prev, catId, typeId, active));
   }, [supabase]);
 
   return (
