@@ -5,6 +5,7 @@
  * Categories + prompts are fetched via getReferenceData → reference.journalCategories.
  */
 
+import { JournalPromptRow } from "@/types/schema";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 type Client = SupabaseClient;

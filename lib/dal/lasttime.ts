@@ -188,7 +188,7 @@ export async function getLastTimeEntries(
     });
   }
 
-  return results.sort((a, b) => a.sort_order - b.sort_order);
+  return results.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
 }
 
 // ── Writes ────────────────────────────────────────────────────────────────────
