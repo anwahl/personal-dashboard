@@ -2,7 +2,7 @@
  * lib/dal/sleep.ts
  */
 
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   SleepEntryRow,
   NapRow,
@@ -10,13 +10,13 @@ import type {
   SleepEventRow,
   SleepTimingEntryRow,
   SleepConsumptionEntryRow,
-} from '@/types/schema';
+} from "@/types/schema";
 import type {
   SleepEntryDetail,
   SleepEntryUpdate,
   PriorSleepContext,
-} from '@/types/dal';
-import { addDays } from './daily';
+} from "@/types/dal";
+import { addDays } from "./daily";
 
 type Client = SupabaseClient;
 
@@ -24,61 +24,67 @@ type Client = SupabaseClient;
 
 async function assembleSleepDetail(
   client: Client,
-  row: SleepEntryRow
+  row: SleepEntryRow,
 ): Promise<SleepEntryDetail> {
   const [nap, wakeEvents, sleepEvents, timingEntries, consumptionEntries] =
     await Promise.all([
       client
-        .from('naps')
-        .select('*')
-        .eq('sleep_entry_id', row.id)
+        .from("naps")
+        .select("*")
+        .eq("sleep_entry_id", row.id)
         .maybeSingle()
-        .then(r => r.data as NapRow | null),
+        .then((r) => r.data as NapRow | null),
 
       client
-        .from('wake_events')
-        .select('*')
-        .eq('sleep_entry_id', row.id)
+        .from("wake_events")
+        .select("*")
+        .eq("sleep_entry_id", row.id)
         .maybeSingle()
-        .then(r => r.data as WakeEventRow | null),
+        .then((r) => r.data as WakeEventRow | null),
 
       client
-        .from('sleep_events')
-        .select('event_type_id')
-        .eq('sleep_entry_id', row.id)
-        .then(r => (r.data ?? []) as Pick<SleepEventRow, 'event_type_id'>[]),
+        .from("sleep_events")
+        .select("event_type_id")
+        .eq("sleep_entry_id", row.id)
+        .then((r) => (r.data ?? []) as Pick<SleepEventRow, "event_type_id">[]),
 
       client
-        .from('sleep_timing_entries')
-        .select('*')
-        .eq('sleep_entry_id', row.id)
-        .then(r => (r.data ?? []) as SleepTimingEntryRow[]),
+        .from("sleep_timing_entries")
+        .select("*")
+        .eq("sleep_entry_id", row.id)
+        .then((r) => (r.data ?? []) as SleepTimingEntryRow[]),
 
       client
-        .from('sleep_consumption_entries')
-        .select('consumption_type_id')
-        .eq('sleep_entry_id', row.id)
-        .then(r => (r.data ?? []) as Pick<SleepConsumptionEntryRow, 'consumption_type_id'>[]),
+        .from("sleep_consumption_entries")
+        .select("consumption_type_id")
+        .eq("sleep_entry_id", row.id)
+        .then(
+          (r) =>
+            (r.data ?? []) as Pick<
+              SleepConsumptionEntryRow,
+              "consumption_type_id"
+            >[],
+        ),
     ]);
 
   return {
     ...row,
     nap,
-    wake_events:     wakeEvents,
-    sleep_event_ids: sleepEvents.map(e => e.event_type_id),
-    timing_entries:  timingEntries,
-    consumption_ids: consumptionEntries.map(e => e.consumption_type_id),
+    wake_events: wakeEvents,
+    sleep_event_ids: sleepEvents.map((e) => e.event_type_id),
+    timing_entries: timingEntries,
+    consumption_ids: consumptionEntries.map((e) => e.consumption_type_id),
   };
 }
 
 export async function getSleepEntry(
   client: Client,
-  entryId: number
+  entryId: number,
 ): Promise<SleepEntryDetail | null> {
   const { data, error } = await client
-    .from('sleep_entries')
-    .select('*')
-    .eq('entry_id', entryId)
+    .from("sleep_entries")
+    .select("*")
+    .eq("entry_id", entryId)
     .maybeSingle();
 
   if (error) throw new Error(`getSleepEntry(${entryId}): ${error.message}`);
@@ -94,46 +100,52 @@ export async function getSleepEntry(
 export async function getPriorSleepContext(
   client: Client,
   currentDate: string,
-  currentEntryId: number
+  currentEntryId: number,
 ): Promise<PriorSleepContext | null> {
   const priorDate = addDays(currentDate, -1);
 
   // Find prior day's daily entry
   const { data: priorEntry } = await client
-    .from('daily_entries')
-    .select('id')
-    .eq('entry_date', priorDate)
+    .from("daily_entries")
+    .select("id")
+    .eq("entry_date", priorDate)
     .maybeSingle();
 
   if (!priorEntry) return null;
 
   // Find its sleep entry
   const { data: priorSleep } = await client
-    .from('sleep_entries')
-    .select('id, today_pre_bed_activity')
-    .eq('entry_id', priorEntry.id)
+    .from("sleep_entries")
+    .select("id, today_pre_bed_activity")
+    .eq("entry_id", priorEntry.id)
     .maybeSingle();
 
   if (!priorSleep) return null;
 
   const [timingEntries, consumptionEntries] = await Promise.all([
     client
-      .from('sleep_timing_entries')
-      .select('*')
-      .eq('sleep_entry_id', priorSleep.id)
-      .then(r => (r.data ?? []) as SleepTimingEntryRow[]),
+      .from("sleep_timing_entries")
+      .select("*")
+      .eq("sleep_entry_id", priorSleep.id)
+      .then((r) => (r.data ?? []) as SleepTimingEntryRow[]),
 
     client
-      .from('sleep_consumption_entries')
-      .select('consumption_type_id')
-      .eq('sleep_entry_id', priorSleep.id)
-      .then(r => (r.data ?? []) as Pick<SleepConsumptionEntryRow, 'consumption_type_id'>[]),
+      .from("sleep_consumption_entries")
+      .select("consumption_type_id")
+      .eq("sleep_entry_id", priorSleep.id)
+      .then(
+        (r) =>
+          (r.data ?? []) as Pick<
+            SleepConsumptionEntryRow,
+            "consumption_type_id"
+          >[],
+      ),
   ]);
 
   return {
     today_pre_bed_activity: priorSleep.today_pre_bed_activity,
-    timing_entries:         timingEntries,
-    consumption_ids:        consumptionEntries.map(e => e.consumption_type_id),
+    timing_entries: timingEntries,
+    consumption_ids: consumptionEntries.map((e) => e.consumption_type_id),
   };
 }
 
@@ -142,19 +154,19 @@ export async function getPriorSleepContext(
 export async function upsertSleepEntry(
   client: Client,
   entryId: number,
-  fields: SleepEntryUpdate
+  fields: SleepEntryUpdate,
 ): Promise<SleepEntryRow> {
   const { data: existing } = await client
-    .from('sleep_entries')
-    .select('id')
-    .eq('entry_id', entryId)
+    .from("sleep_entries")
+    .select("id")
+    .eq("entry_id", entryId)
     .maybeSingle();
 
   if (existing) {
     const { data, error } = await client
-      .from('sleep_entries')
+      .from("sleep_entries")
       .update(fields)
-      .eq('id', existing.id)
+      .eq("id", existing.id)
       .select()
       .single();
     if (error) throw new Error(`upsertSleepEntry update: ${error.message}`);
@@ -162,7 +174,7 @@ export async function upsertSleepEntry(
   }
 
   const { data, error } = await client
-    .from('sleep_entries')
+    .from("sleep_entries")
     .insert({ entry_id: entryId, ...fields })
     .select()
     .single();
@@ -175,26 +187,37 @@ export async function upsertSleepEntry(
 export async function upsertNap(
   client: Client,
   sleepEntryId: number,
-  nap: { nap_count?: number; duration_min?: number | null; was_refreshing?: boolean }
+  nap: {
+    nap_count?: number;
+    duration_min?: number | null;
+    was_refreshing?: boolean;
+  },
 ): Promise<void> {
   const { data: existing } = await client
-    .from('naps')
-    .select('id')
-    .eq('sleep_entry_id', sleepEntryId)
+    .from("naps")
+    .select("id")
+    .eq("sleep_entry_id", sleepEntryId)
     .maybeSingle();
 
   if (existing) {
-    await client.from('naps').update(nap).eq('id', existing.id).throwOnError();
+    await client.from("naps").update(nap).eq("id", existing.id).throwOnError();
   } else {
     await client
-      .from('naps')
+      .from("naps")
       .insert({ sleep_entry_id: sleepEntryId, nap_count: 1, ...nap })
       .throwOnError();
   }
 }
 
-export async function deleteNap(client: Client, sleepEntryId: number): Promise<void> {
-  await client.from('naps').delete().eq('sleep_entry_id', sleepEntryId).throwOnError();
+export async function deleteNap(
+  client: Client,
+  sleepEntryId: number,
+): Promise<void> {
+  await client
+    .from("naps")
+    .delete()
+    .eq("sleep_entry_id", sleepEntryId)
+    .throwOnError();
 }
 
 // ── Wake events ───────────────────────────────────────────────────────────────
@@ -202,23 +225,27 @@ export async function deleteNap(client: Client, sleepEntryId: number): Promise<v
 export async function upsertWakeEvents(
   client: Client,
   sleepEntryId: number,
-  wakeEvents: { event_count: number; duration_min?: number; detail?: string | null }
+  wakeEvents: {
+    event_count: number;
+    duration_min?: number;
+    detail?: string | null;
+  },
 ): Promise<void> {
   const { data: existing } = await client
-    .from('wake_events')
-    .select('id')
-    .eq('sleep_entry_id', sleepEntryId)
+    .from("wake_events")
+    .select("id")
+    .eq("sleep_entry_id", sleepEntryId)
     .maybeSingle();
 
   if (existing) {
     await client
-      .from('wake_events')
+      .from("wake_events")
       .update(wakeEvents)
-      .eq('id', existing.id)
+      .eq("id", existing.id)
       .throwOnError();
   } else {
     await client
-      .from('wake_events')
+      .from("wake_events")
       .insert({ sleep_entry_id: sleepEntryId, ...wakeEvents })
       .throwOnError();
   }
@@ -229,43 +256,51 @@ export async function upsertWakeEvents(
 export async function setSleepEvents(
   client: Client,
   sleepEntryId: number,
-  eventTypeIds: number[]
+  eventTypeIds: number[],
 ): Promise<void> {
   await client
-    .from('sleep_events')
+    .from("sleep_events")
     .delete()
-    .eq('sleep_entry_id', sleepEntryId)
+    .eq("sleep_entry_id", sleepEntryId)
     .throwOnError();
 
   if (eventTypeIds.length === 0) return;
 
   await client
-    .from('sleep_events')
-    .insert(eventTypeIds.map(event_type_id => ({ sleep_entry_id: sleepEntryId, event_type_id })))
+    .from("sleep_events")
+    .insert(
+      eventTypeIds.map((event_type_id) => ({
+        sleep_entry_id: sleepEntryId,
+        event_type_id,
+      })),
+    )
     .throwOnError();
 }
 
 export async function addSleepEvent(
   client: Client,
   sleepEntryId: number,
-  eventTypeId: number
+  eventTypeId: number,
 ): Promise<void> {
   await client
-    .from('sleep_events')
-    .upsert({ sleep_entry_id: sleepEntryId, event_type_id: eventTypeId }, { onConflict: 'sleep_entry_id,event_type_id' })
+    .from("sleep_events")
+    .upsert(
+      { sleep_entry_id: sleepEntryId, event_type_id: eventTypeId },
+      { onConflict: "sleep_entry_id,event_type_id" },
+    )
     .throwOnError();
 }
 
 export async function removeSleepEvent(
   client: Client,
   sleepEntryId: number,
-  eventTypeId: number
+  eventTypeId: number,
 ): Promise<void> {
   await client
-    .from('sleep_events')
+    .from("sleep_events")
     .delete()
-    .eq('sleep_entry_id', sleepEntryId)
-    .eq('event_type_id', eventTypeId)
+    .eq("sleep_entry_id", sleepEntryId)
+    .eq("event_type_id", eventTypeId)
     .throwOnError();
 }
 
@@ -275,15 +310,18 @@ export async function setSleepTimingEntry(
   client: Client,
   sleepEntryId: number,
   timingCategoryId: number,
-  timingOptionId: number
+  timingOptionId: number,
 ): Promise<void> {
   await client
-    .from('sleep_timing_entries')
-    .upsert({
-      sleep_entry_id:      sleepEntryId,
-      timing_category_id:  timingCategoryId,
-      timing_option_id:    timingOptionId,
-    }, { onConflict: 'sleep_entry_id,timing_category_id' })
+    .from("sleep_timing_entries")
+    .upsert(
+      {
+        sleep_entry_id: sleepEntryId,
+        timing_category_id: timingCategoryId,
+        timing_option_id: timingOptionId,
+      },
+      { onConflict: "sleep_entry_id,timing_category_id" },
+    )
     .throwOnError();
 }
 
@@ -292,23 +330,23 @@ export async function setSleepTimingEntry(
 export async function setSleepConsumptionEntries(
   client: Client,
   sleepEntryId: number,
-  consumptionTypeIds: number[]
+  consumptionTypeIds: number[],
 ): Promise<void> {
   await client
-    .from('sleep_consumption_entries')
+    .from("sleep_consumption_entries")
     .delete()
-    .eq('sleep_entry_id', sleepEntryId)
+    .eq("sleep_entry_id", sleepEntryId)
     .throwOnError();
 
   if (consumptionTypeIds.length === 0) return;
 
   await client
-    .from('sleep_consumption_entries')
+    .from("sleep_consumption_entries")
     .insert(
-      consumptionTypeIds.map(consumption_type_id => ({
+      consumptionTypeIds.map((consumption_type_id) => ({
         sleep_entry_id: sleepEntryId,
         consumption_type_id,
-      }))
+      })),
     )
     .throwOnError();
 }
@@ -316,23 +354,26 @@ export async function setSleepConsumptionEntries(
 export async function addSleepConsumptionEntry(
   client: Client,
   sleepEntryId: number,
-  consumptionTypeId: number
+  consumptionTypeId: number,
 ): Promise<void> {
   await client
-    .from('sleep_consumption_entries')
-    .upsert({ sleep_entry_id: sleepEntryId, consumption_type_id: consumptionTypeId }, { onConflict: 'sleep_entry_id,consumption_type_id' })
+    .from("sleep_consumption_entries")
+    .upsert(
+      { sleep_entry_id: sleepEntryId, consumption_type_id: consumptionTypeId },
+      { onConflict: "sleep_entry_id,consumption_type_id" },
+    )
     .throwOnError();
 }
 
 export async function removeSleepConsumptionEntry(
   client: Client,
   sleepEntryId: number,
-  consumptionTypeId: number
+  consumptionTypeId: number,
 ): Promise<void> {
   await client
-    .from('sleep_consumption_entries')
+    .from("sleep_consumption_entries")
     .delete()
-    .eq('sleep_entry_id', sleepEntryId)
-    .eq('consumption_type_id', consumptionTypeId)
+    .eq("sleep_entry_id", sleepEntryId)
+    .eq("consumption_type_id", consumptionTypeId)
     .throwOnError();
 }

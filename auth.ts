@@ -1,4 +1,4 @@
-import NextAuth from "next-auth"
+import NextAuth from "next-auth";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
@@ -6,7 +6,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       id: "authelia",
       name: "Authelia",
       type: "oauth",
-      issuer: process.env.AUTHELIA_ISSUER, 
+      issuer: process.env.AUTHELIA_ISSUER,
       clientId: process.env.AUTHELIA_CLIENT_ID,
       clientSecret: process.env.AUTHELIA_CLIENT_SECRET,
       authorization: {
@@ -17,8 +17,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           id: profile.sub,
           name: profile.name || profile.preferred_username,
           email: profile.email,
-        }
+        };
       },
     },
   ],
-})
+});
