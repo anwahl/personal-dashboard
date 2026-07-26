@@ -8,7 +8,7 @@
 import { useState, useCallback } from 'react';
 import {
   getLastTimeMedia, createLastTimeMedia, deleteLastTimeMedia,
-  getLastTimeBoolean, createLastTimeBoolean, updateLastTimeBooleanEmoji, deleteLastTimeBoolean,
+  getLastTimeBoolean, createLastTimeBoolean, deleteLastTimeBoolean,
   getLastTimeCustom, createLastTimeCustom, deleteLastTimeCustom,
 } from '@/lib/dal/last-time';
 import { createClient }           from '@/lib/supabase/client';

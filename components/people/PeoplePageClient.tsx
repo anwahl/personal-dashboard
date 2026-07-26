@@ -2,13 +2,12 @@
 
 import { InputField, SaveStatus, SaveState } from '@/components/ui/Display';
 import { useState, useCallback } from 'react';
-import { createChecklistItem, deleteChecklistItem } from '@/lib/dal/people';
 import { createClient }          from '@/lib/supabase/client';
 import { formatMediumDate, localTodayISO } from '@/lib/utils/dates';
 import {
   saveInfoFieldValue, toggleChecklistItemState,
   addItemListEntry, deleteItemListEntry,
-  addLogEntry, deleteLogEntry,
+  addLogEntry, deleteLogEntry, deleteChecklistItem
 }                                from '@/lib/dal/people';
 import { Card, CardHeader, CardBody, CardSection, CardSectionLabel } from '@/components/ui/Card';
 import { Button }                from '@/components/ui/Button';

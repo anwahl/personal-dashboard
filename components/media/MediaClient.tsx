@@ -8,7 +8,6 @@ import {
   getMediaNotes, createMediaNote, deleteMediaNote,
   updateMediaEntry, createMediaEntry, addMediaStatusEntry, deleteMediaEntry,
 } from '@/lib/dal/media';
-import { Button }                 from '@/components/ui/Button';
 import { TabBar }                 from '@/components/ui/Controls';
 import { InputField }             from '@/components/ui/Display';
 import { Markdown }               from '@/components/ui/Markdown';
@@ -377,7 +376,7 @@ function MediaItem({ entry, isExpanded, onToggle }: Readonly<{
         {entry.rating != null && <span className="badge">{entry.rating}/10</span>}
         <span style={{ color: 'var(--text-faint)', fontSize: '0.75rem' }}>{isExpanded ? '▲' : '▼'}</span>
       </div>
-    </button>
+    </Button>
   );
 }
 
@@ -437,11 +436,8 @@ export function MediaClient({ entries, mediaTypes, mediaStatuses, statusTypeLink
       // Log a status entry if status is selected and it changed (or it's a new entry)
       const statusChanged = !editEntry || String(editEntry.current_status?.id ?? '') !== form.status_id;
       if (form.status_id && statusChanged) {
-        await addMediaStatusEntry(supabase, {
-          media_entry_id: entryId,
-          status_id:      Number.parseInt(form.status_id),
-          status_date:    form.status_date || localTodayISO(),
-        });
+        await addMediaStatusEntry(supabase,
+          entryId, Number.parseInt(form.status_id), form.status_date || localTodayISO());
       }
 
       router.refresh();

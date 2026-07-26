@@ -8,9 +8,11 @@ import {
   getChartDefinitions,
   getChartCategories,
   getSettingsPageData,
+  getMediaTypes, 
+  getMediaGenres, 
+  getMediaStatuses
 } from '@/lib/dal/reference';
 import { getAllPeople }    from '@/lib/dal/people';
-import { getMediaTypes, getMediaGenres, getMediaStatuses } from '@/lib/dal/reference';
 import { SettingsClient } from '@/components/settings/SettingsClient';
 
 export default async function SettingsPage() {

@@ -597,7 +597,7 @@ export interface MediaEntryRow {
   creator: string | null;
   notes: string | null;
   review: string | null;
-  sort_order: number;
+  sort_order?: number;
   created_at: string;
   updated_at: string;
 }

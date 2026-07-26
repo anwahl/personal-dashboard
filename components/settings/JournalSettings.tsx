@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { toggleJournalCategory, addJournalPrompt, toggleJournalPrompt, getJournalCategoriesWithPrompts } from '@/lib/dal/journal';
+import { toggleJournalCategory, addJournalPrompt, toggleJournalPrompt } from '@/lib/dal/journal';
 import { createClient } from '@/lib/supabase/client';
 import { Button }       from '@/components/ui/Button';
 import type { JournalCategoryWithPrompts } from '@/types/dal';

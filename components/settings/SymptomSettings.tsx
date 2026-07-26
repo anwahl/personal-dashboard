@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { toggleSymptomCategory, toggleSymptomType, addSymptomType } from '@/lib/dal/symptoms';
+import { toggleSymptomCategory, toggleSymptomType } from '@/lib/dal/symptoms';
 import { createClient } from '@/lib/supabase/client';
 import { Button }       from '@/components/ui/Button';
 import type { SymptomCategoryWithTypes } from '@/types/dal';

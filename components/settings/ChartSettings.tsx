@@ -2,8 +2,8 @@
 
 import { useState, useCallback } from 'react';
 import {
-  toggleChartActive, setChartCategory, addChartLink, removeChartLink,
-  createChartDefinition, updateChartSortOrders, deleteChartDefinition,
+  toggleChartActive, setChartCategory, removeChartLink,
+  updateChartSortOrders, deleteChartDefinition,
 } from '@/lib/dal/charts';
 import { createClient }          from '@/lib/supabase/client';
 import { Button }                from '@/components/ui/Button';
@@ -289,9 +289,7 @@ export function ChartSettings({ chartDefinitions, trackables, categories }: Read
       c.id === a.id ? { ...c, sort_order: b.sort_order } :
       c.id === b.id ? { ...c, sort_order: a.sort_order } : c
     ).sort((x, y) => x.sort_order - y.sort_order));
-    await Promise.all([
-      updateChartSortOrders(supabase, [{ id: a.id, sort_order: b.sort_order }, { id: b.id, sort_order: a.sort_order }]),
-    ]);
+    await updateChartSortOrders(supabase, [{ id: a.id, sort_order: b.sort_order }, { id: b.id, sort_order: a.sort_order }]);
   }, [charts, supabase]);
 
   const handleDelete = useCallback(async (chartId: number) => {

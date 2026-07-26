@@ -173,7 +173,7 @@ export function SettingsClient({
         {/* ── PROVIDERS ─────────────────────────────────────────────────────────*/}
         <div className={tab === 'providers' ? '' : 'hidden'}>
           <ProviderSection providers={providers} providerTypes={providerTypes} />
-</div>
+        </div>
 
         {/* ── PEOPLE ────────────────────────────────────────────────────────────*/}
         <div className={tab === 'people' ? '' : 'hidden'}>
@@ -183,7 +183,15 @@ export function SettingsClient({
             infoGroups={infoGroups}
             itemLists={itemLists}
             logSchemas={logSchemas}
-            checklists={check// ── Provider section ─────────────────────────────────────────────────────────
+            checklists={checklists}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Provider section ─────────────────────────────────────────────────────────
 
 function ProviderSection({ providers: initial, providerTypes }: Readonly<{
   providers:     any[];

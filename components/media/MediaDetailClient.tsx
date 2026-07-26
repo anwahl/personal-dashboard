@@ -149,7 +149,7 @@ export function MediaDetailClient({
       if (form.status_id && statusChanged) {
         await addMediaStatusEntry(supabase, {
           media_entry_id: entry.id,
-          status_id:      Number.parseInt(form.status_id),
+          statusId:      Number.parseInt(form.status_id),
           status_date:    form.status_date || localTodayISO(),
         });
       }

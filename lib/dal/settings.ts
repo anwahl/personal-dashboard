@@ -12,7 +12,8 @@ export type ManageableTable =
   | 'sleep_event_types'
   | 'habits'
   | 'providers'
-  | 'medications';
+  | 'medications'
+  | 'chart_categories';
 
 // ── Generic active toggle ─────────────────────────────────────────────────────
 

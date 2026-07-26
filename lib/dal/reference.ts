@@ -442,22 +442,3 @@ export async function getMedications(client: Client): Promise<MedicationRow[]> {
 }
 
 
-// ── Media reference for settings ──────────────────────────────────────────────
-
-export async function getMediaTypes(client: Client): Promise<unknown[]> {
-  const { data, error } = await client.from('media_types').select('*').order('sort_order');
-  if (error) throw new Error(`getMediaTypes: ${error.message}`);
-  return data ?? [];
-}
-
-export async function getMediaGenres(client: Client): Promise<unknown[]> {
-  const { data, error } = await client.from('media_genres').select('*').order('genre_name');
-  if (error) throw new Error(`getMediaGenres: ${error.message}`);
-  return data ?? [];
-}
-
-export async function getMediaStatuses(client: Client): Promise<unknown[]> {
-  const { data, error } = await client.from('media_statuses').select('*').order('sort_order');
-  if (error) throw new Error(`getMediaStatuses: ${error.message}`);
-  return data ?? [];
-}

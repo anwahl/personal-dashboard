@@ -2,8 +2,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
   ChartDefinitionRow,
   ChartTrackableLinkRow,
+  ChartType, MetricRole
 } from '@/types/schema';
-import type { ChartType, MetricRole } from '@/types/schema';
 
 type Client = SupabaseClient;
 
