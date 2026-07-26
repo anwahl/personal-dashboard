@@ -15,7 +15,7 @@ export interface PrescriptionPayload {
   prescriber_id:    number | null;
   start_date:       string | null;
   discontinued_date: string | null;
-  sort_order:       number;
+  sort_order?:       number;
   is_active:        boolean;
 }
 

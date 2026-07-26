@@ -206,7 +206,7 @@ export interface InfoFieldTypeWithValue {
   group_id: number;
   field_label: string;
   field_type: string;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
   value: string | null;
   value_id: number | null;
@@ -215,7 +215,7 @@ export interface InfoFieldTypeWithValue {
 export interface InfoGroupWithFields {
   id: number;
   group_title: string;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
   fields: InfoFieldTypeWithValue[];
 }
@@ -224,7 +224,7 @@ export interface ItemListWithEntries {
   id: number;
   list_title: string;
   list_label: string | null;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
   entries: import("./schema").ItemListEntryRow[];
 }
@@ -235,7 +235,7 @@ export interface LogSchemaFieldWithOptions {
   field_label: string;
   field_key: string;
   field_type: string;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
   options: import("./schema").LogSchemaFieldOptionRow[];
 }
@@ -251,7 +251,7 @@ export interface LogEntryWithValues {
 export interface LogWithSchemaAndEntries {
   id: number;
   log_title: string;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
   fields: LogSchemaFieldWithOptions[];
   entries: LogEntryWithValues[];
@@ -261,7 +261,7 @@ export interface ChecklistWithItems {
   id: number;
   checklist_title: string;
   checklist_label: string | null;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
   items: import("./schema").ChecklistItemRow[];
 }
@@ -332,7 +332,7 @@ export interface LastTimeEntry {
   label: string; // derived or custom label
   last_date: string | null; // ISO date, null = never
   days_ago: number | null; // null = never logged
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
   // Only set for 'custom' items (enables quick "log today" update)
   custom_id?: number;

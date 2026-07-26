@@ -269,7 +269,7 @@ interface Props {
 export function ChartSettings({ chartDefinitions, trackables, categories }: Readonly<Props>) {
   const supabase = createClient();
   const [charts, setCharts] = useState(
-    [...chartDefinitions].sort((a, b) => a.sort_order - b.sort_order)
+    [...chartDefinitions].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
   );
   const [filter, setFilter] = useState('');
   const [showNew, setShowNew] = useState(false);
@@ -280,16 +280,19 @@ export function ChartSettings({ chartDefinitions, trackables, categories }: Read
   };
 
   const handleMove = useCallback(async (chartId: number, dir: 'up' | 'down') => {
-    const sorted = [...charts].sort((a, b) => a.sort_order - b.sort_order);
+    const sorted = [...charts].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
     const idx    = sorted.findIndex(c => c.id === chartId);
     const other  = dir === 'up' ? idx - 1 : idx + 1;
     if (other < 0 || other >= sorted.length) return;
     const [a, b] = [sorted[idx], sorted[other]];
+    if (a.sort_order == null || b.sort_order == null) return;
+    const aSort = a.sort_order;
+    const bSort = b.sort_order;
     setCharts(charts.map(c =>
-      c.id === a.id ? { ...c, sort_order: b.sort_order } :
-      c.id === b.id ? { ...c, sort_order: a.sort_order } : c
-    ).sort((x, y) => x.sort_order - y.sort_order));
-    await updateChartSortOrders(supabase, [{ id: a.id, sort_order: b.sort_order }, { id: b.id, sort_order: a.sort_order }]);
+      c.id === a.id ? { ...c, sort_order: bSort } :
+      c.id === b.id ? { ...c, sort_order: aSort } : c
+    ).sort((x, y) => (x.sort_order ?? 0) - (y.sort_order ?? 0)));
+    await updateChartSortOrders(supabase, [{ id: a.id, sort_order: bSort }, { id: b.id, sort_order: aSort }]);
   }, [charts, supabase]);
 
   const handleDelete = useCallback(async (chartId: number) => {
@@ -299,7 +302,7 @@ export function ChartSettings({ chartDefinitions, trackables, categories }: Read
 
   // Filtered + sorted
   const filtered = charts.filter(c => matchesFilter(c, filter))
-    .sort((a, b) => a.sort_order - b.sort_order);
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
 
   // Group filtered charts by chart_type
   const typeOrder: ChartType[] = ['scatter', 'line', 'bar', 'timeline', 'heatmap'];

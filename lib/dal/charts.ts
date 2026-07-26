@@ -66,7 +66,7 @@ export async function removeChartLink(client: Client, linkId: number): Promise<v
 export interface CreateChartPayload {
   title:      string;
   chart_type: ChartType;
-  sort_order: number;
+  sort_order?: number;
   category_id: number | null;
 }
 

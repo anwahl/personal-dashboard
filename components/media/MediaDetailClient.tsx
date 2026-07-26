@@ -147,11 +147,9 @@ export function MediaDetailClient({
       // Log new status if changed
       const statusChanged = String(entry.current_status?.id ?? '') !== form.status_id;
       if (form.status_id && statusChanged) {
-        await addMediaStatusEntry(supabase, {
-          media_entry_id: entry.id,
-          statusId:      Number.parseInt(form.status_id),
-          status_date:    form.status_date || localTodayISO(),
-        });
+        await addMediaStatusEntry(supabase,
+          entry.id, Number.parseInt(form.status_id), form.status_date || localTodayISO(),
+        );
       }
 
       router.refresh();

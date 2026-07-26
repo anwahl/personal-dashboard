@@ -166,7 +166,7 @@ export function TaskList({ contextDate, initialData, statuses, priorities }: Rea
   // First non-terminal status = default for new tasks
   const defaultStatus   = statuses.find(s => !s.is_terminal) ?? statuses[0];
   // Lowest-sort-order priority = default
-  const defaultPriority = [...priorities].sort((a, b) => a.sort_order - b.sort_order)[0];
+  const defaultPriority = [...priorities].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0];
   // Terminal status for completing
   const doneStatus = statuses.find(s => s.is_terminal);
 

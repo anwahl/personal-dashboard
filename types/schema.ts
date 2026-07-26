@@ -13,7 +13,7 @@ export interface PersonRow {
   person_name: string;
   birth_date: string | null;
   is_self: boolean;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
   created_at: string;
 }
@@ -42,7 +42,7 @@ export interface DailyTrackableRow {
   name: string;
   emoji: string | null;
   color_hex: string | null;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
 }
 
@@ -65,7 +65,7 @@ export interface TagRow {
 export interface SymptomCategoryRow {
   id: number;
   category_name: string;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
 }
 
@@ -73,14 +73,14 @@ export interface SymptomTypeRow {
   id: number;
   category_id: number;
   symptom_name: string;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
 }
 
 export interface EssQuestionTypeRow {
   id: number;
   question_label: string;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
   trackable_id: number | null; // FK → daily_trackables (the aggregate trackable)
 }
@@ -89,49 +89,49 @@ export interface EssAnswerTypeRow {
   id: number;
   answer_label: string;
   answer_value: number;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
 }
 
 export interface TimingOptionRow {
   id: number;
   option_name: string;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
 }
 
 export interface TimingCategoryRow {
   id: number;
   category_name: string;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
 }
 
 export interface PreBedConsumptionTypeRow {
   id: number;
   type_name: string;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
 }
 
 export interface SleepEventTypeRow {
   id: number;
   type_name: string;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
 }
 
 export interface ProviderTypeRow {
   id: number;
   type_name: string;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
 }
 
 export interface AppointmentTypeRow {
   id: number;
   type_name: string;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
 }
 
@@ -139,7 +139,7 @@ export interface MedicationTimingTypeRow {
   id: number;
   timing_name: string;
   dose_interval_days: number | null;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
 }
 
@@ -147,14 +147,14 @@ export interface TaskStatusRow {
   id: number;
   status_name: string;
   is_terminal: boolean;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
 }
 
 export interface TaskPriorityRow {
   id: number;
   priority_name: string;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
 }
 
@@ -162,14 +162,14 @@ export interface TimelineEventTypeRow {
   id: number;
   type_name: string;
   color_hex: string | null;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
 }
 
 export interface MediaTypeRow {
   id: number;
   type_name: string;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
 }
 
@@ -183,7 +183,7 @@ export interface MediaStatusRow {
   id: number;
   status_name: string;
   status_type: MediaStatusType;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
 }
 
@@ -217,7 +217,7 @@ export interface IntentionRow {
 export interface JournalCategoryRow {
   id: number;
   category_name: string;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
 }
 
@@ -239,7 +239,7 @@ export interface ProviderRow {
   phone: string | null;
   address: string | null;
   portal_url: string | null;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -275,7 +275,7 @@ export interface PrescriptionRow {
   prescriber_id: number | null;
   start_date: string | null;
   discontinued_date: string | null;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -450,7 +450,7 @@ export interface ChartDefinitionRow {
   id: number;
   title: string;
   chart_type: ChartType;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
   category_id: number | null;
 }
@@ -460,13 +460,13 @@ export interface ChartTrackableLinkRow {
   chart_id: number;
   trackable_id: number;
   metric_role: MetricRole;
-  sort_order: number;
+  sort_order?: number;
 }
 
 export interface ChartCategoryRow {
   id: number;
   name: string;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
 }
 
@@ -479,7 +479,7 @@ export interface LastTimeMediaRow {
   status_id: number | null; // FK → media_statuses (optional filter)
   label: string; // required; can't auto-derive from multi-filter
   emoji: string | null;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
 }
 
@@ -487,7 +487,7 @@ export interface LastTimeBooleanRow {
   id: number;
   trackable_id: number;
   emoji: string | null;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
 }
 
@@ -495,7 +495,7 @@ export interface LastTimeCustomRow {
   id: number;
   custom_value: string;
   emoji: string | null;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
   last_date: string | null;
 }
@@ -518,7 +518,7 @@ export interface WeeklyIntentionRow {
   id: number;
   weekly_entry_id: number;
   intention_text: string;
-  sort_order: number;
+  sort_order?: number;
   created_at: string;
 }
 
@@ -623,7 +623,7 @@ export interface LastTimeActivityRow {
   id: number;
   activity_name: string;
   emoji: string | null;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
   created_at: string;
 }
@@ -640,7 +640,7 @@ export interface LastTimeLatestRow {
   id: number;
   activity_name: string;
   emoji: string | null;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
   last_logged_date: string | null;
 }
@@ -650,7 +650,7 @@ export interface LastTimeLatestRow {
 export interface InfoGroupRow {
   id: number;
   group_title: string;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
 }
 
@@ -659,7 +659,7 @@ export interface InfoFieldTypeRow {
   group_id: number;
   field_label: string;
   field_type: string;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
 }
 
@@ -674,7 +674,7 @@ export interface ItemListRow {
   id: number;
   list_title: string;
   list_label: string | null;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
 }
 
@@ -683,14 +683,14 @@ export interface ItemListEntryRow {
   list_id: number;
   entry_text: string;
   entry_date: string | null;
-  sort_order: number;
+  sort_order?: number;
   created_at: string;
 }
 
 export interface LogSchemaRow {
   id: number;
   log_title: string;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
 }
 
@@ -700,7 +700,7 @@ export interface LogSchemaFieldRow {
   field_label: string;
   field_key: string;
   field_type: string;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
 }
 
@@ -708,7 +708,7 @@ export interface LogSchemaFieldOptionRow {
   id: number;
   field_id: number;
   option_value: string;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
 }
 
@@ -730,7 +730,7 @@ export interface ChecklistRow {
   id: number;
   checklist_title: string;
   checklist_label: string | null;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
 }
 
@@ -739,6 +739,6 @@ export interface ChecklistItemRow {
   checklist_id: number;
   item_text: string;
   is_checked: boolean;
-  sort_order: number;
+  sort_order?: number;
   created_at: string;
 }

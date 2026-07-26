@@ -36,7 +36,7 @@ export function LastTimeTracker({ entries, compact = false }: Readonly<Props>) {
 
   const sorted = [...items].sort((a, b) =>
     sortBy === 'order'
-      ? a.sort_order - b.sort_order
+      ? (a.sort_order ?? 0) - (b.sort_order ?? 0)
       : (a.days_ago ?? 99999) - (b.days_ago ?? 99999)
   );
 

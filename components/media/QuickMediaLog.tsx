@@ -2,6 +2,9 @@
 
 import Link from 'next/link';
 import { localTodayISO } from '@/lib/utils/dates';
+import {
+  addMediaStatusEntry
+} from '@/lib/dal/media';
 
 /**
  * QuickMediaLog
@@ -137,11 +140,9 @@ export function QuickMediaLog({
   }, {});
 
   const handleStatusChange = useCallback(async (entryId: number, newStatusId: number) => {
-    await addMediaStatusEntry(supabase, {
-      media_entry_id: entryId,
-      status_id:      newStatusId,
-      status_date:    localTodayISO(),
-    });
+    await addMediaStatusEntry(supabase,
+      entryId, newStatusId, localTodayISO()
+    );
     // Remove from in-progress list (it's now completed or abandoned)
     setEntries(prev => prev.filter(e => e.id !== entryId));
   }, [supabase]);
@@ -157,11 +158,7 @@ export function QuickMediaLog({
       if (error || !entryData) throw new Error('Failed to create entry');
 
       if (statusId) {
-        await addMediaStatusEntry(supabase, {
-          media_entry_id: (entryData as any).id,
-          status_id:      Number.parseInt(statusId),
-          status_date:    localTodayISO(),
-        });
+        await addMediaStatusEntry(supabase, (entryData as any).id, Number.parseInt(statusId), localTodayISO());
       }
 
       // Add to local list as in-progress if applicable

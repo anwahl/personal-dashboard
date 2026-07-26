@@ -24,7 +24,7 @@ export interface LastTimeMediaPayload {
   type_id:   number | null;
   genre_id:  number | null;
   status_id: number | null;
-  sort_order: number;
+  sort_order?: number;
 }
 
 export async function createLastTimeMedia(
@@ -106,7 +106,7 @@ export async function getLastTimeCustom(client: Client): Promise<LastTimeCustomR
 export interface LastTimeCustomPayload {
   custom_value: string;
   emoji:        string | null;
-  sort_order:   number;
+  sort_order?:   number;
 }
 
 export async function createLastTimeCustom(
