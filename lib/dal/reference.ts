@@ -34,6 +34,12 @@ import type {
   ChartDefinitionRow,
   ChartTrackableLinkRow,
   MediaStatusTypeLinkRow,
+  ProviderRow,
+  InfoGroupRow,
+  ItemListRow,
+  LogSchemaRow,
+  ChecklistRow,
+  MedicationRow,
 } from "@/types/schema";
 import type {
   ReferenceData,
@@ -362,14 +368,14 @@ export async function getReferenceData(client: Client): Promise<ReferenceData> {
 // ── Settings page bulk fetch ───────────────────────────────────────────────────
 
 export interface SettingsPageData {
-  tags:              unknown[];
-  intentions:        unknown[];
-  providers:         unknown[];
-  providerTypes:     unknown[];
-  infoGroups:        unknown[];
-  itemLists:         unknown[];
-  logSchemas:        unknown[];
-  checklists:        unknown[];
+  tags:              TagRow[];
+  intentions:        IntentionRow[];
+  providers:         ProviderRow[];
+  providerTypes:     ProviderTypeRow[];
+  infoGroups:        InfoGroupRow[];
+  itemLists:         ItemListRow[];
+  logSchemas:        LogSchemaRow[];
+  checklists:        ChecklistRow[];
   personInfoGroupLinks: Array<{ person_id: number; info_group_id: number }>;
   personItemListLinks:  Array<{ person_id: number; list_id:      number }>;
   personLogLinks:       Array<{ person_id: number; log_id:       number }>;
@@ -413,14 +419,14 @@ export async function getSettingsPageData(client: Client): Promise<SettingsPageD
   check('pclLinks',          pclLinks.error);
 
   return {
-    tags:              tagsRes.data        ?? [],
-    intentions:        intentionsRes.data   ?? [],
-    providers:         providersRes.data    ?? [],
-    providerTypes:     providerTypesRes.data ?? [],
-    infoGroups:        infoGroupsRes.data   ?? [],
-    itemLists:         itemListsRes.data    ?? [],
-    logSchemas:        logSchemasRes.data   ?? [],
-    checklists:        checklistsRes.data   ?? [],
+    tags:              (tagsRes.data        ?? []) as TagRow[],
+    intentions:        (intentionsRes.data   ?? []) as IntentionRow[],
+    providers:         (providersRes.data    ?? []) as ProviderRow[],
+    providerTypes:     (providerTypesRes.data ?? []) as ProviderTypeRow[],
+    infoGroups:        (infoGroupsRes.data   ?? []) as InfoGroupRow[],
+    itemLists:         (itemListsRes.data    ?? []) as ItemListRow[],
+    logSchemas:        (logSchemasRes.data   ?? []) as LogSchemaRow[],
+    checklists:        (checklistsRes.data   ?? []) as ChecklistRow[],
     personInfoGroupLinks: (pigLinks.data ?? []) as Array<{ person_id: number; info_group_id: number }>,
     personItemListLinks:  (pilLinks.data ?? []) as Array<{ person_id: number; list_id:      number }>,
     personLogLinks:       (plLinks.data ?? [])  as Array<{ person_id: number; log_id:       number }>,
@@ -440,5 +446,3 @@ export async function getMedications(client: Client): Promise<MedicationRow[]> {
   if (error) throw new Error(`getMedications: ${error.message}`);
   return (data ?? []) as MedicationRow[];
 }
-
-

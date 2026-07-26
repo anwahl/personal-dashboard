@@ -13,6 +13,7 @@ import {
   getMediaStatuses
 } from '@/lib/dal/reference';
 import { getAllPeople }    from '@/lib/dal/people';
+import type { PersonLinks } from '@/types/dal';
 import { SettingsClient } from '@/components/settings/SettingsClient';
 
 export default async function SettingsPage() {
@@ -46,7 +47,7 @@ export default async function SettingsPage() {
     getMediaStatuses(supabase),
   ]);
 
-  const personLinks = people.map(person => ({
+  const personLinks: PersonLinks[] = people.map(person => ({
     person,
     infoGroupIds:  settingsData.personInfoGroupLinks.filter(l => l.person_id === person.id).map(l => l.info_group_id),
     listIds:       settingsData.personItemListLinks.filter(l => l.person_id === person.id).map(l => l.list_id),

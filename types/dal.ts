@@ -276,6 +276,18 @@ export interface PersonPageData {
   prescriptions: PrescriptionDetail[];
 }
 
+// ── People settings structure ─────────────────────────────────────────────────
+
+/** Represents a person's linked structure IDs, used by PeopleStructureSettings. */
+export interface PersonLinks {
+  person:       import('./schema').PersonRow;
+  infoGroupIds: number[];
+  listIds:      number[];
+  logIds:       number[];
+  checklistIds: number[];
+}
+
+
 // ── Weekly entry (enriched) ───────────────────────────────────────────────────
 
 export interface WeeklyEntryDetail extends WeeklyEntryRow {
