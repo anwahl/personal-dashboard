@@ -1,6 +1,9 @@
 'use client';
 
-import { useState }              from 'react';
+import { Button }           from '@/components/ui/Button';
+import { useState, useCallback } from 'react';
+import { createClient }          from '@/lib/supabase/client';
+import { createProvider, updateProvider, toggleProviderActive } from '@/lib/dal/providers';
 import { ManageableList }        from './ManageableList';
 import { SymptomSettings }       from './SymptomSettings';
 import { JournalSettings }       from './JournalSettings';
@@ -93,7 +96,7 @@ export function SettingsClient({
       <div className="settings-tab-content">
 
         {/* ── DAILY ─────────────────────────────────────────────────────────────*/}
-        {tab === 'daily' && (
+        <div className={tab === 'daily' ? '' : 'hidden'}>
           <>
             <ManageableList
               title="Tags"
@@ -118,34 +121,34 @@ export function SettingsClient({
               renderName={item => <em>"{String(item.value)}"</em>}
             />
           </>
-        )}
+</div>
 
         {/* ── TRACKING ──────────────────────────────────────────────────────────*/}
-        {tab === 'tracking' && (
+        <div className={tab === 'tracking' ? '' : 'hidden'}>
           <TrackableSettings trackables={trackables} />
-        )}
+</div>
 
         {/* ── CHARTS ────────────────────────────────────────────────────────────*/}
-        {tab === 'charts' && (
+        <div className={tab === 'charts' ? '' : 'hidden'}>
           <ChartSettings
             chartDefinitions={chartDefinitions}
             trackables={trackables.filter(t => t.is_active)}
             categories={chartCategories}
           />
-        )}
+</div>
 
         {/* ── LAST TIME ─────────────────────────────────────────────────────────*/}
-        {tab === 'lasttime' && (
+        <div className={tab === 'lasttime' ? '' : 'hidden'}>
           <LastTimeSettings
             trackables={trackables.filter(t => t.track_type === 'boolean' && t.is_active)}
             mediaTypes={mediaTypes}
             mediaGenres={mediaGenres}
             mediaStatuses={mediaStatuses}
           />
-        )}
+</div>
 
         {/* ── HEALTH ────────────────────────────────────────────────────────────*/}
-        {tab === 'health' && (
+        <div className={tab === 'health' ? '' : 'hidden'}>
           <>
             <SymptomSettings categories={symptomCategories} />
 
@@ -160,41 +163,67 @@ export function SettingsClient({
               ]}
             />
           </>
-        )}
+</div>
 
         {/* ── JOURNAL ───────────────────────────────────────────────────────────*/}
-        {tab === 'journal' && (
+        <div className={tab === 'journal' ? '' : 'hidden'}>
           <JournalSettings categories={journalCategories} />
-        )}
+</div>
 
         {/* ── PROVIDERS ─────────────────────────────────────────────────────────*/}
-        {tab === 'providers' && (
+        <div className={tab === 'providers' ? '' : 'hidden'}>
           <ProviderSection providers={providers} providerTypes={providerTypes} />
-        )}
+</div>
 
         {/* ── PEOPLE ────────────────────────────────────────────────────────────*/}
-        {tab === 'people' && (
+        <div className={tab === 'people' ? '' : 'hidden'}>
           <PeopleStructureSettings
             people={people}
             personLinks={personLinks}
             infoGroups={infoGroups}
             itemLists={itemLists}
             logSchemas={logSchemas}
-            checklists={checklists}
-          />
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ── Provider section (with local state for instant refresh) ──────────────────
+            checklists={check// ── Provider section ─────────────────────────────────────────────────────────
 
 function ProviderSection({ providers: initial, providerTypes }: Readonly<{
-  providers: any[];
+  providers:     any[];
   providerTypes: ProviderTypeRow[];
 }>) {
+  const supabase   = createClient();
   const [providers, setProviders] = useState<any[]>(initial);
+  const [editId,    setEditId]    = useState<number | null>(null);
+  const [editForm,  setEditForm]  = useState<Record<string, string>>({});
+  const [saving,    setSaving]    = useState(false);
+
+  const startEdit = (p: any) => {
+    setEditId(p.id);
+    setEditForm({
+      provider_type_id: String(p.provider_type_id ?? ''),
+      provider_name:    p.provider_name    ?? '',
+      practice_name:    p.practice_name   ?? '',
+      phone:            p.phone           ?? '',
+    });
+  };
+
+  const saveEdit = useCallback(async () => {
+    if (!editId) return;
+    setSaving(true);
+    try {
+      const updated = await updateProvider(supabase, editId, {
+        provider_type_id: Number.parseInt(editForm.provider_type_id ?? '0'),
+        provider_name:    editForm.provider_name?.trim()  || null,
+        practice_name:    editForm.practice_name?.trim()  || null,
+        phone:            editForm.phone?.trim()           || null,
+      });
+      setProviders(prev => prev.map(p => p.id === editId ? updated : p));
+      setEditId(null);
+    } finally { setSaving(false); }
+  }, [supabase, editId, editForm]);
+
+  const toggleActive = useCallback(async (id: number, isActive: boolean) => {
+    await toggleProviderActive(supabase, id, isActive);
+    setProviders(prev => prev.map(p => p.id === id ? { ...p, is_active: isActive } : p));
+  }, [supabase]);
 
   return (
     <div className="settings-section">
@@ -206,16 +235,55 @@ function ProviderSection({ providers: initial, providerTypes }: Readonly<{
       </p>
 
       {providers.map((p: any) => (
-        <div key={p.id} className="manage-item">
-          <div style={{ flex: 1 }}>
-            <span className="manage-item__name">{p.provider_name ?? p.practice_name ?? 'Unnamed'}</span>
-            {p.practice_name && p.provider_name && (
-              <span className="manage-item__meta" style={{ marginLeft: 8 }}>{p.practice_name}</span>
-            )}
-            <span className="badge" style={{ marginLeft: 8 }}>
-              {providerTypes.find((t: ProviderTypeRow) => t.id === p.provider_type_id)?.type_name ?? ''}
-            </span>
-          </div>
+        <div key={p.id} className={`manage-item${p.is_active ? '' : ' manage-item--inactive'}`}>
+          {editId === p.id ? (
+            <>
+              <select
+                value={editForm.provider_type_id ?? ''}
+                onChange={e => setEditForm(f => ({ ...f, provider_type_id: e.target.value }))}
+                style={{ width: 130 }}
+              >
+                {providerTypes.map((t: ProviderTypeRow) => (
+                  <option key={t.id} value={t.id}>{t.type_name}</option>
+                ))}
+              </select>
+              <input type="text" value={editForm.provider_name ?? ''}
+                onChange={e => setEditForm(f => ({ ...f, provider_name: e.target.value }))}
+                placeholder="Provider name" style={{ flex: 1 }} />
+              <input type="text" value={editForm.practice_name ?? ''}
+                onChange={e => setEditForm(f => ({ ...f, practice_name: e.target.value }))}
+                placeholder="Practice" style={{ flex: 1 }} />
+              <input type="text" value={editForm.phone ?? ''}
+                onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))}
+                placeholder="Phone" style={{ width: 140 }} />
+              <div className="manage-item__actions">
+                <Button size="sm" variant="accent" onClick={saveEdit} disabled={saving}>✓</Button>
+                <Button size="sm" variant="ghost" onClick={() => setEditId(null)}>✕</Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="manage-item__name">
+                {p.provider_name ?? p.practice_name ?? 'Unnamed'}
+                {p.practice_name && p.provider_name && (
+                  <span className="manage-item__meta">{p.practice_name}</span>
+                )}
+                <span className="badge">
+                  {providerTypes.find((t: ProviderTypeRow) => t.id === p.provider_type_id)?.type_name ?? ''}
+                </span>
+              </div>
+              <div className="manage-item__actions">
+                <Button size="sm" variant="ghost" onClick={() => startEdit(p)}>Edit</Button>
+                <Button
+                  size="sm"
+                  variant={p.is_active ? 'ghost' : 'accent'}
+                  onClick={() => toggleActive(p.id, !p.is_active)}
+                >
+                  {p.is_active ? 'Deactivate' : 'Activate'}
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       ))}
 
@@ -229,77 +297,33 @@ function ProviderSection({ providers: initial, providerTypes }: Readonly<{
   );
 }
 
-// ── Add provider form (inline) ────────────────────────────────────────────────
-
-import { createClient as _createClient } from '@/lib/supabase/client';
+// ── Add provider form ─────────────────────────────────────────────────────────
 
 function AddProviderForm({ providerTypes, onAdded }: Readonly<{
   providerTypes: ProviderTypeRow[];
-  onAdded: (p: unknown) => void;
+  onAdded:       (p: unknown) => void;
 }>) {
-  const supabase = _createClient();
-  const [show,   setShow]   = useState(false);
-  const [name,   setName]   = useState('');
+  const supabase = createClient();
+  const [show,     setShow]     = useState(false);
+  const [name,     setName]     = useState('');
   const [practice, setPractice] = useState('');
-  const [phone,  setPhone]  = useState('');
-  const [typeId, setTypeId] = useState('');
-  const [saving, setSaving] = useState(false);
+  const [phone,    setPhone]    = useState('');
+  const [typeId,   setTypeId]   = useState('');
+  const [saving,   setSaving]   = useState(false);
 
-  const save = async () => {
+  const save = useCallback(async () => {
     if (!typeId) return;
     setSaving(true);
     try {
-      const { data } = await supabase.from('providers').insert({
+      const data = await createProvider(supabase, {
         provider_type_id: Number.parseInt(typeId),
-        provider_name:    name.trim()    || null,
+        provider_name:    name.trim()     || null,
         practice_name:    practice.trim() || null,
-        phone:            phone.trim()   || null,
-      }).select().single();
-      if (data) { onAdded(data); setName(''); setPractice(''); setPhone(''); setShow(false); }
+        phone:            phone.trim()    || null,
+      });
+      onAdded(data);
+      setName(''); setPractice(''); setPhone(''); setShow(false);
     } finally { setSaving(false); }
-  };
+  }, [supabase, typeId, name, practice, phone, onAdded]);
 
-  if (!show) {
-    return (
-      <div style={{ paddingTop: 8, borderTop: '1px solid var(--border)' }}>
-        <button type="button" onClick={() => setShow(true)}
-          style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: '0.85rem', padding: 0 }}>
-          + Add Provider
-        </button>
-      </div>
-    );
-  }
 
-  return (
-    <div style={{ paddingTop: 12, borderTop: '1px solid var(--border)' }}>
-      <div className="field-grid">
-        <div>
-          <label htmlFor="provider-type" style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Type</label>
-          <select id="provider-type" value={typeId} onChange={e => setTypeId(e.target.value)}>
-            <option value="">Select type…</option>
-            {providerTypes.map(t => <option key={t.id} value={t.id}>{t.type_name}</option>)}
-          </select>
-        </div>
-        <div>
-          <label htmlFor="provider-name" style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Provider name</label>
-          <input id="provider-name" type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Dr. Smith" />
-        </div>
-        <div>
-          <label htmlFor="provider-practice" style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Practice</label>
-          <input id="provider-practice" type="text" value={practice} onChange={e => setPractice(e.target.value)} placeholder="Helena Family Medicine" />
-        </div>
-        <div>
-          <label htmlFor="provider-phone" style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Phone</label>
-          <input id="provider-phone" type="text" value={phone} onChange={e => setPhone(e.target.value)} placeholder="(406) 555-1234" />
-        </div>
-      </div>
-      <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-        <button type="button" onClick={save} disabled={saving || !typeId}
-          className={`btn btn--sm${!saving && typeId ? ' btn--accent' : ''}`}>
-          {saving ? 'Saving…' : 'Add Provider'}
-        </button>
-        <button type="button" onClick={() => setShow(false)} className="btn btn--sm btn--ghost">Cancel</button>
-      </div>
-    </div>
-  );
-}

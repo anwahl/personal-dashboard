@@ -11,6 +11,10 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter }              from 'next/navigation';
 import { createClient }           from '@/lib/supabase/client';
+import {
+  getMediaNotes, createMediaNote, deleteMediaNote,
+  updateMediaEntry, addMediaStatusEntry, deleteMediaEntry,
+} from '@/lib/dal/media';
 import { Button }                 from '@/components/ui/Button';
 import { ConfirmButton }          from '@/components/ui/ConfirmButton';
 import { InputField } from '@/components/ui/Display';
@@ -106,29 +110,21 @@ export function MediaDetailClient({
   const [addingNote, setAddingNote] = useState(false);
 
   useEffect(() => {
-    supabase.from('media_notes').select('*')
-      .eq('media_entry_id', entry.id)
-      .order('note_date', { ascending: false })
-      .then(({ data }) => {
-        setNotes((data ?? []) as MediaNoteRow[]);
-        setNotesLoaded(true);
-      });
+    getMediaNotes(supabase, entry.id).then(notes => { setNotes(notes); setNotesLoaded(true); });
   }, [entry.id]);
 
   const addNote = useCallback(async () => {
     if (!newNote.trim()) return;
     setAddingNote(true);
     try {
-      const { data } = await supabase.from('media_notes')
-        .insert({ media_entry_id: entry.id, note_date: noteDate, body_md: newNote.trim() })
-        .select().single();
-      if (data) setNotes(prev => [data as MediaNoteRow, ...prev]);
+      const note = await createMediaNote(supabase, entry.id, noteDate, newNote.trim());
+      setNotes(prev => [note, ...prev]);
       setNewNote('');
     } finally { setAddingNote(false); }
   }, [supabase, entry.id, noteDate, newNote]);
 
   const deleteNote = useCallback(async (id: number) => {
-    await supabase.from('media_notes').delete().eq('id', id);
+    await deleteMediaNote(supabase, id);
     setNotes(prev => prev.filter(n => n.id !== id));
   }, [supabase]);
 
@@ -146,16 +142,16 @@ export function MediaDetailClient({
         review:   form.review.trim()   || null,
       };
 
-      await supabase.from('media_entries').update(payload).eq('id', entry.id).throwOnError();
+      await updateMediaEntry(supabase, entry.id, payload);
 
       // Log new status if changed
       const statusChanged = String(entry.current_status?.id ?? '') !== form.status_id;
       if (form.status_id && statusChanged) {
-        await supabase.from('media_status_entries').insert({
+        await addMediaStatusEntry(supabase, {
           media_entry_id: entry.id,
           status_id:      Number.parseInt(form.status_id),
           status_date:    form.status_date || localTodayISO(),
-        }).throwOnError();
+        });
       }
 
       router.refresh();
@@ -168,7 +164,7 @@ export function MediaDetailClient({
   // ── Delete ──────────────────────────────────────────────────────────────────
 
   const handleDelete = useCallback(async () => {
-    await supabase.from('media_entries').delete().eq('id', entry.id);
+    await deleteMediaEntry(supabase, entry.id);
     router.push('/media');
   }, [supabase, entry.id, router]);
 

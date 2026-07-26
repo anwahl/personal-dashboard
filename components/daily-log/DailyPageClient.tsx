@@ -11,6 +11,7 @@ import { SaveStatus, SaveState } from '@/components/ui/Display';
 import { saveJournalResponses, JournalResponseDetail } from '@/lib/dal/journal';
 import { useState, useCallback } from 'react';
 import { useRouter }              from 'next/navigation';
+import { findOrCreateTag } from '@/lib/dal/daily';
 import { createClient }           from '@/lib/supabase/client';
 import { localTodayISO } from '@/lib/utils/dates';
 

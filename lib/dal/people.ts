@@ -433,3 +433,191 @@ export async function deleteLogEntry(
 ): Promise<void> {
   await client.from("log_entries").delete().eq("id", id).throwOnError();
 }
+
+
+// ── Checklist item management ─────────────────────────────────────────────────
+
+
+export async function createChecklistItem(
+  client:      Client,
+  checklistId: number,
+  itemText:    string,
+  sortOrder:   number,
+): Promise<ChecklistItemRow> {
+  const { data, error } = await client
+    .from('checklist_items')
+    .insert({ checklist_id: checklistId, item_text: itemText, sort_order: sortOrder })
+    .select()
+    .single();
+  if (error) throw new Error(`createChecklistItem: ${error.message}`);
+  return data as ChecklistItemRow;
+}
+
+export async function deleteChecklistItem(client: Client, id: number): Promise<void> {
+  const { error } = await client.from('checklist_items').delete().eq('id', id);
+  if (error) throw new Error(`deleteChecklistItem: ${error.message}`);
+}
+
+// ── People structure creation ─────────────────────────────────────────────────
+
+export interface NewInfoGroupPayload {
+  group_title: string;
+  fields: Array<{ label: string; type: string }>;
+}
+
+export async function createInfoGroup(
+  client:  Client,
+  payload: NewInfoGroupPayload,
+): Promise<InfoGroupRow> {
+  const { data: group, error: groupError } = await client
+    .from('info_groups')
+    .insert({ group_title: payload.group_title })
+    .select()
+    .single();
+  if (groupError) throw new Error(`createInfoGroup: ${groupError.message}`);
+
+  const validFields = payload.fields.filter(f => f.label.trim());
+  if (validFields.length > 0) {
+    const { error: fieldError } = await client.from('info_field_types').insert(
+      validFields.map((f, i) => ({
+        group_id:    (group as InfoGroupRow).id,
+        field_label: f.label.trim(),
+        field_type:  f.type,
+        sort_order:  i,
+      })),
+    );
+    if (fieldError) throw new Error(`createInfoGroup fields: ${fieldError.message}`);
+  }
+  return group as InfoGroupRow;
+}
+
+export async function createItemList(
+  client:     Client,
+  listTitle:  string,
+  listLabel:  string | null,
+): Promise<ItemListRow> {
+  const { data, error } = await client
+    .from('item_lists')
+    .insert({ list_title: listTitle, list_label: listLabel })
+    .select()
+    .single();
+  if (error) throw new Error(`createItemList: ${error.message}`);
+  return data as ItemListRow;
+}
+
+export interface NewLogSchemaPayload {
+  log_title: string;
+  fields: Array<{
+    label:   string;
+    key:     string;
+    type:    string;
+    options: string; // comma-separated for select fields
+  }>;
+}
+
+export async function createLogSchema(
+  client:  Client,
+  payload: NewLogSchemaPayload,
+): Promise<LogSchemaRow> {
+  const { data: schema, error: schemaError } = await client
+    .from('log_schemas')
+    .insert({ log_title: payload.log_title })
+    .select()
+    .single();
+  if (schemaError) throw new Error(`createLogSchema: ${schemaError.message}`);
+
+  const validFields = payload.fields.filter(f => f.label.trim());
+  if (validFields.length === 0) return schema as LogSchemaRow;
+
+  const { data: createdFields, error: fieldError } = await client
+    .from('log_schema_fields')
+    .insert(
+      validFields.map((f, i) => ({
+        log_id:      (schema as LogSchemaRow).id,
+        field_label: f.label.trim(),
+        field_key:   f.key.trim() || f.label.trim().toLowerCase().replace(/\s+/g, '_'),
+        field_type:  f.type,
+        sort_order:  i,
+      })),
+    )
+    .select('id, field_type');
+  if (fieldError) throw new Error(`createLogSchema fields: ${fieldError.message}`);
+
+  const fieldRows = (createdFields ?? []) as Array<{ id: number; field_type: string }>;
+  const optionInserts = validFields.flatMap((f, i) => {
+    const created = fieldRows[i];
+    if (!created || f.type !== 'select' || !f.options.trim()) return [];
+    return f.options.split(',').map((opt, oi) => ({
+      field_id:     created.id,
+      option_value: opt.trim(),
+      sort_order:   oi,
+    }));
+  }).filter(o => o.option_value);
+
+  if (optionInserts.length > 0) {
+    const { error: optError } = await client
+      .from('log_schema_field_options')
+      .insert(optionInserts);
+    if (optError) throw new Error(`createLogSchema options: ${optError.message}`);
+  }
+
+  return schema as LogSchemaRow;
+}
+
+export async function createChecklist(
+  client:          Client,
+  checklistTitle:  string,
+  checklistLabel:  string | null,
+): Promise<ChecklistRow> {
+  const { data, error } = await client
+    .from('checklists')
+    .insert({ checklist_title: checklistTitle, checklist_label: checklistLabel })
+    .select()
+    .single();
+  if (error) throw new Error(`createChecklist: ${error.message}`);
+  return data as ChecklistRow;
+}
+
+// ── Person–structure link toggling ────────────────────────────────────────────
+
+type StructureType = 'info_group' | 'list' | 'log' | 'checklist';
+
+const STRUCTURE_MAP: Record<StructureType, { junction: string; idCol: string }> = {
+  info_group: { junction: 'person_info_group_links', idCol: 'info_group_id' },
+  list:       { junction: 'person_item_list_links',  idCol: 'list_id'       },
+  log:        { junction: 'person_log_links',         idCol: 'log_id'        },
+  checklist:  { junction: 'person_checklist_links',  idCol: 'checklist_id'  },
+};
+
+export async function togglePersonStructureLink(
+  client:        Client,
+  personId:      number,
+  structureType: StructureType,
+  structureId:   number,
+  link:          boolean,
+): Promise<void> {
+  const { junction, idCol } = STRUCTURE_MAP[structureType];
+  if (link) {
+    const { error } = await client
+      .from(junction)
+      .insert({ person_id: personId, [idCol]: structureId });
+    if (error) throw new Error(`togglePersonStructureLink insert: ${error.message}`);
+  } else {
+    const { error } = await client
+      .from(junction)
+      .delete()
+      .eq('person_id', personId)
+      .eq(idCol, structureId);
+    if (error) throw new Error(`togglePersonStructureLink delete: ${error.message}`);
+  }
+}
+
+
+export async function getSelfPerson(client: Client): Promise<{ person_name: string } | null> {
+  const { data } = await client
+    .from('people')
+    .select('person_name')
+    .eq('is_self', true)
+    .maybeSingle();
+  return data as { person_name: string } | null;
+}

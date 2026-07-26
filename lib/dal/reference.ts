@@ -357,3 +357,107 @@ export async function getReferenceData(client: Client): Promise<ReferenceData> {
     people,
   };
 }
+
+
+// ── Settings page bulk fetch ───────────────────────────────────────────────────
+
+export interface SettingsPageData {
+  tags:              unknown[];
+  intentions:        unknown[];
+  providers:         unknown[];
+  providerTypes:     unknown[];
+  infoGroups:        unknown[];
+  itemLists:         unknown[];
+  logSchemas:        unknown[];
+  checklists:        unknown[];
+  personInfoGroupLinks: Array<{ person_id: number; info_group_id: number }>;
+  personItemListLinks:  Array<{ person_id: number; list_id:      number }>;
+  personLogLinks:       Array<{ person_id: number; log_id:       number }>;
+  personChecklistLinks: Array<{ person_id: number; checklist_id: number }>;
+}
+
+export async function getSettingsPageData(client: Client): Promise<SettingsPageData> {
+  const [
+    tagsRes, intentionsRes, providersRes, providerTypesRes,
+    infoGroupsRes, itemListsRes, logSchemasRes, checklistsRes,
+    pigLinks, pilLinks, plLinks, pclLinks,
+  ] = await Promise.all([
+    client.from('tags').select('*').order('tag_value'),
+    client.from('intentions').select('*').order('id'),
+    client.from('providers').select('*').order('provider_name'),
+    client.from('provider_types').select('*').order('sort_order'),
+    client.from('info_groups').select('*').order('sort_order'),
+    client.from('item_lists').select('*').order('sort_order'),
+    client.from('log_schemas').select('*').order('sort_order'),
+    client.from('checklists').select('*').order('sort_order'),
+    client.from('person_info_group_links').select('person_id, info_group_id'),
+    client.from('person_item_list_links').select('person_id, list_id'),
+    client.from('person_log_links').select('person_id, log_id'),
+    client.from('person_checklist_links').select('person_id, checklist_id'),
+  ]);
+
+  const check = (label: string, error: { message: string } | null) => {
+    if (error) throw new Error(`getSettingsPageData(${label}): ${error.message}`);
+  };
+  check('tags',              tagsRes.error);
+  check('intentions',        intentionsRes.error);
+  check('providers',         providersRes.error);
+  check('providerTypes',     providerTypesRes.error);
+  check('infoGroups',        infoGroupsRes.error);
+  check('itemLists',         itemListsRes.error);
+  check('logSchemas',        logSchemasRes.error);
+  check('checklists',        checklistsRes.error);
+  check('pigLinks',          pigLinks.error);
+  check('pilLinks',          pilLinks.error);
+  check('plLinks',           plLinks.error);
+  check('pclLinks',          pclLinks.error);
+
+  return {
+    tags:              tagsRes.data        ?? [],
+    intentions:        intentionsRes.data   ?? [],
+    providers:         providersRes.data    ?? [],
+    providerTypes:     providerTypesRes.data ?? [],
+    infoGroups:        infoGroupsRes.data   ?? [],
+    itemLists:         itemListsRes.data    ?? [],
+    logSchemas:        logSchemasRes.data   ?? [],
+    checklists:        checklistsRes.data   ?? [],
+    personInfoGroupLinks: (pigLinks.data ?? []) as Array<{ person_id: number; info_group_id: number }>,
+    personItemListLinks:  (pilLinks.data ?? []) as Array<{ person_id: number; list_id:      number }>,
+    personLogLinks:       (plLinks.data ?? [])  as Array<{ person_id: number; log_id:       number }>,
+    personChecklistLinks: (pclLinks.data ?? []) as Array<{ person_id: number; checklist_id: number }>,
+  };
+}
+
+
+// ── Medication reference data ─────────────────────────────────────────────────
+
+
+export async function getMedications(client: Client): Promise<MedicationRow[]> {
+  const { data, error } = await client
+    .from('medications')
+    .select('*')
+    .order('medication_name');
+  if (error) throw new Error(`getMedications: ${error.message}`);
+  return (data ?? []) as MedicationRow[];
+}
+
+
+// ── Media reference for settings ──────────────────────────────────────────────
+
+export async function getMediaTypes(client: Client): Promise<unknown[]> {
+  const { data, error } = await client.from('media_types').select('*').order('sort_order');
+  if (error) throw new Error(`getMediaTypes: ${error.message}`);
+  return data ?? [];
+}
+
+export async function getMediaGenres(client: Client): Promise<unknown[]> {
+  const { data, error } = await client.from('media_genres').select('*').order('genre_name');
+  if (error) throw new Error(`getMediaGenres: ${error.message}`);
+  return data ?? [];
+}
+
+export async function getMediaStatuses(client: Client): Promise<unknown[]> {
+  const { data, error } = await client.from('media_statuses').select('*').order('sort_order');
+  if (error) throw new Error(`getMediaStatuses: ${error.message}`);
+  return data ?? [];
+}

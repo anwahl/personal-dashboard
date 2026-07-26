@@ -2,6 +2,7 @@
 
 import { InputField, SaveStatus, SaveState } from '@/components/ui/Display';
 import { useState, useCallback } from 'react';
+import { createChecklistItem, deleteChecklistItem } from '@/lib/dal/people';
 import { createClient }          from '@/lib/supabase/client';
 import { formatMediumDate, localTodayISO } from '@/lib/utils/dates';
 import {
@@ -86,7 +87,7 @@ function ChecklistSection({ checklist, mode, personId }: Readonly<{
   }, [supabase, checklist.id, items.length, newText]);
 
   const removeItem = useCallback(async (itemId: number) => {
-    await supabase.from('checklist_items').delete().eq('id', itemId);
+    await deleteChecklistItem(supabase, itemId);
     setItems(prev => prev.filter(i => i.id !== itemId));
   }, [supabase]);
 

@@ -136,3 +136,45 @@ export async function deleteJournalResponse(
     .eq("id", id);
   if (error) throw new Error(`deleteJournalResponse: ${error.message}`);
 }
+
+
+// ── Settings operations ───────────────────────────────────────────────────────
+
+
+export async function toggleJournalCategory(
+  client:   Client,
+  id:       number,
+  isActive: boolean,
+): Promise<void> {
+  const { error } = await client
+    .from('journal_categories')
+    .update({ is_active: isActive })
+    .eq('id', id);
+  if (error) throw new Error(`toggleJournalCategory: ${error.message}`);
+}
+
+export async function addJournalPrompt(
+  client:     Client,
+  categoryId: number,
+  promptText: string,
+): Promise<JournalPromptRow> {
+  const { data, error } = await client
+    .from('journal_prompts')
+    .insert({ category_id: categoryId, prompt_text: promptText })
+    .select()
+    .single();
+  if (error) throw new Error(`addJournalPrompt: ${error.message}`);
+  return data as JournalPromptRow;
+}
+
+export async function toggleJournalPrompt(
+  client:   Client,
+  id:       number,
+  isActive: boolean,
+): Promise<void> {
+  const { error } = await client
+    .from('journal_prompts')
+    .update({ is_active: isActive })
+    .eq('id', id);
+  if (error) throw new Error(`toggleJournalPrompt: ${error.message}`);
+}

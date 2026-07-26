@@ -1,6 +1,10 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import {
+  toggleChartActive, setChartCategory, addChartLink, removeChartLink,
+  createChartDefinition, updateChartSortOrders, deleteChartDefinition,
+} from '@/lib/dal/charts';
 import { createClient }          from '@/lib/supabase/client';
 import { Button }                from '@/components/ui/Button';
 import { ConfirmButton }         from '@/components/ui/ConfirmButton';
@@ -97,13 +101,13 @@ function ChartCard({
 
   const toggleActive = async () => {
     const next = !active; setActive(next);
-    await supabase.from('chart_definitions').update({ is_active: next }).eq('id', chart.id);
+    await toggleChartActive(supabase, chart.id, next);
   };
 
   const changeCategory = async (catId: string) => {
     const id = catId === '' ? null : Number(catId);
     setCategoryId(id);
-    await supabase.from('chart_definitions').update({ category_id: id }).eq('id', chart.id);
+    await setChartCategory(supabase, chart.id, id);
   };
 
   const addLink = useCallback(async () => {
@@ -124,7 +128,7 @@ function ChartCard({
 
   const removeLink = async (linkId: number) => {
     setLinks(prev => prev.filter(l => l.id !== linkId));
-    await supabase.from('chart_trackable_links').delete().eq('id', linkId);
+    await removeChartLink(supabase, linkId);
   };
 
   const handleDelete = async () => {
@@ -286,14 +290,13 @@ export function ChartSettings({ chartDefinitions, trackables, categories }: Read
       c.id === b.id ? { ...c, sort_order: a.sort_order } : c
     ).sort((x, y) => x.sort_order - y.sort_order));
     await Promise.all([
-      supabase.from('chart_definitions').update({ sort_order: b.sort_order }).eq('id', a.id),
-      supabase.from('chart_definitions').update({ sort_order: a.sort_order }).eq('id', b.id),
+      updateChartSortOrders(supabase, [{ id: a.id, sort_order: b.sort_order }, { id: b.id, sort_order: a.sort_order }]),
     ]);
   }, [charts, supabase]);
 
   const handleDelete = useCallback(async (chartId: number) => {
     setCharts(prev => prev.filter(c => c.id !== chartId));
-    await supabase.from('chart_definitions').delete().eq('id', chartId);
+    await deleteChartDefinition(supabase, chartId);
   }, [supabase]);
 
   // Filtered + sorted

@@ -3,6 +3,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter }              from 'next/navigation';
 import { createClient }           from '@/lib/supabase/client';
+import { Button }                   from '@/components/ui/Button';
+import {
+  getMediaNotes, createMediaNote, deleteMediaNote,
+  updateMediaEntry, createMediaEntry, addMediaStatusEntry, deleteMediaEntry,
+} from '@/lib/dal/media';
 import { Button }                 from '@/components/ui/Button';
 import { TabBar }                 from '@/components/ui/Controls';
 import { InputField }             from '@/components/ui/Display';
@@ -269,26 +274,21 @@ function MediaItemView({ entry, onEdit, onClose }: Readonly<{
   const [loading,    setLoading]    = useState(true);
 
   useEffect(() => {
-    supabase.from('media_notes').select('*')
-      .eq('media_entry_id', entry.id)
-      .order('note_date', { ascending: false })
-      .then(({ data }) => { setNotes((data ?? []) as MediaNoteRow[]); setLoading(false); });
+    getMediaNotes(supabase, entry.id).then(notes => { setNotes(notes); setLoading(false); });
   }, [entry.id]);
 
   const addNote = useCallback(async () => {
     if (!newNote.trim()) return;
     setAddingNote(true);
     try {
-      const { data } = await supabase.from('media_notes')
-        .insert({ media_entry_id: entry.id, note_date: noteDate, body_md: newNote.trim() })
-        .select().single();
-      if (data) setNotes(prev => [data as MediaNoteRow, ...prev]);
+      const note = await createMediaNote(supabase, entry.id, noteDate, newNote.trim());
+      setNotes(prev => [note, ...prev]);
       setNewNote('');
     } finally { setAddingNote(false); }
   }, [supabase, entry.id, noteDate, newNote]);
 
   const deleteNote = useCallback(async (id: number) => {
-    await supabase.from('media_notes').delete().eq('id', id);
+    await deleteMediaNote(supabase, id);
     setNotes(prev => prev.filter(n => n.id !== id));
   }, [supabase]);
 
@@ -325,7 +325,7 @@ function MediaItemView({ entry, onEdit, onClose }: Readonly<{
         <div key={n.id} className="media-note">
           <div className="media-note__header">
             <span className="media-note__date-badge">{formatMediumDate(n.note_date)}</span>
-            <button type="button" className="media-note__delete" onClick={() => deleteNote(n.id)} title="Delete note">✕</button>
+            <Button variant="ghost" size="icon" onClick={() => deleteNote(n.id)} title="Delete note">✕</Button>
           </div>
           <Markdown>{n.body_md}</Markdown>
         </div>
@@ -358,8 +358,8 @@ function MediaItem({ entry, isExpanded, onToggle }: Readonly<{
 }>) {
 
   return (
-    <button
-      type="button"
+    <Button
+      variant="ghost"
       className="list-item"
       onClick={onToggle}
       style={{ borderRadius: isExpanded ? 'var(--radius-sm) var(--radius-sm) 0 0' : undefined }}>
@@ -426,18 +426,18 @@ export function MediaClient({ entries, mediaTypes, mediaStatuses, statusTypeLink
 
       let entryId: number;
       if (editEntry) {
-        await supabase.from('media_entries').update(payload).eq('id', editEntry.id);
+        await updateMediaEntry(supabase, editEntry.id, payload);
         entryId = editEntry.id;
       } else {
-        const { data, error } = await supabase.from('media_entries').insert(payload).select().single();
-        if (error || !data) throw new Error('Failed to create entry');
+        const data = await createMediaEntry(supabase, payload);
+        if (!data) throw new Error('Failed to create entry');
         entryId = (data as { id: number }).id;
       }
 
       // Log a status entry if status is selected and it changed (or it's a new entry)
       const statusChanged = !editEntry || String(editEntry.current_status?.id ?? '') !== form.status_id;
       if (form.status_id && statusChanged) {
-        await supabase.from('media_status_entries').insert({
+        await addMediaStatusEntry(supabase, {
           media_entry_id: entryId,
           status_id:      Number.parseInt(form.status_id),
           status_date:    form.status_date || localTodayISO(),
@@ -452,7 +452,7 @@ export function MediaClient({ entries, mediaTypes, mediaStatuses, statusTypeLink
   const remove = useCallback(async () => {
     if (!editEntry || !confirm('Delete this entry?')) return;
     setSaving(true);
-    try { await supabase.from('media_entries').delete().eq('id', editEntry.id); router.refresh(); cancel(); }
+    try { await deleteMediaEntry(supabase, editEntry.id); router.refresh(); cancel(); }
     finally { setSaving(false); }
   }, [supabase, editEntry, router]);
 

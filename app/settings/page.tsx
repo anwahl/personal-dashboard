@@ -7,90 +7,74 @@ import {
   getTrackables,
   getChartDefinitions,
   getChartCategories,
+  getSettingsPageData,
 } from '@/lib/dal/reference';
 import { getAllPeople }    from '@/lib/dal/people';
+import { getMediaTypes, getMediaGenres, getMediaStatuses } from '@/lib/dal/reference';
 import { SettingsClient } from '@/components/settings/SettingsClient';
 
 export default async function SettingsPage() {
   const supabase = await createClient();
 
   const [
-    symptomCategories, journalCategories, providerTypes,
-    sleepEventTypes, people, trackables, chartDefinitions, chartCategories,
-    mediaTypes, mediaGenres, mediaStatuses,
+    symptomCategories,
+    journalCategories,
+    providerTypes,
+    sleepEventTypes,
+    people,
+    trackables,
+    chartDefinitions,
+    chartCategories,
+    settingsData,
   ] = await Promise.all([
-    getSymptomCategoriesWithTypes(supabase, true),
-    getJournalCategoriesWithPrompts(supabase, true),
-    getProviderTypes(supabase, true),
-    getSleepEventTypes(supabase, true),
+    getSymptomCategoriesWithTypes(supabase),
+    getJournalCategoriesWithPrompts(supabase),
+    getProviderTypes(supabase),
+    getSleepEventTypes(supabase),
     getAllPeople(supabase),
-    getTrackables(supabase, true),           // all trackables (active + inactive) for settings
-    getChartDefinitions(supabase, true),     // all charts for settings
-    getChartCategories(supabase, true),      // all chart categories for settings
-    supabase.from('media_types').select('*').order('sort_order').then(r => r.data ?? []),
-    supabase.from('media_genres').select('*').order('genre_name').then(r => r.data ?? []),
-    supabase.from('media_statuses').select('*').order('sort_order').then(r => r.data ?? []),
+    getTrackables(supabase, true),
+    getChartDefinitions(supabase),
+    getChartCategories(supabase),
+    getSettingsPageData(supabase),
   ]);
 
-  const [
-    { data: tags },
-    { data: intentions },
-    { data: providers },
-    { data: infoGroups },
-    { data: itemLists },
-    { data: logSchemas },
-    { data: checklists },
-    { data: igLinks },
-    { data: listLinks },
-    { data: logLinks },
-    { data: clLinks },
-  ] = await Promise.all([
-    supabase.from('tags').select('*').order('tag_value'),
-    supabase.from('intentions').select('*').order('id'),
-    supabase.from('providers').select('*').order('provider_name'),
-    supabase.from('info_groups').select('*').order('sort_order'),
-    supabase.from('item_lists').select('*').order('sort_order'),
-    supabase.from('log_schemas').select('*').order('sort_order'),
-    supabase.from('checklists').select('*').order('sort_order'),
-    supabase.from('person_info_group_links').select('person_id, info_group_id'),
-    supabase.from('person_item_list_links').select('person_id, list_id'),
-    supabase.from('person_log_links').select('person_id, log_id'),
-    supabase.from('person_checklist_links').select('person_id, checklist_id'),
+  const [mediaTypes, mediaGenres, mediaStatuses] = await Promise.all([
+    getMediaTypes(supabase),
+    getMediaGenres(supabase),
+    getMediaStatuses(supabase),
   ]);
 
-  const personLinks = people.map(p => ({
-    person:       p,
-    infoGroupIds: (igLinks   ?? []).filter((l: any) => l.person_id === p.id).map((l: any) => l.info_group_id),
-    listIds:      (listLinks ?? []).filter((l: any) => l.person_id === p.id).map((l: any) => l.list_id),
-    logIds:       (logLinks  ?? []).filter((l: any) => l.person_id === p.id).map((l: any) => l.log_id),
-    checklistIds: (clLinks   ?? []).filter((l: any) => l.person_id === p.id).map((l: any) => l.checklist_id),
+  const personLinks = people.map(person => ({
+    person,
+    infoGroupIds:  settingsData.personInfoGroupLinks.filter(l => l.person_id === person.id).map(l => l.info_group_id),
+    listIds:       settingsData.personItemListLinks.filter(l => l.person_id === person.id).map(l => l.list_id),
+    logIds:        settingsData.personLogLinks.filter(l => l.person_id === person.id).map(l => l.log_id),
+    checklistIds:  settingsData.personChecklistLinks.filter(l => l.person_id === person.id).map(l => l.checklist_id),
   }));
 
   return (
     <div className="page-content">
-      <div className="page-header">
-        <h1 className="page-header__title">⚙️ Settings</h1>
-      </div>
+      <h1 className="page-header__title">Settings</h1>
       <SettingsClient
         trackables={trackables}
         chartDefinitions={chartDefinitions}
         chartCategories={chartCategories}
-        mediaTypes={mediaTypes}
-        mediaGenres={mediaGenres}
-        mediaStatuses={mediaStatuses}
-        tags={tags ?? []}
-        intentions={intentions ?? []}
+        tags={settingsData.tags}
+        intentions={settingsData.intentions}
         symptomCategories={symptomCategories}
         sleepEventTypes={sleepEventTypes}
         journalCategories={journalCategories}
-        providers={providers ?? []}
+        providers={settingsData.providers}
         providerTypes={providerTypes}
+        mediaTypes={mediaTypes}
+        mediaGenres={mediaGenres}
+        mediaStatuses={mediaStatuses}
         people={people}
         personLinks={personLinks}
-        infoGroups={infoGroups ?? []}
-        itemLists={itemLists ?? []}
-        logSchemas={logSchemas ?? []}
-        checklists={checklists ?? []}
+        infoGroups={settingsData.infoGroups}
+        itemLists={settingsData.itemLists}
+        logSchemas={settingsData.logSchemas}
+        checklists={settingsData.checklists}
       />
     </div>
   );

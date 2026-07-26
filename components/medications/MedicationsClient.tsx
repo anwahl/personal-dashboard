@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useRouter }             from 'next/navigation';
+import { updatePrescription, createPrescription } from '@/lib/dal/medications';
 import { createClient }          from '@/lib/supabase/client';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { Button }                from '@/components/ui/Button';
@@ -136,9 +137,9 @@ export function MedicationsClient({ prescriptionsByPerson, medications, timingTy
       };
 
       if (editTarget) {
-        await supabase.from('prescriptions').update(payload).eq('id', editTarget.id);
+        await updatePrescription(supabase, editTarget.id, payload);
       } else {
-        await supabase.from('prescriptions').insert(payload);
+        await createPrescription(supabase, payload);
       }
 
       router.refresh();

@@ -1,6 +1,10 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import {
+  createInfoGroup, createItemList, createLogSchema, createChecklist,
+  togglePersonStructureLink,
+} from '@/lib/dal/people';
 import { createClient } from '@/lib/supabase/client';
 import { Button }       from '@/components/ui/Button';
 import { InputField }   from '@/components/ui/Display';
@@ -149,19 +153,7 @@ function CreateInfoGroupForm({ onCreated }: Readonly<{ onCreated: (id: number, t
     if (!title.trim()) return;
     setSaving(true);
     try {
-      const { data: group } = await supabase.from('info_groups')
-        .insert({ group_title: title.trim() }).select('id').single();
-      if (!group) return;
-
-      const validFields = fields.filter(f => f.label.trim());
-      if (validFields.length > 0) {
-        await supabase.from('info_field_types').insert(
-          validFields.map((f, i) => ({
-            group_id: group.id, field_label: f.label.trim(),
-            field_type: f.type, sort_order: i,
-          }))
-        );
-      }
+      const group = await createInfoGroup(supabase, { group_title: title.trim(), fields });
       onCreated(group.id, title.trim());
       setTitle(''); setFields([{ label: '', type: 'text' }]);
     } finally { setSaving(false); }
@@ -214,11 +206,9 @@ function CreateListForm({
     if (!title.trim()) return;
     setSaving(true);
     try {
-      const { data } = await supabase.from('item_lists')
-        .insert({ list_title: title.trim(), list_label: label.trim() || null })
-        .select('id, list_title, list_label, is_active').single();
+      const data = await createItemList(supabase, title.trim(), label.trim() || null);
       if (data) {
-        onCreated((data as ItemListRow).id, title.trim());
+        onCreated(data.id, title.trim());
         setTitle(''); setLabel('');
       }
     } finally { setSaving(false); }
@@ -263,41 +253,7 @@ function CreateLogForm({ onCreated }: Readonly<{ onCreated: (id: number, title: 
     if (!title.trim()) return;
     setSaving(true);
     try {
-      const { data: schema } = await supabase.from('log_schemas')
-        .insert({ log_title: title.trim() }).select('id').single();
-      if (!schema) return;
-
-      const validFields = fields.filter(f => f.label.trim());
-      if (validFields.length > 0) {
-        const { data: createdFields } = await supabase.from('log_schema_fields').insert(
-          validFields.map((f, i) => ({
-            log_id:      schema.id,
-            field_label: f.label.trim(),
-            field_key:   f.key.trim() || f.label.trim().toLowerCase().replace(/\s+/g, '_'),
-            field_type:  f.type,
-            sort_order:  i,
-          }))
-        ).select('id, field_type');
-
-        if (createdFields) {
-          for (let i = 0; i < validFields.length; i++) {
-            const field   = validFields[i];
-            const created = createdFields[i];
-            if (created && field.type === 'select' && field.options.trim()) {
-              const opts = field.options.split(',').map((o: string) => o.trim()).filter(Boolean);
-              if (opts.length > 0) {
-                await supabase.from('log_schema_field_options').insert(
-                  opts.map((opt: string, oi: number) => ({
-                    field_id:     created.id,
-                    option_value: opt,
-                    sort_order:   oi,
-                  }))
-                );
-              }
-            }
-          }
-        }
-      }
+      const schema = await createLogSchema(supabase, { log_title: title.trim(), fields });
       onCreated(schema.id, title.trim());
       setTitle(''); setFields([{ label: '', key: '', type: 'text', options: '' }]);
     } finally { setSaving(false); }
@@ -361,11 +317,9 @@ function CreateChecklistForm({
     if (!title.trim()) return;
     setSaving(true);
     try {
-      const { data } = await supabase.from('checklists')
-        .insert({ checklist_title: title.trim(), checklist_label: label.trim() || null })
-        .select('id, checklist_title, checklist_label, is_active').single();
+      const data = await createChecklist(supabase, title.trim(), label.trim() || null);
       if (data) {
-        onCreated((data as ChecklistRow).id, title.trim());
+        onCreated(data.id, title.trim());
         setTitle(''); setLabel('');
       }
     } finally { setSaving(false); }
@@ -415,23 +369,18 @@ export function PeopleStructureSettings({
     structureType: StructureType,
     structureId: number,
   ) => {
-    const tableMap: Record<StructureType, { junction: string; idCol: string; idsKey: keyof PersonLinks }> = {
-      info_group: { junction: 'person_info_group_links', idCol: 'info_group_id', idsKey: 'infoGroupIds' },
-      list:       { junction: 'person_item_list_links',  idCol: 'list_id',       idsKey: 'listIds'      },
-      log:        { junction: 'person_log_links',         idCol: 'log_id',        idsKey: 'logIds'       },
-      checklist:  { junction: 'person_checklist_links',  idCol: 'checklist_id',  idsKey: 'checklistIds' },
+    const idsKeyMap: Record<StructureType, keyof PersonLinks> = {
+      info_group: 'infoGroupIds',
+      list:       'listIds',
+      log:        'logIds',
+      checklist:  'checklistIds',
     };
-
-    const { junction, idCol, idsKey } = tableMap[structureType];
+    const idsKey = idsKeyMap[structureType];
     const personLink  = links.find(l => l.person.id === personId);
     const currentIds  = (personLink?.[idsKey] ?? []) as number[];
     const isLinked    = currentIds.includes(structureId);
 
-    if (isLinked) {
-      await supabase.from(junction).delete().eq('person_id', personId).eq(idCol, structureId);
-    } else {
-      await supabase.from(junction).insert({ person_id: personId, [idCol]: structureId });
-    }
+    await togglePersonStructureLink(supabase, personId, structureType, structureId, !isLinked);
 
     setLinks(prev => prev.map(l => l.person.id !== personId ? l : {
       ...l,

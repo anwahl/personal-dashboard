@@ -169,3 +169,41 @@ export async function deleteAnxiety(
     .eq("entry_id", entryId)
     .throwOnError();
 }
+
+
+// ── Settings operations ───────────────────────────────────────────────────────
+
+export async function toggleSymptomCategory(
+  client:   Client,
+  id:       number,
+  isActive: boolean,
+): Promise<void> {
+  const { error } = await client
+    .from('symptom_categories')
+    .update({ is_active: isActive })
+    .eq('id', id);
+  if (error) throw new Error(`toggleSymptomCategory: ${error.message}`);
+}
+
+export async function toggleSymptomType(
+  client:   Client,
+  id:       number,
+  isActive: boolean,
+): Promise<void> {
+  const { error } = await client
+    .from('symptom_types')
+    .update({ is_active: isActive })
+    .eq('id', id);
+  if (error) throw new Error(`toggleSymptomType: ${error.message}`);
+}
+
+export async function addSymptomType(
+  client:     Client,
+  categoryId: number,
+  name:       string,
+): Promise<void> {
+  const { error } = await client
+    .from('symptom_types')
+    .insert({ category_id: categoryId, symptom_name: name, sort_order: 0 });
+  if (error) throw new Error(`addSymptomType: ${error.message}`);
+}

@@ -6,6 +6,11 @@
  */
 
 import { useState, useCallback } from 'react';
+import {
+  getLastTimeMedia, createLastTimeMedia, deleteLastTimeMedia,
+  getLastTimeBoolean, createLastTimeBoolean, updateLastTimeBooleanEmoji, deleteLastTimeBoolean,
+  getLastTimeCustom, createLastTimeCustom, deleteLastTimeCustom,
+} from '@/lib/dal/last-time';
 import { createClient }           from '@/lib/supabase/client';
 import { Button }                 from '@/components/ui/Button';
 import { ConfirmButton }          from '@/components/ui/ConfirmButton';
@@ -53,7 +58,7 @@ function MediaSection({ mediaTypes, mediaGenres, mediaStatuses }: Readonly<Pick<
   const canAdd = label.trim() && (typeId || genreId || statusId);
 
   const load = useCallback(async () => {
-    const { data } = await supabase.from('last_time_media').select('*').order('sort_order');
+    const data = await getLastTimeMedia(supabase);
     const typeMap   = new Map(mediaTypes.map((t: any) => [t.id, t.type_name]));
     const genreMap  = new Map(mediaGenres.map((g: any) => [g.id, g.genre_name]));
     const statusMap = new Map(mediaStatuses.map((s: any) => [s.id, s.status_name]));
@@ -85,7 +90,7 @@ function MediaSection({ mediaTypes, mediaGenres, mediaStatuses }: Readonly<Pick<
         status_id: statusId ? Number.parseInt(statusId) : null,
         sort_order: items.length,
       };
-      const { data } = await supabase.from('last_time_media').insert(payload).select().single();
+      const data = await createLastTimeMedia(supabase, payload);
       if (data) {
         const typeMap   = new Map(mediaTypes.map((t: any) => [t.id, t.type_name]));
         const genreMap  = new Map(mediaGenres.map((g: any) => [g.id, g.genre_name]));
@@ -102,7 +107,7 @@ function MediaSection({ mediaTypes, mediaGenres, mediaStatuses }: Readonly<Pick<
   };
 
   const remove = async (id: number) => {
-    await supabase.from('last_time_media').delete().eq('id', id);
+    await deleteLastTimeMedia(supabase, id);
     setItems(prev => prev.filter(i => i.id !== id));
   };
 
@@ -169,7 +174,7 @@ function BooleanSection({ trackables }: Readonly<Pick<Props, 'trackables'>>) {
   const linkedIds = new Set(items.map((i: any) => i.trackable_id));
 
   const load = useCallback(async () => {
-    const { data } = await supabase.from('last_time_boolean').select('*').order('sort_order');
+    const data = await getLastTimeBoolean(supabase);
     setItems((data ?? []).map((row: any) => {
       const t = trackables.find((t: any) => t.id === row.trackable_id);
       return { ...row, label: t ? `${t.emoji ?? ''} ${t.name}`.trim() : `#${row.trackable_id}` };
@@ -186,9 +191,7 @@ function BooleanSection({ trackables }: Readonly<Pick<Props, 'trackables'>>) {
     if (!trackId || saving) return;
     setSaving(true);
     try {
-      const { data } = await supabase.from('last_time_boolean')
-        .insert({ trackable_id: Number.parseInt(trackId), emoji: emoji || null, sort_order: items.length })
-        .select().single();
+      const data = await createLastTimeBoolean(supabase, { trackable_id: Number.parseInt(trackId), emoji: emoji || null, sort_order: items.length });
       if (data) {
         const t = trackables.find((t: any) => t.id === Number.parseInt(trackId));
         setItems(prev => [...prev, { ...data, label: t ? `${t.emoji ?? ''} ${t.name}`.trim() : `#${data.id}` }]);
@@ -198,7 +201,7 @@ function BooleanSection({ trackables }: Readonly<Pick<Props, 'trackables'>>) {
   };
 
   const remove = async (id: number) => {
-    await supabase.from('last_time_boolean').delete().eq('id', id);
+    await deleteLastTimeBoolean(supabase, id);
     setItems(prev => prev.filter(i => i.id !== id));
   };
 
@@ -242,7 +245,7 @@ function CustomSection() {
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
-    const { data } = await supabase.from('last_time_custom').select('*').order('sort_order');
+    const data = await getLastTimeCustom(supabase);
     setItems((data ?? []).map((row: any) => ({ ...row, label: `${row.emoji ?? ''} ${row.custom_value}`.trim() })));
     setLoaded(true);
   }, [supabase]);
@@ -256,16 +259,14 @@ function CustomSection() {
     if (!value.trim() || saving) return;
     setSaving(true);
     try {
-      const { data } = await supabase.from('last_time_custom')
-        .insert({ custom_value: value.trim(), emoji: emoji || null, sort_order: items.length })
-        .select().single();
+      const data = await createLastTimeCustom(supabase, { custom_value: value.trim(), emoji: emoji || null, sort_order: items.length });
       if (data) setItems(prev => [...prev, { ...data, label: `${(data as any).emoji ?? ''} ${(data as any).custom_value}`.trim() }]);
       setValue(''); setEmoji('');
     } finally { setSaving(false); }
   };
 
   const remove = async (id: number) => {
-    await supabase.from('last_time_custom').delete().eq('id', id);
+    await deleteLastTimeCustom(supabase, id);
     setItems(prev => prev.filter(i => i.id !== id));
   };
 

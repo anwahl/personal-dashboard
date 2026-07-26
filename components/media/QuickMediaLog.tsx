@@ -137,7 +137,7 @@ export function QuickMediaLog({
   }, {});
 
   const handleStatusChange = useCallback(async (entryId: number, newStatusId: number) => {
-    await supabase.from('media_status_entries').insert({
+    await addMediaStatusEntry(supabase, {
       media_entry_id: entryId,
       status_id:      newStatusId,
       status_date:    localTodayISO(),
@@ -157,7 +157,7 @@ export function QuickMediaLog({
       if (error || !entryData) throw new Error('Failed to create entry');
 
       if (statusId) {
-        await supabase.from('media_status_entries').insert({
+        await addMediaStatusEntry(supabase, {
           media_entry_id: (entryData as any).id,
           status_id:      Number.parseInt(statusId),
           status_date:    localTodayISO(),

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { toggleJournalCategory, addJournalPrompt, toggleJournalPrompt, getJournalCategoriesWithPrompts } from '@/lib/dal/journal';
 import { createClient } from '@/lib/supabase/client';
 import { Button }       from '@/components/ui/Button';
 import type { JournalCategoryWithPrompts } from '@/types/dal';
@@ -30,7 +31,7 @@ export function JournalSettings({ categories: initial }: Readonly<Props>) {
   }, [supabase, newCat, cats.length]);
 
   const toggleCategory = useCallback(async (catId: number, active: boolean) => {
-    await supabase.from('journal_categories').update({ is_active: active }).eq('id', catId);
+    await toggleJournalCategory(supabase, catId, active);
     setCats(prev => prev.map(c => c.id === catId ? { ...c, is_active: active } : c));
   }, [supabase]);
 
@@ -39,10 +40,7 @@ export function JournalSettings({ categories: initial }: Readonly<Props>) {
     if (!text) return;
     setAddingPrompt(catId);
     try {
-      const { data } = await supabase
-        .from('journal_prompts')
-        .insert({ category_id: catId, prompt_text: text })
-        .select().single();
+      const data = await addJournalPrompt(supabase, catId, text);
       if (data) {
         setCats(prev => prev.map(c => c.id === catId
           ? { ...c, prompts: [...c.prompts, data] }
@@ -54,7 +52,7 @@ export function JournalSettings({ categories: initial }: Readonly<Props>) {
   }, [supabase, newPromptByCat]);
 
   const togglePrompt = useCallback(async (catId: number, promptId: number, active: boolean) => {
-    await supabase.from('journal_prompts').update({ is_active: active }).eq('id', promptId);
+    await toggleJournalPrompt(supabase, promptId, active);
     setCats(prev => prev.map(c => c.id === catId
       ? { ...c, prompts: c.prompts.map(p => p.id === promptId ? { ...p, is_active: active } : p) }
       : c

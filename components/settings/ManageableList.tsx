@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { createClient }      from '@/lib/supabase/client';
+import { toggleSettingsItem, addSettingsItem, updateSettingsItem } from '@/lib/dal/settings';
+import type { ManageableTable } from '@/lib/dal/settings';
 import { Button }       from '@/components/ui/Button';
 
 export interface AddField {
@@ -22,7 +24,7 @@ interface Item {
 interface Props {
   title:       string;
   description?: string;
-  tableName:   string;
+  tableName:   ManageableTable;
   nameColumn:  string;
   items:       any[];
   addFields:   AddField[];
@@ -59,7 +61,7 @@ export function ManageableList({
   const toggleActive = useCallback(async (item: Item) => {
     const next = !item.is_active;
     setItems(prev => prev.map(i => i.id === item.id ? { ...i, is_active: next } : i));
-    await supabase.from(tableName).update({ is_active: next }).eq('id', item.id);
+    await toggleSettingsItem(supabase, tableName, item.id, next);
   }, [supabase, tableName]);
 
   // ── Add ──────────────────────────────────────────────────────────────────
@@ -81,11 +83,9 @@ export function ManageableList({
       }
       Object.assign(payload, extraDefaultFields);
 
-      const { data, error } = await supabase.from(tableName).upsert(payload).select().single();
-      if (!error && data) {
-        setItems(prev => [...prev, data as Item]);
-        setNewVals(Object.fromEntries(addFields.map(f => [f.key, ''])));
-      }
+      const data = await addSettingsItem<Item>(supabase, tableName, payload);
+      setItems(prev => [...prev, data]);
+      setNewVals(Object.fromEntries(addFields.map(f => [f.key, ''])));
     } finally { setSaving(false); }
   }, [supabase, tableName, addFields, newVals, items, extraDefaultFields]);
 
@@ -108,8 +108,8 @@ export function ManageableList({
         ? (editVals[f.key] ? Number.parseFloat(editVals[f.key]) : null)
         : (editVals[f.key]?.trim() || null);
     }
-    const { data } = await supabase.from(tableName).update(payload).eq('id', editId).select().single();
-    if (data) setItems(prev => prev.map(i => i.id === editId ? { ...i, ...data } : i));
+    const data = await updateSettingsItem<Item>(supabase, tableName, editId, payload);
+    setItems(prev => prev.map(i => i.id === editId ? { ...i, ...data } : i));
     setEditId(null);
   }, [supabase, tableName, editId, editVals, addFields]);
 

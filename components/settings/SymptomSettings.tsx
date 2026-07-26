@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { toggleSymptomCategory, toggleSymptomType, addSymptomType } from '@/lib/dal/symptoms';
 import { createClient } from '@/lib/supabase/client';
 import { Button }       from '@/components/ui/Button';
 import type { SymptomCategoryWithTypes } from '@/types/dal';
@@ -73,7 +74,7 @@ export function SymptomSettings({ categories: initial }: Readonly<Props>) {
   }, [supabase, newCatName, cats.length]);
 
   const toggleCategory = useCallback(async (catId: number, active: boolean) => {
-    await supabase.from('symptom_categories').update({ is_active: active }).eq('id', catId);
+    await toggleSymptomCategory(supabase, catId, active);
     setCats(prev => updateCategoryActiveState(prev, catId, active));
   }, [supabase]);
 
@@ -100,7 +101,7 @@ export function SymptomSettings({ categories: initial }: Readonly<Props>) {
   }, [supabase, newTypeByCat, cats]);
 
   const toggleType = useCallback(async (catId: number, typeId: number, active: boolean) => {
-    await supabase.from('symptom_types').update({ is_active: active }).eq('id', typeId);
+    await toggleSymptomType(supabase, typeId, active);
     setCats(prev => setTypeActiveState(prev, catId, typeId, active));
   }, [supabase]);
 
