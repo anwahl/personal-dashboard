@@ -3279,3 +3279,28 @@ a.appt-secondary:last-child { border-bottom: none; }
 /* ── Sprint 1 fixes ──────────────────────────────────────────────────────────*/
 /* Narrow select for field-type dropdowns in structure create forms */
 .input--sm-select { width: 110px; flex: none; }
+
+/* ── Structure sub-panels (PeopleStructureSettings) ──────────────────────────*/
+/* Indented panel showing sub-items (fields, columns, checklist items) */
+.structure-sub-panel {
+  padding: 8px 0 4px 12px;
+  border-left: 2px solid var(--border);
+  margin: 4px 0 8px;
+}
+.structure-sub-panel__add-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+/* Small badge showing field_type inline with field label */
+.field-type-badge {
+  font-size: var(--font-size-xs);
+  color: var(--text-faint);
+  background: var(--surface-high);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1px 5px;
+  flex-shrink: 0;
+}

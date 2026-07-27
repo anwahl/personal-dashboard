@@ -768,3 +768,174 @@ export async function deleteChecklist(
   const { error } = await client.from("checklists").delete().eq("id", id);
   if (error) throw new Error(`deleteChecklist: ${error.message}`);
 }
+
+// ── Info field type CRUD ───────────────────────────────────────────────────────
+
+export async function getInfoFieldTypes(
+  client: Client,
+  groupId: number,
+): Promise<InfoFieldTypeRow[]> {
+  const { data, error } = await client
+    .from('info_field_types')
+    .select('*')
+    .eq('group_id', groupId)
+    .order('sort_order');
+  if (error) throw new Error(`getInfoFieldTypes: ${error.message}`);
+  return (data ?? []) as InfoFieldTypeRow[];
+}
+
+export async function addInfoFieldType(
+  client:    Client,
+  groupId:   number,
+  label:     string,
+  fieldType: string,
+  sortOrder: number,
+): Promise<InfoFieldTypeRow> {
+  const { data, error } = await client
+    .from('info_field_types')
+    .insert({ group_id: groupId, field_label: label.trim(), field_type: fieldType, sort_order: sortOrder })
+    .select()
+    .single();
+  if (error) throw new Error(`addInfoFieldType: ${error.message}`);
+  return data as InfoFieldTypeRow;
+}
+
+export async function updateInfoFieldType(
+  client:    Client,
+  id:        number,
+  label:     string,
+  fieldType: string,
+): Promise<void> {
+  const { error } = await client
+    .from('info_field_types')
+    .update({ field_label: label.trim(), field_type: fieldType })
+    .eq('id', id);
+  if (error) throw new Error(`updateInfoFieldType: ${error.message}`);
+}
+
+export async function toggleInfoFieldType(
+  client: Client, id: number, isActive: boolean,
+): Promise<void> {
+  const { error } = await client.from('info_field_types').update({ is_active: isActive }).eq('id', id);
+  if (error) throw new Error(`toggleInfoFieldType: ${error.message}`);
+}
+
+export async function deleteInfoFieldType(client: Client, id: number): Promise<void> {
+  const { error } = await client.from('info_field_types').delete().eq('id', id);
+  if (error) throw new Error(`deleteInfoFieldType: ${error.message}`);
+}
+
+// ── Log schema field CRUD ──────────────────────────────────────────────────────
+
+export async function getLogSchemaFields(
+  client: Client,
+  logId:  number,
+): Promise<LogSchemaFieldRow[]> {
+  const { data, error } = await client
+    .from('log_schema_fields')
+    .select('*')
+    .eq('log_id', logId)
+    .order('sort_order');
+  if (error) throw new Error(`getLogSchemaFields: ${error.message}`);
+  return (data ?? []) as LogSchemaFieldRow[];
+}
+
+export async function getLogSchemaFieldOptions(
+  client:   Client,
+  fieldIds: number[],
+): Promise<LogSchemaFieldOptionRow[]> {
+  if (fieldIds.length === 0) return [];
+  const { data, error } = await client
+    .from('log_schema_field_options')
+    .select('*')
+    .in('field_id', fieldIds)
+    .order('sort_order');
+  if (error) throw new Error(`getLogSchemaFieldOptions: ${error.message}`);
+  return (data ?? []) as LogSchemaFieldOptionRow[];
+}
+
+export async function addLogSchemaField(
+  client:    Client,
+  logId:     number,
+  label:     string,
+  key:       string,
+  fieldType: string,
+  sortOrder: number,
+): Promise<LogSchemaFieldRow> {
+  const resolvedKey = key.trim() || label.trim().toLowerCase().replace(/\s+/g, '_');
+  const { data, error } = await client
+    .from('log_schema_fields')
+    .insert({ log_id: logId, field_label: label.trim(), field_key: resolvedKey, field_type: fieldType, sort_order: sortOrder })
+    .select()
+    .single();
+  if (error) throw new Error(`addLogSchemaField: ${error.message}`);
+  return data as LogSchemaFieldRow;
+}
+
+export async function updateLogSchemaField(
+  client:    Client,
+  id:        number,
+  label:     string,
+  key:       string,
+  fieldType: string,
+): Promise<void> {
+  const { error } = await client
+    .from('log_schema_fields')
+    .update({ field_label: label.trim(), field_key: key.trim(), field_type: fieldType })
+    .eq('id', id);
+  if (error) throw new Error(`updateLogSchemaField: ${error.message}`);
+}
+
+/** Replaces all options for a select field (delete + re-insert). */
+export async function setLogSchemaFieldOptions(
+  client:  Client,
+  fieldId: number,
+  options: string[],
+): Promise<void> {
+  await client.from('log_schema_field_options').delete().eq('field_id', fieldId);
+  const valid = options.map(o => o.trim()).filter(Boolean);
+  if (valid.length === 0) return;
+  const { error } = await client
+    .from('log_schema_field_options')
+    .insert(valid.map((option_value, i) => ({ field_id: fieldId, option_value, sort_order: i })));
+  if (error) throw new Error(`setLogSchemaFieldOptions: ${error.message}`);
+}
+
+export async function toggleLogSchemaField(
+  client: Client, id: number, isActive: boolean,
+): Promise<void> {
+  const { error } = await client.from('log_schema_fields').update({ is_active: isActive }).eq('id', id);
+  if (error) throw new Error(`toggleLogSchemaField: ${error.message}`);
+}
+
+export async function deleteLogSchemaField(client: Client, id: number): Promise<void> {
+  const { error } = await client.from('log_schema_fields').delete().eq('id', id);
+  if (error) throw new Error(`deleteLogSchemaField: ${error.message}`);
+}
+
+// ── Checklist item CRUD ────────────────────────────────────────────────────────
+
+export async function getChecklistItemsForStructure(
+  client:      Client,
+  checklistId: number,
+): Promise<ChecklistItemRow[]> {
+  const { data, error } = await client
+    .from('checklist_items')
+    .select('*')
+    .eq('checklist_id', checklistId)
+    .order('sort_order');
+  if (error) throw new Error(`getChecklistItemsForStructure: ${error.message}`);
+  return (data ?? []) as ChecklistItemRow[];
+}
+
+export async function updateChecklistItem(
+  client: Client,
+  id:     number,
+  text:   string,
+): Promise<void> {
+  const { error } = await client
+    .from('checklist_items')
+    .update({ item_text: text.trim() })
+    .eq('id', id);
+  if (error) throw new Error(`updateChecklistItem: ${error.message}`);
+}
