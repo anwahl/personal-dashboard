@@ -126,3 +126,23 @@ export async function deleteLastTimeCustom(client: Client, id: number): Promise<
   const { error } = await client.from('last_time_custom').delete().eq('id', id);
   if (error) throw new Error(`deleteLastTimeCustom: ${error.message}`);
 }
+
+// ── Update functions ──────────────────────────────────────────────────────────
+
+export async function updateLastTimeMedia(
+  client:  Client,
+  id:      number,
+  payload: Partial<LastTimeMediaPayload>,
+): Promise<void> {
+  const { error } = await client.from('last_time_media').update(payload).eq('id', id);
+  if (error) throw new Error(`updateLastTimeMedia: ${error.message}`);
+}
+
+export async function updateLastTimeCustom(
+  client:  Client,
+  id:      number,
+  payload: Partial<LastTimeCustomPayload>,
+): Promise<void> {
+  const { error } = await client.from('last_time_custom').update(payload).eq('id', id);
+  if (error) throw new Error(`updateLastTimeCustom: ${error.message}`);
+}

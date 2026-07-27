@@ -227,3 +227,43 @@ export async function toggleSymptomType(
     .eq('id', id);
   if (error) throw new Error(`toggleSymptomType: ${error.message}`);
 }
+
+export async function updateSymptomCategory(
+  client: Client,
+  id:     number,
+  name:   string,
+): Promise<void> {
+  const { error } = await client
+    .from('symptom_categories')
+    .update({ category_name: name.trim() })
+    .eq('id', id);
+  if (error) throw new Error(`updateSymptomCategory: ${error.message}`);
+}
+
+export async function deleteSymptomCategory(
+  client: Client,
+  id:     number,
+): Promise<void> {
+  const { error } = await client.from('symptom_categories').delete().eq('id', id);
+  if (error) throw new Error(`deleteSymptomCategory: ${error.message}`);
+}
+
+export async function updateSymptomType(
+  client: Client,
+  id:     number,
+  name:   string,
+): Promise<void> {
+  const { error } = await client
+    .from('symptom_types')
+    .update({ symptom_name: name.trim() })
+    .eq('id', id);
+  if (error) throw new Error(`updateSymptomType: ${error.message}`);
+}
+
+export async function deleteSymptomType(
+  client: Client,
+  id:     number,
+): Promise<void> {
+  const { error } = await client.from('symptom_types').delete().eq('id', id);
+  if (error) throw new Error(`deleteSymptomType: ${error.message}`);
+}

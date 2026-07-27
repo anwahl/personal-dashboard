@@ -225,6 +225,7 @@ export interface JournalPromptRow {
   id: number;
   category_id: number;
   prompt_text: string;
+  sort_order?: number;
   is_active: boolean;
   created_at: string;
 }

@@ -192,3 +192,43 @@ export async function toggleJournalPrompt(
     .eq('id', id);
   if (error) throw new Error(`toggleJournalPrompt: ${error.message}`);
 }
+
+export async function updateJournalCategory(
+  client: Client,
+  id:     number,
+  name:   string,
+): Promise<void> {
+  const { error } = await client
+    .from('journal_categories')
+    .update({ category_name: name.trim() })
+    .eq('id', id);
+  if (error) throw new Error(`updateJournalCategory: ${error.message}`);
+}
+
+export async function deleteJournalCategory(
+  client: Client,
+  id:     number,
+): Promise<void> {
+  const { error } = await client.from('journal_categories').delete().eq('id', id);
+  if (error) throw new Error(`deleteJournalCategory: ${error.message}`);
+}
+
+export async function updateJournalPrompt(
+  client: Client,
+  id:     number,
+  text:   string,
+): Promise<void> {
+  const { error } = await client
+    .from('journal_prompts')
+    .update({ prompt_text: text.trim() })
+    .eq('id', id);
+  if (error) throw new Error(`updateJournalPrompt: ${error.message}`);
+}
+
+export async function deleteJournalPrompt(
+  client: Client,
+  id:     number,
+): Promise<void> {
+  const { error } = await client.from('journal_prompts').delete().eq('id', id);
+  if (error) throw new Error(`deleteJournalPrompt: ${error.message}`);
+}

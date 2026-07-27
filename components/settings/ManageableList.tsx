@@ -2,9 +2,16 @@
 
 import { useState, useCallback } from 'react';
 import { createClient }      from '@/lib/supabase/client';
-import { toggleSettingsItem, addSettingsItem, updateSettingsItem } from '@/lib/dal/settings';
+import {
+  toggleSettingsItem,
+  addSettingsItem,
+  updateSettingsItem,
+  deleteSettingsItem,
+  reorderSettingsItem,
+} from '@/lib/dal/settings';
 import type { ManageableTable } from '@/lib/dal/settings';
-import { Button }       from '@/components/ui/Button';
+import { Button }        from '@/components/ui/Button';
+import { ConfirmButton } from '@/components/ui/ConfirmButton';
 
 export interface AddField {
   key:          string;
@@ -16,8 +23,9 @@ export interface AddField {
 }
 
 interface Item {
-  id:        number;
-  is_active: boolean;
+  id:          number;
+  is_active:   boolean;
+  sort_order?: number;
   [key: string]: unknown;
 }
 
@@ -26,18 +34,19 @@ interface Props {
   description?: string;
   tableName:   ManageableTable;
   nameColumn:  string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   items:       any[];
   addFields:   AddField[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   renderName?: (item: any) => React.ReactNode;
   extraDefaultFields?: Record<string, string | boolean | number>;
 }
 
+const bySortOrder = (a: Item, b: Item) => (a.sort_order ?? 0) - (b.sort_order ?? 0);
+
 /**
- * Reusable settings list that handles:
- * - Display active/inactive items
- * - Toggle is_active
- * - Add new row
- * - Inline edit name
+ * Reusable settings list. Handles toggle, add, inline edit,
+ * delete (with confirmation), and sort-order reordering (↑/↓).
  */
 export function ManageableList({
   title, description, tableName, nameColumn, items: initialItems, addFields, renderName,
@@ -45,7 +54,7 @@ export function ManageableList({
 }: Readonly<Props>) {
   const supabase = createClient();
 
-  const [items,    setItems]    = useState<Item[]>(initialItems);
+  const [items,    setItems]    = useState<Item[]>(initialItems as Item[]);
   const [editId,   setEditId]   = useState<number | null>(null);
   const [editVals, setEditVals] = useState<Record<string, string>>({});
   const [newVals,  setNewVals]  = useState<Record<string, string>>(
@@ -53,10 +62,12 @@ export function ManageableList({
   );
   const [saving, setSaving] = useState(false);
 
-  const active   = items.filter(i =>  i.is_active);
-  const inactive = items.filter(i => !i.is_active);
+  const hasSortOrder = items.length > 0 && 'sort_order' in items[0];
 
-  // ── Toggle active ─────────────────────────────────────────────────────────
+  const active   = items.filter(i =>  i.is_active).sort(bySortOrder);
+  const inactive = items.filter(i => !i.is_active).sort(bySortOrder);
+
+  // ── Toggle active ──────────────────────────────────────────────────────────
 
   const toggleActive = useCallback(async (item: Item) => {
     const next = !item.is_active;
@@ -64,7 +75,7 @@ export function ManageableList({
     await toggleSettingsItem(supabase, tableName, item.id, next);
   }, [supabase, tableName]);
 
-  // ── Add ──────────────────────────────────────────────────────────────────
+  // ── Add ────────────────────────────────────────────────────────────────────
 
   const add = useCallback(async () => {
     const required = addFields.filter(f => f.required !== false);
@@ -78,18 +89,43 @@ export function ManageableList({
           ? (newVals[f.key] ? Number.parseFloat(newVals[f.key]) : null)
           : (newVals[f.key]?.trim() || null);
       }
-      if (items.length > 0 && 'sort_order' in items[0]) {
-        payload.sort_order = items.length;
-      }
+      if (hasSortOrder) payload.sort_order = active.length;
       Object.assign(payload, extraDefaultFields);
 
       const data = await addSettingsItem<Item>(supabase, tableName, payload);
       setItems(prev => [...prev, data]);
       setNewVals(Object.fromEntries(addFields.map(f => [f.key, ''])));
     } finally { setSaving(false); }
-  }, [supabase, tableName, addFields, newVals, items, extraDefaultFields]);
+  }, [supabase, tableName, addFields, newVals, active.length, hasSortOrder, extraDefaultFields]);
 
-  // ── Inline edit ───────────────────────────────────────────────────────────
+  // ── Delete ─────────────────────────────────────────────────────────────────
+
+  const remove = useCallback(async (id: number) => {
+    setItems(prev => prev.filter(i => i.id !== id));
+    await deleteSettingsItem(supabase, tableName, id);
+  }, [supabase, tableName]);
+
+  // ── Sort ───────────────────────────────────────────────────────────────────
+
+  const moveItem = useCallback(async (item: Item, direction: 'up' | 'down') => {
+    if (!hasSortOrder) return;
+    const sortedActive = items.filter(i => i.is_active).sort(bySortOrder);
+    const idx     = sortedActive.findIndex(i => i.id === item.id);
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= sortedActive.length) return;
+    const a = sortedActive[idx];
+    const b = sortedActive[swapIdx];
+    const oA = a.sort_order ?? idx;
+    const oB = b.sort_order ?? swapIdx;
+    // Optimistic local update
+    setItems(prev => prev.map(i =>
+      i.id === a.id ? { ...i, sort_order: oB } :
+      i.id === b.id ? { ...i, sort_order: oA } : i
+    ));
+    await reorderSettingsItem(supabase, tableName, a.id, oA, b.id, oB);
+  }, [supabase, tableName, items, hasSortOrder]);
+
+  // ── Inline edit ────────────────────────────────────────────────────────────
 
   const startEdit = (item: Item) => {
     setEditId(item.id);
@@ -113,30 +149,19 @@ export function ManageableList({
     setEditId(null);
   }, [supabase, tableName, editId, editVals, addFields]);
 
-  const handleEditChange = useCallback((key: string, value: string) => {
-    setEditVals(prev => ({ ...prev, [key]: value }));
-  }, []);
-
+  const handleEditChange  = useCallback((key: string, value: string) => setEditVals(prev => ({ ...prev, [key]: value })), []);
   const handleEditKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      saveEdit();
-    }
-    if (e.key === 'Escape') {
-      setEditId(null);
-    }
+    if (e.key === 'Enter')  saveEdit();
+    if (e.key === 'Escape') setEditId(null);
   }, [saveEdit]);
-
-  const handleNewChange = useCallback((key: string, value: string) => {
-    setNewVals(prev => ({ ...prev, [key]: value }));
-  }, []);
-
-  const handleNewKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleNewChange   = useCallback((key: string, value: string) => setNewVals(prev => ({ ...prev, [key]: value })), []);
+  const handleNewKeyDown  = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') add();
   }, [add]);
 
-  // ── Render item row ───────────────────────────────────────────────────────
+  // ── Render item row ────────────────────────────────────────────────────────
 
-  const renderItem = (item: Item) => {
+  const renderItem = (item: Item, idxInActive: number) => {
     const isEditing = editId === item.id;
 
     return (
@@ -158,7 +183,7 @@ export function ManageableList({
             ))}
             <div className="manage-item__actions">
               <Button size="sm" variant="accent" onClick={saveEdit}>✓</Button>
-              <Button size="sm" variant="ghost" onClick={() => setEditId(null)}>✕</Button>
+              <Button size="sm" variant="ghost"  onClick={() => setEditId(null)}>✕</Button>
             </div>
           </>
         ) : (
@@ -167,6 +192,16 @@ export function ManageableList({
               {renderName ? renderName(item) : String(item[nameColumn] ?? '')}
             </span>
             <div className="manage-item__actions">
+              {item.is_active && hasSortOrder && (
+                <>
+                  <Button size="icon" variant="ghost" title="Move up"
+                    disabled={idxInActive === 0}
+                    onClick={() => moveItem(item, 'up')}>↑</Button>
+                  <Button size="icon" variant="ghost" title="Move down"
+                    disabled={idxInActive === active.length - 1}
+                    onClick={() => moveItem(item, 'down')}>↓</Button>
+                </>
+              )}
               <Button size="sm" variant="ghost" onClick={() => startEdit(item)}>Edit</Button>
               <Button
                 size="sm"
@@ -175,6 +210,7 @@ export function ManageableList({
               >
                 {item.is_active ? 'Deactivate' : 'Activate'}
               </Button>
+              <ConfirmButton onConfirm={() => remove(item.id)} size="sm">✕</ConfirmButton>
             </div>
           </>
         )}
@@ -192,25 +228,22 @@ export function ManageableList({
       </div>
       {description && <p className="settings-section__desc">{description}</p>}
 
-      {/* Active items */}
       <div className="manage-list">
         {active.length === 0 && <p className="empty-state">None active.</p>}
-        {active.map(renderItem)}
+        {active.map((item, idx) => renderItem(item, idx))}
       </div>
 
-      {/* Inactive */}
       {inactive.length > 0 && (
         <details className="manage-inactive">
           <summary className="manage-inactive__summary">
             {inactive.length} inactive
           </summary>
           <div className="manage-inactive__body">
-            {inactive.map(renderItem)}
+            {inactive.map(item => renderItem(item, -1))}
           </div>
         </details>
       )}
 
-      {/* Add form */}
       <div className="manage-add-row">
         {addFields.map(f => (
           <input
@@ -220,6 +253,7 @@ export function ManageableList({
             onChange={e => handleNewChange(f.key, e.target.value)}
             onKeyDown={handleNewKeyDown}
             placeholder={f.placeholder ?? f.label}
+            // Dynamic px width — legitimate inline style exception
             style={{ flex: f.width ? 'none' : 1, width: f.width ?? undefined, minWidth: 80 }}
           />
         ))}

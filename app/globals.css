@@ -3249,3 +3249,29 @@ a.appt-secondary:last-child { border-bottom: none; }
 .input--sm    { width: 80px;  flex: none; }   /* short override field (emoji override, etc.) */
 .input--date  { width: 150px; flex: none; }   /* date picker in add rows */
 .input--flex  { flex: 1; min-width: 0; }      /* fills remaining space in flex row */
+
+/* ── CategoryBlock additions (Sprint 1) ──────────────────────────────────────*/
+/* Right-side action group in the category header */
+.category-block__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+/* Inline input that replaces the category name while renaming */
+.category-block__name-input {
+  font-size: 0.82rem;
+  font-weight: 700;
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Manage item edit block (Sprint 1) ───────────────────────────────────────*/
+/* Inline edit layout for LastTimeSettings item rows */
+.manage-item__edit-block {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex: 1;
+  flex-wrap: wrap;
+}

@@ -2,50 +2,20 @@
 
 import { useState, useCallback } from 'react';
 import {
-  addSymptomCategory,
-  addSymptomType,
-  toggleSymptomCategory,
-  toggleSymptomType,
+  addSymptomCategory,    updateSymptomCategory, deleteSymptomCategory,
+  addSymptomType,        updateSymptomType,      deleteSymptomType,
+  toggleSymptomCategory, toggleSymptomType,
 } from '@/lib/dal/symptoms';
-import { createClient }  from '@/lib/supabase/client';
-import { Button }        from '@/components/ui/Button';
+import { reorderSettingsItem } from '@/lib/dal/settings';
+import { createClient }        from '@/lib/supabase/client';
+import { Button }              from '@/components/ui/Button';
+import { CategoryBlock, ChildItem } from '@/components/settings/CategoryBlock';
 import type { SymptomCategoryWithTypes } from '@/types/dal';
-import type { SymptomTypeRow }           from '@/types/schema';
 
-type SymptomType = SymptomTypeRow;
+// ── Sort helper ───────────────────────────────────────────────────────────────
 
-// ── Pure state helpers ────────────────────────────────────────────────────────
-
-function updateCategoryActiveState(
-  categories: SymptomCategoryWithTypes[],
-  catId: number,
-  active: boolean,
-) {
-  return categories.map(c => c.id === catId ? { ...c, is_active: active } : c);
-}
-
-function appendTypeToCategory(
-  categories: SymptomCategoryWithTypes[],
-  catId: number,
-  type: SymptomType,
-) {
-  return categories.map(c =>
-    c.id === catId ? { ...c, types: [...c.types, type] } : c
-  );
-}
-
-function setTypeActiveState(
-  categories: SymptomCategoryWithTypes[],
-  catId: number,
-  typeId: number,
-  active: boolean,
-) {
-  return categories.map(c =>
-    c.id === catId
-      ? { ...c, types: c.types.map(t => t.id === typeId ? { ...t, is_active: active } : t) }
-      : c
-  );
-}
+const bySortOrder = <T extends { sort_order?: number }>(a: T, b: T) =>
+  (a.sort_order ?? 0) - (b.sort_order ?? 0);
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -57,7 +27,7 @@ export function SymptomSettings({ categories: initial }: Readonly<Props>) {
   const supabase = createClient();
   const [cats, setCats] = useState(initial);
 
-  // ── Categories ─────────────────────────────────────────────────────────────
+  // ── Category operations ─────────────────────────────────────────────────────
 
   const [newCatName, setNewCatName] = useState('');
   const [addingCat,  setAddingCat]  = useState(false);
@@ -72,12 +42,38 @@ export function SymptomSettings({ categories: initial }: Readonly<Props>) {
     } finally { setAddingCat(false); }
   }, [supabase, newCatName, cats.length]);
 
-  const toggleCategory = useCallback(async (catId: number, active: boolean) => {
-    await toggleSymptomCategory(supabase, catId, active);
-    setCats(prev => updateCategoryActiveState(prev, catId, active));
+  const renameCategory = useCallback(async (catId: number, name: string) => {
+    await updateSymptomCategory(supabase, catId, name);
+    setCats(prev => prev.map(c => c.id === catId ? { ...c, category_name: name } : c));
   }, [supabase]);
 
-  // ── Types ───────────────────────────────────────────────────────────────────
+  const toggleCategory = useCallback(async (catId: number, active: boolean) => {
+    await toggleSymptomCategory(supabase, catId, active);
+    setCats(prev => prev.map(c => c.id === catId ? { ...c, is_active: active } : c));
+  }, [supabase]);
+
+  const deleteCategory = useCallback(async (catId: number) => {
+    await deleteSymptomCategory(supabase, catId);
+    setCats(prev => prev.filter(c => c.id !== catId));
+  }, [supabase]);
+
+  const moveCategory = useCallback(async (catId: number, direction: 'up' | 'down') => {
+    const sorted = [...cats].sort(bySortOrder);
+    const idx     = sorted.findIndex(c => c.id === catId);
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= sorted.length) return;
+    const a = sorted[idx];
+    const b = sorted[swapIdx];
+    const oA = a.sort_order ?? idx;
+    const oB = b.sort_order ?? swapIdx;
+    setCats(prev => prev.map(c =>
+      c.id === a.id ? { ...c, sort_order: oB } :
+      c.id === b.id ? { ...c, sort_order: oA } : c
+    ));
+    await reorderSettingsItem(supabase, 'symptom_categories', a.id, oA, b.id, oB);
+  }, [supabase, cats]);
+
+  // ── Type operations ─────────────────────────────────────────────────────────
 
   const [newTypeByCat, setNewTypeByCat] = useState<Record<number, string>>({});
   const [addingType,   setAddingType]   = useState<number | null>(null);
@@ -89,15 +85,144 @@ export function SymptomSettings({ categories: initial }: Readonly<Props>) {
     try {
       const cat  = cats.find(c => c.id === catId);
       const data = await addSymptomType(supabase, catId, name, cat?.types.length ?? 0);
-      setCats(prev => appendTypeToCategory(prev, catId, data));
+      setCats(prev => prev.map(c =>
+        c.id === catId ? { ...c, types: [...c.types, data] } : c
+      ));
       setNewTypeByCat(prev => ({ ...prev, [catId]: '' }));
     } finally { setAddingType(null); }
   }, [supabase, newTypeByCat, cats]);
 
+  const renameType = useCallback(async (catId: number, typeId: number, name: string) => {
+    await updateSymptomType(supabase, typeId, name);
+    setCats(prev => prev.map(c =>
+      c.id === catId
+        ? { ...c, types: c.types.map(t => t.id === typeId ? { ...t, symptom_name: name } : t) }
+        : c
+    ));
+  }, [supabase]);
+
   const toggleType = useCallback(async (catId: number, typeId: number, active: boolean) => {
     await toggleSymptomType(supabase, typeId, active);
-    setCats(prev => setTypeActiveState(prev, catId, typeId, active));
+    setCats(prev => prev.map(c =>
+      c.id === catId
+        ? { ...c, types: c.types.map(t => t.id === typeId ? { ...t, is_active: active } : t) }
+        : c
+    ));
   }, [supabase]);
+
+  const deleteType = useCallback(async (catId: number, typeId: number) => {
+    await deleteSymptomType(supabase, typeId);
+    setCats(prev => prev.map(c =>
+      c.id === catId ? { ...c, types: c.types.filter(t => t.id !== typeId) } : c
+    ));
+  }, [supabase]);
+
+  const moveType = useCallback(async (catId: number, typeId: number, direction: 'up' | 'down') => {
+    const cat = cats.find(c => c.id === catId);
+    if (!cat) return;
+    const sorted  = [...cat.types].sort(bySortOrder);
+    const idx     = sorted.findIndex(t => t.id === typeId);
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= sorted.length) return;
+    const a = sorted[idx];
+    const b = sorted[swapIdx];
+    const oA = a.sort_order ?? idx;
+    const oB = b.sort_order ?? swapIdx;
+    setCats(prev => prev.map(c =>
+      c.id === catId
+        ? { ...c, types: c.types.map(t =>
+            t.id === a.id ? { ...t, sort_order: oB } :
+            t.id === b.id ? { ...t, sort_order: oA } : t
+          )}
+        : c
+    ));
+    await reorderSettingsItem(supabase, 'symptom_types', a.id, oA, b.id, oB);
+  }, [supabase, cats]);
+
+  // ── Render ──────────────────────────────────────────────────────────────────
+
+  const sortedCats  = [...cats].sort(bySortOrder);
+  const activeCats  = sortedCats.filter(c =>  c.is_active);
+  const inactiveCats = sortedCats.filter(c => !c.is_active);
+
+  const renderCategory = (cat: SymptomCategoryWithTypes) => {
+    const activeCatIdx  = activeCats.findIndex(c => c.id === cat.id);
+    const activeTypes   = [...cat.types].filter(t =>  t.is_active).sort(bySortOrder);
+    const inactiveTypes = [...cat.types].filter(t => !t.is_active).sort(bySortOrder);
+
+    return (
+      <CategoryBlock
+        key={cat.id}
+        name={cat.category_name}
+        is_active={cat.is_active}
+        isFirst={activeCatIdx === 0}
+        isLast={activeCatIdx === activeCats.length - 1}
+        onMoveUp={()   => moveCategory(cat.id, 'up')}
+        onMoveDown={()  => moveCategory(cat.id, 'down')}
+        onRename={name  => renameCategory(cat.id, name)}
+        onToggle={active => toggleCategory(cat.id, active)}
+        onDelete={()    => deleteCategory(cat.id)}
+        addRow={
+          <div className="category-block__add-row">
+            <input
+              type="text"
+              className="input--flex"
+              value={newTypeByCat[cat.id] ?? ''}
+              onChange={e => setNewTypeByCat(prev => ({ ...prev, [cat.id]: e.target.value }))}
+              onKeyDown={e => e.key === 'Enter' && addType(cat.id)}
+              placeholder={`Add ${cat.category_name.toLowerCase()} type…`}
+            />
+            <Button
+              size="sm" variant="ghost"
+              onClick={() => addType(cat.id)}
+              disabled={addingType === cat.id || !newTypeByCat[cat.id]?.trim()}
+            >
+              {addingType === cat.id ? '…' : '+ Add'}
+            </Button>
+          </div>
+        }
+      >
+        {activeTypes.length === 0 && inactiveTypes.length === 0 && (
+          <p className="empty-state">No types yet.</p>
+        )}
+
+        {activeTypes.map((t, idx) => (
+          <ChildItem
+            key={t.id}
+            name={t.symptom_name}
+            is_active={t.is_active}
+            isFirst={idx === 0}
+            isLast={idx === activeTypes.length - 1}
+            onMoveUp={()     => moveType(cat.id, t.id, 'up')}
+            onMoveDown={()    => moveType(cat.id, t.id, 'down')}
+            onRename={name    => renameType(cat.id, t.id, name)}
+            onToggle={active  => toggleType(cat.id, t.id, active)}
+            onDelete={()      => deleteType(cat.id, t.id)}
+          />
+        ))}
+
+        {inactiveTypes.length > 0 && (
+          <details className="category-block__details">
+            <summary className="category-block__summary">
+              {inactiveTypes.length} inactive
+            </summary>
+            {inactiveTypes.map(t => (
+              <ChildItem
+                key={t.id}
+                name={t.symptom_name}
+                is_active={t.is_active}
+                isFirst={false} isLast={false}
+                onMoveUp={() => {}} onMoveDown={() => {}}
+                onRename={name   => renameType(cat.id, t.id, name)}
+                onToggle={active => toggleType(cat.id, t.id, active)}
+                onDelete={()     => deleteType(cat.id, t.id)}
+              />
+            ))}
+          </details>
+        )}
+      </CategoryBlock>
+    );
+  };
 
   return (
     <div className="settings-section">
@@ -105,65 +230,18 @@ export function SymptomSettings({ categories: initial }: Readonly<Props>) {
         <span className="settings-section__title">Symptom Types</span>
       </div>
 
-      {cats.map(cat => {
-        const activeTypes   = cat.types.filter(t =>  t.is_active);
-        const inactiveTypes = cat.types.filter(t => !t.is_active);
+      {activeCats.map(renderCategory)}
 
-        return (
-          <div key={cat.id} className="category-block">
-            <div className="category-block__header">
-              <span className={`category-block__name${cat.is_active ? '' : ' category-block__name--inactive'}`}>
-                {cat.category_name}
-              </span>
-              <Button size="sm" variant="ghost" onClick={() => toggleCategory(cat.id, !cat.is_active)}>
-                {cat.is_active ? 'Deactivate' : 'Activate'}
-              </Button>
-            </div>
-
-            <div className="category-block__body">
-              {activeTypes.map(t => (
-                <div key={t.id} className="manage-item">
-                  <span className="manage-item__name">{t.symptom_name}</span>
-                  <Button size="sm" variant="ghost" onClick={() => toggleType(cat.id, t.id, false)}>Deactivate</Button>
-                </div>
-              ))}
-
-              {inactiveTypes.length > 0 && (
-                <details className="category-block__details">
-                  <summary className="category-block__summary">
-                    {inactiveTypes.length} inactive
-                  </summary>
-                  {inactiveTypes.map(t => (
-                    <div key={t.id} className="manage-item manage-item--inactive">
-                      <span className="manage-item__name">{t.symptom_name}</span>
-                      <Button size="sm" variant="ghost" onClick={() => toggleType(cat.id, t.id, true)}>Activate</Button>
-                    </div>
-                  ))}
-                </details>
-              )}
-
-              <div className="category-block__add-row">
-                <input
-                  type="text"
-                  className="input--flex"
-                  value={newTypeByCat[cat.id] ?? ''}
-                  onChange={e => setNewTypeByCat(prev => ({ ...prev, [cat.id]: e.target.value }))}
-                  onKeyDown={e => e.key === 'Enter' && addType(cat.id)}
-                  placeholder={`Add ${cat.category_name.toLowerCase()} type…`}
-                />
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => addType(cat.id)}
-                  disabled={addingType === cat.id || !newTypeByCat[cat.id]?.trim()}
-                >
-                  {addingType === cat.id ? '…' : '+ Add'}
-                </Button>
-              </div>
-            </div>
+      {inactiveCats.length > 0 && (
+        <details className="manage-inactive">
+          <summary className="manage-inactive__summary">
+            {inactiveCats.length} inactive {inactiveCats.length === 1 ? 'category' : 'categories'}
+          </summary>
+          <div className="manage-inactive__body">
+            {inactiveCats.map(renderCategory)}
           </div>
-        );
-      })}
+        </details>
+      )}
 
       <div className="category-block__footer">
         <input
