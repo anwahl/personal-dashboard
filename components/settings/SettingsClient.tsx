@@ -10,6 +10,7 @@ import { TrackableSettings }       from './TrackableSettings';
 import { ChartSettings }           from './ChartSettings';
 import { LastTimeSettings }        from '@/components/last-time/LastTimeSettings';
 import { ProviderSettings }        from '@/components/providers/ProviderSettings';
+import { IconSettings }            from './IconSettings';
 import type {
   SymptomCategoryWithTypes,
   JournalCategoryWithPrompts,
@@ -17,6 +18,7 @@ import type {
   ChartCategoryRow,
   PersonLinks,
 } from '@/types/dal';
+import type { IconRow }            from '@/types/schema';
 import type {
   DailyTrackableRow,
   InfoGroupRow,
@@ -44,7 +46,8 @@ type TabId =
   | 'health'
   | 'journal'
   | 'providers'
-  | 'people';
+  | 'people'
+  | 'icons';
 
 const TABS = [
   { id: 'daily',     label: '📅 Daily'     },
@@ -55,11 +58,14 @@ const TABS = [
   { id: 'journal',   label: '📔 Journal'   },
   { id: 'providers', label: '🏥 Providers' },
   { id: 'people',    label: '👤 People'    },
+  { id: 'icons',     label: '✦ Icons'      },
 ] as const satisfies { id: TabId; label: string }[];
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
 interface Props {
+  // Icons
+  icons:                IconRow[];
   // Tracking & charts
   trackables:           DailyTrackableRow[];
   trackableCategories:  import('@/types/schema').TrackableCategoryRow[];
@@ -93,6 +99,7 @@ interface Props {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function SettingsClient({
+  icons,
   trackables, trackableCategories, chartDefinitions, chartCategories,
   tags, intentions,
   symptomCategories, sleepEventTypes,
@@ -187,6 +194,10 @@ export function SettingsClient({
             logSchemas={logSchemas}
             checklists={checklists}
           />
+        </div>
+
+        <div className={tab === 'icons' ? '' : 'hidden'}>
+          <IconSettings icons={icons} />
         </div>
 
       </div>

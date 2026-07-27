@@ -9,9 +9,10 @@ import {
   getChartDefinitions,
   getChartCategories,
   getSettingsPageData,
-  getMediaTypes, 
-  getMediaGenres, 
-  getMediaStatuses
+  getMediaTypes,
+  getMediaGenres,
+  getMediaStatuses,
+  getIconsRef,
 } from '@/lib/dal/reference';
 import { getAllPeople }    from '@/lib/dal/people';
 import { getWeeklyJournalCategories } from '@/lib/dal/weekly-journal';
@@ -22,6 +23,7 @@ export default async function SettingsPage() {
   const supabase = await createClient();
 
   const [
+    icons,
     symptomCategories,
     journalCategories,
     providerTypes,
@@ -34,6 +36,7 @@ export default async function SettingsPage() {
     settingsData,
     weeklyJournalCategories,
   ] = await Promise.all([
+    getIconsRef(supabase, true),
     getSymptomCategoriesWithTypes(supabase),
     getJournalCategoriesWithPrompts(supabase),
     getProviderTypes(supabase),
@@ -65,6 +68,7 @@ export default async function SettingsPage() {
     <div className="page-content">
       <h1 className="page-header__title">Settings</h1>
       <SettingsClient
+        icons={icons}
         trackables={trackables}
         trackableCategories={trackableCategories}
         chartDefinitions={chartDefinitions}

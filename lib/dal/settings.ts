@@ -23,6 +23,7 @@ export type ManageableTable =
  */
 export type ReorderableTable =
   | ManageableTable
+  | "icons"
   | "symptom_categories"
   | "symptom_types"
   | "journal_categories"
