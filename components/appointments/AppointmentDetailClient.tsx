@@ -1,160 +1,264 @@
 'use client';
 
 import { InputField, SaveStatus, SaveState } from '@/components/ui/Display';
-import { useState, useCallback, useEffect }  from 'react';
-import { useRouter }               from 'next/navigation';
-import { createClient }            from '@/lib/supabase/client';
+import { useState, useCallback }             from 'react';
+import { useRouter }                         from 'next/navigation';
+import { createClient }                      from '@/lib/supabase/client';
 import {
   updateAppointment, deleteAppointment, createAppointment,
-  getPrescriptionChanges, createPrescriptionChange, deletePrescriptionChange,
+  deletePrescriptionChange,
 } from '@/lib/dal/appointments';
-import { getActivePrescriptions }  from '@/lib/dal/prescriptions';
-import { createTask }              from '@/lib/dal/tasks';
-import { Button }                  from '@/components/ui/Button';
-import { ConfirmButton }           from '@/components/ui/ConfirmButton';
+import { applyPrescriptionChanges }  from '@/lib/dal/prescriptions';
+import type { FieldChangeEntry }     from '@/lib/dal/prescriptions';
+import { createTask }                from '@/lib/dal/tasks';
+import { Button }                    from '@/components/ui/Button';
+import { ConfirmButton }             from '@/components/ui/ConfirmButton';
 import type { AppointmentDetail, PrescriptionDetail } from '@/types/dal';
 import type {
   AppointmentTypeRow, PersonRow, ProviderRow,
   PrescriptionChangeRow, TaskStatusRow, TaskPriorityRow,
+  MedicationTimingTypeRow,
 } from '@/types/schema';
 import { daysUntil, formatMediumDate, formatTime, localTodayISO } from '@/lib/utils/dates';
 
-interface Props {
-  appointment:      AppointmentDetail;
-  appointmentTypes: AppointmentTypeRow[];
-  people:           PersonRow[];
-  providers:        ProviderRow[];
-  taskStatuses:     TaskStatusRow[];
-  taskPriorities:   TaskPriorityRow[];
+// ── Prescription field definitions ────────────────────────────────────────────
+
+const RX_FIELDS = [
+  { key: 'dose',              label: 'Dose',              type: 'text'   },
+  { key: 'timing_type_id',    label: 'Timing',            type: 'timing' },
+  { key: 'purpose',           label: 'Purpose',           type: 'text'   },
+  { key: 'alias',             label: 'Alias / Nickname',  type: 'text'   },
+  { key: 'start_date',        label: 'Start Date',        type: 'date'   },
+  { key: 'discontinued_date', label: 'Discontinued Date', type: 'date'   },
+  { key: 'is_active',         label: 'Status',            type: 'status' },
+] as const;
+
+type RxFieldKey = typeof RX_FIELDS[number]['key'];
+
+function getRxDisplayValue(
+  rx:      PrescriptionDetail,
+  key:     RxFieldKey,
+  timings: MedicationTimingTypeRow[],
+): string {
+  switch (key) {
+    case 'dose':              return rx.dose              ?? '';
+    case 'timing_type_id':    return timings.find(t => t.id === rx.timing_type_id)?.timing_name ?? '';
+    case 'purpose':           return rx.purpose           ?? '';
+    case 'alias':             return rx.alias             ?? '';
+    case 'start_date':        return rx.start_date        ? formatMediumDate(rx.start_date)        : '';
+    case 'discontinued_date': return rx.discontinued_date ? formatMediumDate(rx.discontinued_date) : '';
+    case 'is_active':         return rx.is_active ? 'Active' : 'Discontinued';
+    default:                  return '';
+  }
+}
+
+// ── Appointment label helper ──────────────────────────────────────────────────
+
+function apptLabel(a: AppointmentDetail): string {
+  return [
+    a.appointment_type?.type_name,
+    a.person?.person_name ? `for ${a.person.person_name}` : null,
+    `on ${formatMediumDate(a.appointment_date)}`,
+    a.provider?.provider_name || a.provider?.practice_name
+      ? `with ${a.provider.provider_name ?? a.provider.practice_name}`
+      : null,
+  ].filter(Boolean).join(' ');
+}
+
+// ── Pending field change type ─────────────────────────────────────────────────
+
+interface PendingChange {
+  uid:           string;
+  fieldKey:      RxFieldKey;
+  fieldLabel:    string;
+  previousValue: string;
+  newValue:      string;
+  newTimingId:   string;
 }
 
 // ── Medication changes section ────────────────────────────────────────────────
 
-function MedChangesSection({ appointmentId, personId }: Readonly<{ appointmentId: number; personId: number }>) {
-  const supabase = createClient();
-  const [changes,      setChanges]      = useState<PrescriptionChangeRow[]>([]);
-  const [prescriptions, setPrescriptions] = useState<PrescriptionDetail[]>([]);
-  const [loaded,       setLoaded]       = useState(false);
-  const [open,         setOpen]         = useState(false);
-  const [rxId,         setRxId]         = useState('');
-  const [field,        setField]        = useState('');
-  const [prevVal,      setPrevVal]      = useState('');
-  const [newVal,       setNewVal]       = useState('');
-  const [noteText,     setNoteText]     = useState('');
-  const [saving,       setSaving]       = useState(false);
+function MedChangesSection({
+  appointmentId, medicationTimings,
+  activePrescriptions, initialHistory,
+}: Readonly<{
+  appointmentId:      number;
+  medicationTimings:  MedicationTimingTypeRow[];
+  activePrescriptions: PrescriptionDetail[];
+  initialHistory:     PrescriptionChangeRow[];
+}>) {
+  const supabase   = createClient();
+  const router     = useRouter();
+  const [open,     setOpen]    = useState(false);
+  const [history,  setHistory] = useState(initialHistory);
+  const [selectedRxId, setSelectedRxId] = useState('');
+  const [pending,  setPending] = useState<PendingChange[]>([]);
+  const [saving,   setSaving]  = useState(false);
 
-  const load = useCallback(async () => {
-    const [c, p] = await Promise.all([
-      getPrescriptionChanges(supabase, appointmentId),
-      getActivePrescriptions(supabase, personId),
-    ]);
-    setChanges(c);
-    setPrescriptions(p);
-    setLoaded(true);
-  }, [supabase, appointmentId]);
+  const selectedRx = activePrescriptions.find(p => String(p.id) === selectedRxId) ?? null;
 
-  const toggle = async () => {
-    if (!open && !loaded) await load();
-    setOpen(o => !o);
+  const addFieldChange = (key: RxFieldKey) => {
+    if (!selectedRx) return;
+    const def  = RX_FIELDS.find(f => f.key === key)!;
+    const prev = getRxDisplayValue(selectedRx, key, medicationTimings);
+    setPending(p => [...p, {
+      uid:           `${key}-${Date.now()}`,
+      fieldKey:      key,
+      fieldLabel:    def.label,
+      previousValue: prev,
+      newValue:      key === 'is_active' ? (selectedRx.is_active ? 'Discontinued' : 'Active') : prev,
+      newTimingId:   key === 'timing_type_id' ? String(selectedRx.timing_type_id ?? '') : '',
+    }]);
   };
 
-  const add = async () => {
-    if (!rxId || !field.trim() || saving) return;
+  const updatePending = (uid: string, patch: Partial<PendingChange>) =>
+    setPending(p => p.map(c => c.uid === uid ? { ...c, ...patch } : c));
+  const removePending = (uid: string) =>
+    setPending(p => p.filter(c => c.uid !== uid));
+
+  const apply = async () => {
+    if (!selectedRx || pending.length === 0 || saving) return;
     setSaving(true);
     try {
-      const row = await createPrescriptionChange(supabase, {
-        appointment_id:  appointmentId,
-        prescription_id: Number.parseInt(rxId),
-        field_changed:   field.trim(),
-        previous_value:  prevVal.trim() || null,
-        new_value:       newVal.trim() || null,
-        change_notes:    noteText.trim() || null,
+      const entries: FieldChangeEntry[] = pending.map(c => {
+        let rawValue: unknown;
+        switch (c.fieldKey) {
+          case 'timing_type_id': rawValue = c.newTimingId ? Number.parseInt(c.newTimingId) : null; break;
+          case 'is_active':      rawValue = c.newValue === 'Active'; break;
+          default:               rawValue = c.newValue || null;
+        }
+        return {
+          fieldKey:      c.fieldKey,
+          fieldLabel:    c.fieldLabel,
+          previousValue: c.previousValue,
+          newValue:      c.fieldKey === 'timing_type_id'
+            ? (medicationTimings.find(t => String(t.id) === c.newTimingId)?.timing_name ?? c.newTimingId)
+            : c.newValue,
+          rawValue,
+        };
       });
-      setChanges(prev => [row, ...prev]);
-      setRxId(''); setField(''); setPrevVal(''); setNewVal(''); setNoteText('');
+      await applyPrescriptionChanges(supabase, selectedRx.id, appointmentId, entries);
+      setPending([]);
+      setSelectedRxId('');
+      router.refresh();   // re-runs server component → fresh prescriptions + history
     } finally { setSaving(false); }
   };
 
-  const remove = async (id: number) => {
+  const removeHistory = async (id: number) => {
     await deletePrescriptionChange(supabase, id);
-    setChanges(prev => prev.filter(c => c.id !== id));
+    setHistory(h => h.filter(r => r.id !== id));
   };
 
   const rxName = (id: number) => {
-    const rx = prescriptions.find(p => p.id === id);
+    const rx = activePrescriptions.find(p => p.id === id);
     return rx ? (rx.alias ?? rx.medication.medication_name) : `#${id}`;
   };
 
+  const availableFields = RX_FIELDS.filter(f => !pending.some(c => c.fieldKey === f.key));
+
   return (
     <div className="appt-section">
-      <button type="button" className="toggle-btn" onClick={toggle}>
-        💊 Medication Changes {open ? '▲' : '▼'}
+      <button type="button" className="toggle-btn" onClick={() => setOpen(o => !o)}>
+        💊 Prescription Changes {open ? '▲' : '▼'}
       </button>
+
       {open && (
         <div className="appt-section__body">
-          {changes.length === 0 && !saving && (
-            <p className="expand-panel__empty">No medication changes logged for this appointment.</p>
-          )}
-          {changes.map(c => (
-            <div key={c.id} className="manage-item">
-              <span className="manage-item__name">
-                {rxName(c.prescription_id)} — {c.field_changed}
-                {(c.previous_value || c.new_value) && (
-                  <span className="manage-item__meta">
-                    {c.previous_value ? ` ${c.previous_value}` : ''}
-                    {c.previous_value && c.new_value ? ' →' : ''}
-                    {c.new_value ? ` ${c.new_value}` : ''}
+          {/* History log */}
+          {history.length > 0 && (
+            <div className="appt-section__history">
+              <p className="expand-panel__label">Change Log</p>
+              {history.map(h => (
+                <div key={h.id} className="manage-item">
+                  <span className="manage-item__name">
+                    {rxName(h.prescription_id)} — {h.field_changed}
+                    {(h.previous_value || h.new_value) && (
+                      <span className="manage-item__meta">
+                        {h.previous_value ? ` ${h.previous_value}` : ''}
+                        {h.previous_value && h.new_value ? ' →' : ''}
+                        {h.new_value ? ` ${h.new_value}` : ''}
+                      </span>
+                    )}
                   </span>
-                )}
-                {c.change_notes && <span className="manage-item__meta"> · {c.change_notes}</span>}
-              </span>
-              <div className="manage-item__actions">
-                <ConfirmButton onConfirm={() => remove(c.id)} size="sm">✕</ConfirmButton>
-              </div>
+                  <div className="manage-item__actions">
+                    <ConfirmButton onConfirm={() => removeHistory(h.id)} size="sm">✕</ConfirmButton>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
+          {history.length === 0 && pending.length === 0 && (
+            <p className="expand-panel__empty">No prescription changes logged for this appointment.</p>
+          )}
 
+          {/* Change form */}
           <div className="appt-med-change-form">
             <div className="field-grid">
-              <div>
-                <label className="field-label">Medication</label>
-                <select className="settings-select" value={rxId} onChange={e => setRxId(e.target.value)}>
-                  <option value="">Select medication…</option>
-                  {prescriptions.map(p => (
+              <InputField label="Prescription" id="rx-select">
+                <select id="rx-select" value={selectedRxId}
+                  onChange={e => { setSelectedRxId(e.target.value); setPending([]); }}>
+                  <option value="">Select prescription…</option>
+                  {activePrescriptions.map(p => (
                     <option key={p.id} value={p.id}>
-                      {p.alias ?? p.medication.medication_name}
-                      {p.dose ? ` ${p.dose}` : ''}
+                      {p.alias ?? p.medication.medication_name}{p.dose ? ` · ${p.dose}` : ''}
                     </option>
                   ))}
                 </select>
-              </div>
-              <div>
-                <label className="field-label">Field changed</label>
-                <input type="text" value={field} onChange={e => setField(e.target.value)}
-                  placeholder="dose, timing, discontinued…" />
-              </div>
+              </InputField>
+
+              {selectedRx && availableFields.length > 0 && (
+                <InputField label="Add field to change" id="rx-field-add">
+                  <select id="rx-field-add" value=""
+                    onChange={e => { if (e.target.value) addFieldChange(e.target.value as RxFieldKey); }}>
+                    <option value="">+ Add field…</option>
+                    {availableFields.map(f => (
+                      <option key={f.key} value={f.key}>{f.label}</option>
+                    ))}
+                  </select>
+                </InputField>
+              )}
             </div>
-            <div className="field-grid">
-              <div>
-                <label className="field-label">Previous value</label>
-                <input type="text" value={prevVal} onChange={e => setPrevVal(e.target.value)} placeholder="Before…" />
+
+            {pending.map(c => (
+              <div key={c.uid} className="rx-field-change-row">
+                <span className="rx-field-change-row__label">{c.fieldLabel}</span>
+                <span className="rx-field-change-row__prev">{c.previousValue || '—'}</span>
+                <span className="rx-field-change-row__arrow">→</span>
+                {c.fieldKey === 'timing_type_id' ? (
+                  <select className="rx-field-change-row__input" value={c.newTimingId}
+                    onChange={e => updatePending(c.uid, { newTimingId: e.target.value })}>
+                    <option value="">No timing</option>
+                    {medicationTimings.map(t => (
+                      <option key={t.id} value={t.id}>{t.timing_name}</option>
+                    ))}
+                  </select>
+                ) : c.fieldKey === 'is_active' ? (
+                  <select className="rx-field-change-row__input" value={c.newValue}
+                    onChange={e => updatePending(c.uid, { newValue: e.target.value })}>
+                    <option value="Active">Active</option>
+                    <option value="Discontinued">Discontinued</option>
+                  </select>
+                ) : (
+                  <input type={c.fieldKey.endsWith('_date') ? 'date' : 'text'}
+                    className="rx-field-change-row__input"
+                    value={c.newValue}
+                    onChange={e => updatePending(c.uid, { newValue: e.target.value })}
+                    placeholder="New value…" />
+                )}
+                <button type="button" className="icon-btn" onClick={() => removePending(c.uid)}>✕</button>
               </div>
-              <div>
-                <label className="field-label">New value</label>
-                <input type="text" value={newVal} onChange={e => setNewVal(e.target.value)} placeholder="After…" />
+            ))}
+
+            {pending.length > 0 && (
+              <div className="form-panel__actions" style={{ marginTop: 10 }}>
+                <Button variant="accent" onClick={apply} disabled={saving}>
+                  {saving ? 'Applying…' : `Apply ${pending.length} Change${pending.length > 1 ? 's' : ''}`}
+                </Button>
+                <Button variant="ghost" onClick={() => { setPending([]); setSelectedRxId(''); }}>
+                  Cancel
+                </Button>
               </div>
-            </div>
-            <div>
-              <label className="field-label">Notes</label>
-              <input type="text" className="input--flex" value={noteText} onChange={e => setNoteText(e.target.value)}
-                placeholder="Additional context…" />
-            </div>
-            <div className="form-panel__actions" style={{ marginTop: 8 }}>
-              <Button size="sm" variant="accent" onClick={add}
-                disabled={saving || !rxId || !field.trim()}>
-                {saving ? '…' : '+ Add Change'}
-              </Button>
-            </div>
+            )}
           </div>
         </div>
       )}
@@ -162,20 +266,94 @@ function MedChangesSection({ appointmentId, personId }: Readonly<{ appointmentId
   );
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
+// ── Follow-up mini form ───────────────────────────────────────────────────────
+
+function FollowUpForm({ appt, onCreated, onCancel }: Readonly<{
+  appt:      AppointmentDetail;
+  onCreated: (id: number) => void;
+  onCancel:  () => void;
+}>) {
+  const supabase = createClient();
+  const [date,   setDate]   = useState('');
+  const [time,   setTime]   = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const create = async () => {
+    if (!date || saving) return;
+    setSaving(true);
+    try {
+      const newAppt = await createAppointment(supabase, {
+        appointment_date:    date,
+        appointment_time:    time || null,
+        person_id:           appt.person_id,
+        provider_id:         appt.provider_id ?? null,
+        appointment_type_id: appt.appointment_type_id ?? null,
+        location:            appt.location ?? null,
+        questions:           null,
+        notes:               null,
+        followup_for_id:     appt.id,
+      });
+      onCreated(newAppt.id);
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <div className="follow-up-form">
+      <p className="follow-up-form__title">Schedule Follow-up</p>
+      <div className="field-grid">
+        <InputField label="Date" id="fu-date">
+          <input id="fu-date" type="date" value={date} onChange={e => setDate(e.target.value)} autoFocus />
+        </InputField>
+        <InputField label="Time (optional)" id="fu-time">
+          <input id="fu-time" type="time" value={time} onChange={e => setTime(e.target.value)} />
+        </InputField>
+      </div>
+      <p className="follow-up-form__hint">
+        Copies: {appt.appointment_type?.type_name ?? 'same type'} ·{' '}
+        {appt.person?.person_name ?? 'same person'}
+        {appt.provider ? ` · ${appt.provider.provider_name ?? appt.provider.practice_name}` : ''}
+      </p>
+      <div className="form-panel__actions">
+        <Button variant="accent" onClick={create} disabled={saving || !date}>
+          {saving ? 'Creating…' : 'Create Follow-up'}
+        </Button>
+        <Button variant="ghost" onClick={onCancel}>Cancel</Button>
+      </div>
+    </div>
+  );
+}
+
+// ── Props ─────────────────────────────────────────────────────────────────────
+
+interface Props {
+  appointment:         AppointmentDetail;
+  parentAppt:          AppointmentDetail | null;
+  appointmentTypes:    AppointmentTypeRow[];
+  people:              PersonRow[];
+  providers:           ProviderRow[];
+  taskStatuses:        TaskStatusRow[];
+  taskPriorities:      TaskPriorityRow[];
+  medicationTimings:   MedicationTimingTypeRow[];
+  activePrescriptions: PrescriptionDetail[];
+  prescriptionChanges: PrescriptionChangeRow[];
+}
+
+// ── Main ──────────────────────────────────────────────────────────────────────
 
 export function AppointmentDetailClient({
-  appointment: appt, appointmentTypes, people, providers,
+  appointment: appt, parentAppt,
+  appointmentTypes, people, providers,
   taskStatuses, taskPriorities,
+  medicationTimings, activePrescriptions, prescriptionChanges,
 }: Readonly<Props>) {
   const supabase = createClient();
   const router   = useRouter();
 
-  const [mode,      setMode]      = useState<'view' | 'edit'>('view');
-  const [saveState, setSaveState] = useState<SaveState>('idle');
-  const [creatingFollowUp, setCreatingFollowUp] = useState(false);
-  const [creatingTask,     setCreatingTask]     = useState(false);
-  const [taskCreated,      setTaskCreated]      = useState(false);
+  const [mode,         setMode]         = useState<'view' | 'edit'>('view');
+  const [saveState,    setSaveState]    = useState<SaveState>('idle');
+  const [showFollowUp, setShowFollowUp] = useState(false);
+  const [taskCreated,  setTaskCreated]  = useState(false);
+  const [creatingTask, setCreatingTask] = useState(false);
 
   const [date,      setDate]      = useState(appt.appointment_date);
   const [time,      setTime]      = useState(appt.appointment_time ?? '');
@@ -192,9 +370,9 @@ export function AppointmentDetailClient({
       await updateAppointment(supabase, appt.id, {
         appointment_date:    date,
         appointment_time:    time || null,
-        appointment_type_id: typeId   ? Number.parseInt(typeId)   : null,
+        appointment_type_id: typeId  ? Number.parseInt(typeId)  : null,
         person_id:           Number.parseInt(personId),
-        provider_id:         provId   ? Number.parseInt(provId)   : null,
+        provider_id:         provId  ? Number.parseInt(provId)  : null,
         location:  location  || null,
         questions: questions || null,
         notes:     notes     || null,
@@ -211,50 +389,30 @@ export function AppointmentDetailClient({
     router.push('/appointments');
   }, [supabase, appt.id, router]);
 
-  const createFollowUp = useCallback(async () => {
-    setCreatingFollowUp(true);
-    try {
-      const followUp = await createAppointment(supabase, {
-        appointment_date:    localTodayISO(),  // placeholder; user will edit
-        appointment_time:    null,
-        person_id:           appt.person_id,
-        provider_id:         appt.provider_id ?? null,
-        appointment_type_id: appt.appointment_type_id ?? null,
-        location:            appt.location ?? null,
-        questions:           null,
-        notes:               null,
-        followup_for_id:     appt.id,
-      });
-      router.push(`/appointments/${followUp.id}`);
-    } finally { setCreatingFollowUp(false); }
-  }, [supabase, appt, router]);
-
-  const createTaskFromAppt = useCallback(async () => {
-    const todoStatus   = taskStatuses.find(s => s.status_name === 'todo' || !s.is_terminal);
-    const normalPrio   = taskPriorities.find(p => p.priority_name === 'normal') ?? taskPriorities[0];
+  const createTaskForAppt = useCallback(async () => {
+    const todoStatus = taskStatuses.find(s => !s.is_terminal) ?? taskStatuses[0];
+    const normalPrio = taskPriorities.find(p => p.priority_name === 'normal') ?? taskPriorities[0];
     if (!todoStatus || !normalPrio) return;
     setCreatingTask(true);
     try {
-      const typeName = appt.appointment_type?.type_name ?? 'Appointment';
-      const prov     = appt.provider?.provider_name ?? appt.provider?.practice_name ?? '';
-      const title    = `Follow up from ${typeName}${prov ? ` with ${prov}` : ''} (${formatMediumDate(appt.appointment_date)})`;
       await createTask(supabase, {
-        title,
-        status_id:      todoStatus.id,
-        priority_id:    normalPrio.id,
-        due_date:       null,
-        person_id:      appt.person_id,
-        body_md:        null,
-        completed_at:   null,
+        title:        apptLabel(appt),
+        status_id:    todoStatus.id,
+        priority_id:  normalPrio.id,
+        due_date:     appt.appointment_date,
+        person_id:    appt.person_id,
+        body_md:      null,
+        completed_at: null,
       });
       setTaskCreated(true);
       setTimeout(() => setTaskCreated(false), 3000);
     } finally { setCreatingTask(false); }
   }, [supabase, appt, taskStatuses, taskPriorities]);
 
+  // ── View mode ───────────────────────────────────────────────────────────────
+
   if (mode === 'view') {
-    const countdown = daysUntil(appt.appointment_date);
-    const isPast    = appt.appointment_date < localTodayISO();
+    const isPast = appt.appointment_date < localTodayISO();
 
     return (
       <div>
@@ -276,7 +434,7 @@ export function AppointmentDetailClient({
         </div>
 
         <div className={`appt-detail-countdown${isPast ? ' appt-detail-countdown--past' : ''}`}>
-          {countdown}
+          {daysUntil(appt.appointment_date)}
         </div>
 
         <dl className="detail-page__fields">
@@ -297,12 +455,12 @@ export function AppointmentDetailClient({
               <dd>{appt.location}</dd>
             </div>
           )}
-          {appt.followup_for_id && (
+          {parentAppt && (
             <div className="detail-page__field">
               <dt>Follow-up of</dt>
               <dd>
-                <a href={`/appointments/${appt.followup_for_id}`} className="text-link">
-                  Appointment #{appt.followup_for_id}
+                <a href={`/appointments/${parentAppt.id}`} className="text-link">
+                  {apptLabel(parentAppt)}
                 </a>
               </dd>
             </div>
@@ -322,22 +480,35 @@ export function AppointmentDetailClient({
           </div>
         )}
 
-        {/* Action buttons */}
         <div className="appt-quick-actions">
-          <Button variant="ghost" size="sm" onClick={createFollowUp} disabled={creatingFollowUp}>
-            {creatingFollowUp ? '…' : '📅 Create Follow-up'}
-          </Button>
-          <Button variant="ghost" size="sm" onClick={createTaskFromAppt} disabled={creatingTask}>
+          {showFollowUp ? (
+            <FollowUpForm
+              appt={appt}
+              onCreated={id => router.push(`/appointments/${id}`)}
+              onCancel={() => setShowFollowUp(false)}
+            />
+          ) : (
+            <Button variant="ghost" size="sm" onClick={() => setShowFollowUp(true)}>
+              📅 Schedule Follow-up
+            </Button>
+          )}
+          <Button variant="ghost" size="sm" onClick={createTaskForAppt} disabled={creatingTask}>
             {taskCreated ? '✓ Task created' : creatingTask ? '…' : '✅ Create Task'}
           </Button>
         </div>
 
-        <MedChangesSection appointmentId={appt.id} personId={appt.person_id} />
+        <MedChangesSection
+          appointmentId={appt.id}
+          medicationTimings={medicationTimings}
+          activePrescriptions={activePrescriptions}
+          initialHistory={prescriptionChanges}
+        />
       </div>
     );
   }
 
-  // Edit mode
+  // ── Edit mode ───────────────────────────────────────────────────────────────
+
   return (
     <div>
       <div className="field-grid">
@@ -353,7 +524,6 @@ export function AppointmentDetailClient({
           </select>
         </InputField>
       </div>
-
       <InputField label="Provider" id="ad-prov">
         <select id="ad-prov" value={provId} onChange={e => setProvId(e.target.value)}>
           <option value="">No provider</option>
@@ -364,7 +534,6 @@ export function AppointmentDetailClient({
           ))}
         </select>
       </InputField>
-
       <div className="field-grid">
         <InputField label="Date" id="ad-date">
           <input id="ad-date" type="date" value={date} onChange={e => setDate(e.target.value)} />
@@ -373,19 +542,15 @@ export function AppointmentDetailClient({
           <input id="ad-time" type="time" value={time} onChange={e => setTime(e.target.value)} />
         </InputField>
       </div>
-
       <InputField label="Location" id="ad-loc">
         <input id="ad-loc" type="text" value={location} onChange={e => setLocation(e.target.value)} />
       </InputField>
-
       <InputField label="Questions" id="ad-q">
         <textarea id="ad-q" value={questions} onChange={e => setQuestions(e.target.value)} className="textarea--short" />
       </InputField>
-
       <InputField label="Notes" id="ad-notes">
         <textarea id="ad-notes" value={notes} onChange={e => setNotes(e.target.value)} className="textarea--short" />
       </InputField>
-
       <div className="page-actions">
         <Button variant="accent" onClick={save} disabled={saveState === 'saving'}>
           {saveState === 'saving' ? 'Saving…' : 'Save'}

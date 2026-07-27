@@ -150,3 +150,60 @@ export async function updatePrescription(
     .eq("id", id);
   if (error) throw new Error(`updatePrescription: ${error.message}`);
 }
+
+// ── Prescription change audit + apply ─────────────────────────────────────────
+
+export interface FieldChangeEntry {
+  fieldKey:      string;
+  fieldLabel:    string;
+  previousValue: string;
+  newValue:      string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  rawValue:      any;
+}
+
+/**
+ * Updates the prescription fields AND writes audit rows.
+ * Runs the UPDATE first (most important), then inserts audit records.
+ */
+export async function applyPrescriptionChanges(
+  client:         Client,
+  prescriptionId: number,
+  appointmentId:  number | null,
+  changes:        FieldChangeEntry[],
+): Promise<void> {
+  if (changes.length === 0) return;
+
+  const patch: Record<string, unknown> = {};
+  for (const c of changes) patch[c.fieldKey] = c.rawValue;
+
+  const { error: upErr } = await client
+    .from('prescriptions').update(patch).eq('id', prescriptionId);
+  if (upErr) throw new Error(`applyPrescriptionChanges update: ${upErr.message}`);
+
+  const { error: auditErr } = await client
+    .from('prescription_changes')
+    .insert(changes.map(c => ({
+      appointment_id:  appointmentId,
+      prescription_id: prescriptionId,
+      field_changed:   c.fieldLabel,
+      previous_value:  c.previousValue || null,
+      new_value:       c.newValue       || null,
+      change_notes:    null,
+    })));
+  if (auditErr) throw new Error(`applyPrescriptionChanges audit: ${auditErr.message}`);
+}
+
+/** Full change history for a prescription (for the medication detail view). */
+export async function getPrescriptionChangesByRx(
+  client:         Client,
+  prescriptionId: number,
+): Promise<import('@/types/schema').PrescriptionChangeRow[]> {
+  const { data, error } = await client
+    .from('prescription_changes')
+    .select('*')
+    .eq('prescription_id', prescriptionId)
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(`getPrescriptionChangesByRx: ${error.message}`);
+  return (data ?? []) as import('@/types/schema').PrescriptionChangeRow[];
+}
