@@ -1,7 +1,11 @@
 import { notFound }                from 'next/navigation';
 import { createClient }            from '@/lib/supabase/server';
 import { getAppointmentById }      from '@/lib/dal/appointments';
-import { getAppointmentTypes, getPeople, getTaskStatuses, getTaskPriorities } from '@/lib/dal/reference';
+import {
+  getAppointmentTypes, getPeople,
+  getTaskStatuses, getTaskPriorities,
+  getMedicationTimingTypes,
+} from '@/lib/dal/reference';
 import { getProviders }            from '@/lib/dal/providers';
 import { AppointmentDetailClient } from '@/components/appointments/AppointmentDetailClient';
 
@@ -18,14 +22,16 @@ export default async function AppointmentDetailPage({ params }: Readonly<Props>)
   const appt     = await getAppointmentById(supabase, numId);
   if (!appt) notFound();
 
-  // Fetch providers — include inactive so edit form shows historically-linked ones
-  const [apptTypes, people, providers, taskStatuses, taskPriorities] = await Promise.all([
-    getAppointmentTypes(supabase),
-    getPeople(supabase),
-    getProviders(supabase, true),   // includeInactive = true for edit form
-    getTaskStatuses(supabase),
-    getTaskPriorities(supabase),
-  ]);
+  const [apptTypes, people, providers, taskStatuses, taskPriorities, medicationTimings, parentAppt] =
+    await Promise.all([
+      getAppointmentTypes(supabase),
+      getPeople(supabase),
+      getProviders(supabase, true),
+      getTaskStatuses(supabase),
+      getTaskPriorities(supabase),
+      getMedicationTimingTypes(supabase),
+      appt.followup_for_id ? getAppointmentById(supabase, appt.followup_for_id) : Promise.resolve(null),
+    ]);
 
   return (
     <div className="page-content">
@@ -35,11 +41,13 @@ export default async function AppointmentDetailPage({ params }: Readonly<Props>)
       </div>
       <AppointmentDetailClient
         appointment={appt}
+        parentAppt={parentAppt}
         appointmentTypes={apptTypes}
         people={people}
         providers={providers}
         taskStatuses={taskStatuses}
         taskPriorities={taskPriorities}
+        medicationTimings={medicationTimings}
       />
     </div>
   );
