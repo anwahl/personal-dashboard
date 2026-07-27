@@ -138,16 +138,15 @@ export async function deleteJournalResponse(
   if (error) throw new Error(`deleteJournalResponse: ${error.message}`);
 }
 
-
 // ── Settings operations ───────────────────────────────────────────────────────
 
 export async function addJournalCategory(
-  client:    Client,
-  name:      string,
+  client: Client,
+  name: string,
   sortOrder: number,
 ): Promise<JournalCategoryRow> {
   const { data, error } = await client
-    .from('journal_categories')
+    .from("journal_categories")
     .insert({ category_name: name.trim(), sort_order: sortOrder })
     .select()
     .single();
@@ -156,24 +155,24 @@ export async function addJournalCategory(
 }
 
 export async function toggleJournalCategory(
-  client:   Client,
-  id:       number,
+  client: Client,
+  id: number,
   isActive: boolean,
 ): Promise<void> {
   const { error } = await client
-    .from('journal_categories')
+    .from("journal_categories")
     .update({ is_active: isActive })
-    .eq('id', id);
+    .eq("id", id);
   if (error) throw new Error(`toggleJournalCategory: ${error.message}`);
 }
 
 export async function addJournalPrompt(
-  client:     Client,
+  client: Client,
   categoryId: number,
   promptText: string,
 ): Promise<JournalPromptRow> {
   const { data, error } = await client
-    .from('journal_prompts')
+    .from("journal_prompts")
     .insert({ category_id: categoryId, prompt_text: promptText })
     .select()
     .single();
@@ -182,53 +181,56 @@ export async function addJournalPrompt(
 }
 
 export async function toggleJournalPrompt(
-  client:   Client,
-  id:       number,
+  client: Client,
+  id: number,
   isActive: boolean,
 ): Promise<void> {
   const { error } = await client
-    .from('journal_prompts')
+    .from("journal_prompts")
     .update({ is_active: isActive })
-    .eq('id', id);
+    .eq("id", id);
   if (error) throw new Error(`toggleJournalPrompt: ${error.message}`);
 }
 
 export async function updateJournalCategory(
   client: Client,
-  id:     number,
-  name:   string,
+  id: number,
+  name: string,
 ): Promise<void> {
   const { error } = await client
-    .from('journal_categories')
+    .from("journal_categories")
     .update({ category_name: name.trim() })
-    .eq('id', id);
+    .eq("id", id);
   if (error) throw new Error(`updateJournalCategory: ${error.message}`);
 }
 
 export async function deleteJournalCategory(
   client: Client,
-  id:     number,
+  id: number,
 ): Promise<void> {
-  const { error } = await client.from('journal_categories').delete().eq('id', id);
+  const { error } = await client
+    .from("journal_categories")
+    .delete()
+    .eq("id", id);
   if (error) throw new Error(`deleteJournalCategory: ${error.message}`);
 }
 
 export async function updateJournalPrompt(
   client: Client,
-  id:     number,
-  text:   string,
+  id: number,
+  text: string,
 ): Promise<void> {
   const { error } = await client
-    .from('journal_prompts')
+    .from("journal_prompts")
     .update({ prompt_text: text.trim() })
-    .eq('id', id);
+    .eq("id", id);
   if (error) throw new Error(`updateJournalPrompt: ${error.message}`);
 }
 
 export async function deleteJournalPrompt(
   client: Client,
-  id:     number,
+  id: number,
 ): Promise<void> {
-  const { error } = await client.from('journal_prompts').delete().eq('id', id);
+  const { error } = await client.from("journal_prompts").delete().eq("id", id);
   if (error) throw new Error(`deleteJournalPrompt: ${error.message}`);
 }

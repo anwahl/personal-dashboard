@@ -7,14 +7,12 @@ import {
   addJournalPrompt,      updateJournalPrompt,   deleteJournalPrompt,
   toggleJournalPrompt,
 } from '@/lib/dal/journal';
-import { reorderSettingsItem } from '@/lib/dal/settings';
+import { batchSetSortOrder } from '@/lib/dal/settings';
+import { bySortOrder, normalizedReorderUpdates } from '@/lib/utils/sort';
 import { createClient }        from '@/lib/supabase/client';
 import { Button }              from '@/components/ui/Button';
 import { CategoryBlock, ChildItem } from '@/components/settings/CategoryBlock';
 import type { JournalCategoryWithPrompts } from '@/types/dal';
-
-const bySortOrder = <T extends { sort_order?: number }>(a: T, b: T) =>
-  (a.sort_order ?? 0) - (b.sort_order ?? 0);
 
 interface Props {
   categories: JournalCategoryWithPrompts[];
@@ -59,15 +57,10 @@ export function JournalSettings({ categories: initial }: Readonly<Props>) {
     const idx     = sorted.findIndex(c => c.id === catId);
     const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
     if (swapIdx < 0 || swapIdx >= sorted.length) return;
-    const a = sorted[idx];
-    const b = sorted[swapIdx];
-    const oA = a.sort_order ?? idx;
-    const oB = b.sort_order ?? swapIdx;
-    setCats(prev => prev.map(c =>
-      c.id === a.id ? { ...c, sort_order: oB } :
-      c.id === b.id ? { ...c, sort_order: oA } : c
-    ));
-    await reorderSettingsItem(supabase, 'journal_categories', a.id, oA, b.id, oB);
+    const updates = normalizedReorderUpdates(sorted, idx, swapIdx);
+    const updateMap = new Map(updates.map(u => [u.id, u.sort_order]));
+    setCats(prev => prev.map(c => updateMap.has(c.id) ? { ...c, sort_order: updateMap.get(c.id)! } : c));
+    await batchSetSortOrder(supabase, 'journal_categories', updates);
   }, [supabase, cats]);
 
   // ── Prompt operations ───────────────────────────────────────────────────────
@@ -120,19 +113,14 @@ export function JournalSettings({ categories: initial }: Readonly<Props>) {
     const idx     = sorted.findIndex(p => p.id === promptId);
     const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
     if (swapIdx < 0 || swapIdx >= sorted.length) return;
-    const a = sorted[idx];
-    const b = sorted[swapIdx];
-    const oA = (a as typeof a & { sort_order?: number }).sort_order ?? idx;
-    const oB = (b as typeof b & { sort_order?: number }).sort_order ?? swapIdx;
+    const updates = normalizedReorderUpdates(sorted, idx, swapIdx);
+    const updateMap = new Map(updates.map(u => [u.id, u.sort_order]));
     setCats(prev => prev.map(c =>
       c.id === catId
-        ? { ...c, prompts: c.prompts.map(p =>
-            p.id === a.id ? { ...p, sort_order: oB } :
-            p.id === b.id ? { ...p, sort_order: oA } : p
-          )}
+        ? { ...c, prompts: c.prompts.map(p => updateMap.has(p.id) ? { ...p, sort_order: updateMap.get(p.id)! } : p) }
         : c
     ));
-    await reorderSettingsItem(supabase, 'journal_prompts', a.id, oA, b.id, oB);
+    await batchSetSortOrder(supabase, 'journal_prompts', updates);
   }, [supabase, cats]);
 
   // ── Render ──────────────────────────────────────────────────────────────────

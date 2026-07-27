@@ -3275,3 +3275,7 @@ a.appt-secondary:last-child { border-bottom: none; }
   flex: 1;
   flex-wrap: wrap;
 }
+
+/* ── Sprint 1 fixes ──────────────────────────────────────────────────────────*/
+/* Narrow select for field-type dropdowns in structure create forms */
+.input--sm-select { width: 110px; flex: none; }

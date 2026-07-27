@@ -1,30 +1,30 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
-import type { PrescriptionRow } from '@/types/schema';
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { PrescriptionRow } from "@/types/schema";
 
 type Client = SupabaseClient;
 
 // ── Prescription CRUD ─────────────────────────────────────────────────────────
 
 export interface PrescriptionPayload {
-  person_id:        number;
-  medication_id:    number;
-  alias:            string | null;
-  dose:             string | null;
-  timing_type_id:   number | null;
-  purpose:          string | null;
-  prescriber_id:    number | null;
-  start_date:       string | null;
+  person_id: number;
+  medication_id: number;
+  alias: string | null;
+  dose: string | null;
+  timing_type_id: number | null;
+  purpose: string | null;
+  prescriber_id: number | null;
+  start_date: string | null;
   discontinued_date: string | null;
-  sort_order?:       number;
-  is_active:        boolean;
+  sort_order?: number;
+  is_active: boolean;
 }
 
 export async function createPrescription(
-  client:  Client,
+  client: Client,
   payload: PrescriptionPayload,
 ): Promise<PrescriptionRow> {
   const { data, error } = await client
-    .from('prescriptions')
+    .from("prescriptions")
     .insert(payload)
     .select()
     .single();
@@ -33,14 +33,14 @@ export async function createPrescription(
 }
 
 export async function updatePrescription(
-  client:  Client,
-  id:      number,
+  client: Client,
+  id: number,
   payload: Partial<PrescriptionPayload>,
 ): Promise<PrescriptionRow> {
   const { data, error } = await client
-    .from('prescriptions')
+    .from("prescriptions")
     .update(payload)
-    .eq('id', id)
+    .eq("id", id)
     .select()
     .single();
   if (error) throw new Error(`updatePrescription: ${error.message}`);
@@ -48,13 +48,13 @@ export async function updatePrescription(
 }
 
 export async function togglePrescriptionActive(
-  client:   Client,
-  id:       number,
+  client: Client,
+  id: number,
   isActive: boolean,
 ): Promise<void> {
   const { error } = await client
-    .from('prescriptions')
+    .from("prescriptions")
     .update({ is_active: isActive })
-    .eq('id', id);
+    .eq("id", id);
   if (error) throw new Error(`togglePrescriptionActive: ${error.message}`);
 }

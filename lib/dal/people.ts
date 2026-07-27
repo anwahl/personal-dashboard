@@ -434,27 +434,32 @@ export async function deleteLogEntry(
   await client.from("log_entries").delete().eq("id", id).throwOnError();
 }
 
-
 // ── Checklist item management ─────────────────────────────────────────────────
 
-
 export async function createChecklistItem(
-  client:      Client,
+  client: Client,
   checklistId: number,
-  itemText:    string,
-  sortOrder:   number,
+  itemText: string,
+  sortOrder: number,
 ): Promise<ChecklistItemRow> {
   const { data, error } = await client
-    .from('checklist_items')
-    .insert({ checklist_id: checklistId, item_text: itemText, sort_order: sortOrder })
+    .from("checklist_items")
+    .insert({
+      checklist_id: checklistId,
+      item_text: itemText,
+      sort_order: sortOrder,
+    })
     .select()
     .single();
   if (error) throw new Error(`createChecklistItem: ${error.message}`);
   return data as ChecklistItemRow;
 }
 
-export async function deleteChecklistItem(client: Client, id: number): Promise<void> {
-  const { error } = await client.from('checklist_items').delete().eq('id', id);
+export async function deleteChecklistItem(
+  client: Client,
+  id: number,
+): Promise<void> {
+  const { error } = await client.from("checklist_items").delete().eq("id", id);
   if (error) throw new Error(`deleteChecklistItem: ${error.message}`);
 }
 
@@ -466,38 +471,39 @@ export interface NewInfoGroupPayload {
 }
 
 export async function createInfoGroup(
-  client:  Client,
+  client: Client,
   payload: NewInfoGroupPayload,
 ): Promise<InfoGroupRow> {
   const { data: group, error: groupError } = await client
-    .from('info_groups')
+    .from("info_groups")
     .insert({ group_title: payload.group_title })
     .select()
     .single();
   if (groupError) throw new Error(`createInfoGroup: ${groupError.message}`);
 
-  const validFields = payload.fields.filter(f => f.label.trim());
+  const validFields = payload.fields.filter((f) => f.label.trim());
   if (validFields.length > 0) {
-    const { error: fieldError } = await client.from('info_field_types').insert(
+    const { error: fieldError } = await client.from("info_field_types").insert(
       validFields.map((f, i) => ({
-        group_id:    (group as InfoGroupRow).id,
+        group_id: (group as InfoGroupRow).id,
         field_label: f.label.trim(),
-        field_type:  f.type,
-        sort_order:  i,
+        field_type: f.type,
+        sort_order: i,
       })),
     );
-    if (fieldError) throw new Error(`createInfoGroup fields: ${fieldError.message}`);
+    if (fieldError)
+      throw new Error(`createInfoGroup fields: ${fieldError.message}`);
   }
   return group as InfoGroupRow;
 }
 
 export async function createItemList(
-  client:     Client,
-  listTitle:  string,
-  listLabel:  string | null,
+  client: Client,
+  listTitle: string,
+  listLabel: string | null,
 ): Promise<ItemListRow> {
   const { data, error } = await client
-    .from('item_lists')
+    .from("item_lists")
     .insert({ list_title: listTitle, list_label: listLabel })
     .select()
     .single();
@@ -508,70 +514,81 @@ export async function createItemList(
 export interface NewLogSchemaPayload {
   log_title: string;
   fields: Array<{
-    label:   string;
-    key:     string;
-    type:    string;
+    label: string;
+    key: string;
+    type: string;
     options: string; // comma-separated for select fields
   }>;
 }
 
 export async function createLogSchema(
-  client:  Client,
+  client: Client,
   payload: NewLogSchemaPayload,
 ): Promise<LogSchemaRow> {
   const { data: schema, error: schemaError } = await client
-    .from('log_schemas')
+    .from("log_schemas")
     .insert({ log_title: payload.log_title })
     .select()
     .single();
   if (schemaError) throw new Error(`createLogSchema: ${schemaError.message}`);
 
-  const validFields = payload.fields.filter(f => f.label.trim());
+  const validFields = payload.fields.filter((f) => f.label.trim());
   if (validFields.length === 0) return schema as LogSchemaRow;
 
   const { data: createdFields, error: fieldError } = await client
-    .from('log_schema_fields')
+    .from("log_schema_fields")
     .insert(
       validFields.map((f, i) => ({
-        log_id:      (schema as LogSchemaRow).id,
+        log_id: (schema as LogSchemaRow).id,
         field_label: f.label.trim(),
-        field_key:   f.key.trim() || f.label.trim().toLowerCase().replace(/\s+/g, '_'),
-        field_type:  f.type,
-        sort_order:  i,
+        field_key:
+          f.key.trim() || f.label.trim().toLowerCase().replace(/\s+/g, "_"),
+        field_type: f.type,
+        sort_order: i,
       })),
     )
-    .select('id, field_type');
-  if (fieldError) throw new Error(`createLogSchema fields: ${fieldError.message}`);
+    .select("id, field_type");
+  if (fieldError)
+    throw new Error(`createLogSchema fields: ${fieldError.message}`);
 
-  const fieldRows = (createdFields ?? []) as Array<{ id: number; field_type: string }>;
-  const optionInserts = validFields.flatMap((f, i) => {
-    const created = fieldRows[i];
-    if (!created || f.type !== 'select' || !f.options.trim()) return [];
-    return f.options.split(',').map((opt, oi) => ({
-      field_id:     created.id,
-      option_value: opt.trim(),
-      sort_order:   oi,
-    }));
-  }).filter(o => o.option_value);
+  const fieldRows = (createdFields ?? []) as Array<{
+    id: number;
+    field_type: string;
+  }>;
+  const optionInserts = validFields
+    .flatMap((f, i) => {
+      const created = fieldRows[i];
+      if (!created || f.type !== "select" || !f.options.trim()) return [];
+      return f.options.split(",").map((opt, oi) => ({
+        field_id: created.id,
+        option_value: opt.trim(),
+        sort_order: oi,
+      }));
+    })
+    .filter((o) => o.option_value);
 
   if (optionInserts.length > 0) {
     const { error: optError } = await client
-      .from('log_schema_field_options')
+      .from("log_schema_field_options")
       .insert(optionInserts);
-    if (optError) throw new Error(`createLogSchema options: ${optError.message}`);
+    if (optError)
+      throw new Error(`createLogSchema options: ${optError.message}`);
   }
 
   return schema as LogSchemaRow;
 }
 
 export async function createChecklist(
-  client:          Client,
-  checklistTitle:  string,
-  checklistLabel:  string | null,
+  client: Client,
+  checklistTitle: string,
+  checklistLabel: string | null,
 ): Promise<ChecklistRow> {
   const { data, error } = await client
-    .from('checklists')
-    .insert({ checklist_title: checklistTitle, checklist_label: checklistLabel })
+    .from("checklists")
+    .insert({
+      checklist_title: checklistTitle,
+      checklist_label: checklistLabel,
+    })
     .select()
     .single();
   if (error) throw new Error(`createChecklist: ${error.message}`);
@@ -580,44 +597,174 @@ export async function createChecklist(
 
 // ── Person–structure link toggling ────────────────────────────────────────────
 
-type StructureType = 'info_group' | 'list' | 'log' | 'checklist';
+type StructureType = "info_group" | "list" | "log" | "checklist";
 
-const STRUCTURE_MAP: Record<StructureType, { junction: string; idCol: string }> = {
-  info_group: { junction: 'person_info_group_links', idCol: 'info_group_id' },
-  list:       { junction: 'person_item_list_links',  idCol: 'list_id'       },
-  log:        { junction: 'person_log_links',         idCol: 'log_id'        },
-  checklist:  { junction: 'person_checklist_links',  idCol: 'checklist_id'  },
+const STRUCTURE_MAP: Record<
+  StructureType,
+  { junction: string; idCol: string }
+> = {
+  info_group: { junction: "person_info_group_links", idCol: "info_group_id" },
+  list: { junction: "person_item_list_links", idCol: "list_id" },
+  log: { junction: "person_log_links", idCol: "log_id" },
+  checklist: { junction: "person_checklist_links", idCol: "checklist_id" },
 };
 
 export async function togglePersonStructureLink(
-  client:        Client,
-  personId:      number,
+  client: Client,
+  personId: number,
   structureType: StructureType,
-  structureId:   number,
-  link:          boolean,
+  structureId: number,
+  link: boolean,
 ): Promise<void> {
   const { junction, idCol } = STRUCTURE_MAP[structureType];
   if (link) {
     const { error } = await client
       .from(junction)
       .insert({ person_id: personId, [idCol]: structureId });
-    if (error) throw new Error(`togglePersonStructureLink insert: ${error.message}`);
+    if (error)
+      throw new Error(`togglePersonStructureLink insert: ${error.message}`);
   } else {
     const { error } = await client
       .from(junction)
       .delete()
-      .eq('person_id', personId)
+      .eq("person_id", personId)
       .eq(idCol, structureId);
-    if (error) throw new Error(`togglePersonStructureLink delete: ${error.message}`);
+    if (error)
+      throw new Error(`togglePersonStructureLink delete: ${error.message}`);
   }
 }
 
-
-export async function getSelfPerson(client: Client): Promise<{ person_name: string } | null> {
+export async function getSelfPerson(
+  client: Client,
+): Promise<{ person_name: string } | null> {
   const { data } = await client
-    .from('people')
-    .select('person_name')
-    .eq('is_self', true)
+    .from("people")
+    .select("person_name")
+    .eq("is_self", true)
     .maybeSingle();
   return data as { person_name: string } | null;
+}
+
+// ── Structure rename / toggle / delete ────────────────────────────────────────
+
+export async function renameInfoGroup(
+  client: Client,
+  id: number,
+  title: string,
+): Promise<void> {
+  const { error } = await client
+    .from("info_groups")
+    .update({ group_title: title.trim() })
+    .eq("id", id);
+  if (error) throw new Error(`renameInfoGroup: ${error.message}`);
+}
+export async function toggleInfoGroup(
+  client: Client,
+  id: number,
+  isActive: boolean,
+): Promise<void> {
+  const { error } = await client
+    .from("info_groups")
+    .update({ is_active: isActive })
+    .eq("id", id);
+  if (error) throw new Error(`toggleInfoGroup: ${error.message}`);
+}
+export async function deleteInfoGroup(
+  client: Client,
+  id: number,
+): Promise<void> {
+  const { error } = await client.from("info_groups").delete().eq("id", id);
+  if (error) throw new Error(`deleteInfoGroup: ${error.message}`);
+}
+
+export async function renameItemList(
+  client: Client,
+  id: number,
+  title: string,
+  label: string | null,
+): Promise<void> {
+  const { error } = await client
+    .from("item_lists")
+    .update({ list_title: title.trim(), list_label: label })
+    .eq("id", id);
+  if (error) throw new Error(`renameItemList: ${error.message}`);
+}
+export async function toggleItemList(
+  client: Client,
+  id: number,
+  isActive: boolean,
+): Promise<void> {
+  const { error } = await client
+    .from("item_lists")
+    .update({ is_active: isActive })
+    .eq("id", id);
+  if (error) throw new Error(`toggleItemList: ${error.message}`);
+}
+export async function deleteItemList(
+  client: Client,
+  id: number,
+): Promise<void> {
+  const { error } = await client.from("item_lists").delete().eq("id", id);
+  if (error) throw new Error(`deleteItemList: ${error.message}`);
+}
+
+export async function renameLogSchema(
+  client: Client,
+  id: number,
+  title: string,
+): Promise<void> {
+  const { error } = await client
+    .from("log_schemas")
+    .update({ log_title: title.trim() })
+    .eq("id", id);
+  if (error) throw new Error(`renameLogSchema: ${error.message}`);
+}
+export async function toggleLogSchema(
+  client: Client,
+  id: number,
+  isActive: boolean,
+): Promise<void> {
+  const { error } = await client
+    .from("log_schemas")
+    .update({ is_active: isActive })
+    .eq("id", id);
+  if (error) throw new Error(`toggleLogSchema: ${error.message}`);
+}
+export async function deleteLogSchema(
+  client: Client,
+  id: number,
+): Promise<void> {
+  const { error } = await client.from("log_schemas").delete().eq("id", id);
+  if (error) throw new Error(`deleteLogSchema: ${error.message}`);
+}
+
+export async function renameChecklist(
+  client: Client,
+  id: number,
+  title: string,
+  label: string | null,
+): Promise<void> {
+  const { error } = await client
+    .from("checklists")
+    .update({ checklist_title: title.trim(), checklist_label: label })
+    .eq("id", id);
+  if (error) throw new Error(`renameChecklist: ${error.message}`);
+}
+export async function toggleChecklist(
+  client: Client,
+  id: number,
+  isActive: boolean,
+): Promise<void> {
+  const { error } = await client
+    .from("checklists")
+    .update({ is_active: isActive })
+    .eq("id", id);
+  if (error) throw new Error(`toggleChecklist: ${error.message}`);
+}
+export async function deleteChecklist(
+  client: Client,
+  id: number,
+): Promise<void> {
+  const { error } = await client.from("checklists").delete().eq("id", id);
+  if (error) throw new Error(`deleteChecklist: ${error.message}`);
 }

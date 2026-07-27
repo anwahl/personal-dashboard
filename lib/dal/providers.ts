@@ -1,5 +1,5 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
-import type { ProviderRow } from '@/types/schema';
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { ProviderRow } from "@/types/schema";
 
 type Client = SupabaseClient;
 
@@ -9,8 +9,8 @@ export async function getProviders(
   client: Client,
   includeInactive = false,
 ): Promise<ProviderRow[]> {
-  let query = client.from('providers').select('*').order('provider_name');
-  if (!includeInactive) query = query.eq('is_active', true);
+  let query = client.from("providers").select("*").order("provider_name");
+  if (!includeInactive) query = query.eq("is_active", true);
   const { data, error } = await query;
   if (error) throw new Error(`getProviders: ${error.message}`);
   return (data ?? []) as ProviderRow[];
@@ -20,19 +20,19 @@ export async function getProviders(
 
 export interface ProviderPayload {
   provider_type_id: number;
-  provider_name:    string | null;
-  practice_name:    string | null;
-  phone:            string | null;
-  address?:         string | null;
-  portal_url?:      string | null;
+  provider_name: string | null;
+  practice_name: string | null;
+  phone: string | null;
+  address?: string | null;
+  portal_url?: string | null;
 }
 
 export async function createProvider(
-  client:  Client,
+  client: Client,
   payload: ProviderPayload,
 ): Promise<ProviderRow> {
   const { data, error } = await client
-    .from('providers')
+    .from("providers")
     .insert(payload)
     .select()
     .single();
@@ -41,14 +41,14 @@ export async function createProvider(
 }
 
 export async function updateProvider(
-  client:  Client,
-  id:      number,
+  client: Client,
+  id: number,
   payload: Partial<ProviderPayload>,
 ): Promise<ProviderRow> {
   const { data, error } = await client
-    .from('providers')
+    .from("providers")
     .update(payload)
-    .eq('id', id)
+    .eq("id", id)
     .select()
     .single();
   if (error) throw new Error(`updateProvider: ${error.message}`);
@@ -56,13 +56,13 @@ export async function updateProvider(
 }
 
 export async function toggleProviderActive(
-  client:   Client,
-  id:       number,
+  client: Client,
+  id: number,
   isActive: boolean,
 ): Promise<void> {
   const { error } = await client
-    .from('providers')
+    .from("providers")
     .update({ is_active: isActive })
-    .eq('id', id);
+    .eq("id", id);
   if (error) throw new Error(`toggleProviderActive: ${error.message}`);
 }

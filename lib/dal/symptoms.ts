@@ -172,16 +172,15 @@ export async function deleteAnxiety(
     .throwOnError();
 }
 
-
 // ── Settings operations ───────────────────────────────────────────────────────
 
 export async function addSymptomCategory(
-  client:    Client,
-  name:      string,
+  client: Client,
+  name: string,
   sortOrder: number,
 ): Promise<SymptomCategoryRow> {
   const { data, error } = await client
-    .from('symptom_categories')
+    .from("symptom_categories")
     .insert({ category_name: name.trim(), sort_order: sortOrder })
     .select()
     .single();
@@ -190,26 +189,30 @@ export async function addSymptomCategory(
 }
 
 export async function toggleSymptomCategory(
-  client:   Client,
-  id:       number,
+  client: Client,
+  id: number,
   isActive: boolean,
 ): Promise<void> {
   const { error } = await client
-    .from('symptom_categories')
+    .from("symptom_categories")
     .update({ is_active: isActive })
-    .eq('id', id);
+    .eq("id", id);
   if (error) throw new Error(`toggleSymptomCategory: ${error.message}`);
 }
 
 export async function addSymptomType(
-  client:     Client,
+  client: Client,
   categoryId: number,
-  name:       string,
-  sortOrder:  number,
+  name: string,
+  sortOrder: number,
 ): Promise<SymptomTypeRow> {
   const { data, error } = await client
-    .from('symptom_types')
-    .insert({ category_id: categoryId, symptom_name: name.trim(), sort_order: sortOrder })
+    .from("symptom_types")
+    .insert({
+      category_id: categoryId,
+      symptom_name: name.trim(),
+      sort_order: sortOrder,
+    })
     .select()
     .single();
   if (error) throw new Error(`addSymptomType: ${error.message}`);
@@ -217,53 +220,56 @@ export async function addSymptomType(
 }
 
 export async function toggleSymptomType(
-  client:   Client,
-  id:       number,
+  client: Client,
+  id: number,
   isActive: boolean,
 ): Promise<void> {
   const { error } = await client
-    .from('symptom_types')
+    .from("symptom_types")
     .update({ is_active: isActive })
-    .eq('id', id);
+    .eq("id", id);
   if (error) throw new Error(`toggleSymptomType: ${error.message}`);
 }
 
 export async function updateSymptomCategory(
   client: Client,
-  id:     number,
-  name:   string,
+  id: number,
+  name: string,
 ): Promise<void> {
   const { error } = await client
-    .from('symptom_categories')
+    .from("symptom_categories")
     .update({ category_name: name.trim() })
-    .eq('id', id);
+    .eq("id", id);
   if (error) throw new Error(`updateSymptomCategory: ${error.message}`);
 }
 
 export async function deleteSymptomCategory(
   client: Client,
-  id:     number,
+  id: number,
 ): Promise<void> {
-  const { error } = await client.from('symptom_categories').delete().eq('id', id);
+  const { error } = await client
+    .from("symptom_categories")
+    .delete()
+    .eq("id", id);
   if (error) throw new Error(`deleteSymptomCategory: ${error.message}`);
 }
 
 export async function updateSymptomType(
   client: Client,
-  id:     number,
-  name:   string,
+  id: number,
+  name: string,
 ): Promise<void> {
   const { error } = await client
-    .from('symptom_types')
+    .from("symptom_types")
     .update({ symptom_name: name.trim() })
-    .eq('id', id);
+    .eq("id", id);
   if (error) throw new Error(`updateSymptomType: ${error.message}`);
 }
 
 export async function deleteSymptomType(
   client: Client,
-  id:     number,
+  id: number,
 ): Promise<void> {
-  const { error } = await client.from('symptom_types').delete().eq('id', id);
+  const { error } = await client.from("symptom_types").delete().eq("id", id);
   if (error) throw new Error(`deleteSymptomType: ${error.message}`);
 }

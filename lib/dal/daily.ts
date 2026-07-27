@@ -434,25 +434,24 @@ export async function deleteBrainDump(
   await client.from("brain_dumps").delete().eq("id", id).throwOnError();
 }
 
-
 // ── Tag helpers ───────────────────────────────────────────────────────────────
 
 export async function findOrCreateTag(
-  client:   Client,
+  client: Client,
   tagValue: string,
 ): Promise<number> {
   const trimmed = tagValue.trim();
   const { data: existing } = await client
-    .from('tags')
-    .select('id')
-    .eq('tag_value', trimmed)
+    .from("tags")
+    .select("id")
+    .eq("tag_value", trimmed)
     .maybeSingle();
   if (existing) return existing.id as number;
 
   const { data: created, error } = await client
-    .from('tags')
+    .from("tags")
     .insert({ tag_value: trimmed })
-    .select('id')
+    .select("id")
     .single();
   if (error) throw new Error(`findOrCreateTag: ${error.message}`);
   return (created as { id: number }).id;

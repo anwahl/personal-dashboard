@@ -280,13 +280,12 @@ export interface PersonPageData {
 
 /** Represents a person's linked structure IDs, used by PeopleStructureSettings. */
 export interface PersonLinks {
-  person:       import('./schema').PersonRow;
+  person: import("./schema").PersonRow;
   infoGroupIds: number[];
-  listIds:      number[];
-  logIds:       number[];
+  listIds: number[];
+  logIds: number[];
   checklistIds: number[];
 }
-
 
 // ── Weekly entry (enriched) ───────────────────────────────────────────────────
 

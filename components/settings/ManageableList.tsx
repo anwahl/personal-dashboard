@@ -7,9 +7,10 @@ import {
   addSettingsItem,
   updateSettingsItem,
   deleteSettingsItem,
-  reorderSettingsItem,
+  batchSetSortOrder,
 } from '@/lib/dal/settings';
 import type { ManageableTable } from '@/lib/dal/settings';
+import { bySortOrder, normalizedReorderUpdates } from '@/lib/utils/sort';
 import { Button }        from '@/components/ui/Button';
 import { ConfirmButton } from '@/components/ui/ConfirmButton';
 
@@ -41,8 +42,6 @@ interface Props {
   renderName?: (item: any) => React.ReactNode;
   extraDefaultFields?: Record<string, string | boolean | number>;
 }
-
-const bySortOrder = (a: Item, b: Item) => (a.sort_order ?? 0) - (b.sort_order ?? 0);
 
 /**
  * Reusable settings list. Handles toggle, add, inline edit,
@@ -113,16 +112,11 @@ export function ManageableList({
     const idx     = sortedActive.findIndex(i => i.id === item.id);
     const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
     if (swapIdx < 0 || swapIdx >= sortedActive.length) return;
-    const a = sortedActive[idx];
-    const b = sortedActive[swapIdx];
-    const oA = a.sort_order ?? idx;
-    const oB = b.sort_order ?? swapIdx;
-    // Optimistic local update
-    setItems(prev => prev.map(i =>
-      i.id === a.id ? { ...i, sort_order: oB } :
-      i.id === b.id ? { ...i, sort_order: oA } : i
-    ));
-    await reorderSettingsItem(supabase, tableName, a.id, oA, b.id, oB);
+    // Normalize all sort_orders to sequential values — fixes the all-zeros problem
+    const updates = normalizedReorderUpdates(sortedActive, idx, swapIdx);
+    const updateMap = new Map(updates.map(u => [u.id, u.sort_order]));
+    setItems(prev => prev.map(i => updateMap.has(i.id) ? { ...i, sort_order: updateMap.get(i.id)! } : i));
+    await batchSetSortOrder(supabase, tableName, updates);
   }, [supabase, tableName, items, hasSortOrder]);
 
   // ── Inline edit ────────────────────────────────────────────────────────────
@@ -202,7 +196,7 @@ export function ManageableList({
                     onClick={() => moveItem(item, 'down')}>↓</Button>
                 </>
               )}
-              <Button size="sm" variant="ghost" onClick={() => startEdit(item)}>Edit</Button>
+              <Button size="icon" variant="ghost" onClick={() => startEdit(item)} title="Edit">✏️</Button>
               <Button
                 size="sm"
                 variant={item.is_active ? 'ghost' : 'accent'}

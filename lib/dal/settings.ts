@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 type Client = SupabaseClient;
 
@@ -7,14 +7,14 @@ type Client = SupabaseClient;
  * type coverage and documents what this DAL owns.
  */
 export type ManageableTable =
-  | 'tags'
-  | 'intentions'
-  | 'sleep_event_types'
-  | 'habits'
-  | 'providers'
-  | 'medications'
-  | 'chart_categories'
-  | 'daily_trackables';
+  | "tags"
+  | "intentions"
+  | "sleep_event_types"
+  | "habits"
+  | "providers"
+  | "medications"
+  | "chart_categories"
+  | "daily_trackables";
 
 /**
  * All tables with a sort_order column — superset of ManageableTable.
@@ -22,34 +22,34 @@ export type ManageableTable =
  */
 export type ReorderableTable =
   | ManageableTable
-  | 'symptom_categories'
-  | 'symptom_types'
-  | 'journal_categories'
-  | 'journal_prompts'
-  | 'last_time_media'
-  | 'last_time_boolean'
-  | 'last_time_custom';
+  | "symptom_categories"
+  | "symptom_types"
+  | "journal_categories"
+  | "journal_prompts"
+  | "last_time_media"
+  | "last_time_boolean"
+  | "last_time_custom";
 
 // ── Generic active toggle ─────────────────────────────────────────────────────
 
 export async function toggleSettingsItem(
-  client:    Client,
-  table:     ManageableTable,
-  id:        number,
-  isActive:  boolean,
+  client: Client,
+  table: ManageableTable,
+  id: number,
+  isActive: boolean,
 ): Promise<void> {
   const { error } = await client
     .from(table)
     .update({ is_active: isActive })
-    .eq('id', id);
+    .eq("id", id);
   if (error) throw new Error(`toggleSettingsItem(${table}): ${error.message}`);
 }
 
 // ── Generic add ───────────────────────────────────────────────────────────────
 
 export async function addSettingsItem<T>(
-  client:  Client,
-  table:   ManageableTable,
+  client: Client,
+  table: ManageableTable,
   payload: Record<string, unknown>,
 ): Promise<T> {
   const { data, error } = await client
@@ -64,15 +64,15 @@ export async function addSettingsItem<T>(
 // ── Generic update ────────────────────────────────────────────────────────────
 
 export async function updateSettingsItem<T>(
-  client:  Client,
-  table:   ManageableTable,
-  id:      number,
+  client: Client,
+  table: ManageableTable,
+  id: number,
   payload: Record<string, unknown>,
 ): Promise<T> {
   const { data, error } = await client
     .from(table)
     .update(payload)
-    .eq('id', id)
+    .eq("id", id)
     .select()
     .single();
   if (error) throw new Error(`updateSettingsItem(${table}): ${error.message}`);
@@ -83,10 +83,10 @@ export async function updateSettingsItem<T>(
 
 export async function deleteSettingsItem(
   client: Client,
-  table:  ManageableTable,
-  id:     number,
+  table: ManageableTable,
+  id: number,
 ): Promise<void> {
-  const { error } = await client.from(table).delete().eq('id', id);
+  const { error } = await client.from(table).delete().eq("id", id);
   if (error) throw new Error(`deleteSettingsItem(${table}): ${error.message}`);
 }
 
@@ -99,16 +99,38 @@ export async function deleteSettingsItem(
  */
 export async function reorderSettingsItem(
   client: Client,
-  table:  ReorderableTable,
-  idA:    number,
+  table: ReorderableTable,
+  idA: number,
   orderA: number,
-  idB:    number,
+  idB: number,
   orderB: number,
 ): Promise<void> {
   const [resA, resB] = await Promise.all([
-    client.from(table).update({ sort_order: orderB }).eq('id', idA),
-    client.from(table).update({ sort_order: orderA }).eq('id', idB),
+    client.from(table).update({ sort_order: orderB }).eq("id", idA),
+    client.from(table).update({ sort_order: orderA }).eq("id", idB),
   ]);
-  if (resA.error) throw new Error(`reorderSettingsItem(${table}) A: ${resA.error.message}`);
-  if (resB.error) throw new Error(`reorderSettingsItem(${table}) B: ${resB.error.message}`);
+  if (resA.error)
+    throw new Error(`reorderSettingsItem(${table}) A: ${resA.error.message}`);
+  if (resB.error)
+    throw new Error(`reorderSettingsItem(${table}) B: ${resB.error.message}`);
+}
+
+/**
+ * Batch-sets sort_order for multiple items at once.
+ * Used when normalizing all-zero sort_orders on first move.
+ */
+export async function batchSetSortOrder(
+  client: Client,
+  table: ReorderableTable,
+  updates: Array<{ id: number; sort_order: number }>,
+): Promise<void> {
+  const results = await Promise.all(
+    updates.map(({ id, sort_order }) =>
+      client.from(table).update({ sort_order }).eq("id", id),
+    ),
+  );
+  for (const res of results) {
+    if (res.error)
+      throw new Error(`batchSetSortOrder(${table}): ${res.error.message}`);
+  }
 }

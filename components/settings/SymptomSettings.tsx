@@ -6,16 +6,14 @@ import {
   addSymptomType,        updateSymptomType,      deleteSymptomType,
   toggleSymptomCategory, toggleSymptomType,
 } from '@/lib/dal/symptoms';
-import { reorderSettingsItem } from '@/lib/dal/settings';
+import { batchSetSortOrder } from '@/lib/dal/settings';
+import { bySortOrder, normalizedReorderUpdates } from '@/lib/utils/sort';
 import { createClient }        from '@/lib/supabase/client';
 import { Button }              from '@/components/ui/Button';
 import { CategoryBlock, ChildItem } from '@/components/settings/CategoryBlock';
 import type { SymptomCategoryWithTypes } from '@/types/dal';
 
 // ── Sort helper ───────────────────────────────────────────────────────────────
-
-const bySortOrder = <T extends { sort_order?: number }>(a: T, b: T) =>
-  (a.sort_order ?? 0) - (b.sort_order ?? 0);
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -58,19 +56,14 @@ export function SymptomSettings({ categories: initial }: Readonly<Props>) {
   }, [supabase]);
 
   const moveCategory = useCallback(async (catId: number, direction: 'up' | 'down') => {
-    const sorted = [...cats].sort(bySortOrder);
+    const sorted  = [...cats].sort(bySortOrder);
     const idx     = sorted.findIndex(c => c.id === catId);
     const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
     if (swapIdx < 0 || swapIdx >= sorted.length) return;
-    const a = sorted[idx];
-    const b = sorted[swapIdx];
-    const oA = a.sort_order ?? idx;
-    const oB = b.sort_order ?? swapIdx;
-    setCats(prev => prev.map(c =>
-      c.id === a.id ? { ...c, sort_order: oB } :
-      c.id === b.id ? { ...c, sort_order: oA } : c
-    ));
-    await reorderSettingsItem(supabase, 'symptom_categories', a.id, oA, b.id, oB);
+    const updates = normalizedReorderUpdates(sorted, idx, swapIdx);
+    const updateMap = new Map(updates.map(u => [u.id, u.sort_order]));
+    setCats(prev => prev.map(c => updateMap.has(c.id) ? { ...c, sort_order: updateMap.get(c.id)! } : c));
+    await batchSetSortOrder(supabase, 'symptom_categories', updates);
   }, [supabase, cats]);
 
   // ── Type operations ─────────────────────────────────────────────────────────
@@ -124,19 +117,14 @@ export function SymptomSettings({ categories: initial }: Readonly<Props>) {
     const idx     = sorted.findIndex(t => t.id === typeId);
     const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
     if (swapIdx < 0 || swapIdx >= sorted.length) return;
-    const a = sorted[idx];
-    const b = sorted[swapIdx];
-    const oA = a.sort_order ?? idx;
-    const oB = b.sort_order ?? swapIdx;
+    const updates = normalizedReorderUpdates(sorted, idx, swapIdx);
+    const updateMap = new Map(updates.map(u => [u.id, u.sort_order]));
     setCats(prev => prev.map(c =>
       c.id === catId
-        ? { ...c, types: c.types.map(t =>
-            t.id === a.id ? { ...t, sort_order: oB } :
-            t.id === b.id ? { ...t, sort_order: oA } : t
-          )}
+        ? { ...c, types: c.types.map(t => updateMap.has(t.id) ? { ...t, sort_order: updateMap.get(t.id)! } : t) }
         : c
     ));
-    await reorderSettingsItem(supabase, 'symptom_types', a.id, oA, b.id, oB);
+    await batchSetSortOrder(supabase, 'symptom_types', updates);
   }, [supabase, cats]);
 
   // ── Render ──────────────────────────────────────────────────────────────────
