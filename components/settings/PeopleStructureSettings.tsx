@@ -15,16 +15,14 @@ import {
   getLogSchemaFields, getLogSchemaFieldOptions,
   addLogSchemaField, updateLogSchemaField,
   setLogSchemaFieldOptions, toggleLogSchemaField, deleteLogSchemaField,
-  // Checklist items
-  getChecklistItemsForStructure,
-  createChecklistItem, updateChecklistItem, deleteChecklistItem,
+  // Checklist items — created/deleted on the person's page, not in settings
 } from '@/lib/dal/people';
 import { createClient }  from '@/lib/supabase/client';
 import { Button }        from '@/components/ui/Button';
 import { ConfirmButton } from '@/components/ui/ConfirmButton';
 import { InputField }    from '@/components/ui/Display';
 import type { PersonRow, InfoFieldTypeRow, LogSchemaFieldRow,
-              LogSchemaFieldOptionRow, ChecklistItemRow } from '@/types/schema';
+              LogSchemaFieldOptionRow } from '@/types/schema';
 
 // ── Local row types ───────────────────────────────────────────────────────────
 
@@ -427,7 +425,7 @@ function LogFieldItem({ field, onUpdate, onToggle, onDelete }: Readonly<{
   );
 }
 
-// ── Checklist: expandable with checklist_items ────────────────────────────────
+// ── Checklist: container only — items are per-person, managed on each person's page ──
 
 function ChecklistTemplateItem({ checklist, onRename, onToggle, onDelete }: Readonly<{
   checklist: ChecklistRow;
@@ -435,107 +433,13 @@ function ChecklistTemplateItem({ checklist, onRename, onToggle, onDelete }: Read
   onToggle: (active: boolean) => Promise<void>;
   onDelete: () => Promise<void>;
 }>) {
-  const supabase = createClient();
-  const [expanded, setExpanded] = useState(false);
-  const [items,    setItems]    = useState<ChecklistItemRow[]>([]);
-  const [loaded,   setLoaded]   = useState(false);
-  const [newText,  setNewText]  = useState('');
-  const [adding,   setAdding]   = useState(false);
-
-  const load = useCallback(async () => {
-    setItems(await getChecklistItemsForStructure(supabase, checklist.id));
-    setLoaded(true);
-  }, [supabase, checklist.id]);
-
-  const handleExpand = async () => {
-    if (!loaded) await load();
-    setExpanded(e => !e);
-  };
-
-  const addItem = async () => {
-    if (!newText.trim() || adding) return;
-    setAdding(true);
-    try {
-      const item = await createChecklistItem(supabase, checklist.id, newText.trim(), items.length);
-      setItems(prev => [...prev, item]);
-      setNewText('');
-    } finally { setAdding(false); }
-  };
-
   return (
-    <div>
-      <StructureItemHeader
-        name={checklist.checklist_title} sublabel={checklist.checklist_label}
-        is_active={checklist.is_active}
-        hasLabel labelValue={checklist.checklist_label}
-        onRename={onRename} onToggle={onToggle} onDelete={onDelete}
-        isExpanded={expanded} onToggleExpand={handleExpand}
-      />
-      {expanded && (
-        <div className="structure-sub-panel">
-          {items.length === 0 && <p className="expand-panel__empty">No items yet.</p>}
-          {items.map(item => (
-            <ChecklistTemplateItemRow key={item.id} item={item}
-              onUpdate={async (text) => {
-                await updateChecklistItem(supabase, item.id, text);
-                setItems(prev => prev.map(x => x.id === item.id ? { ...x, item_text: text } : x));
-              }}
-              onDelete={async () => {
-                await deleteChecklistItem(supabase, item.id);
-                setItems(prev => prev.filter(x => x.id !== item.id));
-              }}
-            />
-          ))}
-          <div className="structure-sub-panel__add-row">
-            <input type="text" className="input--flex" value={newText}
-              onChange={e => setNewText(e.target.value)} placeholder="Item text…"
-              onKeyDown={e => e.key === 'Enter' && addItem()} />
-            <Button size="sm" variant="accent" onClick={addItem} disabled={adding || !newText.trim()}>+ Item</Button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ChecklistTemplateItemRow({ item, onUpdate, onDelete }: Readonly<{
-  item: ChecklistItemRow;
-  onUpdate: (text: string) => Promise<void>;
-  onDelete: () => Promise<void>;
-}>) {
-  const [editing,  setEditing]  = useState(false);
-  const [editText, setEditText] = useState(item.item_text);
-  const [saving,   setSaving]   = useState(false);
-
-  const save = async () => {
-    if (!editText.trim()) return;
-    setSaving(true);
-    try { await onUpdate(editText); setEditing(false); }
-    finally { setSaving(false); }
-  };
-
-  return (
-    <div className="manage-item">
-      {editing ? (
-        <>
-          <input className="input--flex" value={editText}
-            onChange={e => setEditText(e.target.value)} autoFocus
-            onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setEditing(false); }} />
-          <div className="manage-item__actions">
-            <Button size="sm" variant="accent" onClick={save} disabled={saving || !editText.trim()}>✓</Button>
-            <Button size="sm" variant="ghost"  onClick={() => setEditing(false)}>✕</Button>
-          </div>
-        </>
-      ) : (
-        <>
-          <span className="manage-item__name">{item.item_text}</span>
-          <div className="manage-item__actions">
-            <Button size="icon" variant="ghost" onClick={() => { setEditText(item.item_text); setEditing(true); }} title="Edit">✏️</Button>
-            <ConfirmButton onConfirm={onDelete} size="sm">✕</ConfirmButton>
-          </div>
-        </>
-      )}
-    </div>
+    <StructureItemHeader
+      name={checklist.checklist_title} sublabel={checklist.checklist_label}
+      is_active={checklist.is_active}
+      hasLabel labelValue={checklist.checklist_label}
+      onRename={onRename} onToggle={onToggle} onDelete={onDelete}
+    />
   );
 }
 

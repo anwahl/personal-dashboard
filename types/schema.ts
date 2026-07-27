@@ -736,10 +736,11 @@ export interface ChecklistRow {
 }
 
 export interface ChecklistItemRow {
-  id: number;
+  id:           number;
   checklist_id: number;
-  item_text: string;
-  is_checked: boolean;
-  sort_order?: number;
-  created_at: string;
+  person_id:    number;
+  item_text:    string;
+  is_checked:   boolean;
+  sort_order?:  number;
+  created_at:   string;
 }

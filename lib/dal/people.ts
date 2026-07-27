@@ -269,6 +269,8 @@ export async function getPersonPageData(
   }
 
   // ── Checklists ────────────────────────────────────────────────────────────────
+  // Items are per-person (person_id on checklist_items). Each person's instance
+  // of a checklist has entirely independent items and checked state.
 
   let checklists: ChecklistWithItems[] = [];
 
@@ -285,33 +287,14 @@ export async function getPersonPageData(
         .from("checklist_items")
         .select("*")
         .in("checklist_id", checklistLinks)
+        .eq("person_id", pid)
         .order("sort_order")
         .then((r) => (r.data ?? []) as ChecklistItemRow[]),
     ]);
 
-    const itemIds = items.map((i) => i.id);
-    const states =
-      itemIds.length > 0
-        ? await client
-            .from("checklist_item_states")
-            .select("item_id, is_checked")
-            .in("item_id", itemIds)
-            .eq("person_id", pid)
-            .then(
-              (r) =>
-                (r.data ?? []) as { item_id: number; is_checked: boolean }[],
-            )
-        : [];
-    const stateMap = new Map(states.map((s) => [s.item_id, s.is_checked]));
-
     checklists = lists.map((l) => ({
       ...l,
-      items: items
-        .filter((i) => i.checklist_id === l.id)
-        .map((i) => ({
-          ...i,
-          is_checked: stateMap.has(i.id) ? stateMap.get(i.id)! : i.is_checked,
-        })),
+      items: items.filter((i) => i.checklist_id === l.id),
     }));
   }
 
@@ -354,19 +337,17 @@ export async function saveInfoFieldValue(
 }
 
 /** Toggle a checklist item's checked state for a specific person */
-export async function toggleChecklistItemState(
+/** Toggle the checked state on a per-person checklist item. */
+export async function toggleChecklistItemChecked(
   client: Client,
   itemId: number,
-  personId: number,
   checked: boolean,
 ): Promise<void> {
-  await client
-    .from("checklist_item_states")
-    .upsert(
-      { item_id: itemId, person_id: personId, is_checked: checked },
-      { onConflict: "item_id,person_id" },
-    )
-    .throwOnError();
+  const { error } = await client
+    .from("checklist_items")
+    .update({ is_checked: checked })
+    .eq("id", itemId);
+  if (error) throw new Error(`toggleChecklistItemChecked: ${error.message}`);
 }
 
 export async function addItemListEntry(
@@ -439,6 +420,7 @@ export async function deleteLogEntry(
 export async function createChecklistItem(
   client: Client,
   checklistId: number,
+  personId: number,
   itemText: string,
   sortOrder: number,
 ): Promise<ChecklistItemRow> {
@@ -446,8 +428,9 @@ export async function createChecklistItem(
     .from("checklist_items")
     .insert({
       checklist_id: checklistId,
-      item_text: itemText,
-      sort_order: sortOrder,
+      person_id:    personId,
+      item_text:    itemText,
+      sort_order:   sortOrder,
     })
     .select()
     .single();
@@ -913,29 +896,4 @@ export async function deleteLogSchemaField(client: Client, id: number): Promise<
   if (error) throw new Error(`deleteLogSchemaField: ${error.message}`);
 }
 
-// ── Checklist item CRUD ────────────────────────────────────────────────────────
-
-export async function getChecklistItemsForStructure(
-  client:      Client,
-  checklistId: number,
-): Promise<ChecklistItemRow[]> {
-  const { data, error } = await client
-    .from('checklist_items')
-    .select('*')
-    .eq('checklist_id', checklistId)
-    .order('sort_order');
-  if (error) throw new Error(`getChecklistItemsForStructure: ${error.message}`);
-  return (data ?? []) as ChecklistItemRow[];
-}
-
-export async function updateChecklistItem(
-  client: Client,
-  id:     number,
-  text:   string,
-): Promise<void> {
-  const { error } = await client
-    .from('checklist_items')
-    .update({ item_text: text.trim() })
-    .eq('id', id);
-  if (error) throw new Error(`updateChecklistItem: ${error.message}`);
-}
+// (getChecklistItemsForStructure and updateChecklistItem removed — checklist items are per-person, not template items)

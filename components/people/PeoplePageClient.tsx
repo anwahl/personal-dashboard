@@ -5,9 +5,10 @@ import { useState, useCallback } from 'react';
 import { createClient }          from '@/lib/supabase/client';
 import { formatMediumDate, localTodayISO } from '@/lib/utils/dates';
 import {
-  saveInfoFieldValue, toggleChecklistItemState,
+  saveInfoFieldValue, toggleChecklistItemChecked,
   addItemListEntry, deleteItemListEntry,
-  addLogEntry, deleteLogEntry, deleteChecklistItem
+  addLogEntry, deleteLogEntry,
+  createChecklistItem, deleteChecklistItem
 }                                from '@/lib/dal/people';
 import { Card, CardHeader, CardBody, CardSection, CardSectionLabel } from '@/components/ui/Card';
 import { Button }                from '@/components/ui/Button';
@@ -70,20 +71,18 @@ function ChecklistSection({ checklist, mode, personId }: Readonly<{
 
   const toggle = useCallback(async (itemId: number, checked: boolean) => {
     setItems(prev => prev.map(i => i.id === itemId ? { ...i, is_checked: checked } : i));
-    await toggleChecklistItemState(supabase, itemId, personId, checked);
+    await toggleChecklistItemChecked(supabase, itemId, checked);
   }, [supabase, personId]);
 
   const addItem = useCallback(async () => {
     if (!newText.trim()) return;
     setAdding(true);
     try {
-      const { data } = await supabase
-        .from('checklist_items')
-        .insert({ checklist_id: checklist.id, item_text: newText.trim(), sort_order: items.length })
-        .select().single();
-      if (data) { setItems(prev => [...prev, data as typeof items[0]]); setNewText(''); }
+      const item = await createChecklistItem(supabase, checklist.id, personId, newText.trim(), items.length);
+      setItems(prev => [...prev, item]);
+      setNewText('');
     } finally { setAdding(false); }
-  }, [supabase, checklist.id, items.length, newText]);
+  }, [supabase, checklist.id, personId, items.length, newText]);
 
   const removeItem = useCallback(async (itemId: number) => {
     await deleteChecklistItem(supabase, itemId);
