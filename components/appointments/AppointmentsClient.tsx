@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter }             from 'next/navigation';
+import Link                      from 'next/link';
 import { createClient }          from '@/lib/supabase/client';
 import { createAppointment, updateAppointment, deleteAppointment } from '@/lib/dal/appointments';
 import { Button }                from '@/components/ui/Button';
@@ -70,6 +71,9 @@ function ApptRow({ appt, onEdit }: Readonly<{ appt: AppointmentDetail; onEdit: (
             <p className="expand-panel__empty">No questions or notes.</p>
           )}
           <div className="expand-panel__actions">
+            <Link href={`/appointments/${appt.id}`} className="btn btn--ghost btn--sm">
+              View Details →
+            </Link>
             <Button size="sm" variant="ghost" onClick={e => { e.stopPropagation(); onEdit(); }}>
               ✏️ Edit
             </Button>

@@ -3393,3 +3393,30 @@ a.appt-secondary:last-child { border-bottom: none; }
   text-decoration: none;
 }
 .text-link:hover { text-decoration: underline; }
+
+/* ── Follow-up form ──────────────────────────────────────────────────────────*/
+.follow-up-form {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  flex: 1;
+}
+.follow-up-form__title { font-weight: 700; margin: 0 0 10px; font-size: var(--font-size-body); }
+.follow-up-form__hint  { font-size: var(--font-size-xs); color: var(--text-faint); margin: 6px 0 10px; }
+
+/* ── Prescription field change row ───────────────────────────────────────────*/
+.rx-field-change-row {
+  display: grid;
+  grid-template-columns: 140px 1fr auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+.rx-field-change-row:last-of-type { border-bottom: none; }
+.rx-field-change-row__label { font-size: var(--font-size-sm); font-weight: 600; color: var(--text-muted); }
+.rx-field-change-row__prev  { font-size: var(--font-size-sm); color: var(--text-faint); }
+.rx-field-change-row__arrow { color: var(--text-faint); flex-shrink: 0; text-align: center; }
+.rx-field-change-row__input { min-width: 0; }
+.appt-section__history { margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
