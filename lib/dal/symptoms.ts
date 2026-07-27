@@ -10,6 +10,8 @@ import type {
   CrashRow,
   AnxietyEntryRow,
   DailySymptomEntryRow,
+  SymptomCategoryRow,
+  SymptomTypeRow,
 } from "@/types/schema";
 import type {
   DailySymptomData,
@@ -173,6 +175,20 @@ export async function deleteAnxiety(
 
 // ── Settings operations ───────────────────────────────────────────────────────
 
+export async function addSymptomCategory(
+  client:    Client,
+  name:      string,
+  sortOrder: number,
+): Promise<SymptomCategoryRow> {
+  const { data, error } = await client
+    .from('symptom_categories')
+    .insert({ category_name: name.trim(), sort_order: sortOrder })
+    .select()
+    .single();
+  if (error) throw new Error(`addSymptomCategory: ${error.message}`);
+  return data as SymptomCategoryRow;
+}
+
 export async function toggleSymptomCategory(
   client:   Client,
   id:       number,
@@ -185,6 +201,21 @@ export async function toggleSymptomCategory(
   if (error) throw new Error(`toggleSymptomCategory: ${error.message}`);
 }
 
+export async function addSymptomType(
+  client:     Client,
+  categoryId: number,
+  name:       string,
+  sortOrder:  number,
+): Promise<SymptomTypeRow> {
+  const { data, error } = await client
+    .from('symptom_types')
+    .insert({ category_id: categoryId, symptom_name: name.trim(), sort_order: sortOrder })
+    .select()
+    .single();
+  if (error) throw new Error(`addSymptomType: ${error.message}`);
+  return data as SymptomTypeRow;
+}
+
 export async function toggleSymptomType(
   client:   Client,
   id:       number,
@@ -195,15 +226,4 @@ export async function toggleSymptomType(
     .update({ is_active: isActive })
     .eq('id', id);
   if (error) throw new Error(`toggleSymptomType: ${error.message}`);
-}
-
-export async function addSymptomType(
-  client:     Client,
-  categoryId: number,
-  name:       string,
-): Promise<void> {
-  const { error } = await client
-    .from('symptom_types')
-    .insert({ category_id: categoryId, symptom_name: name, sort_order: 0 });
-  if (error) throw new Error(`addSymptomType: ${error.message}`);
 }

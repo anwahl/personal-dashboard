@@ -144,6 +144,7 @@ export function ManageableList({
         {isEditing ? (
           <>
             {addFields.map(f => (
+              // Dynamic px width from caller config — legitimate inline style exception
               <input
                 key={f.key}
                 type={f.type}

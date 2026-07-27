@@ -1,9 +1,14 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { toggleJournalCategory, addJournalPrompt, toggleJournalPrompt } from '@/lib/dal/journal';
-import { createClient } from '@/lib/supabase/client';
-import { Button }       from '@/components/ui/Button';
+import {
+  addJournalCategory,
+  toggleJournalCategory,
+  addJournalPrompt,
+  toggleJournalPrompt,
+} from '@/lib/dal/journal';
+import { createClient }  from '@/lib/supabase/client';
+import { Button }        from '@/components/ui/Button';
 import type { JournalCategoryWithPrompts } from '@/types/dal';
 
 interface Props {
@@ -16,17 +21,15 @@ export function JournalSettings({ categories: initial }: Readonly<Props>) {
   const [newCat, setNewCat] = useState('');
   const [addingCat, setAddingCat] = useState(false);
   const [newPromptByCat, setNewPromptByCat] = useState<Record<number, string>>({});
-  const [addingPrompt, setAddingPrompt] = useState<number | null>(null);
+  const [addingPrompt,   setAddingPrompt]   = useState<number | null>(null);
 
   const addCategory = useCallback(async () => {
     if (!newCat.trim()) return;
     setAddingCat(true);
     try {
-      const { data } = await supabase
-        .from('journal_categories')
-        .insert({ category_name: newCat.trim(), sort_order: cats.length })
-        .select().single();
-      if (data) { setCats(prev => [...prev, { ...data, prompts: [] }]); setNewCat(''); }
+      const data = await addJournalCategory(supabase, newCat, cats.length);
+      setCats(prev => [...prev, { ...data, prompts: [] }]);
+      setNewCat('');
     } finally { setAddingCat(false); }
   }, [supabase, newCat, cats.length]);
 
@@ -42,9 +45,8 @@ export function JournalSettings({ categories: initial }: Readonly<Props>) {
     try {
       const data = await addJournalPrompt(supabase, catId, text);
       if (data) {
-        setCats(prev => prev.map(c => c.id === catId
-          ? { ...c, prompts: [...c.prompts, data] }
-          : c
+        setCats(prev => prev.map(c =>
+          c.id === catId ? { ...c, prompts: [...c.prompts, data] } : c
         ));
         setNewPromptByCat(prev => ({ ...prev, [catId]: '' }));
       }
@@ -53,9 +55,10 @@ export function JournalSettings({ categories: initial }: Readonly<Props>) {
 
   const togglePrompt = useCallback(async (catId: number, promptId: number, active: boolean) => {
     await toggleJournalPrompt(supabase, promptId, active);
-    setCats(prev => prev.map(c => c.id === catId
-      ? { ...c, prompts: c.prompts.map(p => p.id === promptId ? { ...p, is_active: active } : p) }
-      : c
+    setCats(prev => prev.map(c =>
+      c.id === catId
+        ? { ...c, prompts: c.prompts.map(p => p.id === promptId ? { ...p, is_active: active } : p) }
+        : c
     ));
   }, [supabase]);
 
@@ -69,38 +72,40 @@ export function JournalSettings({ categories: initial }: Readonly<Props>) {
       </p>
 
       {cats.map(cat => {
-        const active   = cat.prompts.filter(p => p.is_active);
+        const active   = cat.prompts.filter(p =>  p.is_active);
         const inactive = cat.prompts.filter(p => !p.is_active);
 
         return (
-          <div key={cat.id} style={{ marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid var(--border)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: cat.is_active ? 'var(--text)' : 'var(--text-faint)' }}>
-                {cat.category_name} <span style={{ color: 'var(--text-faint)', fontWeight: 400 }}>({active.length} prompts)</span>
+          <div key={cat.id} className="category-block">
+            <div className="category-block__header">
+              <span className={`category-block__name${cat.is_active ? '' : ' category-block__name--inactive'}`}>
+                {cat.category_name}{' '}
+                <span className="category-block__count">({active.length} prompts)</span>
               </span>
               <Button size="sm" variant="ghost" onClick={() => toggleCategory(cat.id, !cat.is_active)}>
                 {cat.is_active ? 'Deactivate' : 'Activate'}
               </Button>
             </div>
 
-            <div style={{ paddingLeft: 12 }}>
+            <div className="category-block__body">
               {active.map(p => (
                 <div key={p.id} className="manage-item">
-                  <span className="manage-item__name" style={{ fontSize: '0.83rem', fontStyle: 'italic' }}>
-                    "{p.prompt_text}"
+                  <span className="manage-item__name manage-item__name--italic">
+                    &ldquo;{p.prompt_text}&rdquo;
                   </span>
                   <Button size="sm" variant="ghost" onClick={() => togglePrompt(cat.id, p.id, false)}>✕</Button>
                 </div>
               ))}
+
               {inactive.length > 0 && (
-                <details style={{ marginTop: 4 }}>
-                  <summary style={{ fontSize: '0.72rem', color: 'var(--text-faint)', cursor: 'pointer' }}>
+                <details className="category-block__details">
+                  <summary className="category-block__summary">
                     {inactive.length} inactive
                   </summary>
                   {inactive.map(p => (
                     <div key={p.id} className="manage-item manage-item--inactive">
-                      <span className="manage-item__name" style={{ fontSize: '0.83rem', fontStyle: 'italic' }}>
-                        "{p.prompt_text}"
+                      <span className="manage-item__name manage-item__name--italic">
+                        &ldquo;{p.prompt_text}&rdquo;
                       </span>
                       <Button size="sm" variant="ghost" onClick={() => togglePrompt(cat.id, p.id, true)}>Activate</Button>
                     </div>
@@ -108,12 +113,12 @@ export function JournalSettings({ categories: initial }: Readonly<Props>) {
                 </details>
               )}
 
-              <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+              <div className="category-block__add-row">
                 <textarea
+                  className="input--flex textarea--short"
                   value={newPromptByCat[cat.id] ?? ''}
                   onChange={e => setNewPromptByCat(prev => ({ ...prev, [cat.id]: e.target.value }))}
                   placeholder="New prompt…"
-                  style={{ flex: 1, minHeight: 60, resize: 'vertical' }}
                 />
                 <Button
                   size="sm"
@@ -129,10 +134,15 @@ export function JournalSettings({ categories: initial }: Readonly<Props>) {
         );
       })}
 
-      <div style={{ display: 'flex', gap: 6, paddingTop: 8 }}>
-        <input type="text" value={newCat} onChange={e => setNewCat(e.target.value)}
+      <div className="category-block__footer">
+        <input
+          type="text"
+          className="input--flex"
+          value={newCat}
+          onChange={e => setNewCat(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && addCategory()}
-          placeholder="New category…" style={{ flex: 1 }} />
+          placeholder="New category…"
+        />
         <Button size="sm" variant="accent" onClick={addCategory} disabled={addingCat || !newCat.trim()}>
           {addingCat ? '…' : '+ Category'}
         </Button>

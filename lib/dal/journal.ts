@@ -5,7 +5,7 @@
  * Categories + prompts are fetched via getReferenceData → reference.journalCategories.
  */
 
-import { JournalPromptRow } from "@/types/schema";
+import type { JournalCategoryRow, JournalPromptRow } from "@/types/schema";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 type Client = SupabaseClient;
@@ -141,6 +141,19 @@ export async function deleteJournalResponse(
 
 // ── Settings operations ───────────────────────────────────────────────────────
 
+export async function addJournalCategory(
+  client:    Client,
+  name:      string,
+  sortOrder: number,
+): Promise<JournalCategoryRow> {
+  const { data, error } = await client
+    .from('journal_categories')
+    .insert({ category_name: name.trim(), sort_order: sortOrder })
+    .select()
+    .single();
+  if (error) throw new Error(`addJournalCategory: ${error.message}`);
+  return data as JournalCategoryRow;
+}
 
 export async function toggleJournalCategory(
   client:   Client,

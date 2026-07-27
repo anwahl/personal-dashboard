@@ -1,32 +1,36 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { toggleSymptomCategory, toggleSymptomType } from '@/lib/dal/symptoms';
-import { createClient } from '@/lib/supabase/client';
-import { Button }       from '@/components/ui/Button';
+import {
+  addSymptomCategory,
+  addSymptomType,
+  toggleSymptomCategory,
+  toggleSymptomType,
+} from '@/lib/dal/symptoms';
+import { createClient }  from '@/lib/supabase/client';
+import { Button }        from '@/components/ui/Button';
 import type { SymptomCategoryWithTypes } from '@/types/dal';
+import type { SymptomTypeRow }           from '@/types/schema';
 
-type SymptomType = SymptomCategoryWithTypes['types'][number];
+type SymptomType = SymptomTypeRow;
+
+// ── Pure state helpers ────────────────────────────────────────────────────────
 
 function updateCategoryActiveState(
   categories: SymptomCategoryWithTypes[],
   catId: number,
-  active: boolean
+  active: boolean,
 ) {
-  return categories.map(category =>
-    category.id === catId ? { ...category, is_active: active } : category
-  );
+  return categories.map(c => c.id === catId ? { ...c, is_active: active } : c);
 }
 
 function appendTypeToCategory(
   categories: SymptomCategoryWithTypes[],
   catId: number,
-  type: SymptomType
+  type: SymptomType,
 ) {
-  return categories.map(category =>
-    category.id === catId
-      ? { ...category, types: [...category.types, type] }
-      : category
+  return categories.map(c =>
+    c.id === catId ? { ...c, types: [...c.types, type] } : c
   );
 }
 
@@ -34,29 +38,26 @@ function setTypeActiveState(
   categories: SymptomCategoryWithTypes[],
   catId: number,
   typeId: number,
-  active: boolean
+  active: boolean,
 ) {
-  return categories.map(category =>
-    category.id === catId
-      ? {
-          ...category,
-          types: category.types.map(type =>
-            type.id === typeId ? { ...type, is_active: active } : type
-          ),
-        }
-      : category
+  return categories.map(c =>
+    c.id === catId
+      ? { ...c, types: c.types.map(t => t.id === typeId ? { ...t, is_active: active } : t) }
+      : c
   );
 }
+
+// ── Component ─────────────────────────────────────────────────────────────────
 
 interface Props {
   categories: SymptomCategoryWithTypes[];
 }
 
 export function SymptomSettings({ categories: initial }: Readonly<Props>) {
-  const supabase    = createClient();
+  const supabase = createClient();
   const [cats, setCats] = useState(initial);
 
-  // ── Categories ────────────────────────────────────────────────────────────
+  // ── Categories ─────────────────────────────────────────────────────────────
 
   const [newCatName, setNewCatName] = useState('');
   const [addingCat,  setAddingCat]  = useState(false);
@@ -65,11 +66,9 @@ export function SymptomSettings({ categories: initial }: Readonly<Props>) {
     if (!newCatName.trim()) return;
     setAddingCat(true);
     try {
-      const { data } = await supabase
-        .from('symptom_categories')
-        .insert({ category_name: newCatName.trim(), sort_order: cats.length })
-        .select().single();
-      if (data) { setCats(prev => [...prev, { ...data, types: [] }]); setNewCatName(''); }
+      const data = await addSymptomCategory(supabase, newCatName, cats.length);
+      setCats(prev => [...prev, { ...data, types: [] }]);
+      setNewCatName('');
     } finally { setAddingCat(false); }
   }, [supabase, newCatName, cats.length]);
 
@@ -78,25 +77,20 @@ export function SymptomSettings({ categories: initial }: Readonly<Props>) {
     setCats(prev => updateCategoryActiveState(prev, catId, active));
   }, [supabase]);
 
-  // ── Types ─────────────────────────────────────────────────────────────────
+  // ── Types ───────────────────────────────────────────────────────────────────
 
   const [newTypeByCat, setNewTypeByCat] = useState<Record<number, string>>({});
-  const [addingType, setAddingType] = useState<number | null>(null);
+  const [addingType,   setAddingType]   = useState<number | null>(null);
 
   const addType = useCallback(async (catId: number) => {
     const name = newTypeByCat[catId]?.trim();
     if (!name) return;
     setAddingType(catId);
     try {
-      const cat = cats.find(c => c.id === catId);
-      const { data } = await supabase
-        .from('symptom_types')
-        .insert({ category_id: catId, symptom_name: name, sort_order: cat?.types.length ?? 0 })
-        .select().single();
-      if (data) {
-        setCats(prev => appendTypeToCategory(prev, catId, data));
-        setNewTypeByCat(prev => ({ ...prev, [catId]: '' }));
-      }
+      const cat  = cats.find(c => c.id === catId);
+      const data = await addSymptomType(supabase, catId, name, cat?.types.length ?? 0);
+      setCats(prev => appendTypeToCategory(prev, catId, data));
+      setNewTypeByCat(prev => ({ ...prev, [catId]: '' }));
     } finally { setAddingType(null); }
   }, [supabase, newTypeByCat, cats]);
 
@@ -112,56 +106,50 @@ export function SymptomSettings({ categories: initial }: Readonly<Props>) {
       </div>
 
       {cats.map(cat => {
-        const activeTypes   = cat.types.filter(t => t.is_active);
+        const activeTypes   = cat.types.filter(t =>  t.is_active);
         const inactiveTypes = cat.types.filter(t => !t.is_active);
 
         return (
-          <div key={cat.id} style={{ marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid var(--border)' }}>
-            {/* Category header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: cat.is_active ? 'var(--text)' : 'var(--text-faint)' }}>
+          <div key={cat.id} className="category-block">
+            <div className="category-block__header">
+              <span className={`category-block__name${cat.is_active ? '' : ' category-block__name--inactive'}`}>
                 {cat.category_name}
               </span>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => toggleCategory(cat.id, !cat.is_active)}
-              >
+              <Button size="sm" variant="ghost" onClick={() => toggleCategory(cat.id, !cat.is_active)}>
                 {cat.is_active ? 'Deactivate' : 'Activate'}
               </Button>
             </div>
 
-            {/* Active types */}
-            <div style={{ paddingLeft: 12 }}>
+            <div className="category-block__body">
               {activeTypes.map(t => (
                 <div key={t.id} className="manage-item">
-                  <span className="manage-item__name" style={{ fontSize: '0.83rem' }}>{t.symptom_name}</span>
+                  <span className="manage-item__name">{t.symptom_name}</span>
                   <Button size="sm" variant="ghost" onClick={() => toggleType(cat.id, t.id, false)}>Deactivate</Button>
                 </div>
               ))}
+
               {inactiveTypes.length > 0 && (
-                <details style={{ marginTop: 4 }}>
-                  <summary style={{ fontSize: '0.72rem', color: 'var(--text-faint)', cursor: 'pointer' }}>
+                <details className="category-block__details">
+                  <summary className="category-block__summary">
                     {inactiveTypes.length} inactive
                   </summary>
                   {inactiveTypes.map(t => (
                     <div key={t.id} className="manage-item manage-item--inactive">
-                      <span className="manage-item__name" style={{ fontSize: '0.83rem' }}>{t.symptom_name}</span>
+                      <span className="manage-item__name">{t.symptom_name}</span>
                       <Button size="sm" variant="ghost" onClick={() => toggleType(cat.id, t.id, true)}>Activate</Button>
                     </div>
                   ))}
                 </details>
               )}
 
-              {/* Add type */}
-              <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+              <div className="category-block__add-row">
                 <input
                   type="text"
+                  className="input--flex"
                   value={newTypeByCat[cat.id] ?? ''}
                   onChange={e => setNewTypeByCat(prev => ({ ...prev, [cat.id]: e.target.value }))}
                   onKeyDown={e => e.key === 'Enter' && addType(cat.id)}
                   placeholder={`Add ${cat.category_name.toLowerCase()} type…`}
-                  style={{ flex: 1 }}
                 />
                 <Button
                   size="sm"
@@ -177,15 +165,14 @@ export function SymptomSettings({ categories: initial }: Readonly<Props>) {
         );
       })}
 
-      {/* Add category */}
-      <div style={{ display: 'flex', gap: 6, paddingTop: 8 }}>
+      <div className="category-block__footer">
         <input
           type="text"
+          className="input--flex"
           value={newCatName}
           onChange={e => setNewCatName(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && addCategory()}
           placeholder="New category name…"
-          style={{ flex: 1 }}
         />
         <Button size="sm" variant="accent" onClick={addCategory} disabled={addingCat || !newCatName.trim()}>
           {addingCat ? '…' : '+ Category'}

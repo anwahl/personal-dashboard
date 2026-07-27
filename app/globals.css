@@ -1225,6 +1225,7 @@ textarea {
 .manage-item:last-child { border-bottom: none; }
 .manage-item--inactive { opacity: 0.45; }
 .manage-item__name { flex: 1; font-size: 0.88rem; color: var(--text); }
+.manage-item__name--italic { font-style: italic; }
 .manage-item__edit-input { flex: 1; }
 .manage-item__meta { font-size: 0.75rem; color: var(--text-faint); }
 .manage-item__actions { display: flex; gap: 4px; flex-shrink: 0; }
@@ -3151,3 +3152,100 @@ a.appt-secondary:last-child { border-bottom: none; }
 
 /* ── QuickMediaLog linked body ───────────────────────────────────────────────*/
 .item-body-link:hover .qml-item__title { color: var(--accent); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CLEANUP PASS — 2026-07-26
+   Converts previously-inline styles to reusable CSS classes.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Form panel (card variant) — large inset form for add/edit ───────────── */
+.form-panel--card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+.form-panel__title   { font-weight: 700; margin: 0 0 14px; }
+.form-panel__actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ── Category block — categories with toggleable children (Symptoms, Journal) */
+.category-block {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.category-block__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.category-block__name         { font-size: 0.82rem; font-weight: 700; color: var(--text); }
+.category-block__name--inactive { color: var(--text-faint); }
+.category-block__count        { color: var(--text-faint); font-weight: 400; }
+.category-block__body         { padding-left: 12px; }
+.category-block__details      { margin-top: 4px; }
+.category-block__summary      { font-size: var(--font-size-xs); color: var(--text-faint); cursor: pointer; }
+.category-block__add-row      { display: flex; gap: 6px; margin-top: 6px; }
+.category-block__footer       { display: flex; gap: 6px; padding-top: 8px; }
+
+/* ── List item additions ─────────────────────────────────────────────────── */
+/* Chevron ▲/▼ used in collapsible list rows */
+.list-item__chevron { color: var(--text-faint); font-size: 0.75rem; flex-shrink: 0; }
+/* Used when expanded — rounds only top corners, expand-panel handles bottom */
+.list-item--expanded { border-radius: var(--radius-sm) var(--radius-sm) 0 0 !important; }
+
+/* ── Expand panel additions ──────────────────────────────────────────────── */
+.expand-panel__empty   { color: var(--text-faint); font-size: var(--font-size-sm); margin: 0; }
+.expand-panel__actions { margin-top: 10px; }
+
+/* ── Search panel BEM children ───────────────────────────────────────────── */
+.search-panel__header  { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.search-panel__loading { font-size: var(--font-size-xs); color: var(--text-faint); margin-top: 4px; display: block; }
+.search-panel__empty   { padding: 10px 14px; font-size: var(--font-size-sm); color: var(--text-faint); }
+.search-trigger-row    { margin-bottom: 10px; } /* spacing below a "search and pull" trigger button */
+
+/* ── Media page layout ───────────────────────────────────────────────────── */
+.media-header         { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.media-header__tabs   { flex: 1; }
+.media-header__action { margin-left: 8px; flex-shrink: 0; }
+.media-section-group  { margin-bottom: 20px; }
+
+/* Item-view (expand panel) for media entries */
+.media-entry__creator { font-size: 0.85rem; color: var(--text-muted); margin: 0 0 4px; }
+.media-entry__badges  { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.media-entry__updated { font-size: var(--font-size-xs); color: var(--text-faint); }
+
+/* ── Note add form (media notes and similar) ─────────────────────────────── */
+.note-add-row        { display: flex; gap: 6px; align-items: flex-start; margin-top: 8px; }
+.note-add-row__date  { width: 140px; }
+.note-add-row__text  { flex: 1; min-height: 50px; resize: vertical; }
+.note-add-actions    { display: flex; gap: 8px; margin-top: 10px; }
+.note-empty {
+  font-size: var(--font-size-sm);
+  color: var(--text-faint);
+  font-style: italic;
+  margin-bottom: 8px;
+}
+
+/* ── Toggle button — plain/ghost for show-past, collapse toggles ─────────── */
+.toggle-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-faint);
+  font-size: var(--font-size-xs);
+  padding: 4px 0;
+}
+.toggle-btn:hover         { color: var(--text); }
+.toggle-btn-section       { margin-top: 20px; }   /* outer wrapper for toggle + content */
+.toggle-btn-section__body { margin-top: 8px; }    /* content revealed after toggle */
+.settings-section-gap     { margin-top: 32px; }   /* space before a settings block that follows page content */
+
+/* ── Input width utilities ───────────────────────────────────────────────── */
+/* Used in add-rows where inputs must fit alongside sibling elements */
+.input--short { width: 48px;  flex: none; }   /* emoji character input */
+.input--sm    { width: 80px;  flex: none; }   /* short override field (emoji override, etc.) */
+.input--date  { width: 150px; flex: none; }   /* date picker in add rows */
+.input--flex  { flex: 1; min-width: 0; }      /* fills remaining space in flex row */

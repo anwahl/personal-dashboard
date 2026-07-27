@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter }             from 'next/navigation';
 import { createClient }          from '@/lib/supabase/client';
+import { createTask, updateTask, completeTask, deleteTask } from '@/lib/dal/tasks';
 import { Button }                from '@/components/ui/Button';
 import { TabBar }                from '@/components/ui/Controls';
 import { InputField }            from '@/components/ui/Display';
@@ -236,10 +237,15 @@ export function TasksClient({ active, completed, statuses, priorities, people }:
     if (!newTitle.trim()) return;
     setAdding(true);
     try {
-      await supabase.from('tasks').insert({
-        title: newTitle.trim(), status_id: todoStatusId, priority_id: normalPriorityId,
-        due_date: newDue || null,
-        person_id: newPerson ? Number.parseInt(newPerson) : null,
+      await createTask(supabase, {
+        title:          newTitle.trim(),
+        status_id:      todoStatusId,
+        priority_id:    normalPriorityId,
+        due_date:       newDue || null,
+        scheduled_date: null,
+        person_id:      newPerson ? Number.parseInt(newPerson) : null,
+        body_md:        null,
+        completed_at:   null,
       });
       setNewTitle(''); setNewDue('');
       router.refresh();
@@ -249,7 +255,7 @@ export function TasksClient({ active, completed, statuses, priorities, people }:
   const fullAdd = useCallback(async (data: EditState) => {
     setSaving(true);
     try {
-      await supabase.from('tasks').insert({
+      await createTask(supabase, {
         title:          data.title.trim(),
         status_id:      Number.parseInt(data.status_id),
         priority_id:    Number.parseInt(data.priority_id),
@@ -257,6 +263,7 @@ export function TasksClient({ active, completed, statuses, priorities, people }:
         scheduled_date: data.scheduled_date || null,
         person_id:      data.person_id      ? Number.parseInt(data.person_id) : null,
         body_md:        data.body_md        || null,
+        completed_at:   null,
       });
       setShowFull(false);
       router.refresh();
@@ -264,7 +271,7 @@ export function TasksClient({ active, completed, statuses, priorities, people }:
   }, [supabase, router]);
 
   const complete = useCallback(async (id: number) => {
-    await supabase.from('tasks').update({ status_id: doneStatusId, completed_at: new Date().toISOString() }).eq('id', id);
+    await completeTask(supabase, id, doneStatusId);
     router.refresh();
   }, [supabase, doneStatusId, router]);
 
@@ -272,7 +279,7 @@ export function TasksClient({ active, completed, statuses, priorities, people }:
     if (!editTask) return;
     setSaving(true);
     try {
-      await supabase.from('tasks').update({
+      await updateTask(supabase, editTask.id, {
         title:          data.title,
         status_id:      Number.parseInt(data.status_id),
         priority_id:    Number.parseInt(data.priority_id),
@@ -280,17 +287,17 @@ export function TasksClient({ active, completed, statuses, priorities, people }:
         scheduled_date: data.scheduled_date || null,
         person_id:      data.person_id      ? Number.parseInt(data.person_id) : null,
         body_md:        data.body_md        || null,
-      }).eq('id', editTask.id);
+      });
       setEditTask(null);
       router.refresh();
     } finally { setSaving(false); }
   }, [supabase, editTask, router]);
 
-  const deleteTask = useCallback(async () => {
+  const handleDeleteTask = useCallback(async () => {
     if (!editTask || !confirm('Delete this task?')) return;
     setSaving(true);
     try {
-      await supabase.from('tasks').delete().eq('id', editTask.id);
+      await deleteTask(supabase, editTask.id);
       setEditTask(null);
       router.refresh();
     } finally { setSaving(false); }
@@ -356,7 +363,7 @@ export function TasksClient({ active, completed, statuses, priorities, people }:
               {editTask?.id === t.id ? (
                 <EditPanel
                   task={t} statuses={statuses} priorities={priorities} people={people}
-                  onSave={saveEdit} onDelete={deleteTask} onCancel={() => setEditTask(null)} saving={saving}
+                  onSave={saveEdit} onDelete={handleDeleteTask} onCancel={() => setEditTask(null)} saving={saving}
                 />
               ) : (
                 <TaskItem task={t} doneStatusId={doneStatusId} onComplete={complete} onEdit={setEditTask} />

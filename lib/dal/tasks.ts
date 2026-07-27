@@ -130,8 +130,9 @@ export async function completeTask(
   id: number,
   doneStatusId: number,
 ): Promise<void> {
+  // completed_at is a TIMESTAMPTZ — UTC ISO string is correct here (it's an instant, not a date)
   await updateTask(client, id, {
-    status_id: doneStatusId,
+    status_id:    doneStatusId,
     completed_at: new Date().toISOString(),
   });
 }

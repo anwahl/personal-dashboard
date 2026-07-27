@@ -141,14 +141,14 @@ function ChecklistSection({ checklist, mode, personId }: Readonly<{
       </div>
 
       {mode === 'edit' && (
-        <div className="manage-add-row" style={{ marginTop: 8 }}>
+        <div className="manage-add-row">
           <input
             type="text"
             value={newText}
             onChange={e => setNewText(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && addItem()}
             placeholder="New item…"
-            style={{ flex: 1 }}
+            className="input--flex"
           />
           <Button size="sm" variant="accent" onClick={addItem} disabled={adding || !newText.trim()}>
             {adding ? '…' : 'Add'}
@@ -213,16 +213,16 @@ function ItemListSection({ list, mode, personId }: Readonly<{
       </div>
 
       {mode === 'edit' && (
-        <div className="manage-add-row" style={{ marginTop: 10 }}>
+        <div className="manage-add-row">
           <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
-            style={{ width: 150 }} />
+            className="input--date" />
           <input
             type="text"
             value={newText}
             onChange={e => setNewText(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && add()}
             placeholder="New entry…"
-            style={{ flex: 1 }}
+            className="input--flex"
           />
           <Button size="sm" variant="accent" onClick={add} disabled={adding || !newText.trim()}>
             {adding ? '…' : 'Add'}

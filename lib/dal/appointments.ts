@@ -12,6 +12,7 @@ import type {
   AppointmentInsert,
   AppointmentUpdate,
 } from "@/types/dal";
+import { localTodayISO } from "@/lib/utils/dates";
 
 type Client = SupabaseClient;
 
@@ -76,7 +77,7 @@ export async function getUpcomingAppointments(
   fromDate?: string,
   limit = 10,
 ): Promise<AppointmentDetail[]> {
-  const from = fromDate ?? new Date().toISOString().slice(0, 10);
+  const from = fromDate ?? localTodayISO();
   const { data, error } = await client
     .from("appointments")
     .select("*")
@@ -93,7 +94,7 @@ export async function getAllAppointments(client: Client): Promise<{
   upcoming: AppointmentDetail[];
   past: AppointmentDetail[];
 }> {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localTodayISO();
 
   const [{ data: upcoming, error: ue }, { data: past, error: pe }] =
     await Promise.all([

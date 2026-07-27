@@ -7,27 +7,44 @@
 
 import { useState, useCallback } from 'react';
 import {
-  getLastTimeMedia, createLastTimeMedia, deleteLastTimeMedia,
-  getLastTimeBoolean, createLastTimeBoolean, deleteLastTimeBoolean,
-  getLastTimeCustom, createLastTimeCustom, deleteLastTimeCustom,
+  getLastTimeMedia,    createLastTimeMedia,    deleteLastTimeMedia,
+  getLastTimeBoolean,  createLastTimeBoolean,  deleteLastTimeBoolean,
+  getLastTimeCustom,   createLastTimeCustom,   deleteLastTimeCustom,
 } from '@/lib/dal/last-time';
-import { createClient }           from '@/lib/supabase/client';
-import { Button }                 from '@/components/ui/Button';
-import { ConfirmButton }          from '@/components/ui/ConfirmButton';
+import { createClient }   from '@/lib/supabase/client';
+import { Button }         from '@/components/ui/Button';
+import { ConfirmButton }  from '@/components/ui/ConfirmButton';
+import type {
+  DailyTrackableRow,
+  MediaTypeRow,
+  MediaGenreRow,
+  MediaStatusRow,
+  LastTimeMediaRow,
+  LastTimeBooleanRow,
+  LastTimeCustomRow,
+} from '@/types/schema';
 
-interface Props {
-  trackables:    any[];   // boolean trackables
-  mediaTypes:    any[];
-  mediaGenres:   any[];
-  mediaStatuses: any[];
+// ── Display item augmented with a computed label + subtitle ───────────────────
+
+interface DisplayItem {
+  id:       number;
+  label:    string;
+  subtitle?: string;
 }
 
-function ItemRow({ item, onDelete }: Readonly<{ item: any; onDelete: (id: number) => void }>) {
+interface Props {
+  trackables:    DailyTrackableRow[];
+  mediaTypes:    MediaTypeRow[];
+  mediaGenres:   MediaGenreRow[];
+  mediaStatuses: MediaStatusRow[];
+}
+
+// ── Shared row ────────────────────────────────────────────────────────────────
+
+function ItemRow({ item, onDelete }: Readonly<{ item: DisplayItem; onDelete: (id: number) => void }>) {
   return (
     <div className="manage-item">
-      <span className="manage-item__name">
-        {item.emoji ?? ''} {item.label}
-      </span>
+      <span className="manage-item__name">{item.label}</span>
       {item.subtitle && <span className="badge badge--muted">{item.subtitle}</span>}
       <ConfirmButton
         onConfirm={() => onDelete(item.id)}
@@ -44,10 +61,9 @@ function ItemRow({ item, onDelete }: Readonly<{ item: any; onDelete: (id: number
 
 function MediaSection({ mediaTypes, mediaGenres, mediaStatuses }: Readonly<Pick<Props, 'mediaTypes' | 'mediaGenres' | 'mediaStatuses'>>) {
   const supabase = createClient();
-  const [items,    setItems]    = useState<any[]>([]);
+  const [items,    setItems]    = useState<DisplayItem[]>([]);
   const [loaded,   setLoaded]   = useState(false);
   const [open,     setOpen]     = useState(false);
-  // Form fields
   const [label,    setLabel]    = useState('');
   const [emoji,    setEmoji]    = useState('');
   const [typeId,   setTypeId]   = useState('');
@@ -57,21 +73,28 @@ function MediaSection({ mediaTypes, mediaGenres, mediaStatuses }: Readonly<Pick<
 
   const canAdd = label.trim() && (typeId || genreId || statusId);
 
+  const buildSubtitle = useCallback((
+    tId: number | null, gId: number | null, sId: number | null,
+  ): string => {
+    const typeMap   = new Map(mediaTypes.map(t => [t.id, t.type_name]));
+    const genreMap  = new Map(mediaGenres.map(g => [g.id, g.genre_name]));
+    const statusMap = new Map(mediaStatuses.map(s => [s.id, s.status_name]));
+    return [
+      tId ? typeMap.get(tId)   : null,
+      gId ? genreMap.get(gId)  : null,
+      sId ? statusMap.get(sId) : null,
+    ].filter(Boolean).join(' · ');
+  }, [mediaTypes, mediaGenres, mediaStatuses]);
+
   const load = useCallback(async () => {
     const data = await getLastTimeMedia(supabase);
-    const typeMap   = new Map(mediaTypes.map((t: any) => [t.id, t.type_name]));
-    const genreMap  = new Map(mediaGenres.map((g: any) => [g.id, g.genre_name]));
-    const statusMap = new Map(mediaStatuses.map((s: any) => [s.id, s.status_name]));
-    setItems((data ?? []).map((row: any) => {
-      const parts = [
-        row.type_id   ? typeMap.get(row.type_id)     : null,
-        row.genre_id  ? genreMap.get(row.genre_id)   : null,
-        row.status_id ? statusMap.get(row.status_id) : null,
-      ].filter(Boolean);
-      return { ...row, subtitle: parts.join(' · ') };
-    }));
+    setItems((data ?? []).map((row: LastTimeMediaRow) => ({
+      id:       row.id,
+      label:    row.label,
+      subtitle: buildSubtitle(row.type_id, row.genre_id, row.status_id),
+    })));
     setLoaded(true);
-  }, [supabase, mediaTypes, mediaGenres, mediaStatuses]);
+  }, [supabase, buildSubtitle]);
 
   const toggle = async () => {
     if (!open && !loaded) await load();
@@ -83,24 +106,20 @@ function MediaSection({ mediaTypes, mediaGenres, mediaStatuses }: Readonly<Pick<
     setSaving(true);
     try {
       const payload = {
-        label:     label.trim(),
-        emoji:     emoji || null,
-        type_id:   typeId   ? Number.parseInt(typeId)   : null,
-        genre_id:  genreId  ? Number.parseInt(genreId)  : null,
-        status_id: statusId ? Number.parseInt(statusId) : null,
+        label:      label.trim(),
+        emoji:      emoji || null,
+        type_id:    typeId   ? Number.parseInt(typeId)   : null,
+        genre_id:   genreId  ? Number.parseInt(genreId)  : null,
+        status_id:  statusId ? Number.parseInt(statusId) : null,
         sort_order: items.length,
       };
       const data = await createLastTimeMedia(supabase, payload);
       if (data) {
-        const typeMap   = new Map(mediaTypes.map((t: any) => [t.id, t.type_name]));
-        const genreMap  = new Map(mediaGenres.map((g: any) => [g.id, g.genre_name]));
-        const statusMap = new Map(mediaStatuses.map((s: any) => [s.id, s.status_name]));
-        const parts = [
-          payload.type_id   ? typeMap.get(payload.type_id)     : null,
-          payload.genre_id  ? genreMap.get(payload.genre_id)   : null,
-          payload.status_id ? statusMap.get(payload.status_id) : null,
-        ].filter(Boolean);
-        setItems(prev => [...prev, { ...data, subtitle: parts.join(' · ') }]);
+        setItems(prev => [...prev, {
+          id:       (data as LastTimeMediaRow).id,
+          label:    payload.label,
+          subtitle: buildSubtitle(payload.type_id, payload.genre_id, payload.status_id),
+        }]);
       }
       setLabel(''); setEmoji(''); setTypeId(''); setGenreId(''); setStatusId('');
     } finally { setSaving(false); }
@@ -136,15 +155,15 @@ function MediaSection({ mediaTypes, mediaGenres, mediaStatuses }: Readonly<Pick<
             <div className="last-time-media-form__row last-time-media-form__row--filters">
               <select value={typeId} onChange={e => setTypeId(e.target.value)} className="settings-select">
                 <option value="">Any type…</option>
-                {mediaTypes.map((t: any) => <option key={t.id} value={t.id}>{t.type_name}</option>)}
+                {mediaTypes.map(t => <option key={t.id} value={t.id}>{t.type_name}</option>)}
               </select>
               <select value={genreId} onChange={e => setGenreId(e.target.value)} className="settings-select">
                 <option value="">Any genre…</option>
-                {mediaGenres.map((g: any) => <option key={g.id} value={g.id}>{g.genre_name}</option>)}
+                {mediaGenres.map(g => <option key={g.id} value={g.id}>{g.genre_name}</option>)}
               </select>
               <select value={statusId} onChange={e => setStatusId(e.target.value)} className="settings-select">
                 <option value="">Any status…</option>
-                {mediaStatuses.map((s: any) => <option key={s.id} value={s.id}>{s.status_name}</option>)}
+                {mediaStatuses.map(s => <option key={s.id} value={s.id}>{s.status_name}</option>)}
               </select>
               <Button variant="accent" size="sm" onClick={add} disabled={!canAdd || saving}>
                 + Add
@@ -164,23 +183,28 @@ function MediaSection({ mediaTypes, mediaGenres, mediaStatuses }: Readonly<Pick<
 
 function BooleanSection({ trackables }: Readonly<Pick<Props, 'trackables'>>) {
   const supabase = createClient();
-  const [items,   setItems]   = useState<any[]>([]);
+  const [items,   setItems]   = useState<DisplayItem[]>([]);
   const [loaded,  setLoaded]  = useState(false);
   const [open,    setOpen]    = useState(false);
   const [trackId, setTrackId] = useState('');
-  const [emoji,   setEmoji]   = useState('');
   const [saving,  setSaving]  = useState(false);
-
-  const linkedIds = new Set(items.map((i: any) => i.trackable_id));
 
   const load = useCallback(async () => {
     const data = await getLastTimeBoolean(supabase);
-    setItems((data ?? []).map((row: any) => {
-      const t = trackables.find((t: any) => t.id === row.trackable_id);
-      return { ...row, label: t ? `${t.emoji ?? ''} ${t.name}`.trim() : `#${row.trackable_id}` };
+    setItems((data ?? []).map((row: LastTimeBooleanRow) => {
+      const t = trackables.find(t => t.id === row.trackable_id);
+      return {
+        id:          row.id,
+        label:       t ? `${t.emoji ?? ''} ${t.name}`.trim() : `#${row.trackable_id}`,
+        trackable_id: row.trackable_id,
+      };
     }));
     setLoaded(true);
   }, [supabase, trackables]);
+
+  const linkedTrackableIds = new Set(
+    (items as Array<DisplayItem & { trackable_id?: number }>).map(i => i.trackable_id)
+  );
 
   const toggle = async () => {
     if (!open && !loaded) await load();
@@ -191,12 +215,20 @@ function BooleanSection({ trackables }: Readonly<Pick<Props, 'trackables'>>) {
     if (!trackId || saving) return;
     setSaving(true);
     try {
-      const data = await createLastTimeBoolean(supabase, { trackable_id: Number.parseInt(trackId), emoji: emoji || null, sort_order: items.length });
+      const data = await createLastTimeBoolean(supabase, {
+        trackable_id: Number.parseInt(trackId),
+        emoji:        null,
+        sort_order:   items.length,
+      });
       if (data) {
-        const t = trackables.find((t: any) => t.id === Number.parseInt(trackId));
-        setItems(prev => [...prev, { ...data, label: t ? `${t.emoji ?? ''} ${t.name}`.trim() : `#${data.id}` }]);
+        const t = trackables.find(t => t.id === Number.parseInt(trackId));
+        setItems(prev => [...prev, {
+          id:          (data as LastTimeBooleanRow).id,
+          label:       t ? `${t.emoji ?? ''} ${t.name}`.trim() : `#${(data as LastTimeBooleanRow).id}`,
+          trackable_id: (data as LastTimeBooleanRow).trackable_id,
+        }]);
       }
-      setTrackId(''); setEmoji('');
+      setTrackId('');
     } finally { setSaving(false); }
   };
 
@@ -217,14 +249,19 @@ function BooleanSection({ trackables }: Readonly<Pick<Props, 'trackables'>>) {
           </p>
           {items.map(item => <ItemRow key={item.id} item={item} onDelete={remove} />)}
           <div className="manage-add-row">
-            <select value={trackId} onChange={e => setTrackId(e.target.value)} className="settings-select" style={{ flex: 1 }}>
+            <select
+              value={trackId}
+              onChange={e => setTrackId(e.target.value)}
+              className="settings-select input--flex"
+            >
               <option value="">Select habit…</option>
-              {trackables.filter((t: any) => !linkedIds.has(t.id)).map((t: any) => (
-                <option key={t.id} value={t.id}>{t.emoji ?? ''} {t.name}</option>
-              ))}
+              {trackables
+                .filter(t => !linkedTrackableIds.has(t.id))
+                .map(t => (
+                  <option key={t.id} value={t.id}>{t.emoji ?? ''} {t.name}</option>
+                ))
+              }
             </select>
-            <input type="text" value={emoji} onChange={e => setEmoji(e.target.value)}
-              placeholder="Override emoji" style={{ width: 80 }} />
             <Button variant="accent" size="sm" onClick={add} disabled={!trackId || saving}>+ Add</Button>
           </div>
         </div>
@@ -237,7 +274,7 @@ function BooleanSection({ trackables }: Readonly<Pick<Props, 'trackables'>>) {
 
 function CustomSection() {
   const supabase = createClient();
-  const [items,  setItems]  = useState<any[]>([]);
+  const [items,  setItems]  = useState<DisplayItem[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [open,   setOpen]   = useState(false);
   const [value,  setValue]  = useState('');
@@ -246,7 +283,10 @@ function CustomSection() {
 
   const load = useCallback(async () => {
     const data = await getLastTimeCustom(supabase);
-    setItems((data ?? []).map((row: any) => ({ ...row, label: `${row.emoji ?? ''} ${row.custom_value}`.trim() })));
+    setItems((data ?? []).map((row: LastTimeCustomRow) => ({
+      id:    row.id,
+      label: `${row.emoji ?? ''} ${row.custom_value}`.trim(),
+    })));
     setLoaded(true);
   }, [supabase]);
 
@@ -259,8 +299,17 @@ function CustomSection() {
     if (!value.trim() || saving) return;
     setSaving(true);
     try {
-      const data = await createLastTimeCustom(supabase, { custom_value: value.trim(), emoji: emoji || null, sort_order: items.length });
-      if (data) setItems(prev => [...prev, { ...data, label: `${(data as any).emoji ?? ''} ${(data as any).custom_value}`.trim() }]);
+      const data = await createLastTimeCustom(supabase, {
+        custom_value: value.trim(),
+        emoji:        emoji || null,
+        sort_order:   items.length,
+      });
+      if (data) {
+        setItems(prev => [...prev, {
+          id:    (data as LastTimeCustomRow).id,
+          label: `${(data as LastTimeCustomRow).emoji ?? ''} ${(data as LastTimeCustomRow).custom_value}`.trim(),
+        }]);
+      }
       setValue(''); setEmoji('');
     } finally { setSaving(false); }
   };
@@ -283,9 +332,9 @@ function CustomSection() {
           {items.map(item => <ItemRow key={item.id} item={item} onDelete={remove} />)}
           <div className="manage-add-row">
             <input type="text" value={emoji} onChange={e => setEmoji(e.target.value)}
-              placeholder="Emoji" style={{ width: 48 }} />
+              placeholder="Emoji" className="input--short" />
             <input type="text" value={value} onChange={e => setValue(e.target.value)}
-              placeholder="Activity name…" style={{ flex: 1 }}
+              placeholder="Activity name…" className="input--flex"
               onKeyDown={e => { if (e.key === 'Enter') add(); }} />
             <Button variant="accent" size="sm" onClick={add} disabled={!value.trim() || saving}>+ Add</Button>
           </div>

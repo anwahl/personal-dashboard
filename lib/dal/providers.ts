@@ -5,11 +5,13 @@ type Client = SupabaseClient;
 
 // ── Read ──────────────────────────────────────────────────────────────────────
 
-export async function getProviders(client: Client): Promise<ProviderRow[]> {
-  const { data, error } = await client
-    .from('providers')
-    .select('*')
-    .order('provider_name');
+export async function getProviders(
+  client: Client,
+  includeInactive = false,
+): Promise<ProviderRow[]> {
+  let query = client.from('providers').select('*').order('provider_name');
+  if (!includeInactive) query = query.eq('is_active', true);
+  const { data, error } = await query;
   if (error) throw new Error(`getProviders: ${error.message}`);
   return (data ?? []) as ProviderRow[];
 }
