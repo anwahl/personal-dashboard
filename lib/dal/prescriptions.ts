@@ -171,8 +171,8 @@ export async function applyPrescriptionChanges(
   prescriptionId: number,
   appointmentId:  number | null,
   changes:        FieldChangeEntry[],
-): Promise<void> {
-  if (changes.length === 0) return;
+): Promise<import('@/types/schema').PrescriptionChangeRow[]> {
+  if (changes.length === 0) return [];
 
   const patch: Record<string, unknown> = {};
   for (const c of changes) patch[c.fieldKey] = c.rawValue;
@@ -181,7 +181,7 @@ export async function applyPrescriptionChanges(
     .from('prescriptions').update(patch).eq('id', prescriptionId);
   if (upErr) throw new Error(`applyPrescriptionChanges update: ${upErr.message}`);
 
-  const { error: auditErr } = await client
+  const { data, error: auditErr } = await client
     .from('prescription_changes')
     .insert(changes.map(c => ({
       appointment_id:  appointmentId,
@@ -190,8 +190,10 @@ export async function applyPrescriptionChanges(
       previous_value:  c.previousValue || null,
       new_value:       c.newValue       || null,
       change_notes:    null,
-    })));
+    })))
+    .select();
   if (auditErr) throw new Error(`applyPrescriptionChanges audit: ${auditErr.message}`);
+  return (data ?? []) as import('@/types/schema').PrescriptionChangeRow[];
 }
 
 /** Full change history for a prescription (for the medication detail view). */

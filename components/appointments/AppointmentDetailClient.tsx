@@ -137,7 +137,8 @@ function MedChangesSection({
           rawValue,
         };
       });
-      await applyPrescriptionChanges(supabase, selectedRx.id, appointmentId, entries);
+      const newRows = await applyPrescriptionChanges(supabase, selectedRx.id, appointmentId, entries);
+      setHistory(h => [...newRows, ...h]);
       setPending([]);
       setSelectedRxId('');
       router.refresh();   // re-runs server component → fresh prescriptions + history
