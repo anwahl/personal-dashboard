@@ -39,7 +39,7 @@ function fmtDate(d: string | null) {
 }
 
 function isOverdue(t: TaskDetail): boolean {
-  const ref = t.due_date ?? t.scheduled_date;
+  const ref = t.due_date;
   return !!ref && ref < new Date().toISOString().slice(0, 10) && !t.status.is_terminal;
 }
 
@@ -51,7 +51,7 @@ function TaskItem({ task, doneStatusId, onComplete, onEdit }: Readonly<{
 }>) {
   const done    = task.status.is_terminal;
   const overdue = isOverdue(task);
-  const dueDate = task.due_date ?? task.scheduled_date;
+  const dueDate = task.due_date;
 
   return (
     <div className={`list-item${done ? ' list-item--muted' : ''}`}>
@@ -92,7 +92,7 @@ function TaskItem({ task, doneStatusId, onComplete, onEdit }: Readonly<{
 
 interface EditState {
   title: string; status_id: string; priority_id: string;
-  due_date: string; scheduled_date: string; person_id: string; body_md: string;
+  due_date: string; person_id: string; body_md: string;
 }
 
 function taskToEdit(t: TaskDetail): EditState {
@@ -101,7 +101,6 @@ function taskToEdit(t: TaskDetail): EditState {
     status_id:      String(t.status_id),
     priority_id:    String(t.priority_id),
     due_date:       t.due_date       ?? '',
-    scheduled_date: t.scheduled_date ?? '',
     person_id:      t.person_id      ? String(t.person_id) : '',
     body_md:        t.body_md        ?? '',
   };
@@ -165,7 +164,7 @@ function FullAddForm({ statuses, priorities, people, todoStatusId, normalPriorit
 }>) {
   const [form, setForm] = useState<EditState>({
     title: '', status_id: String(todoStatusId), priority_id: String(normalPriorityId),
-    due_date: '', scheduled_date: '', person_id: '', body_md: '',
+    due_date: '', person_id: '', body_md: '',
   });
   const set = (k: keyof EditState, v: string) => setForm(p => ({ ...p, [k]: v }));
 
@@ -191,9 +190,6 @@ function FullAddForm({ statuses, priorities, people, todoStatusId, normalPriorit
       <div className="field-grid">
         <InputField label="Due date" id="fa-due">
           <input id="fa-due" type="date" value={form.due_date} onChange={e => set('due_date', e.target.value)} />
-        </InputField>
-        <InputField label="Scheduled" id="fa-sched">
-          <input id="fa-sched" type="date" value={form.scheduled_date} onChange={e => set('scheduled_date', e.target.value)} />
         </InputField>
       </div>
       <InputField label="Notes" id="fa-body">
@@ -242,7 +238,6 @@ export function TasksClient({ active, completed, statuses, priorities, people }:
         status_id:      todoStatusId,
         priority_id:    normalPriorityId,
         due_date:       newDue || null,
-        scheduled_date: null,
         person_id:      newPerson ? Number.parseInt(newPerson) : null,
         body_md:        null,
         completed_at:   null,
@@ -260,7 +255,6 @@ export function TasksClient({ active, completed, statuses, priorities, people }:
         status_id:      Number.parseInt(data.status_id),
         priority_id:    Number.parseInt(data.priority_id),
         due_date:       data.due_date       || null,
-        scheduled_date: data.scheduled_date || null,
         person_id:      data.person_id      ? Number.parseInt(data.person_id) : null,
         body_md:        data.body_md        || null,
         completed_at:   null,
@@ -284,7 +278,6 @@ export function TasksClient({ active, completed, statuses, priorities, people }:
         status_id:      Number.parseInt(data.status_id),
         priority_id:    Number.parseInt(data.priority_id),
         due_date:       data.due_date       || null,
-        scheduled_date: data.scheduled_date || null,
         person_id:      data.person_id      ? Number.parseInt(data.person_id) : null,
         body_md:        data.body_md        || null,
       });

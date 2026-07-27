@@ -243,7 +243,6 @@ export function AppointmentDetailClient({
         status_id:      todoStatus.id,
         priority_id:    normalPrio.id,
         due_date:       null,
-        scheduled_date: null,
         person_id:      appt.person_id,
         body_md:        null,
         completed_at:   null,

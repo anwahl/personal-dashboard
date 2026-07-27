@@ -188,7 +188,6 @@ export function TaskList({ contextDate, initialData, statuses, priorities }: Rea
       status_id:    defaultStatus.id,
       priority_id:  defaultPriority.id,
       due_date:     dueDate,
-      scheduled_date: null,
       person_id:    null,
       body_md:      null,
       completed_at: null,

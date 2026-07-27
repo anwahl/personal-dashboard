@@ -595,7 +595,6 @@ export interface TaskRow {
   status_id: number;
   priority_id: number;
   due_date: string | null;
-  scheduled_date: string | null;
   person_id: number | null;
   body_md: string | null;
   completed_at: string | null;
