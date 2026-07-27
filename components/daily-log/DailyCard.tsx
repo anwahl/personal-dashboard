@@ -58,13 +58,14 @@ function Rating({ value, max = SEVERITY_MAX }: Readonly<{ value: number | null |
 
 function OverviewTab({
   mode, state, setState,
-  trackables, checkedTrackableIds, toggleBoolean,
+  trackables, trackableCategories, checkedTrackableIds, toggleBoolean,
   tags, tagIds, toggleTag, addNewTag,
 }: Readonly<{
   mode: Mode;
   state: DailyOverviewState;
   setState: React.Dispatch<React.SetStateAction<DailyOverviewState>>;
-  trackables: ReferenceData['trackables'];
+  trackables:          ReferenceData['trackables'];
+  trackableCategories: ReferenceData['trackableCategories'];
   checkedTrackableIds: number[];
   toggleBoolean: (id: number) => void;
   tags: ReferenceData['tags'];
@@ -76,25 +77,47 @@ function OverviewTab({
     setState(prev => ({ ...prev, [k]: v }));
 
   const booleanTrackables = trackables.filter(t => t.track_type === 'boolean');
+
+  // Group boolean trackables by category for display
+  // Category order follows sort_order; uncategorized appear last under 'Habits'
+  const categorizedGroups: { label: string; items: typeof booleanTrackables }[] = [];
+  const categorized = new Map<number, typeof booleanTrackables>();
+  const uncategorized: typeof booleanTrackables = [];
+  for (const t of booleanTrackables) {
+    if (t.category_id != null) {
+      if (!categorized.has(t.category_id)) categorized.set(t.category_id, []);
+      categorized.get(t.category_id)!.push(t);
+    } else {
+      uncategorized.push(t);
+    }
+  }
+  const sortedCats = [...trackableCategories].filter(c => c.is_active).sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+  for (const cat of sortedCats) {
+    const items = categorized.get(cat.id) ?? [];
+    if (items.length > 0) categorizedGroups.push({ label: cat.category_name, items });
+  }
+  if (uncategorized.length > 0) {
+    categorizedGroups.push({ label: categorizedGroups.length === 0 ? 'Habits' : 'Other', items: uncategorized });
+  }
+  const showSingleGroup = categorizedGroups.length <= 1;
   const activeTags = tags.filter(t => tagIds.includes(t.id));
 
   if (mode === 'view') {
     return (
       <div>
-        <CardSection>
-          <CardSectionLabel>Habits</CardSectionLabel>
-          <div className="habit-grid">
-            {booleanTrackables.map(t => (
-              <div
-                key={t.id}
-                className={`habit-btn${checkedTrackableIds.includes(t.id) ? ' habit-btn--done' : ''}`}
-              >
-                <span className="habit-btn__emoji">{t.emoji ?? '•'}</span>
-                <span className="habit-btn__label">{t.name}</span>
-              </div>
-            ))}
-          </div>
-        </CardSection>
+        {categorizedGroups.map(({ label, items }) => (
+          <CardSection key={label}>
+            <CardSectionLabel>{label}</CardSectionLabel>
+            <div className="habit-grid">
+              {items.map(t => (
+                <div key={t.id} className={`habit-btn${checkedTrackableIds.includes(t.id) ? ' habit-btn--done' : ''}`}>
+                  <span className="habit-btn__emoji">{t.emoji ?? '•'}</span>
+                  <span className="habit-btn__label">{t.name}</span>
+                </div>
+              ))}
+            </div>
+          </CardSection>
+        ))}
 
         {(state.word || state.dailyEmoji) && (
           <CardSection>
@@ -143,22 +166,22 @@ function OverviewTab({
 
   return (
     <div>
-      <CardSection>
-        <CardSectionLabel>Habits</CardSectionLabel>
-        <div className="habit-grid">
-          {booleanTrackables.map(t => (
-            <button
-              key={t.id}
-              type="button"
-              className={`habit-btn${checkedTrackableIds.includes(t.id) ? ' habit-btn--done' : ''}`}
-              onClick={() => toggleBoolean(t.id)}
-            >
-              <span className="habit-btn__emoji">{t.emoji ?? '•'}</span>
-              <span className="habit-btn__label">{t.name}</span>
-            </button>
-          ))}
-        </div>
-      </CardSection>
+      {categorizedGroups.map(({ label, items }) => (
+        <CardSection key={label}>
+          <CardSectionLabel>{label}</CardSectionLabel>
+          <div className="habit-grid">
+            {items.map(t => (
+              <button key={t.id} type="button"
+                className={`habit-btn${checkedTrackableIds.includes(t.id) ? ' habit-btn--done' : ''}`}
+                onClick={() => toggleBoolean(t.id)}
+              >
+                <span className="habit-btn__emoji">{t.emoji ?? '•'}</span>
+                <span className="habit-btn__label">{t.name}</span>
+              </button>
+            ))}
+          </div>
+        </CardSection>
+      ))}
 
       <CardSection>
         <div className="field-grid">
@@ -955,6 +978,7 @@ export function DailyCard({
             state={overviewState}
             setState={setOverviewState}
             trackables={reference.trackables}
+            trackableCategories={reference.trackableCategories}
             checkedTrackableIds={checkedTrackableIds}
             toggleBoolean={toggleBoolean}
             tags={reference.tags}

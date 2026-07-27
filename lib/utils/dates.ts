@@ -112,3 +112,48 @@ export function formatTime(t: string | null | undefined): string | null {
   const [h, m] = t.split(":").map(Number);
   return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`;
 }
+
+// ── Week helpers (Sunday-based) ───────────────────────────────────────────────
+
+/** Returns the YYYY-MM-DD of the Sunday starting the week that contains dateStr. */
+export function getSundayOfWeek(dateStr: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  const day  = date.getDay(); // 0 = Sunday
+  if (day !== 0) date.setDate(date.getDate() - day);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+/** Sunday that starts the current week. */
+export function currentWeekStart(): string {
+  return getSundayOfWeek(localTodayISO());
+}
+
+/**
+ * Sunday-based week number within the year.
+ * Week 1 = the week containing Jan 1 (or starting before it if Jan 1 is mid-week).
+ */
+export function getSundayWeekNumber(dateStr: string): number {
+  const sunday    = getSundayOfWeek(dateStr);
+  const [y, m, d] = sunday.split('-').map(Number);
+  const jan1      = new Date(y, 0, 1);
+  const sunDate   = new Date(y, m - 1, d);
+  const jan1Sunday = new Date(y, 0, 1 - jan1.getDay()); // roll back to sunday
+  const diffMs    = sunDate.getTime() - jan1Sunday.getTime();
+  return Math.floor(diffMs / (7 * 86_400_000)) + 1;
+}
+
+/**
+ * "Jan 5–11" — human-readable week range from a Sunday date.
+ * End date is the Saturday 6 days later; drops redundant month on end.
+ */
+export function formatWeekRange(sundayStr: string): string {
+  const [y, m, d] = sundayStr.split('-').map(Number);
+  const sun = new Date(y, m - 1, d);
+  const sat = new Date(y, m - 1, d + 6);
+  const startLabel = sun.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const endLabel   = sat.getMonth() === sun.getMonth()
+    ? String(sat.getDate())
+    : sat.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return `${startLabel}–${endLabel}`;
+}

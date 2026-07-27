@@ -1,5 +1,6 @@
 import { createClient }    from '@/lib/supabase/server';
 import {
+  getTrackableCategories,
   getSymptomCategoriesWithTypes,
   getJournalCategoriesWithPrompts,
   getProviderTypes,
@@ -13,6 +14,7 @@ import {
   getMediaStatuses
 } from '@/lib/dal/reference';
 import { getAllPeople }    from '@/lib/dal/people';
+import { getWeeklyJournalCategories } from '@/lib/dal/weekly-journal';
 import type { PersonLinks } from '@/types/dal';
 import { SettingsClient } from '@/components/settings/SettingsClient';
 
@@ -26,9 +28,11 @@ export default async function SettingsPage() {
     sleepEventTypes,
     people,
     trackables,
+    trackableCategories,
     chartDefinitions,
     chartCategories,
     settingsData,
+    weeklyJournalCategories,
   ] = await Promise.all([
     getSymptomCategoriesWithTypes(supabase),
     getJournalCategoriesWithPrompts(supabase),
@@ -36,9 +40,11 @@ export default async function SettingsPage() {
     getSleepEventTypes(supabase),
     getAllPeople(supabase),
     getTrackables(supabase, true),
+    getTrackableCategories(supabase, true),
     getChartDefinitions(supabase),
     getChartCategories(supabase),
     getSettingsPageData(supabase),
+    getWeeklyJournalCategories(supabase, true),
   ]);
 
   const [mediaTypes, mediaGenres, mediaStatuses] = await Promise.all([
@@ -60,6 +66,7 @@ export default async function SettingsPage() {
       <h1 className="page-header__title">Settings</h1>
       <SettingsClient
         trackables={trackables}
+        trackableCategories={trackableCategories}
         chartDefinitions={chartDefinitions}
         chartCategories={chartCategories}
         tags={settingsData.tags}
@@ -78,6 +85,7 @@ export default async function SettingsPage() {
         itemLists={settingsData.itemLists}
         logSchemas={settingsData.logSchemas}
         checklists={settingsData.checklists}
+        weeklyJournalCategories={weeklyJournalCategories}
       />
     </div>
   );

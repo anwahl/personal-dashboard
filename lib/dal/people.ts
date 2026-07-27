@@ -897,3 +897,35 @@ export async function deleteLogSchemaField(client: Client, id: number): Promise<
 }
 
 // (getChecklistItemsForStructure and updateChecklistItem removed — checklist items are per-person, not template items)
+
+// ── Diagnosis CRUD ────────────────────────────────────────────────────────────
+
+export async function addDiagnosis(
+  client: Client, personId: number, name: string,
+  date: string | null, notes: string | null, sortOrder: number,
+): Promise<DiagnosisRow> {
+  const { data, error } = await client
+    .from('diagnoses')
+    .insert({ person_id: personId, diagnosis_name: name.trim(), diagnosed_date: date, notes, sort_order: sortOrder })
+    .select().single();
+  if (error) throw new Error(`addDiagnosis: ${error.message}`);
+  return data as DiagnosisRow;
+}
+
+export async function updateDiagnosis(
+  client: Client, id: number, name: string, date: string | null, notes: string | null,
+): Promise<void> {
+  const { error } = await client.from('diagnoses')
+    .update({ diagnosis_name: name.trim(), diagnosed_date: date, notes }).eq('id', id);
+  if (error) throw new Error(`updateDiagnosis: ${error.message}`);
+}
+
+export async function toggleDiagnosis(client: Client, id: number, isActive: boolean): Promise<void> {
+  const { error } = await client.from('diagnoses').update({ is_active: isActive }).eq('id', id);
+  if (error) throw new Error(`toggleDiagnosis: ${error.message}`);
+}
+
+export async function deleteDiagnosis(client: Client, id: number): Promise<void> {
+  const { error } = await client.from('diagnoses').delete().eq('id', id);
+  if (error) throw new Error(`deleteDiagnosis: ${error.message}`);
+}

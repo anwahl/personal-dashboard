@@ -1,7 +1,7 @@
 import { notFound }                from 'next/navigation';
 import { createClient }            from '@/lib/supabase/server';
 import { getAppointmentById }      from '@/lib/dal/appointments';
-import { getAppointmentTypes, getPeople } from '@/lib/dal/reference';
+import { getAppointmentTypes, getPeople, getTaskStatuses, getTaskPriorities } from '@/lib/dal/reference';
 import { getProviders }            from '@/lib/dal/providers';
 import { AppointmentDetailClient } from '@/components/appointments/AppointmentDetailClient';
 
@@ -19,10 +19,12 @@ export default async function AppointmentDetailPage({ params }: Readonly<Props>)
   if (!appt) notFound();
 
   // Fetch providers — include inactive so edit form shows historically-linked ones
-  const [apptTypes, people, providers] = await Promise.all([
+  const [apptTypes, people, providers, taskStatuses, taskPriorities] = await Promise.all([
     getAppointmentTypes(supabase),
     getPeople(supabase),
     getProviders(supabase, true),   // includeInactive = true for edit form
+    getTaskStatuses(supabase),
+    getTaskPriorities(supabase),
   ]);
 
   return (
@@ -36,6 +38,8 @@ export default async function AppointmentDetailPage({ params }: Readonly<Props>)
         appointmentTypes={apptTypes}
         people={people}
         providers={providers}
+        taskStatuses={taskStatuses}
+        taskPriorities={taskPriorities}
       />
     </div>
   );

@@ -36,14 +36,22 @@ export interface DiagnosisRow {
 
 export type TrackType = "boolean" | "numeric" | "aggregate";
 
+export interface TrackableCategoryRow {
+  id:            number;
+  category_name: string;
+  sort_order?:   number;
+  is_active:     boolean;
+}
+
 export interface DailyTrackableRow {
-  id: number;
-  track_type: TrackType;
-  name: string;
-  emoji: string | null;
-  color_hex: string | null;
+  id:          number;
+  track_type:  TrackType;
+  name:        string;
+  emoji:       string | null;
+  color_hex:   string | null;
+  category_id: number | null;
   sort_order?: number;
-  is_active: boolean;
+  is_active:   boolean;
 }
 
 export interface DailyNumericEntryRow {
@@ -500,6 +508,34 @@ export interface LastTimeCustomRow {
   is_active: boolean;
   last_date: string | null;
 }
+
+// ── Weekly journal ────────────────────────────────────────────────────────────
+
+export interface WeeklyJournalCategoryRow {
+  id:            number;
+  category_name: string;
+  sort_order?:   number;
+  is_active:     boolean;
+}
+
+export interface WeeklyJournalPromptRow {
+  id:          number;
+  category_id: number;
+  prompt_text: string;
+  sort_order?: number;
+  is_active:   boolean;
+  created_at:  string;
+}
+
+export interface WeeklyJournalPromptResponseRow {
+  id:              number;
+  weekly_entry_id: number;
+  prompt_id:       number;
+  response_text:   string | null;
+  created_at:      string;
+  updated_at:      string;
+}
+
 // ── Weekly entries ────────────────────────────────────────────────────────────
 
 export interface WeeklyEntryRow {
@@ -542,7 +578,7 @@ export interface AppointmentRow {
 
 export interface PrescriptionChangeRow {
   id: number;
-  appointment_id: number;
+  appointment_id: number | null;  // nullable — changes can exist without an appointment
   prescription_id: number;
   field_changed: string;
   previous_value: string | null;

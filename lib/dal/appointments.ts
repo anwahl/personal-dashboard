@@ -6,6 +6,7 @@ import type {
   PersonRow,
   ProviderRow,
   AppointmentTypeRow,
+  PrescriptionChangeRow,
 } from "@/types/schema";
 import type {
   AppointmentDetail,
@@ -169,4 +170,46 @@ export async function getAppointmentById(
 
   const enriched = await enrich(client, [data as AppointmentRow]);
   return enriched[0] ?? null;
+}
+
+// ── Prescription changes ───────────────────────────────────────────────────────
+
+export interface PrescriptionChangePayload {
+  appointment_id:  number | null;
+  prescription_id: number;
+  field_changed:   string;
+  previous_value:  string | null;
+  new_value:       string | null;
+  change_notes:    string | null;
+}
+
+export async function getPrescriptionChanges(
+  client:        Client,
+  appointmentId: number,
+): Promise<PrescriptionChangeRow[]> {
+  const { data, error } = await client
+    .from('prescription_changes')
+    .select('*')
+    .eq('appointment_id', appointmentId)
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(`getPrescriptionChanges: ${error.message}`);
+  return (data ?? []) as PrescriptionChangeRow[];
+}
+
+export async function createPrescriptionChange(
+  client:  Client,
+  payload: PrescriptionChangePayload,
+): Promise<PrescriptionChangeRow> {
+  const { data, error } = await client
+    .from('prescription_changes')
+    .insert(payload)
+    .select()
+    .single();
+  if (error) throw new Error(`createPrescriptionChange: ${error.message}`);
+  return data as PrescriptionChangeRow;
+}
+
+export async function deletePrescriptionChange(client: Client, id: number): Promise<void> {
+  const { error } = await client.from('prescription_changes').delete().eq('id', id);
+  if (error) throw new Error(`deletePrescriptionChange: ${error.message}`);
 }

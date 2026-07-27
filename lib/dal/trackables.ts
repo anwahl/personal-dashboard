@@ -108,3 +108,18 @@ export async function deleteBooleanEntry(
     .eq("trackable_id", trackableId)
     .throwOnError();
 }
+
+// ── Category assignment ───────────────────────────────────────────────────────
+
+/** Assign (or clear) the category for a boolean trackable. */
+export async function setTrackableCategory(
+  client:     Client,
+  trackableId: number,
+  categoryId:  number | null,
+): Promise<void> {
+  const { error } = await client
+    .from('daily_trackables')
+    .update({ category_id: categoryId })
+    .eq('id', trackableId);
+  if (error) throw new Error(`setTrackableCategory: ${error.message}`);
+}

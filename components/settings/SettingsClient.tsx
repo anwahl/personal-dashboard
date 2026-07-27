@@ -61,7 +61,8 @@ const TABS = [
 
 interface Props {
   // Tracking & charts
-  trackables:        DailyTrackableRow[];
+  trackables:           DailyTrackableRow[];
+  trackableCategories:  import('@/types/schema').TrackableCategoryRow[];
   chartDefinitions:  ChartDefinitionDetail[];
   chartCategories:   ChartCategoryRow[];
   // Daily
@@ -71,7 +72,8 @@ interface Props {
   symptomCategories: SymptomCategoryWithTypes[];
   sleepEventTypes:   SleepEventTypeRow[];
   // Journal
-  journalCategories: JournalCategoryWithPrompts[];
+  journalCategories:       JournalCategoryWithPrompts[];
+  weeklyJournalCategories: import('@/types/dal').WeeklyJournalCategoryWithPrompts[];
   // Providers
   providers:         ProviderRow[];
   providerTypes:     ProviderTypeRow[];
@@ -91,10 +93,11 @@ interface Props {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function SettingsClient({
-  trackables, chartDefinitions, chartCategories,
+  trackables, trackableCategories, chartDefinitions, chartCategories,
   tags, intentions,
   symptomCategories, sleepEventTypes,
   journalCategories,
+  weeklyJournalCategories,
   providers, providerTypes,
   mediaTypes, mediaGenres, mediaStatuses,
   people, personLinks, infoGroups, itemLists, logSchemas, checklists,
@@ -133,7 +136,7 @@ export function SettingsClient({
         </div>
 
         <div className={tab === 'tracking' ? '' : 'hidden'}>
-          <TrackableSettings trackables={trackables} />
+          <TrackableSettings trackables={trackables} categories={trackableCategories} />
         </div>
 
         <div className={tab === 'charts' ? '' : 'hidden'}>
@@ -168,7 +171,7 @@ export function SettingsClient({
         </div>
 
         <div className={tab === 'journal' ? '' : 'hidden'}>
-          <JournalSettings categories={journalCategories} />
+          <JournalSettings categories={journalCategories} weeklyCategories={weeklyJournalCategories} />
         </div>
 
         <div className={tab === 'providers' ? '' : 'hidden'}>

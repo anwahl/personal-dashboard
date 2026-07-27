@@ -7,6 +7,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
+  TrackableCategoryRow,
   DailyTrackableRow,
   TagRow,
   SymptomCategoryRow,
@@ -64,6 +65,9 @@ async function fetchRef<T>(
 }
 
 // ── Trackables (replaces getHabits) ──────────────────────────────────────────
+
+export const getTrackableCategories = (c: Client, includeInactive = false) =>
+  fetchRef<TrackableCategoryRow>(c, "trackable_categories", includeInactive);
 
 export const getTrackables = (c: Client, includeInactive = false) =>
   fetchRef<DailyTrackableRow>(c, "daily_trackables", includeInactive);
@@ -300,6 +304,7 @@ export async function getMediaStatusTypeLinks(
 
 export async function getReferenceData(client: Client): Promise<ReferenceData> {
   const [
+    trackableCategories,
     trackables,
     tags,
     symptomCategories,
@@ -320,6 +325,7 @@ export async function getReferenceData(client: Client): Promise<ReferenceData> {
     journalCategories,
     people,
   ] = await Promise.all([
+    getTrackableCategories(client),
     getTrackables(client),
     getTags(client),
     getSymptomCategoriesWithTypes(client),
@@ -342,6 +348,7 @@ export async function getReferenceData(client: Client): Promise<ReferenceData> {
   ]);
 
   return {
+    trackableCategories,
     trackables,
     tags,
     symptomCategories,

@@ -3304,3 +3304,92 @@ a.appt-secondary:last-child { border-bottom: none; }
   padding: 1px 5px;
   flex-shrink: 0;
 }
+
+/* ── Weekly journal ──────────────────────────────────────────────────────────*/
+.week-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.week-nav__btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  padding: 4px 10px;
+  line-height: 1;
+}
+.week-nav__btn:hover { color: var(--text); background: var(--surface-high); }
+.week-nav__label     { flex: 1; text-align: center; font-weight: 600; }
+.journal-category-section { margin-bottom: 24px; }
+
+/* ── Side calendar: week number column ───────────────────────────────────────*/
+.side-calendar__grid--with-weeks {
+  display: grid;
+  grid-template-columns: 16px repeat(7, 1fr);
+  gap: 1px;
+}
+.side-calendar__week-label {
+  font-size: 0.55rem;
+  color: var(--text-faint);
+  text-align: center;
+  padding: 2px 1px;
+}
+.side-calendar__week-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.55rem;
+  color: var(--text-faint);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  cursor: pointer;
+  line-height: 1;
+}
+.side-calendar__week-num:hover              { background: var(--surface-high); color: var(--accent); }
+.side-calendar__week-num--has-entry         { color: var(--accent); font-weight: 700; }
+
+/* ── Settings section divider ────────────────────────────────────────────────*/
+.settings-section-gap {
+  display: block;
+  height: 1px;
+  background: var(--border);
+  margin: 24px 0 20px;
+}
+
+/* ── Appointment detail additions ────────────────────────────────────────────*/
+.appt-quick-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 16px 0;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.appt-section        { margin-top: 20px; }
+.appt-section__body  { margin-top: 10px; }
+.appt-med-change-form {
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.field-label {
+  display: block;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: var(--letter-spacing-label);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.text-link {
+  color: var(--accent);
+  text-decoration: none;
+}
+.text-link:hover { text-decoration: underline; }

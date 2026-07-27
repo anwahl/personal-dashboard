@@ -80,6 +80,7 @@ export type {
 // ── Reference data bundle ─────────────────────────────────────────────────────
 
 export interface ReferenceData {
+  trackableCategories: import('./schema').TrackableCategoryRow[];
   trackables: DailyTrackableRow[]; // replaces habits
   tags: TagRow[];
   symptomCategories: SymptomCategoryWithTypes[];
@@ -393,3 +394,22 @@ export {
   type LastTimeCustomRow,
   type LastTimeLatestRow,
 } from "./schema";
+
+// ── Weekly journal ─────────────────────────────────────────────────────────────
+
+export interface WeeklyJournalCategoryWithPrompts {
+  id:            number;
+  category_name: string;
+  sort_order?:   number;
+  is_active:     boolean;
+  prompts:       import('./schema').WeeklyJournalPromptRow[];
+}
+
+export interface WeeklyJournalResponseDetail {
+  id:            number;
+  prompt_id:     number;
+  prompt_text:   string;
+  category_id:   number;
+  category_name: string;
+  response_text: string | null;
+}
