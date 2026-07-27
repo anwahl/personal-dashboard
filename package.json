@@ -25,6 +25,6 @@
     "gray-matter": "^4.0.3",
     "tailwindcss": "^4",
     "tsx": "^4.23.1",
-    "typescript": "^5"
+    "typescript": "^5.9.3"
   }
 }

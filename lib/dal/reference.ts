@@ -41,6 +41,7 @@ import type {
   LogSchemaRow,
   ChecklistRow,
   MedicationRow,
+  IconRow,
 } from "@/types/schema";
 import type {
   ReferenceData,
@@ -63,6 +64,11 @@ async function fetchRef<T>(
   if (error) throw new Error(`${table}: ${error.message}`);
   return (data ?? []) as T[];
 }
+
+// ── Icons ─────────────────────────────────────────────────────────────────────
+
+export const getIconsRef = (c: Client, includeInactive = false) =>
+  fetchRef<IconRow>(c, 'icons', includeInactive);
 
 // ── Trackables (replaces getHabits) ──────────────────────────────────────────
 
@@ -304,6 +310,7 @@ export async function getMediaStatusTypeLinks(
 
 export async function getReferenceData(client: Client): Promise<ReferenceData> {
   const [
+    icons,
     trackableCategories,
     trackables,
     tags,
@@ -325,6 +332,7 @@ export async function getReferenceData(client: Client): Promise<ReferenceData> {
     journalCategories,
     people,
   ] = await Promise.all([
+    getIconsRef(client),
     getTrackableCategories(client),
     getTrackables(client),
     getTags(client),
@@ -348,6 +356,7 @@ export async function getReferenceData(client: Client): Promise<ReferenceData> {
   ]);
 
   return {
+    icons,
     trackableCategories,
     trackables,
     tags,

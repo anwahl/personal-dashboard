@@ -52,10 +52,12 @@ import type {
   ChartCategoryRow,
   ChartDefinitionRow,
   ChartTrackableLinkRow,
+  IconRow,
 } from "./schema";
 
 // Re-export raw rows that components may need directly
 export type {
+  IconRow,
   ChartCategoryRow,
   DailyTrackableRow,
   DailyNumericEntryRow,
@@ -80,6 +82,7 @@ export type {
 // ── Reference data bundle ─────────────────────────────────────────────────────
 
 export interface ReferenceData {
+  icons: IconRow[];
   trackableCategories: import('./schema').TrackableCategoryRow[];
   trackables: DailyTrackableRow[]; // replaces habits
   tags: TagRow[];
