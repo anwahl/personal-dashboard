@@ -235,31 +235,31 @@ function RxChangeHistory({ rx, timings }: Readonly<{
 function RxItem({ rx, timings, onEdit }: Readonly<{ rx: PrescriptionDetail; timings: MedicationTimingTypeRow[]; onEdit: () => void }>) {
   const isActive = !rx.discontinued_date;
   return (
-    <>
-      <div className={`list-item${isActive ? '' : ' list-item--muted'}`} onClick={onEdit}>
-        <div className="list-item__body">
-          <div className="list-item__title">
+    <div className={`list-item${isActive ? '' : ' list-item--muted'}`}>
+      <div className="list-item__body">
+        <div className="list-item__title">
+          <a href={`/medications/${rx.id}`} className="text-link" style={{ fontWeight: 'inherit', color: 'inherit' }}>
             {rx.alias ?? rx.medication.medication_name}
             {rx.dose ? ` · ${rx.dose}` : ''}
-          </div>
-          <div className="list-item__meta">
-            {rx.timing_type && <span>{rx.timing_type.timing_name}</span>}
-            {rx.purpose && <span>{rx.purpose}</span>}
-            {rx.prescriber && <span>Rx: {rx.prescriber.provider_name ?? rx.prescriber.practice_name}</span>}
-            {!isActive && <span style={{ color: 'var(--danger)' }}>Discontinued</span>}
-          </div>
-          {rx.latest_refill?.refill_due_date && (
-            <div className="list-item__meta" style={{ marginTop: 4 }}>
-              <span>Refill due: {rx.latest_refill.refill_due_date}</span>
-            </div>
-          )}
+          </a>
         </div>
+        <div className="list-item__meta">
+          {rx.timing_type && <span>{rx.timing_type.timing_name}</span>}
+          {rx.purpose && <span>{rx.purpose}</span>}
+          {rx.prescriber && <span>Rx: {rx.prescriber.provider_name ?? rx.prescriber.practice_name}</span>}
+          {!isActive && <span style={{ color: 'var(--danger)' }}>Discontinued</span>}
+        </div>
+        {rx.latest_refill?.refill_due_date && (
+          <div className="list-item__meta" style={{ marginTop: 4 }}>
+            <span>Refill due: {rx.latest_refill.refill_due_date}</span>
+          </div>
+        )}
+      </div>
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
         {isActive && <span className="badge badge--success">Active</span>}
+        <Button size="sm" variant="ghost" onClick={onEdit}>Edit</Button>
       </div>
-      <div style={{ marginTop: 8 }}>
-        <a href={`/medications/${rx.id}`} className="text-link" style={{ fontSize: '0.8rem' }}>View history / log change →</a>
-      </div>
-    </>
+    </div>
   );
 }
 

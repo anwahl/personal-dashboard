@@ -30,6 +30,16 @@ import { getActivePrescriptions } from "./prescriptions";
 
 type Client = SupabaseClient;
 
+/** Convert a person name to a URL-safe slug (spaces → hyphens). */
+export function personSlug(name: string): string {
+  return name.toLowerCase().replace(/\s+/g, '-');
+}
+
+/** Reverse a slug back to a search pattern (hyphens → spaces). */
+function slugToPattern(slug: string): string {
+  return slug.replace(/-/g, ' ');
+}
+
 // ── Lookups ───────────────────────────────────────────────────────────────────
 
 export async function getAllPeople(client: Client): Promise<PersonRow[]> {
@@ -50,7 +60,7 @@ export async function getPersonBySlug(
   const { data } = await client
     .from("people")
     .select("*")
-    .ilike("person_name", slug) // case-insensitive match
+    .ilike("person_name", slugToPattern(slug)) // hyphens → spaces, case-insensitive
     .maybeSingle();
   return data as PersonRow | null;
 }

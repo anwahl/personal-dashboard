@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   // Structure containers
   createInfoGroup,  renameInfoGroup,  toggleInfoGroup,  deleteInfoGroup,
@@ -133,6 +134,7 @@ function InfoGroupItem({ group, onRename, onToggle, onDelete }: Readonly<{
   onDelete: () => Promise<void>;
 }>) {
   const supabase = createClient();
+  const router   = useRouter();
   const [expanded, setExpanded] = useState(false);
   const [fields,   setFields]   = useState<InfoFieldTypeRow[]>([]);
   const [loaded,   setLoaded]   = useState(false);
@@ -700,6 +702,7 @@ export function PeopleStructureSettings({
   peopleCategories: initialCategories,
 }: Readonly<Props>) {
   const supabase = createClient();
+  const router   = useRouter();
   const [links,      setLinks]      = useState<PersonLinks[]>(initialLinks);
   const [infoGroups, setInfoGroups] = useState(initGroups);
   const [itemLists,  setItemLists]  = useState(initLists);
@@ -775,7 +778,18 @@ export function PeopleStructureSettings({
           const cat = initialCategories.find(c => c.id === person.category_id);
           return (
             <div key={person.id} className="manage-item">
-              <span className="manage-item__name">{person.person_name}</span>
+              <input
+                className="manage-item__name input"
+                defaultValue={person.person_name}
+                onBlur={async e => {
+                  const newName = e.target.value.trim();
+                  if (newName && newName !== person.person_name) {
+                    await updatePersonField(supabase, person.id, { person_name: newName });
+                    setPeople(prev => prev.map(p => p.id === person.id ? { ...p, person_name: newName } : p));
+                    router.refresh();
+                  }
+                }}
+              />
               {cat && <span className="badge badge--muted">{cat.category_name}</span>}
             </div>
           );

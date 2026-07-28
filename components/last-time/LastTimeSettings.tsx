@@ -143,10 +143,12 @@ function MediaSection({ mediaTypes, mediaGenres, mediaStatuses, icons }: Readonl
   const update = async (id: number, patch: Partial<{ label: string }>) => {
     await updateLastTimeMedia(supabase, id, patch);
     setItems(prev => prev.map(i => i.id === id ? { ...i, ...patch } : i));
+    router.refresh();
   };
   const updateIcon_m = async (id: number, icon_id: number | null) => {
     await setIconId(supabase, 'last_time_media', id, icon_id);
     setItems(prev => prev.map(i => i.id === id ? { ...i, icon_id } : i));
+    router.refresh();
   };
 
   return (
@@ -248,6 +250,7 @@ function BooleanSection({ trackables, icons }: Readonly<Pick<Props, 'trackables'
   const updateIcon_b = async (id: number, icon_id: number | null) => {
     await setIconId(supabase, 'last_time_boolean', id, icon_id);
     setItems(prev => prev.map(i => i.id === id ? { ...i, icon_id } : i));
+    router.refresh();
   };
 
   const label = (row: LastTimeBooleanRow) => {
@@ -258,12 +261,12 @@ function BooleanSection({ trackables, icons }: Readonly<Pick<Props, 'trackables'
   return (
     <div className="last-time-section">
       <button type="button" className="last-time-section__toggle" onClick={toggle}>
-        ✅ Habits {open ? '▲' : '▼'}
+        ✅ Boolean Metrics {open ? '▲' : '▼'}
       </button>
       {open && (
         <div className="last-time-section__body">
           {items.map(item => (
-            <ItemRow key={item.id} label={label(item)} icon={icons.find(i => i.id === item.icon_id) ?? null} onDelete={() => remove_b(item.id)}>
+            <ItemRow key={item.id} label={label(item)} icon={icons.find(i => i.id === (item.icon_id ?? trackables.find(t => t.id === item.trackable_id)?.icon_id)) ?? null} onDelete={() => remove_b(item.id)}>
               <IconPicker icons={icons} value={item.icon_id} onChange={id => updateIcon_b(item.id, id)} fallbackEmoji={item.emoji} size="sm" />
               <span className="manage-item__name">
                 {trackables.find(t => t.id === item.trackable_id)?.name ?? `#${item.trackable_id}`}
@@ -329,13 +332,15 @@ function CustomSection({ icons }: Readonly<{ icons: IconRow[] }>) {
     router.refresh();
   };
 
-  const update = async (id: number, patch: Partial<{ custom_value: string }>) => {
+  const update_label_c = async (id: number, patch: Partial<{ custom_value: string }>) => {
     await updateLastTimeCustom(supabase, id, patch);
     setItems(prev => prev.map(i => i.id === id ? { ...i, ...patch } : i));
+    router.refresh();
   };
   const updateIcon_c = async (id: number, icon_id: number | null) => {
     await setIconId(supabase, 'last_time_custom', id, icon_id);
     setItems(prev => prev.map(i => i.id === id ? { ...i, icon_id } : i));
+    router.refresh();
   };
 
   return (
@@ -350,7 +355,7 @@ function CustomSection({ icons }: Readonly<{ icons: IconRow[] }>) {
               <IconPicker icons={icons} value={item.icon_id} onChange={id => updateIcon_c(item.id, id)} fallbackEmoji={item.emoji} size="sm" />
               <input type="text" className="input--flex" defaultValue={item.custom_value}
                 placeholder="Activity name…"
-                onBlur={e => { if (e.target.value.trim()) update(item.id, { custom_value: e.target.value.trim() }); }} />
+                onBlur={e => { if (e.target.value.trim()) update_label_c(item.id, { custom_value: e.target.value.trim() }); }} />
             </ItemRow>
           ))}
           <div className="manage-add-row">
