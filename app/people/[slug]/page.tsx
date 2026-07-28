@@ -1,6 +1,7 @@
 import { notFound }           from 'next/navigation';
 import { createClient }       from '@/lib/supabase/server';
 import { getPersonBySlug, getAllPeople, getPersonPageData } from '@/lib/dal/people';
+import { getPeopleCategories } from '@/lib/dal/reference';
 import { PeoplePageClient }   from '@/components/people/PeoplePageClient';
 
 interface Props {
@@ -11,9 +12,10 @@ export default async function PersonPage({ params }: Readonly<Props>) {
   const { slug }   = await params;
   const supabase   = await createClient();
 
-  const [person, allPeople] = await Promise.all([
+  const [person, allPeople, peopleCategories] = await Promise.all([
     getPersonBySlug(supabase, slug),
     getAllPeople(supabase),
+    getPeopleCategories(supabase),
   ]);
 
   if (!person) notFound();
@@ -40,7 +42,7 @@ export default async function PersonPage({ params }: Readonly<Props>) {
         })}
       </nav>
 
-      <PeoplePageClient data={pageData} />
+      <PeoplePageClient data={pageData} peopleCategories={peopleCategories} />
     </div>
   );
 }

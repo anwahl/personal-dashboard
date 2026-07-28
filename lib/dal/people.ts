@@ -929,3 +929,32 @@ export async function deleteDiagnosis(client: Client, id: number): Promise<void>
   const { error } = await client.from('diagnoses').delete().eq('id', id);
   if (error) throw new Error(`deleteDiagnosis: ${error.message}`);
 }
+
+// ── Person creation + field updates ──────────────────────────────────────────
+
+export async function createPerson(
+  client: Client,
+  payload: {
+    person_name:  string;
+    category_id:  number | null;
+    birth_date?:  string | null;
+    sort_order?:  number;
+  },
+): Promise<PersonRow> {
+  const { data, error } = await client
+    .from('people')
+    .insert(payload)
+    .select()
+    .single();
+  if (error) throw new Error(`createPerson: ${error.message}`);
+  return data as PersonRow;
+}
+
+export async function updatePersonField(
+  client: Client,
+  id: number,
+  patch: Partial<{ person_name: string; category_id: number | null; birth_date: string | null; sort_order: number }>,
+): Promise<void> {
+  const { error } = await client.from('people').update(patch).eq('id', id);
+  if (error) throw new Error(`updatePersonField: ${error.message}`);
+}

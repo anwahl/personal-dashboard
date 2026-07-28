@@ -206,6 +206,7 @@ export function SettingsClient({
             itemLists={itemLists}
             logSchemas={logSchemas}
             checklists={checklists}
+            peopleCategories={peopleCategories}
           />
         </div>
 

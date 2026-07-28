@@ -10,6 +10,7 @@ import {
   addLogEntry, deleteLogEntry,
   createChecklistItem, deleteChecklistItem,
   addDiagnosis, updateDiagnosis, toggleDiagnosis, deleteDiagnosis,
+  updatePersonField,
 }                                from '@/lib/dal/people';
 import { Card, CardHeader, CardBody, CardSection, CardSectionLabel } from '@/components/ui/Card';
 import { Button }                from '@/components/ui/Button';
@@ -18,7 +19,7 @@ import type {
   PersonPageData, InfoGroupWithFields,
   ItemListWithEntries, LogWithSchemaAndEntries, ChecklistWithItems,
 }                                from '@/types/dal';
-import type { DiagnosisRow }     from '@/types/schema';
+import type { DiagnosisRow, PeopleCategoryRow } from '@/types/schema';
 
 type Mode = 'view' | 'edit';
 
@@ -264,21 +265,20 @@ function ChecklistSection({ checklist, mode, personId }: Readonly<{
         )}
       </div>
 
-      {mode === 'edit' && (
-        <div className="manage-add-row">
-          <input
-            type="text"
-            value={newText}
-            onChange={e => setNewText(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && addItem()}
-            placeholder="New item…"
-            className="input--flex"
-          />
-          <Button size="sm" variant="accent" onClick={addItem} disabled={adding || !newText.trim()}>
-            {adding ? '…' : 'Add'}
-          </Button>
-        </div>
-      )}
+      {/* Add item always available — immediate save, no edit mode needed */}
+      <div className="manage-add-row">
+        <input
+          type="text"
+          value={newText}
+          onChange={e => setNewText(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && addItem()}
+          placeholder="New item…"
+          className="input--flex"
+        />
+        <Button size="sm" variant="accent" onClick={addItem} disabled={adding || !newText.trim()}>
+          {adding ? '…' : 'Add'}
+        </Button>
+      </div>
     </CardSection>
   );
 }
@@ -471,11 +471,17 @@ function LogSection({ log, mode, personId }: Readonly<{
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function PeoplePageClient({ data }: Readonly<{ data: PersonPageData }>) {
+export function PeoplePageClient({ data, peopleCategories }: Readonly<{ data: PersonPageData; peopleCategories: PeopleCategoryRow[] }>) {
   const { person, diagnoses, infoGroups, itemLists, logs, checklists, prescriptions } = data;
   const supabase = createClient();
 
   const [mode,       setMode]      = useState<Mode>('view');
+  const [categoryId, setCategoryId] = useState<number | null>(person.category_id ?? null);
+
+  const saveCategory = async (newId: number | null) => {
+    setCategoryId(newId);
+    await updatePersonField(supabase, person.id, { category_id: newId });
+  };
   const [saveState,  setSaveState] = useState<SaveState>('idle');
   const [localGroups, setLocalGroups] = useState<InfoGroupWithFields[]>(infoGroups);
 
@@ -518,6 +524,18 @@ export function PeoplePageClient({ data }: Readonly<{ data: PersonPageData }>) {
         <CardHeader>
           <div>
             <h2 className="person-header__name">{person.person_name}</h2>
+            {mode === 'view' && categoryId && (() => {
+              const cat = peopleCategories.find(c => c.id === categoryId);
+              return cat ? <span className="badge badge--muted">{cat.category_name}</span> : null;
+            })()}
+            {mode === 'edit' && (
+              <select value={categoryId ?? ''} onChange={e => saveCategory(e.target.value ? Number.parseInt(e.target.value) : null)}>
+                <option value="">No category</option>
+                {peopleCategories.filter(c => c.is_active).map(c => (
+                  <option key={c.id} value={c.id}>{c.category_name}</option>
+                ))}
+              </select>
+            )}
             {person.birth_date && (
               <p className="person-header__sub">🎂 {formatMediumDate(person.birth_date)}</p>
             )}

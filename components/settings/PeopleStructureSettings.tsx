@@ -16,13 +16,15 @@ import {
   addLogSchemaField, updateLogSchemaField,
   setLogSchemaFieldOptions, toggleLogSchemaField, deleteLogSchemaField,
   // Checklist items — created/deleted on the person's page, not in settings
+  createPerson, updatePersonField,
 } from '@/lib/dal/people';
 import { createClient }  from '@/lib/supabase/client';
 import { Button }        from '@/components/ui/Button';
 import { ConfirmButton } from '@/components/ui/ConfirmButton';
 import { InputField }    from '@/components/ui/Display';
-import type { PersonRow, InfoFieldTypeRow, LogSchemaFieldRow,
+import type { PersonRow, PeopleCategoryRow, InfoFieldTypeRow, LogSchemaFieldRow,
               LogSchemaFieldOptionRow } from '@/types/schema';
+import { ManageableList } from './ManageableList';
 
 // ── Local row types ───────────────────────────────────────────────────────────
 
@@ -41,6 +43,7 @@ interface Props {
   people: PersonRow[]; personLinks: PersonLinks[];
   infoGroups: InfoGroupRow[]; itemLists: ItemListRow[];
   logSchemas: LogSchemaRow[]; checklists: ChecklistRow[];
+  peopleCategories: PeopleCategoryRow[];
 }
 
 type StructureType = 'info_group' | 'list' | 'log' | 'checklist';
@@ -691,9 +694,10 @@ function StructureLinkGroup<T extends { id: number; is_active?: boolean }>({ lab
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 export function PeopleStructureSettings({
-  people, personLinks: initialLinks,
+  people: initialPeople, personLinks: initialLinks,
   infoGroups: initGroups, itemLists: initLists,
   logSchemas: initLogs, checklists: initChecklists,
+  peopleCategories: initialCategories,
 }: Readonly<Props>) {
   const supabase = createClient();
   const [links,      setLinks]      = useState<PersonLinks[]>(initialLinks);
@@ -701,6 +705,27 @@ export function PeopleStructureSettings({
   const [itemLists,  setItemLists]  = useState(initLists);
   const [logSchemas, setLogSchemas] = useState(initLogs);
   const [checklists, setChecklists] = useState(initChecklists);
+  const [people,     setPeople]     = useState<PersonRow[]>(initialPeople);
+
+  // New-person form state
+  const [newName,       setNewName]       = useState('');
+  const [newCategoryId, setNewCategoryId] = useState('');
+  const [addingPerson,  setAddingPerson]  = useState(false);
+
+  const addPerson = useCallback(async () => {
+    if (!newName.trim() || !newCategoryId) return;
+    setAddingPerson(true);
+    try {
+      const person = await createPerson(supabase, {
+        person_name:  newName.trim(),
+        category_id:  Number.parseInt(newCategoryId),
+        sort_order:   people.length,
+      });
+      setPeople(prev => [...prev, person]);
+      setLinks(prev => [...prev, { person, infoGroupIds: [], listIds: [], logIds: [], checklistIds: [] }]);
+      setNewName(''); setNewCategoryId('');
+    } finally { setAddingPerson(false); }
+  }, [supabase, newName, newCategoryId, people.length]);
 
   const toggleLink = useCallback(async (personId: number, structureType: StructureType, structureId: number) => {
     const idsKeyMap: Record<StructureType, keyof PersonLinks> = {
@@ -723,8 +748,56 @@ export function PeopleStructureSettings({
       </div>
       <p className="settings-section__desc">
         Create info groups, lists, logs, and checklists, then link them to people.
-        Click "Fields" on any item to manage its sub-items.
+        Click &quot;Fields&quot; on any item to manage its sub-items.
       </p>
+
+      {/* ── People Categories ───────────────────────────────────────────── */}
+      <ManageableList
+        title="People Categories"
+        description="Categories for grouping people (e.g. Family, Friends)."
+        tableName="people_categories"
+        nameColumn="category_name"
+        items={initialCategories}
+        addFields={[
+          { key: 'category_name', label: 'Category name', type: 'text', placeholder: 'e.g. Colleagues', required: true },
+        ]}
+      />
+
+      {/* ── People ─────────────────────────────────────────────────────── */}
+      <div className="settings-section">
+        <div className="settings-section__header">
+          <span className="settings-section__title">People</span>
+          <span className="manage-item__meta">{people.length} active</span>
+        </div>
+        <p className="settings-section__desc">Add new people here. Their page will be at /people/[name].</p>
+
+        {people.map(person => {
+          const cat = initialCategories.find(c => c.id === person.category_id);
+          return (
+            <div key={person.id} className="manage-item">
+              <span className="manage-item__name">{person.person_name}</span>
+              {cat && <span className="badge badge--muted">{cat.category_name}</span>}
+            </div>
+          );
+        })}
+
+        <div className="manage-add-row">
+          <input type="text" value={newName} onChange={e => setNewName(e.target.value)}
+            placeholder="Person name…" className="input--flex"
+            onKeyDown={e => e.key === 'Enter' && addPerson()} />
+          <select value={newCategoryId} onChange={e => setNewCategoryId(e.target.value)}>
+            <option value="">Category…</option>
+            {initialCategories.filter(c => c.is_active).map(c => (
+              <option key={c.id} value={c.id}>{c.category_name}</option>
+            ))}
+          </select>
+          <Button variant="accent" size="sm"
+            onClick={addPerson}
+            disabled={addingPerson || !newName.trim() || !newCategoryId}>
+            {addingPerson ? '…' : '+ Add'}
+          </Button>
+        </div>
+      </div>
 
       <StructureSection title="Info Groups"
         createForm={<CreateInfoGroupForm onCreated={row => setInfoGroups(prev => [...prev, row])} />}>
@@ -783,9 +856,13 @@ export function PeopleStructureSettings({
         {people.map(person => {
           const pl = links.find(l => l.person.id === person.id)
             ?? { person, infoGroupIds: [], listIds: [], logIds: [], checklistIds: [] };
+          const cat = initialCategories.find(c => c.id === person.category_id);
           return (
             <div key={person.id} className="person-block">
-              <h4 className="person-block__name">{person.person_name}</h4>
+              <h4 className="person-block__name">
+                {person.person_name}
+                {cat && <span className="badge badge--muted" style={{ marginLeft: 6 }}>{cat.category_name}</span>}
+              </h4>
               <StructureLinkGroup label="Info Groups" items={infoGroups} linkedIds={pl.infoGroupIds}
                 getName={g => g.group_title} onToggle={id => toggleLink(person.id, 'info_group', id)} />
               <StructureLinkGroup label="Lists" items={itemLists} linkedIds={pl.listIds}

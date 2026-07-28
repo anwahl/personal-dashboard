@@ -15,7 +15,8 @@ export type ManageableTable =
   | "medications"
   | "chart_categories"
   | "daily_trackables"
-  | "trackable_categories";
+  | "trackable_categories"
+  | "people_categories";
 
 /**
  * All tables with a sort_order column — superset of ManageableTable.
