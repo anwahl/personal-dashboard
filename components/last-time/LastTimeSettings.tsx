@@ -275,13 +275,13 @@ function BooleanSection({ trackables, icons }: Readonly<Pick<Props, 'trackables'
             </ItemRow>
           ))}
           <div className="manage-add-row">
-            <select value={trackId} onChange={e => setTrackId(e.target.value)}
-              className="settings-select input--flex">
-              <option value="">Select habit…</option>
-              {trackables
-                .filter(t => !linkedIds.has(t.id))
-                .map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
+            <TrackablePicker
+              trackables={trackables.filter(t => !linkedIds.has(t.id))}
+              icons={icons}
+              value={trackId}
+              onChange={setTrackId}
+              placeholder="Select metric…"
+            />
             <Button variant="accent" size="sm" onClick={add} disabled={!trackId || saving}>+ Add</Button>
           </div>
         </div>

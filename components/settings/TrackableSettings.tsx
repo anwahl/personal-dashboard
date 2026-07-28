@@ -57,11 +57,17 @@ function BooleanRow({
   const [eName,    setEName]    = useState(item.name);
   const [saving,   setSaving]   = useState(false);
 
+  const [saveError, setSaveError] = useState<string | null>(null);
   const saveEdit = async () => {
     if (!eName.trim()) return;
     setSaving(true);
-    try { await onUpdate(item.id, eIconId, eName); setEditing(false); }
-    finally { setSaving(false); }
+    setSaveError(null);
+    try {
+      await onUpdate(item.id, eIconId, eName);
+      setEditing(false);
+    } catch (e) {
+      setSaveError(String(e));
+    } finally { setSaving(false); }
   };
 
   const handleCat = async (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -278,9 +284,9 @@ function NumericRow({
           <input type="color" value={eColor} onChange={e => setEColor(e.target.value)}
             style={{ width: 36, height: 32, padding: 2 }} />
           <div className="manage-item__actions">
-            <Button size="sm" variant="accent" onClick={saveEdit} disabled={saving || !eName.trim()}>✓</Button>
-            <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>✕</Button>
-          </div>
+              <Button size="sm" variant="accent" onClick={saveEdit} disabled={saving || !eName.trim()}>✓</Button>
+              <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>✕</Button>
+            </div>
         </>
       ) : (
         <>

@@ -703,6 +703,49 @@ function StructureLinkGroup<T extends { id: number; is_active?: boolean }>({ lab
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
+// ── CategoryAssignabilitySection — toggle is_assignable per category ──────────
+
+function CategoryAssignabilitySection({ supabase, categories: initial }: Readonly<{
+  supabase: import('@supabase/supabase-js').SupabaseClient;
+  categories: PeopleCategoryRow[];
+}>) {
+  const [cats, setCats] = useState<PeopleCategoryRow[]>(initial);
+
+  const toggle = async (id: number, current: boolean) => {
+    const next = !current;
+    const { error } = await supabase
+      .from('people_categories')
+      .update({ is_assignable: next })
+      .eq('id', id);
+    if (!error) {
+      setCats(prev => prev.map(c => c.id === id ? { ...c, is_assignable: next } : c));
+    }
+  };
+
+  return (
+    <div className="settings-section">
+      <div className="settings-section__header">
+        <span className="settings-section__title">Assignability</span>
+      </div>
+      <p className="settings-section__desc">
+        When enabled, people in that category appear in task, appointment, and prescription dropdowns.
+      </p>
+      {cats.filter(c => c.is_active).map(c => (
+        <div key={c.id} className="manage-item">
+          <span className="manage-item__name">{c.category_name}</span>
+          <Button
+            size="sm"
+            variant={c.is_assignable ? 'accent' : 'ghost'}
+            onClick={() => toggle(c.id, c.is_assignable)}
+          >
+            {c.is_assignable ? '✓ Assignable' : 'Not assignable'}
+          </Button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ── PersonNameRow — toggle-to-edit person name ──────────────────────────────
 
 function PersonNameRow({ person, categories, onSave }: Readonly<{
@@ -827,25 +870,12 @@ export function PeopleStructureSettings({
         addFields={[
           { key: 'category_name', label: 'Category name', type: 'text', placeholder: 'e.g. Colleagues', required: true },
         ]}
-        renderName={item => (
-          <span style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
-            <span>{String(item.category_name)}</span>
-            <button
-              type="button"
-              className={`badge${item.is_assignable ? ' badge--success' : ' badge--muted'}`}
-              style={{ cursor: 'pointer', border: 'none', fontSize: '0.7rem' }}
-              title={item.is_assignable ? 'Assignable — click to disable' : 'Not assignable — click to enable'}
-              onClick={async () => {
-                const next = !item.is_assignable;
-                await supabase.from('people_categories').update({ is_assignable: next }).eq('id', item.id);
-              }}
-            >
-              {item.is_assignable ? '✓ assignable' : '✗ not assignable'}
-            </button>
-          </span>
-        )}
+
       />
       </details>
+
+      {/* ── is_assignable toggles per category ──────────────────────────────── */}
+      <CategoryAssignabilitySection supabase={supabase} categories={initialCategories} />
 
       {/* ── People ─────────────────────────────────────────────────────── */}
       <details className="settings-section settings-section--collapsible">

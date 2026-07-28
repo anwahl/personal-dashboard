@@ -515,6 +515,12 @@ export function TasksClient({ active, completed, statuses, priorities, people }:
                 onChange={e => setNewDue(e.target.value)}
                 style={{ width: 140 }}
               />
+              <input
+                type="time"
+                value={newTime}
+                onChange={e => setNewTime(e.target.value)}
+                style={{ width: 100 }}
+              />
               {/* Date shortcuts */}
               <div className="date-shortcuts">
                 <Button size="sm" variant="ghost" onClick={() => setNewDue(addDays(1))}>Tomorrow</Button>

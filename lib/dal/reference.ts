@@ -76,8 +76,31 @@ export const getIconsRef = (c: Client, includeInactive = false) =>
 export const getTrackableCategories = (c: Client, includeInactive = false) =>
   fetchRef<TrackableCategoryRow>(c, "trackable_categories", includeInactive);
 
-export const getTrackables = (c: Client, includeInactive = false) =>
-  fetchRef<DailyTrackableRow>(c, "daily_trackables", includeInactive);
+/** 
+ * Fetches daily_trackables with an explicit column list.
+ * Tries including icon_id first; if the column isn't in PostgREST's schema
+ * cache, falls back without it so the page doesn't crash.
+ */
+export async function getTrackables(client: Client, includeInactive = false): Promise<DailyTrackableRow[]> {
+  const base = 'id, name, track_type, emoji, color_hex, category_id, sort_order, is_active';
+  const withIcon = `${base}, icon_id`;
+
+  // Try with icon_id first
+  let q = client.from('daily_trackables').select(withIcon).order('sort_order');
+  if (!includeInactive) q = q.eq('is_active', true);
+  const { data, error } = await q;
+
+  if (!error) return (data ?? []) as DailyTrackableRow[];
+
+  // Fallback: icon_id column not yet in PostgREST schema — fetch without it
+  // (icons won't show on the daily card until the migration is applied)
+  console.warn('[getTrackables] icon_id not available, falling back:', error.message);
+  let q2 = client.from('daily_trackables').select(base).order('sort_order');
+  if (!includeInactive) q2 = q2.eq('is_active', true);
+  const { data: d2, error: e2 } = await q2;
+  if (e2) throw new Error(`daily_trackables: ${e2.message}`);
+  return (d2 ?? []) as DailyTrackableRow[];
+}
 
 // ── Other reference tables ────────────────────────────────────────────────────
 
