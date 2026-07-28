@@ -14,6 +14,11 @@
  *   APP_URL     — base URL of your dashboard (for deep-link in notification)
  *   RESEND_API_KEY, REMINDER_EMAIL_TO, REMINDER_EMAIL_FROM (optional)
  */
+/* Keeping this all commented out for now because I don't have a cron job 
+set up yet, and this is currently causing Vercel errors.
+I'm more interested in the Calendar integration at the moment, so this is
+lower priority.
+Once I have a cron job set up, I can uncomment this and test it.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -147,3 +152,4 @@ Deno.serve(async (_req) => {
     );
   }
 });
+*/
