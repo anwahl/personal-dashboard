@@ -159,9 +159,9 @@ function MedChangesSection({
 
   return (
     <div className="appt-section">
-      <button type="button" className="toggle-btn" onClick={() => setOpen(o => !o)}>
+      <Button variant="ghost" className="toggle-btn" onClick={() => setOpen(o => !o)}>
         💊 Prescription Changes {open ? '▲' : '▼'}
-      </button>
+      </Button>
 
       {open && (
         <div className="appt-section__body">
@@ -246,7 +246,7 @@ function MedChangesSection({
                     onChange={e => updatePending(c.uid, { newValue: e.target.value })}
                     placeholder="New value…" />
                 )}
-                <button type="button" className="icon-btn" onClick={() => removePending(c.uid)}>✕</button>
+                <Button size="icon" variant="ghost" onClick={() => removePending(c.uid)}>✕</Button>
               </div>
             ))}
 

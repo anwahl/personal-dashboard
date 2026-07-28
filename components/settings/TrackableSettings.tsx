@@ -1,5 +1,7 @@
 'use client';
 
+import React from 'react';
+
 /**
  * TrackableSettings
  *
@@ -25,9 +27,11 @@ import { ConfirmButton }   from '@/components/ui/ConfirmButton';
 import type { DailyTrackableRow, TrackableCategoryRow, IconRow } from '@/types/schema';
 
 interface Props {
-  trackables: DailyTrackableRow[];
-  categories: TrackableCategoryRow[];
-  icons:      IconRow[];
+  trackables:        DailyTrackableRow[];
+  categories:        TrackableCategoryRow[];
+  icons:             IconRow[];
+  onCategoryAdded?:  (cat: TrackableCategoryRow) => void;
+  onTrackableAdded?: (t: DailyTrackableRow) => void;
 }
 
 // ── Single boolean trackable row (full CRUD + category select) ─────────────────
@@ -113,10 +117,11 @@ function BooleanRow({
 
 // ── CategorizedBooleanList ────────────────────────────────────────────────────
 
-function CategorizedBooleanList({ initialItems, categories, icons }: Readonly<{
-  initialItems: DailyTrackableRow[];
-  categories:   TrackableCategoryRow[];
-  icons:        IconRow[];
+function CategorizedBooleanList({ initialItems, categories, icons, onTrackableAdded }: Readonly<{
+  initialItems:      DailyTrackableRow[];
+  categories:        TrackableCategoryRow[];
+  icons:             IconRow[];
+  onTrackableAdded?: (t: DailyTrackableRow) => void;
 }>) {
   const supabase = createClient();
   const [items,   setItems]   = useState<DailyTrackableRow[]>(initialItems);
@@ -166,7 +171,9 @@ function CategorizedBooleanList({ initialItems, categories, icons }: Readonly<{
       const payload = { track_type: 'boolean', name: eName.trim(), icon_id: eIconId, category_id: eCategoryId, sort_order: active.length };
       const { data, error } = await supabase.from('daily_trackables').insert(payload).select().single();
       if (error) throw new Error(error.message);
-      setItems(prev => [...prev, data as DailyTrackableRow]);
+      const newItem = data as DailyTrackableRow;
+      setItems(prev => [...prev, newItem]);
+      onTrackableAdded?.(newItem);
       setEIconId(null); setEName(''); setECategoryId(null);
     } finally { setAdding(false); }
   }, [supabase, eName, eIconId, active.length, adding]);
@@ -322,10 +329,11 @@ function NumericRow({
   );
 }
 
-function CategorizedNumericList({ initialItems, categories, icons }: Readonly<{
-  initialItems: DailyTrackableRow[];
-  categories:   TrackableCategoryRow[];
-  icons:        IconRow[];
+function CategorizedNumericList({ initialItems, categories, icons, onTrackableAdded }: Readonly<{
+  initialItems:      DailyTrackableRow[];
+  categories:        TrackableCategoryRow[];
+  icons:             IconRow[];
+  onTrackableAdded?: (t: DailyTrackableRow) => void;
 }>) {
   const supabase = createClient();
   const [items,       setItems]       = useState<DailyTrackableRow[]>(initialItems);
@@ -379,8 +387,10 @@ function CategorizedNumericList({ initialItems, categories, icons }: Readonly<{
       };
       const { data, error } = await supabase.from('daily_trackables').insert(payload).select().single();
       if (error) throw new Error(error.message);
-      setItems(prev => [...prev, data as DailyTrackableRow]);
+      const newItem = data as DailyTrackableRow;
+      setItems(prev => [...prev, newItem]);
       setEIconId(null); setEName(''); setEColor('#888888'); setECategoryId(null);
+      onTrackableAdded?.(newItem);
     } finally { setAdding(false); }
   }, [supabase, eName, eIconId, eColor, eCategoryId, active.length, adding]);
 
@@ -447,7 +457,8 @@ function CategorizedNumericList({ initialItems, categories, icons }: Readonly<{
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
-export function TrackableSettings({ trackables, categories, icons }: Readonly<Props>) {
+export function TrackableSettings({ trackables, categories, icons, onCategoryAdded, onTrackableAdded }: Readonly<Props>) {
+  const [liveCategories, setLiveCategories] = React.useState<TrackableCategoryRow[]>(categories);
   const boolean   = trackables.filter(t => t.track_type === 'boolean');
   const numeric   = trackables.filter(t => t.track_type === 'numeric');
   const aggregate = trackables.filter(t => t.track_type === 'aggregate');
@@ -463,11 +474,16 @@ export function TrackableSettings({ trackables, categories, icons }: Readonly<Pr
         addFields={[
           { key: 'category_name', label: 'Category name', type: 'text', placeholder: 'e.g. Morning, Health', required: true },
         ]}
+        onItemAdded={item => {
+          const cat = item as TrackableCategoryRow;
+          setLiveCategories(prev => [...prev, cat]);
+          onCategoryAdded?.(cat);
+        }}
       />
 
-      <CategorizedBooleanList initialItems={boolean} categories={categories} icons={icons} />
+      <CategorizedBooleanList initialItems={boolean} categories={liveCategories} icons={icons} onTrackableAdded={onTrackableAdded} />
 
-      <CategorizedNumericList initialItems={numeric} categories={categories} icons={icons} />
+      <CategorizedNumericList initialItems={numeric} categories={liveCategories} icons={icons} onTrackableAdded={onTrackableAdded} />
 
       {aggregate.length > 0 && (
         <div className="settings-section">

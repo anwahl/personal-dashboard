@@ -900,31 +900,49 @@ function SleepTab({
 
       <CardSection>
         <CardSectionLabel>Tonight's context</CardSectionLabel>
-        {reference.timingCategories.map(cat => (
-          <div key={cat.id} className="daily-card__timing-group">
-            <p className="card__section-label">{cat.category_name}</p>
-            <ChipGroup>
-              {reference.timingOptions.map(opt => (
-                <Chip key={opt.id} active={sleepState.timingMap[cat.id] === opt.id} small
-                  onClick={() => set('timingMap', { ...sleepState.timingMap, [cat.id]: opt.id })}>
-                  {opt.option_name}
-                </Chip>
-              ))}
-            </ChipGroup>
-          </div>
-        ))}
+        {reference.timingCategories.map(cat => {
+          const selected = sleepState.timingMap[cat.id];
+          const clearTiming = () => {
+            const next = { ...sleepState.timingMap };
+            delete next[cat.id];
+            set('timingMap', next);
+          };
+          return (
+            <div key={cat.id} className="daily-card__timing-group">
+              <p className="card__section-label">{cat.category_name}</p>
+              <ChipGroup>
+                {reference.timingOptions
+                  .filter(opt => opt.option_name.toLowerCase() !== 'none')
+                  .map(opt => (
+                    <Chip key={opt.id} active={selected === opt.id} small
+                      onClick={() => set('timingMap', { ...sleepState.timingMap, [cat.id]: opt.id })}>
+                      {opt.option_name}
+                    </Chip>
+                  ))}
+                {selected && (
+                  <Chip small onClick={clearTiming}>✕ clear</Chip>
+                )}
+              </ChipGroup>
+            </div>
+          );
+        })}
         <p className="card__section-label card__section-label--spaced">Pre-bed consumption</p>
         <ChipGroup>
-          {reference.consumptionTypes.map(t => (
-            <Chip key={t.id} active={sleepState.consumptionIds.includes(t.id)} small
-              onClick={() => set('consumptionIds',
-                sleepState.consumptionIds.includes(t.id)
-                  ? sleepState.consumptionIds.filter(id => id !== t.id)
-                  : [...sleepState.consumptionIds, t.id]
-              )}>
-              {t.type_name}
-            </Chip>
-          ))}
+          {reference.consumptionTypes
+            .filter(t => t.type_name.toLowerCase() !== 'none')
+            .map(t => (
+              <Chip key={t.id} active={sleepState.consumptionIds.includes(t.id)} small
+                onClick={() => set('consumptionIds',
+                  sleepState.consumptionIds.includes(t.id)
+                    ? sleepState.consumptionIds.filter(id => id !== t.id)
+                    : [...sleepState.consumptionIds, t.id]
+                )}>
+                {t.type_name}
+              </Chip>
+            ))}
+          {sleepState.consumptionIds.length > 0 && (
+            <Chip small onClick={() => set('consumptionIds', [])}>✕ clear</Chip>
+          )}
         </ChipGroup>
         <div className="daily-card__timing-group">
           <InputField label="Pre-bed activity" id="pre-bed-activity">

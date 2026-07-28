@@ -121,6 +121,9 @@ export function SettingsClient({
   people, personLinks, infoGroups, itemLists, logSchemas, checklists,
 }: Readonly<Props>) {
   const [tab, setTab] = useState<TabId>('daily');
+  // Lifted trackables state — allows ChartSettings dropdown to update when
+  // new metrics are added in TrackableSettings without a full page refresh
+  const [liveTrackables, setLiveTrackables] = useState<DailyTrackableRow[]>(trackables);
 
   return (
     <div>
@@ -154,13 +157,18 @@ export function SettingsClient({
         </div>
 
         <div className={tab === 'tracking' ? '' : 'hidden'}>
-          <TrackableSettings trackables={trackables} categories={trackableCategories} icons={icons} />
+          <TrackableSettings
+            trackables={liveTrackables}
+            categories={trackableCategories}
+            icons={icons}
+            onTrackableAdded={(t: DailyTrackableRow) => setLiveTrackables(prev => [...prev, t])}
+          />
         </div>
 
         <div className={tab === 'charts' ? '' : 'hidden'}>
           <ChartSettings
             chartDefinitions={chartDefinitions}
-            trackables={trackables.filter(t => t.is_active)}
+            trackables={liveTrackables.filter(t => t.is_active)}
             categories={chartCategories}
             icons={icons}
           />
@@ -168,7 +176,7 @@ export function SettingsClient({
 
         <div className={tab === 'lasttime' ? '' : 'hidden'}>
           <LastTimeSettings
-            trackables={trackables.filter(t => t.track_type === 'boolean' && t.is_active)}
+            trackables={liveTrackables.filter(t => t.track_type === 'boolean' && t.is_active)}
             mediaTypes={mediaTypes}
             mediaGenres={mediaGenres}
             mediaStatuses={mediaStatuses}

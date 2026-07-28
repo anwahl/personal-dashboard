@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter }             from 'next/navigation';
 import { createClient }          from '@/lib/supabase/client';
+import { localTodayISO }         from '@/lib/utils/dates';
 import { createTask, updateTask, completeTask, deleteTask, spawnNextRecurrence } from '@/lib/dal/tasks';
 import { Button }                from '@/components/ui/Button';
 import { TabBar }                from '@/components/ui/Controls';
@@ -27,9 +28,10 @@ const PRIORITY_COLOR: Record<string, string> = {
 };
 
 function addDays(n: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + n);
-  return d.toISOString().slice(0, 10);
+  const [y, m, d] = localTodayISO().split('-').map(Number);
+  const date = new Date(y, m - 1, d + n);
+  const p = (x: number) => String(x).padStart(2, '0');
+  return `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())}`;
 }
 
 function fmtDate(d: string | null) {
@@ -78,7 +80,7 @@ function TaskItem({ task, doneStatusId, onComplete, onEdit }: Readonly<{
           <span className={`badge${overdue ? ' badge--danger' : ''}`}>{task.status.status_name}</span>
           {dueDate && (
             <span style={{ color: overdue ? 'var(--danger)' : 'var(--text-faint)' }}>
-              {overdue ? '⚠ ' : ''}{fmtDate(dueDate)}
+  {overdue ? '⚠ ' : ''}{fmtDate(dueDate)}{task.due_time ? ' ' + task.due_time.slice(0,5) : ''}
             </span>
           )}
           {task.reminder_at && (
@@ -126,7 +128,7 @@ const WEEKDAYS = [
 
 interface EditState {
   title: string; status_id: string; priority_id: string;
-  due_date: string; person_id: string; body_md: string;
+  due_date: string; due_time: string; person_id: string; body_md: string;
   reminder_at:          string;
   recurrence_frequency: string;
   recurrence_interval:  string;
@@ -140,6 +142,7 @@ function taskToEdit(t: TaskDetail): EditState {
     status_id:            String(t.status_id),
     priority_id:          String(t.priority_id),
     due_date:             t.due_date             ?? '',
+    due_time:             t.due_time             ?? '',
     person_id:            t.person_id            ? String(t.person_id) : '',
     body_md:              t.body_md              ?? '',
     reminder_at:          t.reminder_at          ? toLocalInput(t.reminder_at) : '',
@@ -275,6 +278,9 @@ function EditPanel({ task, statuses, priorities, people, onSave, onDelete, onCan
         <InputField label="Due date" id="et-due">
           <input id="et-due" type="date" value={form.due_date} onChange={e => set('due_date', e.target.value)} />
         </InputField>
+        <InputField label="Time" id="et-time">
+          <input id="et-time" type="time" value={form.due_time} onChange={e => set('due_time', e.target.value)} />
+        </InputField>
         <InputField label="For" id="et-person">
           <select id="et-person" value={form.person_id} onChange={e => set('person_id', e.target.value)}>
             <option value="">Anyone</option>
@@ -306,7 +312,7 @@ function FullAddForm({ statuses, priorities, people, todoStatusId, normalPriorit
 }>) {
   const [form, setForm] = useState<EditState>({
     title: '', status_id: String(todoStatusId), priority_id: String(normalPriorityId),
-    due_date: '', person_id: '', body_md: '',
+    due_date: '', due_time: '', person_id: '', body_md: '',
     reminder_at: '', recurrence_frequency: '', recurrence_interval: '1',
     recurrence_days: '', recurrence_end_date: '',
   });
@@ -334,6 +340,9 @@ function FullAddForm({ statuses, priorities, people, todoStatusId, normalPriorit
       <div className="field-grid">
         <InputField label="Due date" id="fa-due">
           <input id="fa-due" type="date" value={form.due_date} onChange={e => set('due_date', e.target.value)} />
+        </InputField>
+        <InputField label="Time" id="fa-time">
+          <input id="fa-time" type="time" value={form.due_time} onChange={e => set('due_time', e.target.value)} />
         </InputField>
       </div>
       <InputField label="Notes" id="fa-body">
@@ -410,6 +419,7 @@ export function TasksClient({ active, completed, statuses, priorities, people }:
         status_id:      Number.parseInt(data.status_id),
         priority_id:    Number.parseInt(data.priority_id),
         due_date:       data.due_date       || null,
+        due_time:       data.due_time       || null,
         person_id:      data.person_id      ? Number.parseInt(data.person_id) : null,
         body_md:        data.body_md        || null,
         completed_at:   null,
@@ -449,6 +459,7 @@ export function TasksClient({ active, completed, statuses, priorities, people }:
         status_id:      Number.parseInt(data.status_id),
         priority_id:    Number.parseInt(data.priority_id),
         due_date:       data.due_date       || null,
+        due_time:       data.due_time       || null,
         person_id:      data.person_id      ? Number.parseInt(data.person_id) : null,
         body_md:        data.body_md        || null,
         ...reminderPayload,

@@ -209,3 +209,18 @@ export async function getPrescriptionChangesByRx(
   if (error) throw new Error(`getPrescriptionChangesByRx: ${error.message}`);
   return (data ?? []) as import('@/types/schema').PrescriptionChangeRow[];
 }
+
+export async function getPrescriptionById(
+  client: Client,
+  id: number,
+): Promise<import('@/types/dal').PrescriptionDetail | null> {
+  const { data, error } = await client
+    .from('prescriptions')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw new Error(`getPrescriptionById: ${error.message}`);
+  if (!data) return null;
+  const [enriched] = await enrichPrescriptions(client, [data as import('@/types/schema').PrescriptionRow]);
+  return enriched ?? null;
+}

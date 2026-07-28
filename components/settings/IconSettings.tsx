@@ -47,6 +47,15 @@ export function IconSettings({ icons: initialIcons }: Readonly<Props>) {
   const [addLoading, setAddLoading] = useState(false);
 
   const svgPreview = cleanSvg(addSvg);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => { setAddSvg((ev.target?.result as string) ?? ''); };
+    reader.readAsText(file);
+    e.target.value = ''; // reset so same file can be re-uploaded
+  };
   const svgValid   = svgPreview.startsWith('<svg');
 
   // ── Add ────────────────────────────────────────────────────────────────────
@@ -166,6 +175,13 @@ export function IconSettings({ icons: initialIcons }: Readonly<Props>) {
           </div>
         </div>
 
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
+          <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+            📁 Upload .svg file
+            <input type="file" accept=".svg,image/svg+xml" onChange={handleFileUpload} style={{ display: 'none' }} />
+          </label>
+          <span style={{ fontSize: '0.72rem', color: 'var(--text-faint)' }}>or paste below</span>
+        </div>
         <textarea
           className="input textarea--tall"
           placeholder="Paste SVG markup here…"

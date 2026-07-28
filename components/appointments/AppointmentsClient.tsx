@@ -250,13 +250,13 @@ export function AppointmentsClient({ upcoming, past, appointmentTypes, people, p
       }
 
       <div className="toggle-btn-section">
-        <button
-          type="button"
+        <Button
+          variant="ghost"
           className="toggle-btn"
           onClick={() => setShowPast(s => !s)}
         >
           {showPast ? '▲ Hide' : '▼ Show'} past appointments ({localPast.length})
-        </button>
+        </Button>
 
         {showPast && (
           <div className="toggle-btn-section__body">

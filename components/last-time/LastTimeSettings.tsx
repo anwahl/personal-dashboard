@@ -1,5 +1,7 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
+
 /**
  * LastTimeSettings — manage last_time_media, last_time_boolean, last_time_custom.
  * Each section lazy-loads its items on first expand.
@@ -13,6 +15,7 @@ import {
 } from '@/lib/dal/last-time';
 import { createClient }   from '@/lib/supabase/client';
 import { Button }         from '@/components/ui/Button';
+import { IconDisplay }    from '@/components/ui/IconDisplay';
 import { IconPicker }     from '@/components/ui/IconPicker';
 import { setIconId }      from '@/lib/dal/icons';
 import { ConfirmButton }  from '@/components/ui/ConfirmButton';
@@ -40,12 +43,13 @@ interface Props {
 interface EditRowProps {
   label:      string;
   subtitle?:  string;
+  icon?:      import('@/types/schema').IconRow | null;
   onDelete:   () => void;
-  children:   React.ReactNode;   // edit fields, shown in edit mode
+  children:   React.ReactNode;
 }
 
 function ItemRow({
-  label, subtitle, onDelete,
+  label, subtitle, icon, onDelete,
   children,
 }: Readonly<EditRowProps>) {
   const [editing, setEditing] = useState(false);
@@ -60,6 +64,7 @@ function ItemRow({
       ) : (
         <>
           <span className="manage-item__name">
+            {icon !== undefined && <IconDisplay icon={icon} size="sm" className="trackable-emoji" />}
             {label}
             {subtitle && <span className="badge badge--muted">{subtitle}</span>}
           </span>
@@ -77,6 +82,7 @@ function ItemRow({
 
 function MediaSection({ mediaTypes, mediaGenres, mediaStatuses, icons }: Readonly<Pick<Props, 'mediaTypes' | 'mediaGenres' | 'mediaStatuses'> & { icons: IconRow[] }>) {
   const supabase = createClient();
+  const router   = useRouter();
   const [items,    setItems]    = useState<LastTimeMediaRow[]>([]);
   const [loaded,   setLoaded]   = useState(false);
   const [open,     setOpen]     = useState(false);
@@ -124,12 +130,14 @@ function MediaSection({ mediaTypes, mediaGenres, mediaStatuses, icons }: Readonl
       const data = await createLastTimeMedia(supabase, payload);
       setItems(prev => [...prev, data]);
       setLabel(''); setIconId_m(null); setTypeId(''); setGenreId(''); setStatusId('');
+      router.refresh();
     } finally { setSaving(false); }
   };
 
-  const remove = async (id: number) => {
+  const remove_m = async (id: number) => {
     await deleteLastTimeMedia(supabase, id);
     setItems(prev => prev.filter(i => i.id !== id));
+    router.refresh();
   };
 
   const update = async (id: number, patch: Partial<{ label: string }>) => {
@@ -152,7 +160,7 @@ function MediaSection({ mediaTypes, mediaGenres, mediaStatuses, icons }: Readonl
             Combine any filters: type + genre + status. At least one filter is required.
           </p>
           {items.map(item => (
-            <ItemRow key={item.id} label={item.label} subtitle={subtitle(item)} onDelete={() => remove(item.id)}>
+            <ItemRow key={item.id} label={item.label} subtitle={subtitle(item)} icon={icons.find(i => i.id === item.icon_id) ?? null} onDelete={() => remove_m(item.id)}>
               <IconPicker icons={icons} value={item.icon_id} onChange={id => updateIcon_m(item.id, id)} fallbackEmoji={item.emoji} size="sm" />
               <input type="text" className="input--flex" defaultValue={item.label}
                 placeholder="Label…"
@@ -197,6 +205,7 @@ function MediaSection({ mediaTypes, mediaGenres, mediaStatuses, icons }: Readonl
 
 function BooleanSection({ trackables, icons }: Readonly<Pick<Props, 'trackables'> & { icons: IconRow[] }>) {
   const supabase = createClient();
+  const router   = useRouter();
   const [items,   setItems]   = useState<LastTimeBooleanRow[]>([]);
   const [loaded,  setLoaded]  = useState(false);
   const [open,    setOpen]    = useState(false);
@@ -226,12 +235,14 @@ function BooleanSection({ trackables, icons }: Readonly<Pick<Props, 'trackables'
       });
       setItems(prev => [...prev, data]);
       setTrackId('');
+      router.refresh();
     } finally { setSaving(false); }
   };
 
-  const remove = async (id: number) => {
+  const remove_b = async (id: number) => {
     await deleteLastTimeBoolean(supabase, id);
     setItems(prev => prev.filter(i => i.id !== id));
+    router.refresh();
   };
 
   const updateIcon_b = async (id: number, icon_id: number | null) => {
@@ -252,7 +263,7 @@ function BooleanSection({ trackables, icons }: Readonly<Pick<Props, 'trackables'
       {open && (
         <div className="last-time-section__body">
           {items.map(item => (
-            <ItemRow key={item.id} label={label(item)} onDelete={() => remove(item.id)}>
+            <ItemRow key={item.id} label={label(item)} icon={icons.find(i => i.id === item.icon_id) ?? null} onDelete={() => remove_b(item.id)}>
               <IconPicker icons={icons} value={item.icon_id} onChange={id => updateIcon_b(item.id, id)} fallbackEmoji={item.emoji} size="sm" />
               <span className="manage-item__name">
                 {trackables.find(t => t.id === item.trackable_id)?.name ?? `#${item.trackable_id}`}
@@ -279,6 +290,7 @@ function BooleanSection({ trackables, icons }: Readonly<Pick<Props, 'trackables'
 
 function CustomSection({ icons }: Readonly<{ icons: IconRow[] }>) {
   const supabase = createClient();
+  const router   = useRouter();
   const [items,  setItems]  = useState<LastTimeCustomRow[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [open,   setOpen]   = useState(false);
@@ -307,12 +319,14 @@ function CustomSection({ icons }: Readonly<{ icons: IconRow[] }>) {
       });
       setItems(prev => [...prev, data]);
       setValue(''); setIconId_c(null);
+      router.refresh();
     } finally { setSaving(false); }
   };
 
-  const remove = async (id: number) => {
+  const remove_c = async (id: number) => {
     await deleteLastTimeCustom(supabase, id);
     setItems(prev => prev.filter(i => i.id !== id));
+    router.refresh();
   };
 
   const update = async (id: number, patch: Partial<{ custom_value: string }>) => {
@@ -332,7 +346,7 @@ function CustomSection({ icons }: Readonly<{ icons: IconRow[] }>) {
       {open && (
         <div className="last-time-section__body">
           {items.map(item => (
-            <ItemRow key={item.id} label={item.custom_value} onDelete={() => remove(item.id)}>
+            <ItemRow key={item.id} label={item.custom_value} icon={icons.find(i => i.id === item.icon_id) ?? null} onDelete={() => remove_c(item.id)}>
               <IconPicker icons={icons} value={item.icon_id} onChange={id => updateIcon_c(item.id, id)} fallbackEmoji={item.emoji} size="sm" />
               <input type="text" className="input--flex" defaultValue={item.custom_value}
                 placeholder="Activity name…"

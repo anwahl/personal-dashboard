@@ -8,7 +8,7 @@
  * Sort options: sort_order (default) or days_ago ascending.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { createClient }           from '@/lib/supabase/client';
 import { logCustomLastTime }       from '@/lib/dal/lasttime';
 import { Button }                  from '@/components/ui/Button';
@@ -37,6 +37,9 @@ export function LastTimeTracker({ entries, icons, compact = false }: Readonly<Pr
   const [sortBy,  setSortBy]  = useState<'order' | 'recent'>('order');
   const [logging, setLogging] = useState<Set<number>>(new Set());
 
+  // Re-sync when server refreshes (router.refresh() from LastTimeSettings)
+  useEffect(() => { setItems(entries); }, [entries]);
+
   const sorted = [...items].sort((a, b) =>
     sortBy === 'order'
       ? (a.sort_order ?? 0) - (b.sort_order ?? 0)
@@ -50,7 +53,9 @@ export function LastTimeTracker({ entries, icons, compact = false }: Readonly<Pr
       const today = localTodayISO();
       await logCustomLastTime(supabase, item.custom_id, today);
       setItems(prev => prev.map(i =>
-        i.id === item.id ? { ...i, last_date: today, days_ago: 0 } : i
+        // IDs can collide across source tables — match category too
+        i.id === item.id && i.category === item.category
+          ? { ...i, last_date: today, days_ago: 0 } : i
       ));
     } finally {
       setLogging(prev => { const n = new Set(prev); n.delete(item.id); return n; });

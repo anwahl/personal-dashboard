@@ -10,6 +10,7 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { localTodayISO } from "@/lib/utils/dates";
 import type {
   LastTimeMediaRow,
   LastTimeBooleanRow,
@@ -202,7 +203,7 @@ export async function logCustomLastTime(
   id: number,
   date?: string,
 ): Promise<void> {
-  const today = date ?? new Date().toISOString().slice(0, 10);
+  const today = date ?? localTodayISO();
   await client
     .from("last_time_custom")
     .update({ last_date: today })

@@ -256,7 +256,9 @@ function RxItem({ rx, timings, onEdit }: Readonly<{ rx: PrescriptionDetail; timi
         </div>
         {isActive && <span className="badge badge--success">Active</span>}
       </div>
-      <RxChangeHistory rx={rx} timings={timings} />
+      <div style={{ marginTop: 8 }}>
+        <a href={`/medications/${rx.id}`} className="text-link" style={{ fontSize: '0.8rem' }}>View history / log change →</a>
+      </div>
     </>
   );
 }

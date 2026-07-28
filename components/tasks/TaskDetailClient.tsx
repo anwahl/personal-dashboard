@@ -31,6 +31,7 @@ export function TaskDetailClient({ task, statuses, priorities, people }: Readonl
   const [statusId,   setStatusId]   = useState(String(task.status_id));
   const [priorityId, setPriorityId] = useState(String(task.priority_id));
   const [dueDate,    setDueDate]    = useState(task.due_date ?? '');
+  const [dueTime,    setDueTime]    = useState(task.due_time ?? '');
   const [personId,   setPersonId]   = useState(task.person_id ? String(task.person_id) : '');
   const [bodyMd,     setBodyMd]     = useState(task.body_md ?? '');
 
@@ -65,6 +66,7 @@ export function TaskDetailClient({ task, statuses, priorities, people }: Readonl
         status_id:   Number.parseInt(statusId),
         priority_id: Number.parseInt(priorityId),
         due_date:    dueDate || null,
+        due_time:    dueTime  || null,
         person_id:   personId ? Number.parseInt(personId) : null,
         body_md:     bodyMd || null,
         ...reminderPayload,
@@ -78,7 +80,7 @@ export function TaskDetailClient({ task, statuses, priorities, people }: Readonl
     } catch {
       setSaveState('error');
     }
-  }, [supabase, task.id, title, statusId, priorityId, dueDate, personId, bodyMd, reminderAt, recurrenceFrequency, recurrenceInterval, recurrenceDays, recurrenceEndDate, router]);
+  }, [supabase, task.id, title, statusId, priorityId, dueDate, dueTime, personId, bodyMd, reminderAt, recurrenceFrequency, recurrenceInterval, recurrenceDays, recurrenceEndDate, router]);
 
   const complete = useCallback(async () => {
     if (!doneStatus) return;
@@ -130,7 +132,7 @@ export function TaskDetailClient({ task, statuses, priorities, people }: Readonl
           </div>
           <div className="detail-page__field">
             <dt>Due</dt>
-            <dd>{formatMediumDate(task.due_date)}</dd>
+            <dd>{formatMediumDate(task.due_date)}{task.due_time ? ' · ' + task.due_time.slice(0,5) : ''}</dd>
           </div>
           {task.person && (
             <div className="detail-page__field">
@@ -186,6 +188,10 @@ export function TaskDetailClient({ task, statuses, priorities, people }: Readonl
         <InputField label="Due date" id="td-due">
           <input id="td-due" type="date" value={dueDate}
             onChange={e => setDueDate(e.target.value)} />
+        </InputField>
+        <InputField label="Time" id="td-time">
+          <input id="td-time" type="time" value={dueTime}
+            onChange={e => setDueTime(e.target.value)} />
         </InputField>
         <InputField label="Person" id="td-person">
           <select id="td-person" value={personId} onChange={e => setPersonId(e.target.value)}>

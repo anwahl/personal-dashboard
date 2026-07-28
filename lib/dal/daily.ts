@@ -292,6 +292,7 @@ export async function upsertBrainDump(
   dumpDate: string,
   bodyMd: string,
 ): Promise<void> {
+  if (!bodyMd.trim()) return; // never create an empty brain dump row
   const { data: existing } = await client
     .from("brain_dumps")
     .select("id")

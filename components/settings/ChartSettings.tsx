@@ -200,6 +200,12 @@ function ChartCard({
   const addLink = useCallback(async () => {
     const tid = Number(selT);
     if (!tid || linkedIds.has(tid)) return;
+    // Block configurations that would violate chart constraints
+    const existingRoles = links.map(l => l.metric_role);
+    if (chart.chart_type === 'scatter') {
+      if (selRole === 'x_axis' && existingRoles.filter(r => r === 'x_axis').length >= 1) return;
+      if (selRole === 'y_axis' && existingRoles.filter(r => r === 'y_axis').length >= 1) return;
+    }
     setSaving(true);
     try {
       const { data, error } = await supabase
@@ -293,7 +299,17 @@ function ChartCard({
         <select value={selRole} onChange={e => setSelRole(e.target.value as MetricRole)} className="settings-select">
           {roleOptions.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
         </select>
-        <Button variant="accent" size="sm" onClick={addLink} disabled={!selT || saving}>+ Add</Button>
+        <Button variant="accent" size="sm" onClick={addLink}
+          disabled={!selT || saving || (() => {
+            if (!selT) return false;
+            const roles = links.map(l => l.metric_role);
+            if (chart.chart_type === 'scatter') {
+              if (selRole === 'x_axis' && roles.filter(r => r === 'x_axis').length >= 1) return true;
+              if (selRole === 'y_axis' && roles.filter(r => r === 'y_axis').length >= 1) return true;
+            }
+            return false;
+          })()}
+        >+ Add</Button>
       </div>
     </div>
   );

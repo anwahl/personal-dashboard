@@ -44,6 +44,8 @@ interface Props {
   renderName?: (item: any) => React.ReactNode;
   extraDefaultFields?: Record<string, string | boolean | number>;
   icons?:      IconRow[];  // required when any addField has type 'icon'
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onItemAdded?: (item: any) => void; // called after a successful add
 }
 
 /**
@@ -54,6 +56,7 @@ export function ManageableList({
   title, description, tableName, nameColumn, items: initialItems, addFields, renderName,
   extraDefaultFields = {},
   icons = [],
+  onItemAdded,
 }: Readonly<Props>) {
   const supabase = createClient();
 
@@ -109,6 +112,7 @@ export function ManageableList({
       setItems(prev => [...prev, data]);
       setNewVals(Object.fromEntries(addFields.filter(f => f.type !== 'icon').map(f => [f.key, ''])));
       setIconNewVals(Object.fromEntries(iconFields.map(f => [f.key, null])));
+      onItemAdded?.(data);
     } finally { setSaving(false); }
   }, [supabase, tableName, addFields, newVals, active.length, hasSortOrder, extraDefaultFields]);
 
