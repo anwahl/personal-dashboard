@@ -20,6 +20,8 @@ import { JournalTab }       from './JournalTab';
 import { SliderField }     from '@/components/ui/SliderField';
 import { Chip, ChipGroup } from '@/components/ui/Chip';
 import { InputField, SaveState } from '@/components/ui/Display';
+import { IconDisplay }  from '@/components/ui/IconDisplay';
+import { IconPicker }   from '@/components/ui/IconPicker';
 
 import { TagSelector }   from '@/components/ui/TagSelector';
 import type {
@@ -27,7 +29,7 @@ import type {
   EssEntryDetail, PrescriptionDetail, PriorSleepContext, ReferenceData,
 } from '@/types/dal';
 import type {  JournalState, DailyOverviewState, SymptomFormState, SleepFormState, MetricState, } from './DailyPageClient';
-import type { EssQuestionTypeRow, EssAnswerTypeRow } from '@/types/schema';
+import type { EssQuestionTypeRow, EssAnswerTypeRow, IconRow } from '@/types/schema';
 
 type Mode = 'view' | 'input';
 
@@ -60,6 +62,7 @@ function OverviewTab({
   mode, state, setState,
   trackables, trackableCategories, checkedTrackableIds, toggleBoolean,
   tags, tagIds, toggleTag, addNewTag,
+  icons, dailyFallbackEmoji,
 }: Readonly<{
   mode: Mode;
   state: DailyOverviewState;
@@ -72,6 +75,8 @@ function OverviewTab({
   tagIds: number[];
   toggleTag: (id: number) => void;
   addNewTag: (v: string) => Promise<void>;
+  icons:               IconRow[];
+  dailyFallbackEmoji:  string | null;
 }>) {
   const set = <K extends keyof DailyOverviewState>(k: K, v: DailyOverviewState[K]) =>
     setState(prev => ({ ...prev, [k]: v }));
@@ -99,7 +104,7 @@ function OverviewTab({
   if (uncategorized.length > 0) {
     categorizedGroups.push({ label: categorizedGroups.length === 0 ? 'Habits' : 'Other', items: uncategorized });
   }
-  const showSingleGroup = categorizedGroups.length <= 1;
+
   const activeTags = tags.filter(t => tagIds.includes(t.id));
 
   if (mode === 'view') {
@@ -111,7 +116,7 @@ function OverviewTab({
             <div className="habit-grid">
               {items.map(t => (
                 <div key={t.id} className={`habit-btn${checkedTrackableIds.includes(t.id) ? ' habit-btn--done' : ''}`}>
-                  <span className="habit-btn__emoji">{t.emoji ?? '•'}</span>
+                  <IconDisplay icon={icons.find(i => i.id === t.icon_id) ?? null} fallbackEmoji={t.emoji} size="sm" className="habit-btn__emoji" />
                   <span className="habit-btn__label">{t.name}</span>
                 </div>
               ))}
@@ -119,7 +124,7 @@ function OverviewTab({
           </CardSection>
         ))}
 
-        {(state.word || state.dailyEmoji) && (
+        {(state.word || state.dailyIconId != null || dailyFallbackEmoji) && (
           <CardSection>
             <div className="summary-row">
               <span className="summary-row__label">Word</span>
@@ -129,8 +134,12 @@ function OverviewTab({
             </div>
             <div className="summary-row">
               <span className="summary-row__label">Emoji</span>
-              <span className={`summary-row__value${!state.dailyEmoji ? ' summary-row__value--empty' : ''}`}>
-                {state.dailyEmoji || '—'}
+              <span className="summary-row__value">
+                <IconDisplay
+                  icon={icons.find(i => i.id === state.dailyIconId) ?? null}
+                  fallbackEmoji={dailyFallbackEmoji}
+                  size="md"
+                />
               </span>
             </div>
           </CardSection>
@@ -193,12 +202,13 @@ function OverviewTab({
               onChange={e => set('word', e.target.value)}
             />
           </InputField>
-          <InputField label="Daily emoji" id="daily-emoji">
-            <input
-              id="daily-emoji" type="text"
-              value={state.dailyEmoji}
-              placeholder="🌟"
-              onChange={e => set('dailyEmoji', e.target.value)}
+          <InputField label="Daily icon" id="daily-icon">
+            <IconPicker
+              icons={icons}
+              value={state.dailyIconId}
+              onChange={id => set('dailyIconId', id)}
+              fallbackEmoji={dailyFallbackEmoji}
+              size="sm"
             />
           </InputField>
         </div>
@@ -240,12 +250,13 @@ function OverviewTab({
 // ── Metrics tab ───────────────────────────────────────────────────────────────
 
 function MetricsTab({
-  mode, trackables, metricState, setMetricState,
+  mode, trackables, metricState, setMetricState, icons,
 }: Readonly<{
   mode: Mode;
   trackables: ReferenceData['trackables'];
   metricState: MetricState;
   setMetricState: React.Dispatch<React.SetStateAction<MetricState>>;
+  icons: IconRow[];
 }>) {
   const numericTrackables = trackables.filter(t => t.track_type === 'numeric');
 
@@ -258,7 +269,7 @@ function MetricsTab({
       <div>
         {numericTrackables.map(t => (
           <div key={t.id} className="metric-display">
-            <span className="metric-display__emoji">{t.emoji ?? '•'}</span>
+            <IconDisplay icon={icons.find(i => i.id === t.icon_id) ?? null} fallbackEmoji={t.emoji} size="sm" className="metric-display__emoji" />
             <span className="metric-display__label">{t.name}</span>
             <Rating value={metricState[t.id] ?? null} />
           </div>
@@ -272,7 +283,7 @@ function MetricsTab({
       {numericTrackables.map(t => (
         <SliderField
           key={t.id}
-          emoji={t.emoji ?? '•'}
+          emoji={<IconDisplay icon={icons.find(i => i.id === t.icon_id) ?? null} fallbackEmoji={t.emoji} size="sm" />}
           label={t.name}
           value={metricState[t.id] ?? null}
           min={0}
@@ -985,6 +996,8 @@ export function DailyCard({
             tagIds={tagIds}
             toggleTag={toggleTag}
             addNewTag={addNewTag}
+            icons={reference.icons}
+            dailyFallbackEmoji={entry.daily_emoji}
           />
         )}
 
@@ -994,6 +1007,7 @@ export function DailyCard({
             trackables={reference.trackables}
             metricState={metricState}
             setMetricState={setMetricState}
+            icons={reference.icons}
           />
         )}
 

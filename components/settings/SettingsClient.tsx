@@ -18,7 +18,6 @@ import type {
   ChartCategoryRow,
   PersonLinks,
 } from '@/types/dal';
-import type { IconRow }            from '@/types/schema';
 import type {
   DailyTrackableRow,
   InfoGroupRow,
@@ -34,6 +33,7 @@ import type {
   MediaTypeRow,
   MediaGenreRow,
   MediaStatusRow,
+  IconRow
 } from '@/types/schema';
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
@@ -143,7 +143,7 @@ export function SettingsClient({
         </div>
 
         <div className={tab === 'tracking' ? '' : 'hidden'}>
-          <TrackableSettings trackables={trackables} categories={trackableCategories} />
+          <TrackableSettings trackables={trackables} categories={trackableCategories} icons={icons} />
         </div>
 
         <div className={tab === 'charts' ? '' : 'hidden'}>
@@ -160,6 +160,7 @@ export function SettingsClient({
             mediaTypes={mediaTypes}
             mediaGenres={mediaGenres}
             mediaStatuses={mediaStatuses}
+            icons={icons}
           />
         </div>
 

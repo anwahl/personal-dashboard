@@ -35,10 +35,10 @@ type Mode = 'view' | 'input';
 export type MetricState = Record<number, number | null>;
 
 export interface DailyOverviewState {
-  summary:    string;
-  word:       string;
-  dailyEmoji: string;
-  brainDump:  string;
+  summary:     string;
+  word:        string;
+  dailyIconId: number | null;
+  brainDump:   string;
 }
 
 export interface SymptomFormState {
@@ -89,10 +89,10 @@ export type JournalState = JournalCard[];
 
 function initOverviewState(entry: DailyEntryDetail): DailyOverviewState {
   return {
-    summary:    entry.summary     ?? '',
-    word:       entry.word        ?? '',
-    dailyEmoji: entry.daily_emoji ?? '',
-    brainDump:  entry.brain_dump?.body_md ?? '',
+    summary:     entry.summary  ?? '',
+    word:        entry.word     ?? '',
+    dailyIconId: entry.icon_id  ?? null,
+    brainDump:   entry.brain_dump?.body_md ?? '',
   };
 }
 
@@ -263,9 +263,9 @@ export function DailyPageClient({
       // 1. Core daily entry fields + numeric metrics + brain dump (parallel)
       await Promise.all([
         updateDailyEntry(supabase, entry.id, {
-          summary:     overviewState.summary    || null,
-          word:        overviewState.word       || null,
-          daily_emoji: overviewState.dailyEmoji || null,
+          summary:  overviewState.summary     || null,
+          word:     overviewState.word        || null,
+          icon_id:  overviewState.dailyIconId ?? null,
         }),
         saveNumericEntries(supabase, entry.id, metricState),
         upsertBrainDump(supabase, entry.id, date, overviewState.brainDump),

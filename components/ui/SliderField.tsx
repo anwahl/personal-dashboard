@@ -1,7 +1,7 @@
 'use client';
 
 interface Props {
-  emoji:    string;
+  emoji:    React.ReactNode;
   label:    string;
   value:    number | null;
   min?:     number;

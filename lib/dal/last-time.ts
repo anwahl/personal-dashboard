@@ -22,7 +22,8 @@ export async function getLastTimeMedia(
 
 export interface LastTimeMediaPayload {
   label: string;
-  emoji: string | null;
+  emoji?: string | null;
+  icon_id?: number | null;
   type_id: number | null;
   genre_id: number | null;
   status_id: number | null;
@@ -120,7 +121,8 @@ export async function getLastTimeCustom(
 
 export interface LastTimeCustomPayload {
   custom_value: string;
-  emoji: string | null;
+  emoji?: string | null;
+  icon_id?: number | null;
   sort_order?: number;
 }
 

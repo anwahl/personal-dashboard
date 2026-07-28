@@ -13,11 +13,13 @@ import type { ManageableTable } from '@/lib/dal/settings';
 import { bySortOrder, normalizedReorderUpdates } from '@/lib/utils/sort';
 import { Button }        from '@/components/ui/Button';
 import { ConfirmButton } from '@/components/ui/ConfirmButton';
+import { IconPicker }    from '@/components/ui/IconPicker';
+import type { IconRow } from '@/types/schema';
 
 export interface AddField {
   key:          string;
   label:        string;
-  type:         'text' | 'number' | 'color';
+  type:         'text' | 'number' | 'color' | 'icon';
   placeholder?: string;
   required?:    boolean;
   width?:       number;   // px, for short fields like emoji
@@ -41,6 +43,7 @@ interface Props {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   renderName?: (item: any) => React.ReactNode;
   extraDefaultFields?: Record<string, string | boolean | number>;
+  icons?:      IconRow[];  // required when any addField has type 'icon'
 }
 
 /**
@@ -50,6 +53,7 @@ interface Props {
 export function ManageableList({
   title, description, tableName, nameColumn, items: initialItems, addFields, renderName,
   extraDefaultFields = {},
+  icons = [],
 }: Readonly<Props>) {
   const supabase = createClient();
 
@@ -59,6 +63,12 @@ export function ManageableList({
   const [newVals,  setNewVals]  = useState<Record<string, string>>(
     Object.fromEntries(addFields.map(f => [f.key, '']))
   );
+  // Separate state for icon_id fields (number|null vs string)
+  const iconFields = addFields.filter(f => f.type === 'icon');
+  const [iconNewVals,  setIconNewVals]  = useState<Record<string, number | null>>(
+    Object.fromEntries(iconFields.map(f => [f.key, null]))
+  );
+  const [iconEditVals, setIconEditVals] = useState<Record<string, number | null>>({});
   const [saving, setSaving] = useState(false);
 
   const hasSortOrder = items.length > 0 && 'sort_order' in items[0];
@@ -84,16 +94,21 @@ export function ManageableList({
     try {
       const payload: Record<string, unknown> = {};
       for (const f of addFields) {
-        payload[f.key] = f.type === 'number'
-          ? (newVals[f.key] ? Number.parseFloat(newVals[f.key]) : null)
-          : (newVals[f.key]?.trim() || null);
+        if (f.type === 'icon') {
+          payload[f.key] = iconNewVals[f.key] ?? null;
+        } else if (f.type === 'number') {
+          payload[f.key] = newVals[f.key] ? Number.parseFloat(newVals[f.key]) : null;
+        } else {
+          payload[f.key] = newVals[f.key]?.trim() || null;
+        }
       }
       if (hasSortOrder) payload.sort_order = active.length;
       Object.assign(payload, extraDefaultFields);
 
       const data = await addSettingsItem<Item>(supabase, tableName, payload);
       setItems(prev => [...prev, data]);
-      setNewVals(Object.fromEntries(addFields.map(f => [f.key, ''])));
+      setNewVals(Object.fromEntries(addFields.filter(f => f.type !== 'icon').map(f => [f.key, ''])));
+      setIconNewVals(Object.fromEntries(iconFields.map(f => [f.key, null])));
     } finally { setSaving(false); }
   }, [supabase, tableName, addFields, newVals, active.length, hasSortOrder, extraDefaultFields]);
 
@@ -124,19 +139,29 @@ export function ManageableList({
   const startEdit = (item: Item) => {
     setEditId(item.id);
     const vals: Record<string, string> = {};
+    const iconVals: Record<string, number | null> = {};
     for (const f of addFields) {
-      vals[f.key] = item[f.key] != null ? String(item[f.key]) : '';
+      if (f.type === 'icon') {
+        iconVals[f.key] = (item[f.key] as number | null) ?? null;
+      } else {
+        vals[f.key] = item[f.key] != null ? String(item[f.key]) : '';
+      }
     }
     setEditVals(vals);
+    setIconEditVals(iconVals);
   };
 
   const saveEdit = useCallback(async () => {
     if (!editId) return;
     const payload: Record<string, unknown> = {};
     for (const f of addFields) {
-      payload[f.key] = f.type === 'number'
-        ? (editVals[f.key] ? Number.parseFloat(editVals[f.key]) : null)
-        : (editVals[f.key]?.trim() || null);
+      if (f.type === 'icon') {
+        payload[f.key] = iconEditVals[f.key] ?? null;
+      } else if (f.type === 'number') {
+        payload[f.key] = editVals[f.key] ? Number.parseFloat(editVals[f.key]) : null;
+      } else {
+        payload[f.key] = editVals[f.key]?.trim() || null;
+      }
     }
     const data = await updateSettingsItem<Item>(supabase, tableName, editId, payload);
     setItems(prev => prev.map(i => i.id === editId ? { ...i, ...data } : i));
@@ -162,7 +187,15 @@ export function ManageableList({
       <div key={item.id} className={`manage-item${item.is_active ? '' : ' manage-item--inactive'}`}>
         {isEditing ? (
           <>
-            {addFields.map(f => (
+            {addFields.map(f => f.type === 'icon' ? (
+              <IconPicker
+                key={f.key}
+                icons={icons}
+                value={iconEditVals[f.key] ?? null}
+                onChange={id => setIconEditVals(prev => ({ ...prev, [f.key]: id }))}
+                size="sm"
+              />
+            ) : (
               // Dynamic px width from caller config — legitimate inline style exception
               <input
                 key={f.key}
@@ -239,7 +272,15 @@ export function ManageableList({
       )}
 
       <div className="manage-add-row">
-        {addFields.map(f => (
+        {addFields.map(f => f.type === 'icon' ? (
+          <IconPicker
+            key={f.key}
+            icons={icons}
+            value={iconNewVals[f.key] ?? null}
+            onChange={id => setIconNewVals(prev => ({ ...prev, [f.key]: id }))}
+            size="sm"
+          />
+        ) : (
           <input
             key={f.key}
             type={f.type}

@@ -12,11 +12,14 @@ import { useState, useCallback } from 'react';
 import { createClient }           from '@/lib/supabase/client';
 import { logCustomLastTime }       from '@/lib/dal/lasttime';
 import { Button }                  from '@/components/ui/Button';
+import { IconDisplay }             from '@/components/ui/IconDisplay';
 import type { LastTimeEntry }      from '@/types/dal';
+import type { IconRow }            from '@/types/schema';
 import { formatDaysAgo, formatMediumDate, localTodayISO } from '@/lib/utils/dates';
 
 interface Props {
   entries:  LastTimeEntry[];
+  icons:    IconRow[];
   compact?: boolean;
 }
 
@@ -28,7 +31,7 @@ function daysAgoColor(days: number | null): string {
   return 'var(--danger)';
 }
 
-export function LastTimeTracker({ entries, compact = false }: Readonly<Props>) {
+export function LastTimeTracker({ entries, icons, compact = false }: Readonly<Props>) {
   const supabase = createClient();
   const [items,   setItems]   = useState<LastTimeEntry[]>(entries);
   const [sortBy,  setSortBy]  = useState<'order' | 'recent'>('order');
@@ -82,7 +85,12 @@ export function LastTimeTracker({ entries, compact = false }: Readonly<Props>) {
       <div className="last-time-list">
         {sorted.map(item => (
           <div key={`${item.category}-${item.id}`} className="last-time-item">
-            <span className="last-time-item__emoji">{item.emoji ?? '•'}</span>
+            <IconDisplay
+              icon={icons.find(i => i.id === item.icon_id) ?? null}
+              fallbackEmoji={item.emoji}
+              size="sm"
+              className="last-time-item__emoji"
+            />
             <div className="last-time-item__body">
               <span className="last-time-item__label">{item.label}</span>
               {!compact && item.last_date && (
