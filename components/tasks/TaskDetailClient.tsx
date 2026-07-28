@@ -204,7 +204,7 @@ export function TaskDetailClient({ task, statuses, priorities, people }: Readonl
       <div className="reminder-section" style={{ marginTop: 16 }}>
         <div className="reminder-section__row">
           <span className="reminder-section__label">Reminder</span>
-          <input type="datetime-local" className="input" value={reminderAt}
+          <input type="datetime-local" value={reminderAt}
             onChange={e => { setReminderAt(e.target.value); if (!e.target.value) { setRecurrenceFrequency(''); setRecurrenceDays(''); setRecurrenceEndDate(''); }}} />
           {reminderAt && <button type="button" className="reminder-section__toggle" onClick={() => { setReminderAt(''); setRecurrenceFrequency(''); setRecurrenceDays(''); setRecurrenceEndDate(''); }}>✕ Clear</button>}
         </div>
@@ -212,7 +212,7 @@ export function TaskDetailClient({ task, statuses, priorities, people }: Readonl
           <div className="reminder-section__fields">
             <div className="reminder-section__row">
               <span className="reminder-section__label">Repeat</span>
-              <select className="input" value={recurrenceFrequency} onChange={e => { setRecurrenceFrequency(e.target.value); setRecurrenceDays(''); }}>
+              <select value={recurrenceFrequency} onChange={e => { setRecurrenceFrequency(e.target.value); setRecurrenceDays(''); }}>
                 <option value="">No repeat</option>
                 <option value="daily">Daily</option>
                 <option value="weekly">Weekly</option>
@@ -224,7 +224,7 @@ export function TaskDetailClient({ task, statuses, priorities, people }: Readonl
               <>
                 <div className="reminder-section__row">
                   <span className="reminder-section__label">Every</span>
-                  <input type="number" min="1" max="99" className="input reminder-section__interval"
+                  <input type="number" min="1" max="99" className="reminder-section__interval"
                     value={recurrenceInterval} onChange={e => setRecurrenceInterval(e.target.value)} />
                 </div>
                 {recurrenceFrequency === 'weekly' && (
@@ -240,7 +240,7 @@ export function TaskDetailClient({ task, statuses, priorities, people }: Readonl
                 )}
                 <div className="reminder-section__row">
                   <span className="reminder-section__label">Until</span>
-                  <input type="date" className="input" value={recurrenceEndDate} onChange={e => setRecurrenceEndDate(e.target.value)} />
+                  <input type="date" value={recurrenceEndDate} onChange={e => setRecurrenceEndDate(e.target.value)} />
                   {recurrenceEndDate && <button type="button" className="reminder-section__toggle" onClick={() => setRecurrenceEndDate('')}>✕</button>}
                 </div>
               </>
