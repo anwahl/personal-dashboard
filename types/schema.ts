@@ -615,8 +615,23 @@ export interface TaskRow {
   person_id: number | null;
   body_md: string | null;
   completed_at: string | null;
+  // Reminder (all optional — default null in DB)
+  reminder_at?:          string | null;  // ISO timestamptz
+  snoozed_until?:        string | null;  // ISO timestamptz; null = not snoozed
+  reminder_last_sent?:   string | null;  // ISO timestamptz; stamped by Edge Function
+  // Recurrence (null frequency = one-off)
+  recurrence_frequency?: 'daily' | 'weekly' | 'monthly' | 'yearly' | null;
+  recurrence_interval?:  number | null;  // default 1
+  recurrence_days?:      string | null;  // e.g. 'MO,WE,FR' (weekly only)
+  recurrence_end_date?:  string | null;  // ISO date
   created_at: string;
   updated_at: string;
+}
+
+export interface CalendarTokenRow {
+  id:         number;
+  token:      string;
+  created_at: string;
 }
 
 export interface TaskTagEntryRow {

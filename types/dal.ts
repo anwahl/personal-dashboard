@@ -53,11 +53,13 @@ import type {
   ChartDefinitionRow,
   ChartTrackableLinkRow,
   IconRow,
+  CalendarTokenRow,
 } from "./schema";
 
 // Re-export raw rows that components may need directly
 export type {
   IconRow,
+  CalendarTokenRow,
   ChartCategoryRow,
   DailyTrackableRow,
   DailyNumericEntryRow,
