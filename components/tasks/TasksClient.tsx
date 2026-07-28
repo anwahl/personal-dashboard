@@ -170,6 +170,7 @@ function ReminderSection({ form, set }: Readonly<{ form: EditState; set: (k: key
         <span className="reminder-section__label">Reminder</span>
         <input
           type="datetime-local"
+          className="input"
           value={form.reminder_at}
           onChange={e => {
             set('reminder_at', e.target.value);
@@ -192,7 +193,7 @@ function ReminderSection({ form, set }: Readonly<{ form: EditState; set: (k: key
         <div className="reminder-section__fields">
           <div className="reminder-section__row">
             <span className="reminder-section__label">Repeat</span>
-            <select value={form.recurrence_frequency} onChange={e => { set('recurrence_frequency', e.target.value); set('recurrence_days', ''); }}>
+            <select className="input" value={form.recurrence_frequency} onChange={e => { set('recurrence_frequency', e.target.value); set('recurrence_days', ''); }}>
               <option value="">No repeat</option>
               <option value="daily">Daily</option>
               <option value="weekly">Weekly</option>
@@ -205,10 +206,10 @@ function ReminderSection({ form, set }: Readonly<{ form: EditState; set: (k: key
             <>
               <div className="reminder-section__row">
                 <span className="reminder-section__label">Every</span>
-                <input type="number" min="1" max="99" className="reminder-section__interval"
+                <input type="number" min="1" max="99" className="input reminder-section__interval"
                   value={form.recurrence_interval}
                   onChange={e => set('recurrence_interval', e.target.value)} />
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                <span className="reminder-section__unit">
                   {form.recurrence_frequency === 'daily' ? 'day(s)' :
                    form.recurrence_frequency === 'weekly' ? 'week(s)' :
                    form.recurrence_frequency === 'monthly' ? 'month(s)' : 'year(s)'}
@@ -232,7 +233,7 @@ function ReminderSection({ form, set }: Readonly<{ form: EditState; set: (k: key
 
               <div className="reminder-section__row">
                 <span className="reminder-section__label">Until</span>
-                <input type="date" value={form.recurrence_end_date}
+                <input type="date" className="input" value={form.recurrence_end_date}
                   onChange={e => set('recurrence_end_date', e.target.value)} />
                 {form.recurrence_end_date && (
                   <button type="button" className="reminder-section__toggle"

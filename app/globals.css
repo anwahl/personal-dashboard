@@ -3686,6 +3686,7 @@ a.appt-secondary:last-child { border-bottom: none; }
 .reminder-section__row          { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .reminder-section__label        { font-size: 0.75rem; color: var(--text-muted); min-width: 64px; }
 .reminder-section__interval     { width: 52px; }
+.reminder-section__unit          { font-size: 0.8rem; color: var(--text-muted); }
 
 /* ── Weekday chip toggles ────────────────────────────────────────────────────*/
 .weekday-chips                  { display: flex; gap: 4px; flex-wrap: wrap; }
