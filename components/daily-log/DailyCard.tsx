@@ -250,10 +250,11 @@ function OverviewTab({
 // ── Metrics tab ───────────────────────────────────────────────────────────────
 
 function MetricsTab({
-  mode, trackables, metricState, setMetricState, icons,
+  mode, trackables, trackableCategories, metricState, setMetricState, icons,
 }: Readonly<{
   mode: Mode;
   trackables: ReferenceData['trackables'];
+  trackableCategories: ReferenceData['trackableCategories'];
   metricState: MetricState;
   setMetricState: React.Dispatch<React.SetStateAction<MetricState>>;
   icons: IconRow[];
@@ -264,35 +265,56 @@ function MetricsTab({
     return <p className="empty-state">No numeric metrics configured.</p>;
   }
 
-  if (mode === 'view') {
-    return (
-      <div>
-        {numericTrackables.map(t => (
-          <div key={t.id} className="metric-display">
-            <IconDisplay icon={icons.find(i => i.id === t.icon_id) ?? null} fallbackEmoji={t.emoji} size="sm" className="metric-display__emoji" />
-            <span className="metric-display__label">{t.name}</span>
-            <Rating value={metricState[t.id] ?? null} />
-          </div>
-        ))}
-      </div>
-    );
+  // Group by category (same pattern as boolean metrics in OverviewTab)
+  type Group = { label: string; items: typeof numericTrackables };
+  const groups: Group[] = [];
+  const byCategory = new Map<number, typeof numericTrackables>();
+  const uncategorized: typeof numericTrackables = [];
+
+  for (const t of numericTrackables) {
+    if (t.category_id != null) {
+      if (!byCategory.has(t.category_id)) byCategory.set(t.category_id, []);
+      byCategory.get(t.category_id)!.push(t);
+    } else {
+      uncategorized.push(t);
+    }
   }
 
-  return (
-    <div>
-      {numericTrackables.map(t => (
-        <SliderField
-          key={t.id}
-          emoji={<IconDisplay icon={icons.find(i => i.id === t.icon_id) ?? null} fallbackEmoji={t.emoji} size="sm" />}
-          label={t.name}
-          value={metricState[t.id] ?? null}
-          min={0}
-          max={SEVERITY_MAX}
-          onChange={v => setMetricState(prev => ({ ...prev, [t.id]: v }))}
-        />
-      ))}
+  for (const cat of [...trackableCategories].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))) {
+    const items = byCategory.get(cat.id);
+    if (items?.length) groups.push({ label: cat.category_name, items });
+  }
+  if (uncategorized.length) {
+    groups.push({ label: groups.length > 0 ? 'Other' : '', items: uncategorized });
+  }
+
+  const renderGroup = (group: Group) => (
+    <div key={group.label}>
+      {group.label && <p className="category-group__label">{group.label}</p>}
+      {mode === 'view'
+        ? group.items.map(t => (
+            <div key={t.id} className="metric-display">
+              <IconDisplay icon={icons.find(i => i.id === t.icon_id) ?? null} fallbackEmoji={t.emoji} size="sm" className="metric-display__emoji" />
+              <span className="metric-display__label">{t.name}</span>
+              <Rating value={metricState[t.id] ?? null} />
+            </div>
+          ))
+        : group.items.map(t => (
+            <SliderField
+              key={t.id}
+              emoji={<IconDisplay icon={icons.find(i => i.id === t.icon_id) ?? null} fallbackEmoji={t.emoji} size="sm" />}
+              label={t.name}
+              value={metricState[t.id] ?? null}
+              min={0}
+              max={SEVERITY_MAX}
+              onChange={v => setMetricState(prev => ({ ...prev, [t.id]: v }))}
+            />
+          ))
+      }
     </div>
   );
+
+  return <div>{groups.map(renderGroup)}</div>;
 }
 
 // ── Symptoms tab ──────────────────────────────────────────────────────────────
@@ -1005,6 +1027,7 @@ export function DailyCard({
           <MetricsTab
             mode={mode}
             trackables={reference.trackables}
+            trackableCategories={reference.trackableCategories}
             metricState={metricState}
             setMetricState={setMetricState}
             icons={reference.icons}

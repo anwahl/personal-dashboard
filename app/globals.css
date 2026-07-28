@@ -3710,3 +3710,14 @@ a.appt-secondary:last-child { border-bottom: none; }
 .ical-url-input                { flex: 1; font-family: monospace; font-size: 0.75rem; }
 .ical-instructions             { font-size: 0.82rem; color: var(--text-muted); line-height: 1.6; margin: 12px 0 0; }
 .ical-instructions li          { margin: 4px 0; }
+
+/* ── Metric / boolean category group header (daily card Metrics tab) ─────────*/
+.category-group__label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-faint);
+  margin: 12px 0 6px;
+}
+.category-group__label:first-child { margin-top: 0; }
