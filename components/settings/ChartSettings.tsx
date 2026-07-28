@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   toggleChartActive, setChartCategory, removeChartLink,
   updateChartSortOrders, deleteChartDefinition,
@@ -70,6 +70,91 @@ function matchesFilter(chart: ChartDefinitionDetail, q: string): boolean {
     CHART_TYPE_META[chart.chart_type].label.toLowerCase().includes(lq) ||
     (chart.category?.name.toLowerCase().includes(lq) ?? false) ||
     chart.links.some(l => l.trackable.name.toLowerCase().includes(lq))
+  );
+}
+
+// ── TrackablePicker — icon-aware metric selector ──────────────────────────────
+// Replaces a plain <select> so we can render SVG icons next to each option.
+
+function TrackablePicker({
+  trackables, icons, value, onChange, placeholder = 'Add metric…',
+}: Readonly<{
+  trackables:  DailyTrackableRow[];
+  icons:       IconRow[];
+  value:       string;          // trackable id as string, '' = none
+  onChange:    (id: string) => void;
+  placeholder?: string;
+}>) {
+  const [open, setOpen] = useState(false);
+  const ref             = useRef<HTMLDivElement>(null);
+
+  // Close when clicking outside
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const selected = value ? trackables.find(t => String(t.id) === value) ?? null : null;
+
+  const select = (t: DailyTrackableRow) => {
+    onChange(String(t.id));
+    setOpen(false);
+  };
+
+  return (
+    <div className="trackable-picker" ref={ref}>
+      <button
+        type="button"
+        className={`trackable-picker__trigger${open ? ' trackable-picker__trigger--open' : ''}`}
+        onClick={() => setOpen(o => !o)}
+      >
+        {selected ? (
+          <>
+            <IconDisplay
+              icon={icons.find(i => i.id === selected.icon_id) ?? null}
+              fallbackEmoji={selected.emoji}
+              size="sm"
+            />
+            <span className="trackable-picker__trigger-label">{selected.name}</span>
+          </>
+        ) : (
+          <span className="trackable-picker__placeholder trackable-picker__trigger-label">
+            {placeholder}
+          </span>
+        )}
+        <span className="trackable-picker__caret">{open ? '▲' : '▼'}</span>
+      </button>
+
+      {open && (
+        <div className="trackable-picker__dropdown">
+          {trackables.map(t => (
+            <button
+              key={t.id}
+              type="button"
+              className={`trackable-picker__option${String(t.id) === value ? ' trackable-picker__option--selected' : ''}`}
+              onClick={() => select(t)}
+            >
+              <IconDisplay
+                icon={icons.find(i => i.id === t.icon_id) ?? null}
+                fallbackEmoji={t.emoji}
+                size="sm"
+              />
+              <span className="trackable-picker__option-name">{t.name}</span>
+              <span className="trackable-picker__option-type">{t.track_type}</span>
+            </button>
+          ))}
+          {trackables.length === 0 && (
+            <p className="trackable-picker__option" style={{ color: 'var(--text-faint)', cursor: 'default' }}>
+              All metrics already linked.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -199,12 +284,12 @@ function ChartCard({
 
       {/* Add metric */}
       <div className="chart-settings-card__add-row">
-        <select value={selT} onChange={e => setSelT(e.target.value)} className="settings-select">
-          <option value="">Add metric…</option>
-          {trackables.filter(t => !linkedIds.has(t.id)).map(t => (
-            <option key={t.id} value={t.id}>{t.emoji ? `${t.emoji} ` : ''}{t.name} ({t.track_type})</option>
-          ))}
-        </select>
+        <TrackablePicker
+          trackables={trackables.filter(t => !linkedIds.has(t.id))}
+          icons={icons}
+          value={selT}
+          onChange={setSelT}
+        />
         <select value={selRole} onChange={e => setSelRole(e.target.value as MetricRole)} className="settings-select">
           {roleOptions.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
         </select>
