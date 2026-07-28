@@ -12,15 +12,17 @@ import { useState }         from 'react';
 import { TabBar }           from '@/components/ui/Controls';
 import { ChartPanel }       from './ChartPanel';
 import type { ChartDefinitionDetail, TrackingDataPoint } from '@/types/dal';
+import type { IconRow } from '@/types/schema';
 
 interface Props {
   charts:      ChartDefinitionDetail[];
   data:        TrackingDataPoint[];   // initial server-fetched data (default range)
   fromDate:    string;
   toDate:      string;
+  icons:       IconRow[];
 }
 
-export function AnalyticsClient({ charts, data, fromDate, toDate }: Readonly<Props>) {
+export function AnalyticsClient({ charts, data, fromDate, toDate, icons }: Readonly<Props>) {
   // Build category tabs from charts
   const categoryOrder = new Map<string, number>();
   categoryOrder.set('All', -1);
@@ -69,6 +71,7 @@ export function AnalyticsClient({ charts, data, fromDate, toDate }: Readonly<Pro
           initialData={data}
           fromDate={fromDate}
           toDate={toDate}
+          icons={icons}
         />
       ))}
     </div>

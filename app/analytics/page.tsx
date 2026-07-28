@@ -1,5 +1,5 @@
 import { createClient }            from '@/lib/supabase/server';
-import { getChartDefinitions }     from '@/lib/dal/reference';
+import { getChartDefinitions, getIconsRef } from '@/lib/dal/reference';
 import { getCombinedTrackingData } from '@/lib/dal/analytics';
 import { AnalyticsClient }         from '@/components/analytics/AnalyticsClient';
 import type { TrackType }          from '@/types/schema';
@@ -15,7 +15,10 @@ export default async function AnalyticsPage() {
   })();
 
   const supabase = await createClient();
-  const charts   = await getChartDefinitions(supabase);
+  const [charts, icons] = await Promise.all([
+    getChartDefinitions(supabase),
+    getIconsRef(supabase),
+  ]);
 
   const allIds     = new Set<number>();
   const booleanIds = new Set<number>();
@@ -46,6 +49,7 @@ export default async function AnalyticsPage() {
         data={data}
         fromDate={fromDate}
         toDate={toDate}
+        icons={icons}
       />
     </div>
   );

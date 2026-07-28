@@ -151,6 +151,7 @@ export function SettingsClient({
             chartDefinitions={chartDefinitions}
             trackables={trackables.filter(t => t.is_active)}
             categories={chartCategories}
+            icons={icons}
           />
         </div>
 

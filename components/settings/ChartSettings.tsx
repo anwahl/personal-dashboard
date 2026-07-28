@@ -7,10 +7,11 @@ import {
 } from '@/lib/dal/charts';
 import { createClient }          from '@/lib/supabase/client';
 import { Button }                from '@/components/ui/Button';
+import { IconDisplay }           from '@/components/ui/IconDisplay';
 import { ConfirmButton }         from '@/components/ui/ConfirmButton';
 import { ManageableList }        from './ManageableList';
 import type { ChartDefinitionDetail, ChartCategoryRow } from '@/types/dal';
-import type { DailyTrackableRow, ChartType, MetricRole } from '@/types/schema';
+import type { DailyTrackableRow, ChartType, MetricRole, IconRow } from '@/types/schema';
 
 // ── Chart type metadata ───────────────────────────────────────────────────────
 
@@ -75,7 +76,7 @@ function matchesFilter(chart: ChartDefinitionDetail, q: string): boolean {
 // ── ChartCard ─────────────────────────────────────────────────────────────────
 
 function ChartCard({
-  chart, idx, total, trackables, categories,
+  chart, idx, total, trackables, categories, icons,
   onMove, onDelete,
 }: Readonly<{
   chart:      ChartDefinitionDetail;
@@ -83,6 +84,7 @@ function ChartCard({
   total:      number;
   trackables: DailyTrackableRow[];
   categories: ChartCategoryRow[];
+  icons:      IconRow[];
   onMove:    (id: number, dir: 'up' | 'down') => Promise<void>;
   onDelete:  (id: number) => Promise<void>;
 }>) {
@@ -182,7 +184,12 @@ function ChartCard({
         {links.map(link => (
           <div key={link.id} className="chart-settings-card__link-row">
             <span className="chart-settings-card__link-name">
-              {link.trackable.emoji ?? ''} {link.trackable.name}
+              <IconDisplay
+                icon={icons.find(i => i.id === link.trackable.icon_id) ?? null}
+                fallbackEmoji={link.trackable.emoji}
+                size="sm"
+              />
+              {link.trackable.name}
             </span>
             <span className="badge">{ROLE_LABELS[link.metric_role]}</span>
             <Button variant="danger" size="icon" onClick={() => removeLink(link.id)}>✕</Button>
@@ -195,7 +202,7 @@ function ChartCard({
         <select value={selT} onChange={e => setSelT(e.target.value)} className="settings-select">
           <option value="">Add metric…</option>
           {trackables.filter(t => !linkedIds.has(t.id)).map(t => (
-            <option key={t.id} value={t.id}>{t.emoji ?? ''} {t.name} ({t.track_type})</option>
+            <option key={t.id} value={t.id}>{t.emoji ? `${t.emoji} ` : ''}{t.name} ({t.track_type})</option>
           ))}
         </select>
         <select value={selRole} onChange={e => setSelRole(e.target.value as MetricRole)} className="settings-select">
@@ -264,9 +271,10 @@ interface Props {
   chartDefinitions: ChartDefinitionDetail[];
   trackables:       DailyTrackableRow[];
   categories:       ChartCategoryRow[];
+  icons:            IconRow[];
 }
 
-export function ChartSettings({ chartDefinitions, trackables, categories }: Readonly<Props>) {
+export function ChartSettings({ chartDefinitions, trackables, categories, icons }: Readonly<Props>) {
   const supabase = createClient();
   const [charts, setCharts] = useState(
     [...chartDefinitions].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
@@ -380,6 +388,7 @@ export function ChartSettings({ chartDefinitions, trackables, categories }: Read
                 total={flatFiltered.length}
                 trackables={trackables}
                 categories={categories}
+                icons={icons}
                 onMove={handleMove}
                 onDelete={handleDelete}
               />

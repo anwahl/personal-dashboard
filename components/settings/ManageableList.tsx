@@ -87,7 +87,7 @@ export function ManageableList({
   // ── Add ────────────────────────────────────────────────────────────────────
 
   const add = useCallback(async () => {
-    const required = addFields.filter(f => f.required !== false);
+    const required = addFields.filter(f => f.required !== false && f.type !== 'icon');
     if (required.some(f => !newVals[f.key]?.trim())) return;
 
     setSaving(true);
