@@ -31,6 +31,7 @@ import type {
   JournalCategoryRow,
   JournalPromptRow,
   PersonRow,
+  PeopleCategoryRow,
   ChartCategoryRow,
   ChartDefinitionRow,
   ChartTrackableLinkRow,
@@ -138,6 +139,9 @@ export const getMediaGenres = (c: Client, includeInactive = false) =>
 
 export const getPeople = (c: Client, includeInactive = false) =>
   fetchRef<PersonRow>(c, "people", includeInactive);
+
+export const getPeopleCategories = (c: Client, includeInactive = false) =>
+  fetchRef<PeopleCategoryRow>(c, "people_categories", includeInactive);
 
 // ── Symptom categories with their types ──────────────────────────────────────
 
@@ -331,6 +335,7 @@ export async function getReferenceData(client: Client): Promise<ReferenceData> {
     mediaGenres,
     journalCategories,
     people,
+    peopleCategories,
   ] = await Promise.all([
     getIconsRef(client),
     getTrackableCategories(client),
@@ -353,6 +358,7 @@ export async function getReferenceData(client: Client): Promise<ReferenceData> {
     getMediaGenres(client),
     getJournalCategoriesWithPrompts(client),
     getPeople(client),
+    getPeopleCategories(client),
   ]);
 
   return {
@@ -377,6 +383,7 @@ export async function getReferenceData(client: Client): Promise<ReferenceData> {
     mediaGenres,
     journalCategories,
     people,
+    peopleCategories,
   };
 }
 

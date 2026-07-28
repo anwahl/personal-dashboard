@@ -8,14 +8,25 @@
 
 // ── People ────────────────────────────────────────────────────────────────────
 
+// ── People ────────────────────────────────────────────────────────────────────
+
+export interface PeopleCategoryRow {
+  id:            number;
+  category_name: string;
+  sort_order?:   number;
+  is_active:     boolean;
+  created_at:    string;
+}
+
 export interface PersonRow {
-  id: number;
+  id:          number;
   person_name: string;
-  birth_date: string | null;
-  is_self: boolean;
+  birth_date:  string | null;
+  is_self:     boolean;
+  category_id: number | null;
   sort_order?: number;
-  is_active: boolean;
-  created_at: string;
+  is_active:   boolean;
+  created_at:  string;
 }
 
 export interface DiagnosisRow {
@@ -612,6 +623,7 @@ export interface TaskRow {
   status_id: number;
   priority_id: number;
   due_date: string | null;
+  due_time?: string | null;       // HH:MM:SS local time, optional alongside due_date
   person_id: number | null;
   body_md: string | null;
   completed_at: string | null;

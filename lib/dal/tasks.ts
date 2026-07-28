@@ -314,6 +314,7 @@ export async function spawnNextRecurrence(
     status_id:            defaultStatusId,
     priority_id:          task.priority_id,
     due_date:             next.toISOString().slice(0, 10),
+    due_time:             task.due_time ?? null,
     person_id:            task.person_id,
     body_md:              task.body_md,
     completed_at:         null,

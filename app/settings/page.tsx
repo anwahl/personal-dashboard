@@ -15,6 +15,7 @@ import {
   getIconsRef,
 } from '@/lib/dal/reference';
 import { getAllPeople }    from '@/lib/dal/people';
+import { getPeopleCategories } from '@/lib/dal/reference';
 import { getCalendarToken } from '@/lib/dal/calendar';
 import { getWeeklyJournalCategories } from '@/lib/dal/weekly-journal';
 import type { PersonLinks } from '@/types/dal';
@@ -30,6 +31,7 @@ export default async function SettingsPage() {
     providerTypes,
     sleepEventTypes,
     people,
+    peopleCategories,
     trackables,
     trackableCategories,
     chartDefinitions,
@@ -44,6 +46,7 @@ export default async function SettingsPage() {
     getProviderTypes(supabase),
     getSleepEventTypes(supabase),
     getAllPeople(supabase),
+    getPeopleCategories(supabase, true),
     getTrackables(supabase, true),
     getTrackableCategories(supabase, true),
     getChartDefinitions(supabase),
@@ -87,6 +90,7 @@ export default async function SettingsPage() {
         mediaGenres={mediaGenres}
         mediaStatuses={mediaStatuses}
         people={people}
+        peopleCategories={peopleCategories}
         personLinks={personLinks}
         infoGroups={settingsData.infoGroups}
         itemLists={settingsData.itemLists}

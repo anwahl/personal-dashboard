@@ -36,6 +36,7 @@ import type {
   MediaStatusRow,
   IconRow,
   CalendarTokenRow,
+  PeopleCategoryRow,
 } from '@/types/schema';
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
@@ -70,6 +71,8 @@ const TABS = [
 interface Props {
   // Icons
   icons:                IconRow[];
+  // People
+  peopleCategories:     PeopleCategoryRow[];
   // Integrations
   calendarToken:        CalendarTokenRow | null;
   // Tracking & charts
@@ -107,6 +110,7 @@ interface Props {
 export function SettingsClient({
   icons,
   calendarToken,
+  peopleCategories,
   trackables, trackableCategories, chartDefinitions, chartCategories,
   tags, intentions,
   symptomCategories, sleepEventTypes,

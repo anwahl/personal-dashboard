@@ -30,6 +30,7 @@ import type {
   JournalCategoryRow,
   JournalPromptRow,
   PersonRow,
+  PeopleCategoryRow,
   ProviderRow,
   MedicationRow,
   PrescriptionRow,
@@ -60,6 +61,7 @@ import type {
 export type {
   IconRow,
   CalendarTokenRow,
+  PeopleCategoryRow,
   ChartCategoryRow,
   DailyTrackableRow,
   DailyNumericEntryRow,
@@ -105,6 +107,7 @@ export interface ReferenceData {
   mediaGenres: MediaGenreRow[];
   journalCategories: JournalCategoryWithPrompts[];
   people: PersonRow[];
+  peopleCategories: PeopleCategoryRow[];
 }
 
 export interface SymptomCategoryWithTypes extends SymptomCategoryRow {
