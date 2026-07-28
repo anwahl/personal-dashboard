@@ -6,11 +6,14 @@
  * Icon-aware custom dropdown for picking a DailyTrackableRow.
  * Replaces a plain <select> so SVG icons can appear next to each option.
  * Used in ChartSettings and LastTimeSettings.
+ *
+ * The dropdown uses position:fixed (not position:absolute) so it renders
+ * in viewport space and is never clipped by overflow:hidden on a parent.
  */
 
-import { useState, useRef, useEffect } from 'react';
-import { IconDisplay }                  from '@/components/ui/IconDisplay';
-import type { DailyTrackableRow, IconRow } from '@/types/schema';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { IconDisplay }                               from '@/components/ui/IconDisplay';
+import type { DailyTrackableRow, IconRow }           from '@/types/schema';
 
 interface Props {
   trackables:   DailyTrackableRow[];
@@ -18,24 +21,61 @@ interface Props {
   value:        string;           // trackable id as string, '' = none
   onChange:     (id: string) => void;
   placeholder?: string;
-  showType?:    boolean;          // show track_type badge in dropdown
+  showType?:    boolean;
 }
+
+interface DropdownPos { top: number; left: number; width: number; }
 
 export function TrackablePicker({
   trackables, icons, value, onChange,
   placeholder = 'Select metric…',
   showType = false,
 }: Readonly<Props>) {
-  const [open, setOpen] = useState(false);
-  const ref             = useRef<HTMLDivElement>(null);
+  const [open,    setOpen]    = useState(false);
+  const [pos,     setPos]     = useState<DropdownPos | null>(null);
+  const triggerRef            = useRef<HTMLButtonElement>(null);
 
+  // Calculate fixed position from the trigger's bounding rect
+  const openDropdown = useCallback(() => {
+    if (triggerRef.current) {
+      const r = triggerRef.current.getBoundingClientRect();
+      setPos({ top: r.bottom + 4, left: r.left, width: r.width });
+    }
+    setOpen(true);
+  }, []);
+
+  // Close on outside click
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      // Keep open if clicking trigger or dropdown
+      const dropdown = document.getElementById('trackable-picker-dropdown');
+      if (
+        (triggerRef.current && triggerRef.current.contains(target)) ||
+        (dropdown && dropdown.contains(target))
+      ) return;
+      setOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  // Recalculate position on scroll/resize so dropdown follows the trigger
+  useEffect(() => {
+    if (!open) return;
+    const update = () => {
+      if (triggerRef.current) {
+        const r = triggerRef.current.getBoundingClientRect();
+        setPos({ top: r.bottom + 4, left: r.left, width: r.width });
+      }
+    };
+    window.addEventListener('scroll', update, true);
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('scroll', update, true);
+      window.removeEventListener('resize', update);
+    };
   }, [open]);
 
   const selected = value ? (trackables.find(t => String(t.id) === value) ?? null) : null;
@@ -46,11 +86,12 @@ export function TrackablePicker({
   };
 
   return (
-    <div className="trackable-picker" ref={ref}>
+    <div className="trackable-picker">
       <button
+        ref={triggerRef}
         type="button"
         className={`trackable-picker__trigger${open ? ' trackable-picker__trigger--open' : ''}`}
-        onClick={() => setOpen(o => !o)}
+        onClick={() => open ? setOpen(false) : openDropdown()}
       >
         {selected ? (
           <>
@@ -69,8 +110,18 @@ export function TrackablePicker({
         <span className="trackable-picker__caret">{open ? '▲' : '▼'}</span>
       </button>
 
-      {open && (
-        <div className="trackable-picker__dropdown">
+      {open && pos && (
+        <div
+          id="trackable-picker-dropdown"
+          className="trackable-picker__dropdown"
+          style={{
+            position: 'fixed',
+            top:      pos.top,
+            left:     pos.left,
+            width:    pos.width,
+            zIndex:   300,
+          }}
+        >
           {trackables.map(t => (
             <button
               key={t.id}

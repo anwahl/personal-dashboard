@@ -3614,15 +3614,12 @@ a.appt-secondary:last-child { border-bottom: none; }
 .trackable-picker__trigger-label   { flex: 1; overflow: hidden; text-overflow: ellipsis; }
 .trackable-picker__caret           { color: var(--text-faint); font-size: 0.65rem; flex-shrink: 0; }
 .trackable-picker__dropdown {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
+  /* position/top/left/width/z-index applied inline (position:fixed) so the
+     dropdown renders in viewport space, escaping any overflow:hidden parent */
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   box-shadow: var(--box-shadow-standard);
-  z-index: 500;
   max-height: 220px;
   overflow-y: auto;
 }
