@@ -80,6 +80,11 @@ function TaskItem({
               {isOverdue ? `Overdue · ` : ''}{fmtShortDate(task.due_date)}
             </span>
           )}
+          {task.reminder_at && !task.status.is_terminal && (
+            <span className={`task-reminder-badge${new Date(task.reminder_at) < new Date() ? ' task-reminder-badge--overdue' : ''}`}>
+              🔔{task.recurrence_frequency ? ' ↻' : ''}
+            </span>
+          )}
           {task.person && (
             <span className="task-item__person">{task.person.person_name}</span>
           )}

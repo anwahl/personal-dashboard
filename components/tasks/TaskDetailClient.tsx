@@ -4,7 +4,7 @@ import { InputField, SaveStatus, SaveState } from '@/components/ui/Display';
 import { useState, useCallback } from 'react';
 import { useRouter }             from 'next/navigation';
 import { createClient }          from '@/lib/supabase/client';
-import { updateTask, completeTask, deleteTask } from '@/lib/dal/tasks';
+import { updateTask, completeTask, deleteTask, spawnNextRecurrence } from '@/lib/dal/tasks';
 import { Button }                from '@/components/ui/Button';
 import { ConfirmButton }         from '@/components/ui/ConfirmButton';
 import type { TaskDetail, TaskStatusRow, TaskPriorityRow } from '@/types/dal';
@@ -34,11 +34,32 @@ export function TaskDetailClient({ task, statuses, priorities, people }: Readonl
   const [personId,   setPersonId]   = useState(task.person_id ? String(task.person_id) : '');
   const [bodyMd,     setBodyMd]     = useState(task.body_md ?? '');
 
+  // Reminder state
+  const toLocalInput = (iso: string) => {
+    const d = new Date(iso); const p = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+  };
+  const [reminderAt,          setReminderAt]          = useState(task.reminder_at ? toLocalInput(task.reminder_at) : '');
+  const [recurrenceFrequency, setRecurrenceFrequency] = useState(task.recurrence_frequency ?? '');
+  const [recurrenceInterval,  setRecurrenceInterval]  = useState(String(task.recurrence_interval ?? 1));
+  const [recurrenceDays,      setRecurrenceDays]      = useState(task.recurrence_days ?? '');
+  const [recurrenceEndDate,   setRecurrenceEndDate]   = useState(task.recurrence_end_date ?? '');
+
   const doneStatus = statuses.find(s => s.is_terminal);
 
   const save = useCallback(async () => {
     setSaveState('saving');
     try {
+      const reminderPayload = reminderAt ? {
+        reminder_at:          new Date(reminderAt).toISOString(),
+        recurrence_frequency: (recurrenceFrequency || null) as import('@/types/schema').TaskRow['recurrence_frequency'],
+        recurrence_interval:  recurrenceInterval ? Number.parseInt(recurrenceInterval) : null,
+        recurrence_days:      recurrenceDays || null,
+        recurrence_end_date:  recurrenceEndDate || null,
+      } : {
+        reminder_at: null, recurrence_frequency: null, recurrence_interval: null,
+        recurrence_days: null, recurrence_end_date: null,
+      };
       await updateTask(supabase, task.id, {
         title,
         status_id:   Number.parseInt(statusId),
@@ -46,6 +67,9 @@ export function TaskDetailClient({ task, statuses, priorities, people }: Readonl
         due_date:    dueDate || null,
         person_id:   personId ? Number.parseInt(personId) : null,
         body_md:     bodyMd || null,
+        ...reminderPayload,
+        snoozed_until: null,
+        reminder_last_sent: null,
       });
       setSaveState('ok');
       setTimeout(() => setSaveState('idle'), 2500);
@@ -54,13 +78,17 @@ export function TaskDetailClient({ task, statuses, priorities, people }: Readonl
     } catch {
       setSaveState('error');
     }
-  }, [supabase, task.id, title, statusId, priorityId, dueDate, personId, bodyMd, router]);
+  }, [supabase, task.id, title, statusId, priorityId, dueDate, personId, bodyMd, reminderAt, recurrenceFrequency, recurrenceInterval, recurrenceDays, recurrenceEndDate, router]);
 
   const complete = useCallback(async () => {
     if (!doneStatus) return;
+    const todoStatus = statuses.find(s => !s.is_terminal);
     await completeTask(supabase, task.id, doneStatus.id);
+    if (task.recurrence_frequency && task.reminder_at && todoStatus) {
+      await spawnNextRecurrence(supabase, task, todoStatus.id);
+    }
     router.push('/tasks');
-  }, [supabase, task.id, doneStatus, router]);
+  }, [supabase, task, statuses, doneStatus, router]);
 
   const remove = useCallback(async () => {
     setDeleting(true);
@@ -108,6 +136,17 @@ export function TaskDetailClient({ task, statuses, priorities, people }: Readonl
             <div className="detail-page__field">
               <dt>Person</dt>
               <dd>{task.person.person_name}</dd>
+            </div>
+          )}
+          {task.reminder_at && (
+            <div className="detail-page__field">
+              <dt>Reminder</dt>
+              <dd className={`task-reminder-badge${
+                (task.reminder_at && !task.status.is_terminal && new Date(task.reminder_at) < new Date()) ? ' task-reminder-badge--overdue' : ''
+              }`}>
+                🔔 {new Date(task.reminder_at).toLocaleString()}
+                {task.recurrence_frequency && ` ↻ ${task.recurrence_frequency}`}
+              </dd>
             </div>
           )}
         </dl>
@@ -160,6 +199,55 @@ export function TaskDetailClient({ task, statuses, priorities, people }: Readonl
         <textarea id="td-body" value={bodyMd}
           onChange={e => setBodyMd(e.target.value)} />
       </InputField>
+
+      {/* Reminder section */}
+      <div className="reminder-section" style={{ marginTop: 16 }}>
+        <div className="reminder-section__row">
+          <span className="reminder-section__label">Reminder</span>
+          <input type="datetime-local" value={reminderAt}
+            onChange={e => { setReminderAt(e.target.value); if (!e.target.value) { setRecurrenceFrequency(''); setRecurrenceDays(''); setRecurrenceEndDate(''); }}} />
+          {reminderAt && <button type="button" className="reminder-section__toggle" onClick={() => { setReminderAt(''); setRecurrenceFrequency(''); setRecurrenceDays(''); setRecurrenceEndDate(''); }}>✕ Clear</button>}
+        </div>
+        {reminderAt && (
+          <div className="reminder-section__fields">
+            <div className="reminder-section__row">
+              <span className="reminder-section__label">Repeat</span>
+              <select value={recurrenceFrequency} onChange={e => { setRecurrenceFrequency(e.target.value); setRecurrenceDays(''); }}>
+                <option value="">No repeat</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="yearly">Yearly</option>
+              </select>
+            </div>
+            {recurrenceFrequency && (
+              <>
+                <div className="reminder-section__row">
+                  <span className="reminder-section__label">Every</span>
+                  <input type="number" min="1" max="99" className="reminder-section__interval"
+                    value={recurrenceInterval} onChange={e => setRecurrenceInterval(e.target.value)} />
+                </div>
+                {recurrenceFrequency === 'weekly' && (
+                  <div className="reminder-section__row">
+                    <span className="reminder-section__label">On</span>
+                    <div className="weekday-chips">
+                      {[{code:'MO',label:'Mo'},{code:'TU',label:'Tu'},{code:'WE',label:'We'},{code:'TH',label:'Th'},{code:'FR',label:'Fr'},{code:'SA',label:'Sa'},{code:'SU',label:'Su'}].map(({code,label}) => {
+                        const active = recurrenceDays.split(',').includes(code);
+                        return <button key={code} type="button" className={`weekday-chip${active ? ' weekday-chip--active' : ''}`} onClick={() => { const d = recurrenceDays.split(',').filter(Boolean); setRecurrenceDays(active ? d.filter(x=>x!==code).join(',') : [...d,code].join(',')); }}>{label}</button>;
+                      })}
+                    </div>
+                  </div>
+                )}
+                <div className="reminder-section__row">
+                  <span className="reminder-section__label">Until</span>
+                  <input type="date" value={recurrenceEndDate} onChange={e => setRecurrenceEndDate(e.target.value)} />
+                  {recurrenceEndDate && <button type="button" className="reminder-section__toggle" onClick={() => setRecurrenceEndDate('')}>✕</button>}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
 
       <div className="page-actions">
         <Button variant="accent" onClick={save} disabled={saveState === 'saving'}>

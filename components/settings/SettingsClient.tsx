@@ -11,6 +11,7 @@ import { ChartSettings }           from './ChartSettings';
 import { LastTimeSettings }        from '@/components/last-time/LastTimeSettings';
 import { ProviderSettings }        from '@/components/providers/ProviderSettings';
 import { IconSettings }            from './IconSettings';
+import { IntegrationsSettings }   from './IntegrationsSettings';
 import type {
   SymptomCategoryWithTypes,
   JournalCategoryWithPrompts,
@@ -33,7 +34,8 @@ import type {
   MediaTypeRow,
   MediaGenreRow,
   MediaStatusRow,
-  IconRow
+  IconRow,
+  CalendarTokenRow,
 } from '@/types/schema';
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
@@ -47,7 +49,8 @@ type TabId =
   | 'journal'
   | 'providers'
   | 'people'
-  | 'icons';
+  | 'icons'
+  | 'integrations';
 
 const TABS = [
   { id: 'daily',     label: '📅 Daily'     },
@@ -58,7 +61,8 @@ const TABS = [
   { id: 'journal',   label: '📔 Journal'   },
   { id: 'providers', label: '🏥 Providers' },
   { id: 'people',    label: '👤 People'    },
-  { id: 'icons',     label: '✦ Icons'      },
+  { id: 'icons',         label: '✦ Icons'        },
+  { id: 'integrations',  label: '🔗 Integrations' },
 ] as const satisfies { id: TabId; label: string }[];
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -66,6 +70,8 @@ const TABS = [
 interface Props {
   // Icons
   icons:                IconRow[];
+  // Integrations
+  calendarToken:        CalendarTokenRow | null;
   // Tracking & charts
   trackables:           DailyTrackableRow[];
   trackableCategories:  import('@/types/schema').TrackableCategoryRow[];
@@ -100,6 +106,7 @@ interface Props {
 
 export function SettingsClient({
   icons,
+  calendarToken,
   trackables, trackableCategories, chartDefinitions, chartCategories,
   tags, intentions,
   symptomCategories, sleepEventTypes,
@@ -200,6 +207,10 @@ export function SettingsClient({
 
         <div className={tab === 'icons' ? '' : 'hidden'}>
           <IconSettings icons={icons} />
+        </div>
+
+        <div className={tab === 'integrations' ? '' : 'hidden'}>
+          <IntegrationsSettings token={calendarToken} />
         </div>
 
       </div>

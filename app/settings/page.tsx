@@ -15,6 +15,7 @@ import {
   getIconsRef,
 } from '@/lib/dal/reference';
 import { getAllPeople }    from '@/lib/dal/people';
+import { getCalendarToken } from '@/lib/dal/calendar';
 import { getWeeklyJournalCategories } from '@/lib/dal/weekly-journal';
 import type { PersonLinks } from '@/types/dal';
 import { SettingsClient } from '@/components/settings/SettingsClient';
@@ -35,6 +36,7 @@ export default async function SettingsPage() {
     chartCategories,
     settingsData,
     weeklyJournalCategories,
+    calendarToken,
   ] = await Promise.all([
     getIconsRef(supabase, true),
     getSymptomCategoriesWithTypes(supabase),
@@ -48,6 +50,7 @@ export default async function SettingsPage() {
     getChartCategories(supabase),
     getSettingsPageData(supabase),
     getWeeklyJournalCategories(supabase, true),
+    getCalendarToken(supabase),
   ]);
 
   const [mediaTypes, mediaGenres, mediaStatuses] = await Promise.all([
@@ -90,6 +93,7 @@ export default async function SettingsPage() {
         logSchemas={settingsData.logSchemas}
         checklists={settingsData.checklists}
         weeklyJournalCategories={weeklyJournalCategories}
+        calendarToken={calendarToken}
       />
     </div>
   );

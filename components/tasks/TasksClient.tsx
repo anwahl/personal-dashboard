@@ -3,12 +3,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter }             from 'next/navigation';
 import { createClient }          from '@/lib/supabase/client';
-import { createTask, updateTask, completeTask, deleteTask } from '@/lib/dal/tasks';
+import { createTask, updateTask, completeTask, deleteTask, spawnNextRecurrence } from '@/lib/dal/tasks';
 import { Button }                from '@/components/ui/Button';
 import { TabBar }                from '@/components/ui/Controls';
 import { InputField }            from '@/components/ui/Display';
 import type { TaskDetail }       from '@/types/dal';
-import type { TaskStatusRow, TaskPriorityRow, PersonRow } from '@/types/schema';
+import type { TaskStatusRow, TaskPriorityRow, PersonRow, TaskRow } from '@/types/schema';
 
 interface Props {
   active:     TaskDetail[];
@@ -54,7 +54,7 @@ function TaskItem({ task, doneStatusId, onComplete, onEdit }: Readonly<{
   const dueDate = task.due_date;
 
   return (
-    <div className={`list-item${done ? ' list-item--muted' : ''}`}>
+    <div className={`list-item${done ? ' list-item--muted' : ''}${isReminderOverdue(task) ? ' list-item--reminder-overdue' : ''}`}>
       <div className={`priority-dot ${PRIORITY_COLOR[task.priority.priority_name] ?? 'priority-dot--normal'}`} />
 
       {!done && (
@@ -81,6 +81,12 @@ function TaskItem({ task, doneStatusId, onComplete, onEdit }: Readonly<{
               {overdue ? '⚠ ' : ''}{fmtDate(dueDate)}
             </span>
           )}
+          {task.reminder_at && (
+            <span className={`task-reminder-badge${isReminderOverdue(task) ? ' task-reminder-badge--overdue' : isReminderSoon(task) ? ' task-reminder-badge--soon' : ''}`}>
+              🔔 {fmtDate(task.reminder_at.slice(0, 10))}
+              {task.recurrence_frequency && ' ↻'}
+            </span>
+          )}
           {task.person && <span>{task.person.person_name}</span>}
         </div>
       </div>
@@ -90,20 +96,155 @@ function TaskItem({ task, doneStatusId, onComplete, onEdit }: Readonly<{
 
 // ── Edit panel (inline) ───────────────────────────────────────────────────────
 
+// ── Reminder helpers ──────────────────────────────────────────────────────────
+
+/** ISO timestamptz → local datetime string for datetime-local input */
+function toLocalInput(iso: string): string {
+  const d = new Date(iso);
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+function isReminderOverdue(t: TaskDetail): boolean {
+  if (!t.reminder_at || t.status.is_terminal) return false;
+  if (t.snoozed_until && new Date(t.snoozed_until) > new Date()) return false;
+  return new Date(t.reminder_at) < new Date();
+}
+
+function isReminderSoon(t: TaskDetail): boolean {
+  if (!t.reminder_at || t.status.is_terminal || isReminderOverdue(t)) return false;
+  return new Date(t.reminder_at) <= new Date(Date.now() + 24 * 60 * 60_000);
+}
+
+const WEEKDAYS = [
+  { code: 'MO', label: 'Mo' }, { code: 'TU', label: 'Tu' }, { code: 'WE', label: 'We' },
+  { code: 'TH', label: 'Th' }, { code: 'FR', label: 'Fr' }, { code: 'SA', label: 'Sa' },
+  { code: 'SU', label: 'Su' },
+];
+
+// ── Form state ────────────────────────────────────────────────────────────────
+
 interface EditState {
   title: string; status_id: string; priority_id: string;
   due_date: string; person_id: string; body_md: string;
+  reminder_at:          string;
+  recurrence_frequency: string;
+  recurrence_interval:  string;
+  recurrence_days:      string;
+  recurrence_end_date:  string;
 }
 
 function taskToEdit(t: TaskDetail): EditState {
   return {
-    title:          t.title,
-    status_id:      String(t.status_id),
-    priority_id:    String(t.priority_id),
-    due_date:       t.due_date       ?? '',
-    person_id:      t.person_id      ? String(t.person_id) : '',
-    body_md:        t.body_md        ?? '',
+    title:                t.title,
+    status_id:            String(t.status_id),
+    priority_id:          String(t.priority_id),
+    due_date:             t.due_date             ?? '',
+    person_id:            t.person_id            ? String(t.person_id) : '',
+    body_md:              t.body_md              ?? '',
+    reminder_at:          t.reminder_at          ? toLocalInput(t.reminder_at) : '',
+    recurrence_frequency: t.recurrence_frequency ?? '',
+    recurrence_interval:  String(t.recurrence_interval ?? 1),
+    recurrence_days:      t.recurrence_days      ?? '',
+    recurrence_end_date:  t.recurrence_end_date  ?? '',
   };
+}
+
+// ── ReminderSection sub-component ─────────────────────────────────────────────
+
+function ReminderSection({ form, set }: Readonly<{ form: EditState; set: (k: keyof EditState, v: string) => void }>) {
+  const hasReminder = Boolean(form.reminder_at);
+  const isWeekly = form.recurrence_frequency === 'weekly';
+
+  const toggleDay = (code: string) => {
+    const days = form.recurrence_days ? form.recurrence_days.split(',').filter(Boolean) : [];
+    const next = days.includes(code) ? days.filter(d => d !== code) : [...days, code];
+    set('recurrence_days', next.join(','));
+  };
+
+  const activeDays = form.recurrence_days ? form.recurrence_days.split(',').filter(Boolean) : [];
+
+  return (
+    <div className="reminder-section">
+      <div className="reminder-section__row">
+        <span className="reminder-section__label">Reminder</span>
+        <input
+          type="datetime-local"
+          value={form.reminder_at}
+          onChange={e => {
+            set('reminder_at', e.target.value);
+            if (!e.target.value) {
+              set('recurrence_frequency', '');
+              set('recurrence_days', '');
+              set('recurrence_end_date', '');
+            }
+          }}
+        />
+        {hasReminder && (
+          <button type="button" className="reminder-section__toggle"
+            onClick={() => { set('reminder_at', ''); set('recurrence_frequency', ''); set('recurrence_days', ''); set('recurrence_end_date', ''); }}>
+            ✕ Clear
+          </button>
+        )}
+      </div>
+
+      {hasReminder && (
+        <div className="reminder-section__fields">
+          <div className="reminder-section__row">
+            <span className="reminder-section__label">Repeat</span>
+            <select value={form.recurrence_frequency} onChange={e => { set('recurrence_frequency', e.target.value); set('recurrence_days', ''); }}>
+              <option value="">No repeat</option>
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+              <option value="yearly">Yearly</option>
+            </select>
+          </div>
+
+          {form.recurrence_frequency && (
+            <>
+              <div className="reminder-section__row">
+                <span className="reminder-section__label">Every</span>
+                <input type="number" min="1" max="99" className="reminder-section__interval"
+                  value={form.recurrence_interval}
+                  onChange={e => set('recurrence_interval', e.target.value)} />
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  {form.recurrence_frequency === 'daily' ? 'day(s)' :
+                   form.recurrence_frequency === 'weekly' ? 'week(s)' :
+                   form.recurrence_frequency === 'monthly' ? 'month(s)' : 'year(s)'}
+                </span>
+              </div>
+
+              {isWeekly && (
+                <div className="reminder-section__row">
+                  <span className="reminder-section__label">On</span>
+                  <div className="weekday-chips">
+                    {WEEKDAYS.map(({ code, label }) => (
+                      <button key={code} type="button"
+                        className={`weekday-chip${activeDays.includes(code) ? ' weekday-chip--active' : ''}`}
+                        onClick={() => toggleDay(code)}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="reminder-section__row">
+                <span className="reminder-section__label">Until</span>
+                <input type="date" value={form.recurrence_end_date}
+                  onChange={e => set('recurrence_end_date', e.target.value)} />
+                {form.recurrence_end_date && (
+                  <button type="button" className="reminder-section__toggle"
+                    onClick={() => set('recurrence_end_date', '')}>✕</button>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function EditPanel({ task, statuses, priorities, people, onSave, onDelete, onCancel, saving }: Readonly<{
@@ -144,7 +285,8 @@ function EditPanel({ task, statuses, priorities, people, onSave, onDelete, onCan
       <InputField label="Notes" id="et-body">
         <textarea id="et-body" value={form.body_md} onChange={e => set('body_md', e.target.value)} style={{ minHeight: 60 }} />
       </InputField>
-      <div style={{ display: 'flex', gap: 8 }}>
+      <ReminderSection form={form} set={set} />
+      <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
         <Button variant="accent" onClick={() => onSave(form)} disabled={saving || !form.title.trim()}>
           {saving ? 'Saving…' : 'Update'}
         </Button>
@@ -165,6 +307,8 @@ function FullAddForm({ statuses, priorities, people, todoStatusId, normalPriorit
   const [form, setForm] = useState<EditState>({
     title: '', status_id: String(todoStatusId), priority_id: String(normalPriorityId),
     due_date: '', person_id: '', body_md: '',
+    reminder_at: '', recurrence_frequency: '', recurrence_interval: '1',
+    recurrence_days: '', recurrence_end_date: '',
   });
   const set = (k: keyof EditState, v: string) => setForm(p => ({ ...p, [k]: v }));
 
@@ -195,7 +339,8 @@ function FullAddForm({ statuses, priorities, people, todoStatusId, normalPriorit
       <InputField label="Notes" id="fa-body">
         <textarea id="fa-body" value={form.body_md} onChange={e => set('body_md', e.target.value)} style={{ minHeight: 60 }} />
       </InputField>
-      <div style={{ display: 'flex', gap: 8 }}>
+      <ReminderSection form={form} set={set} />
+      <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
         <Button variant="accent" onClick={() => onSave(form)} disabled={saving || !form.title.trim()}>
           {saving ? 'Adding…' : 'Add Task'}
         </Button>
@@ -250,6 +395,16 @@ export function TasksClient({ active, completed, statuses, priorities, people }:
   const fullAdd = useCallback(async (data: EditState) => {
     setSaving(true);
     try {
+    const reminderPayload = data.reminder_at ? {
+      reminder_at:          new Date(data.reminder_at).toISOString(),
+      recurrence_frequency: (data.recurrence_frequency || null) as TaskRow['recurrence_frequency'],
+      recurrence_interval:  data.recurrence_interval ? Number.parseInt(data.recurrence_interval) : null,
+      recurrence_days:      data.recurrence_days      || null,
+      recurrence_end_date:  data.recurrence_end_date  || null,
+    } : {
+      reminder_at: null, recurrence_frequency: null, recurrence_interval: null,
+      recurrence_days: null, recurrence_end_date: null,
+    };
       await createTask(supabase, {
         title:          data.title.trim(),
         status_id:      Number.parseInt(data.status_id),
@@ -258,6 +413,7 @@ export function TasksClient({ active, completed, statuses, priorities, people }:
         person_id:      data.person_id      ? Number.parseInt(data.person_id) : null,
         body_md:        data.body_md        || null,
         completed_at:   null,
+        ...reminderPayload,
       });
       setShowFull(false);
       router.refresh();
@@ -265,14 +421,29 @@ export function TasksClient({ active, completed, statuses, priorities, people }:
   }, [supabase, router]);
 
   const complete = useCallback(async (id: number) => {
+    const task = localActive.find(t => t.id === id) ?? null;
     await completeTask(supabase, id, doneStatusId);
+    // Spawn next occurrence for recurring tasks
+    if (task?.recurrence_frequency && task.reminder_at) {
+      await spawnNextRecurrence(supabase, task as TaskRow, todoStatusId);
+    }
     router.refresh();
-  }, [supabase, doneStatusId, router]);
+  }, [supabase, doneStatusId, todoStatusId, localActive, router]);
 
   const saveEdit = useCallback(async (data: EditState) => {
     if (!editTask) return;
     setSaving(true);
     try {
+    const reminderPayload = data.reminder_at ? {
+      reminder_at:          new Date(data.reminder_at).toISOString(),
+      recurrence_frequency: (data.recurrence_frequency || null) as TaskRow['recurrence_frequency'],
+      recurrence_interval:  data.recurrence_interval ? Number.parseInt(data.recurrence_interval) : null,
+      recurrence_days:      data.recurrence_days      || null,
+      recurrence_end_date:  data.recurrence_end_date  || null,
+    } : {
+      reminder_at: null, recurrence_frequency: null, recurrence_interval: null,
+      recurrence_days: null, recurrence_end_date: null,
+    };
       await updateTask(supabase, editTask.id, {
         title:          data.title,
         status_id:      Number.parseInt(data.status_id),
@@ -280,6 +451,9 @@ export function TasksClient({ active, completed, statuses, priorities, people }:
         due_date:       data.due_date       || null,
         person_id:      data.person_id      ? Number.parseInt(data.person_id) : null,
         body_md:        data.body_md        || null,
+        ...reminderPayload,
+        snoozed_until:  null,
+        reminder_last_sent: null,
       });
       setEditTask(null);
       router.refresh();

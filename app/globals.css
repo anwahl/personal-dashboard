@@ -3641,3 +3641,69 @@ a.appt-secondary:last-child { border-bottom: none; }
 .trackable-picker__option--selected      { background: var(--accent-dim); }
 .trackable-picker__option-name           { flex: 1; }
 .trackable-picker__option-type           { font-size: 0.7rem; color: var(--text-faint); flex-shrink: 0; }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   TASK REMINDERS
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Reminder badge in task meta row ─────────────────────────────────────────*/
+.task-reminder-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+.task-reminder-badge--overdue   { color: var(--danger); }
+.task-reminder-badge--soon      { color: var(--accent); }
+
+/* ── Overdue reminder: pulsing left border on the list-item ──────────────────*/
+@keyframes reminder-pulse {
+  0%, 100% { box-shadow: inset 3px 0 0 var(--danger); }
+  50%       { box-shadow: inset 3px 0 0 transparent;   }
+}
+.list-item--reminder-overdue {
+  animation: reminder-pulse 2s ease-in-out infinite;
+}
+
+/* ── Reminder form section ───────────────────────────────────────────────────*/
+.reminder-section {
+  border-top: 1px solid var(--border);
+  margin-top: 10px;
+  padding-top: 10px;
+}
+.reminder-section__toggle {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 8px;
+}
+.reminder-section__toggle:hover { color: var(--text); }
+.reminder-section__fields       { display: flex; flex-direction: column; gap: 8px; }
+.reminder-section__row          { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.reminder-section__label        { font-size: 0.75rem; color: var(--text-muted); min-width: 64px; }
+.reminder-section__interval     { width: 52px; }
+
+/* ── Weekday chip toggles ────────────────────────────────────────────────────*/
+.weekday-chips                  { display: flex; gap: 4px; flex-wrap: wrap; }
+.weekday-chip {
+  padding: 3px 7px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.72rem;
+  cursor: pointer;
+  background: none;
+  color: var(--text-muted);
+  transition: border-color 0.1s, background 0.1s, color 0.1s;
+}
+.weekday-chip:hover            { border-color: var(--border-focus); color: var(--text); }
+.weekday-chip--active          { border-color: var(--accent); background: var(--accent-dim); color: var(--text); }
+
+/* ── Integrations settings ───────────────────────────────────────────────────*/
+.ical-url-row                  { display: flex; gap: 8px; align-items: center; margin: 10px 0; }
+.ical-url-input                { flex: 1; font-family: monospace; font-size: 0.75rem; }
+.ical-instructions             { font-size: 0.82rem; color: var(--text-muted); line-height: 1.6; margin: 12px 0 0; }
+.ical-instructions li          { margin: 4px 0; }
