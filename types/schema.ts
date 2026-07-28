@@ -13,6 +13,7 @@
 export interface PeopleCategoryRow {
   id:            number;
   category_name: string;
+  is_assignable: boolean;   // true = people here can be assigned to tasks/appts/etc.
   sort_order?:   number;
   is_active:     boolean;
   created_at:    string;

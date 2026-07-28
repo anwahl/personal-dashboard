@@ -17,6 +17,7 @@ import { createClient }   from '@/lib/supabase/client';
 import { Button }         from '@/components/ui/Button';
 import { IconDisplay }    from '@/components/ui/IconDisplay';
 import { IconPicker }     from '@/components/ui/IconPicker';
+import { TrackablePicker } from '@/components/settings/TrackablePicker';
 import { setIconId }      from '@/lib/dal/icons';
 import { ConfirmButton }  from '@/components/ui/ConfirmButton';
 import type {

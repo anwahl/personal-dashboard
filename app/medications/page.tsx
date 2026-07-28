@@ -1,6 +1,6 @@
 import { createClient }                         from '@/lib/supabase/server';
 import { getAllPrescriptions }                  from '@/lib/dal/prescriptions';
-import { getMedicationTimingTypes, getPeople, getMedications } from '@/lib/dal/reference';
+import { getMedicationTimingTypes, getAssignablePeople, getMedications } from '@/lib/dal/reference';
 import { getProviders }                         from '@/lib/dal/providers';
 import { MedicationsClient }                    from '@/components/medications/MedicationsClient';
 
@@ -8,7 +8,7 @@ export default async function MedicationsPage() {
   const supabase = await createClient();
 
   const [people, timings, medications, providers] = await Promise.all([
-    getPeople(supabase),
+    getAssignablePeople(supabase),
     getMedicationTimingTypes(supabase),
     getMedications(supabase),
     getProviders(supabase),

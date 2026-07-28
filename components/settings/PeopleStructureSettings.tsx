@@ -473,16 +473,24 @@ function StructureSection({
 }: Readonly<{ title: string; children: React.ReactNode; createForm: React.ReactNode }>) {
   const [creating, setCreating] = useState(false);
   return (
-    <div className="settings-section">
-      <div className="settings-section__header">
+    <details className="settings-section settings-section--collapsible">
+      <summary className="settings-section__header">
         <span className="settings-section__title">{title}</span>
-        <Button size="sm" variant={creating ? 'accent' : 'ghost'} onClick={() => setCreating(c => !c)}>
-          {creating ? '▲ Hide' : '+ Create'}
+        <span className="settings-section__caret">▸</span>
+      </summary>
+      <div className="manage-list" style={{ marginTop: 8 }}>{children}</div>
+      {!creating && (
+        <Button size="sm" variant="ghost" onClick={() => setCreating(true)} style={{ marginTop: 8 }}>
+          + Create new
         </Button>
-      </div>
-      <div className="manage-list">{children}</div>
-      {creating && <div className="settings-section-gap">{createForm}</div>}
-    </div>
+      )}
+      {creating && (
+        <div className="settings-section-gap">
+          {createForm}
+          <Button size="sm" variant="ghost" onClick={() => setCreating(false)}>Cancel</Button>
+        </div>
+      )}
+    </details>
   );
 }
 
@@ -695,6 +703,56 @@ function StructureLinkGroup<T extends { id: number; is_active?: boolean }>({ lab
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
+// ── PersonNameRow — toggle-to-edit person name ──────────────────────────────
+
+function PersonNameRow({ person, categories, onSave }: Readonly<{
+  person:     PersonRow;
+  categories: PeopleCategoryRow[];
+  onSave:     (id: number, newName: string) => Promise<void>;
+}>) {
+  const [editing, setEditing] = useState(false);
+  const [name,    setName]    = useState(person.person_name);
+  const [saving,  setSaving]  = useState(false);
+  const cat = categories.find(c => c.id === person.category_id);
+
+  const save = async () => {
+    if (!name.trim() || name.trim() === person.person_name) { setEditing(false); return; }
+    setSaving(true);
+    try { await onSave(person.id, name.trim()); setEditing(false); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <div className="manage-item">
+      {editing ? (
+        <>
+          <input className="manage-item__edit-input"
+            value={name} autoFocus
+            onChange={e => setName(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') { setName(person.person_name); setEditing(false); } }}
+          />
+          <div className="manage-item__actions">
+            <Button size="sm" variant="accent" onClick={save} disabled={saving || !name.trim()}>✓</Button>
+            <Button size="sm" variant="ghost" onClick={() => { setName(person.person_name); setEditing(false); }}>✕</Button>
+          </div>
+        </>
+      ) : (
+        <>
+          <span className="manage-item__name">
+            {person.person_name}
+            {cat && <span className="badge badge--muted" style={{ marginLeft: 6 }}>{cat.category_name}</span>}
+          </span>
+          <div className="manage-item__actions">
+            <Button size="icon" variant="ghost" onClick={() => setEditing(true)} title="Rename">✏️</Button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── PeopleStructureSettings (main export) ─────────────────────────────────────
+
 export function PeopleStructureSettings({
   people: initialPeople, personLinks: initialLinks,
   infoGroups: initGroups, itemLists: initLists,
@@ -755,45 +813,60 @@ export function PeopleStructureSettings({
       </p>
 
       {/* ── People Categories ───────────────────────────────────────────── */}
+      <details className="settings-section settings-section--collapsible">
+        <summary className="settings-section__header">
+          <span className="settings-section__title">People Categories</span>
+          <span className="settings-section__caret">▸</span>
+        </summary>
       <ManageableList
         title="People Categories"
-        description="Categories for grouping people (e.g. Family, Friends)."
+        description="Categories for grouping people (e.g. Family, Friends). 'Assignable' means people in this category appear in task/appointment/prescription dropdowns."
         tableName="people_categories"
         nameColumn="category_name"
         items={initialCategories}
         addFields={[
           { key: 'category_name', label: 'Category name', type: 'text', placeholder: 'e.g. Colleagues', required: true },
         ]}
+        renderName={item => (
+          <span style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
+            <span>{String(item.category_name)}</span>
+            <button
+              type="button"
+              className={`badge${item.is_assignable ? ' badge--success' : ' badge--muted'}`}
+              style={{ cursor: 'pointer', border: 'none', fontSize: '0.7rem' }}
+              title={item.is_assignable ? 'Assignable — click to disable' : 'Not assignable — click to enable'}
+              onClick={async () => {
+                const next = !item.is_assignable;
+                await supabase.from('people_categories').update({ is_assignable: next }).eq('id', item.id);
+              }}
+            >
+              {item.is_assignable ? '✓ assignable' : '✗ not assignable'}
+            </button>
+          </span>
+        )}
       />
+      </details>
 
       {/* ── People ─────────────────────────────────────────────────────── */}
-      <div className="settings-section">
-        <div className="settings-section__header">
+      <details className="settings-section settings-section--collapsible">
+        <summary className="settings-section__header">
           <span className="settings-section__title">People</span>
-          <span className="manage-item__meta">{people.length} active</span>
-        </div>
+          <span className="settings-section__caret">▸</span>
+        </summary>
         <p className="settings-section__desc">Add new people here. Their page will be at /people/[name].</p>
 
-        {people.map(person => {
-          const cat = initialCategories.find(c => c.id === person.category_id);
-          return (
-            <div key={person.id} className="manage-item">
-              <input
-                className="manage-item__name input"
-                defaultValue={person.person_name}
-                onBlur={async e => {
-                  const newName = e.target.value.trim();
-                  if (newName && newName !== person.person_name) {
-                    await updatePersonField(supabase, person.id, { person_name: newName });
-                    setPeople(prev => prev.map(p => p.id === person.id ? { ...p, person_name: newName } : p));
-                    router.refresh();
-                  }
-                }}
-              />
-              {cat && <span className="badge badge--muted">{cat.category_name}</span>}
-            </div>
-          );
-        })}
+        {people.map(person => (
+          <PersonNameRow
+            key={person.id}
+            person={person}
+            categories={initialCategories}
+            onSave={async (id, newName) => {
+              await updatePersonField(supabase, id, { person_name: newName });
+              setPeople(prev => prev.map(p => p.id === id ? { ...p, person_name: newName } : p));
+              router.refresh();
+            }}
+          />
+        ))}
 
         <div className="manage-add-row">
           <input type="text" value={newName} onChange={e => setNewName(e.target.value)}
@@ -811,7 +884,7 @@ export function PeopleStructureSettings({
             {addingPerson ? '…' : '+ Add'}
           </Button>
         </div>
-      </div>
+      </details>
 
       <StructureSection title="Info Groups"
         createForm={<CreateInfoGroupForm onCreated={row => setInfoGroups(prev => [...prev, row])} />}>
@@ -862,10 +935,11 @@ export function PeopleStructureSettings({
       </StructureSection>
 
       {/* Per-person linking */}
-      <div className="settings-section">
-        <div className="settings-section__header">
+      <details className="settings-section settings-section--collapsible">
+        <summary className="settings-section__header">
           <span className="settings-section__title">Link to People</span>
-        </div>
+          <span className="settings-section__caret">▸</span>
+        </summary>
         <p className="settings-section__desc">Toggle which structures appear on each person's page.</p>
         {people.map(person => {
           const pl = links.find(l => l.person.id === person.id)
@@ -891,7 +965,7 @@ export function PeopleStructureSettings({
             </div>
           );
         })}
-      </div>
+      </details>
     </div>
   );
 }

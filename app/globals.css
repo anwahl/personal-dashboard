@@ -3728,3 +3728,27 @@ input[type="time"],
 input[type="datetime-local"] {
   min-height: 42px;
 }
+
+/* ── Collapsible settings sections ──────────────────────────────────────────*/
+.settings-section--collapsible > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0;
+}
+.settings-section--collapsible > summary::-webkit-details-marker { display: none; }
+.settings-section--collapsible > summary .settings-section__caret {
+  font-size: 0.7rem;
+  color: var(--text-faint);
+  transition: transform 0.15s;
+}
+.settings-section--collapsible[open] > summary .settings-section__caret {
+  transform: rotate(90deg);
+}
+.settings-section--collapsible[open] > summary {
+  margin-bottom: 8px;
+}

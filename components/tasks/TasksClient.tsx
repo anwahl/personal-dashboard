@@ -374,6 +374,7 @@ export function TasksClient({ active, completed, statuses, priorities, people }:
   const [showFull,   setShowFull]   = useState(false);
   const [newTitle,   setNewTitle]   = useState('');
   const [newDue,     setNewDue]     = useState('');
+  const [newTime,    setNewTime]    = useState('');
   const [newPerson,  setNewPerson]  = useState('');
   const [adding,     setAdding]     = useState(false);
   const [editTask,   setEditTask]   = useState<TaskDetail | null>(null);
@@ -391,15 +392,16 @@ export function TasksClient({ active, completed, statuses, priorities, people }:
         title:          newTitle.trim(),
         status_id:      todoStatusId,
         priority_id:    normalPriorityId,
-        due_date:       newDue || null,
+        due_date:       newDue  || null,
+        due_time:       newTime || null,
         person_id:      newPerson ? Number.parseInt(newPerson) : null,
         body_md:        null,
         completed_at:   null,
       });
-      setNewTitle(''); setNewDue('');
+      setNewTitle(''); setNewDue(''); setNewTime('');
       router.refresh();
     } finally { setAdding(false); }
-  }, [supabase, newTitle, newDue, newPerson, todoStatusId, normalPriorityId, router]);
+  }, [supabase, newTitle, newDue, newTime, newPerson, todoStatusId, normalPriorityId, router]);
 
   const fullAdd = useCallback(async (data: EditState) => {
     setSaving(true);

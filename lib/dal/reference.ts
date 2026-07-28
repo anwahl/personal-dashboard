@@ -143,6 +143,19 @@ export const getPeople = (c: Client, includeInactive = false) =>
 export const getPeopleCategories = (c: Client, includeInactive = false) =>
   fetchRef<PeopleCategoryRow>(c, "people_categories", includeInactive);
 
+/** Returns only people whose category has is_assignable = true (or who have no category). */
+export async function getAssignablePeople(client: Client): Promise<PersonRow[]> {
+  const [people, categories] = await Promise.all([
+    getPeople(client),
+    getPeopleCategories(client),
+  ]);
+  const assignableIds = new Set(
+    categories.filter(c => c.is_assignable).map(c => c.id),
+  );
+  // Include people with no category as assignable (safe default)
+  return people.filter(p => p.category_id == null || assignableIds.has(p.category_id));
+}
+
 // ── Symptom categories with their types ──────────────────────────────────────
 
 export async function getSymptomCategoriesWithTypes(
