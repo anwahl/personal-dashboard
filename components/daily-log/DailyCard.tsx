@@ -183,8 +183,8 @@ function OverviewTab({
               <button key={t.id} type="button"
                 className={`habit-btn${checkedTrackableIds.includes(t.id) ? ' habit-btn--done' : ''}`}
                 onClick={() => toggleBoolean(t.id)}
-              >
-                <span className="habit-btn__emoji">{t.emoji ?? '•'}</span>
+                >
+                <IconDisplay icon={icons.find(i => i.id === t.icon_id) ?? null} fallbackEmoji={t.emoji} size="sm" className="habit-btn__emoji" />
                 <span className="habit-btn__label">{t.name}</span>
               </button>
             ))}

@@ -3622,7 +3622,7 @@ a.appt-secondary:last-child { border-bottom: none; }
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   box-shadow: var(--box-shadow-standard);
-  z-index: 100;
+  z-index: 500;
   max-height: 220px;
   overflow-y: auto;
 }
