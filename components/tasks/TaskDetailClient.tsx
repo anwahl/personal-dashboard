@@ -210,7 +210,7 @@ export function TaskDetailClient({ task, statuses, priorities, people }: Readonl
       <div className="reminder-section" style={{ marginTop: 16 }}>
         <div className="reminder-section__row">
           <span className="reminder-section__label">Reminder</span>
-          <input type="datetime-local" value={reminderAt ? reminderAt : dueTime ? new Date(`${dueDate}T${dueTime}`).toLocaleString()}
+          <input type="datetime-local" value={reminderAt ? reminderAt : dueTime ? new Date(`${dueDate}T${dueTime}`).toLocaleString() : reminderAt}
             onChange={e => { setReminderAt(e.target.value); if (!e.target.value) { setRecurrenceFrequency(''); setRecurrenceDays(''); setRecurrenceEndDate(''); }}} />
           {reminderAt && <button type="button" className="reminder-section__toggle" onClick={() => { setReminderAt(''); setRecurrenceFrequency(''); setRecurrenceDays(''); setRecurrenceEndDate(''); }}>✕ Clear</button>}
         </div>
