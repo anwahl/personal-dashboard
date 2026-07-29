@@ -71,7 +71,7 @@ export default async function DailyPage({ params }: Readonly<Props>) {
 
       <div className="page-header">
         <h1 className="page-header__title">
-          {entry.icon ? `${entry.icon} ` : ''}{formatDate(date)}
+          {formatDate(date)}
         </h1>
       </div>
 
