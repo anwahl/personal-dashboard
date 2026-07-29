@@ -82,7 +82,7 @@ export const getTrackableCategories = (c: Client, includeInactive = false) =>
  * cache, falls back without it so the page doesn't crash.
  */
 export async function getTrackables(client: Client, includeInactive = false): Promise<DailyTrackableRow[]> {
-  const base = 'id, name, track_type, emoji, color_hex, category_id, sort_order, is_active';
+  const base = 'id, name, track_type, color_hex, category_id, sort_order, is_active';
   const withIcon = `${base}, icon_id`;
 
   // Try with icon_id first

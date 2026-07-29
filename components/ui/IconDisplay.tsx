@@ -22,14 +22,12 @@ function cleanSvg(raw: string): string {
 
 interface Props {
   icon?:          IconRow | null;
-  fallbackEmoji?: string | null;
   size?:          'sm' | 'md' | 'lg';
   className?:     string;
 }
 
 export function IconDisplay({
   icon,
-  fallbackEmoji,
   size      = 'md',
   className = '',
 }: Readonly<Props>) {
@@ -48,7 +46,7 @@ export function IconDisplay({
 
   return (
     <span className={cls}>
-      {fallbackEmoji ?? '•'}
+      {'•'}
     </span>
   );
 }

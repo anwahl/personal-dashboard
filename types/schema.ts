@@ -71,7 +71,6 @@ export interface DailyTrackableRow {
   id:          number;
   track_type:  TrackType;
   name:        string;
-  emoji:       string | null;
   icon_id:     number | null;
   color_hex:   string | null;
   category_id: number | null;
@@ -330,10 +329,8 @@ export interface PrescriptionRefillRow {
 export interface DailyEntryRow {
   id: number;
   entry_date: string;
-  icon: string | null;       // legacy Obsidian artifact — do not use
-  icon_id: number | null;    // replaces daily_emoji; FK → icons
+  icon_id: number | null;
   word: string | null;
-  daily_emoji: string | null; // kept for backward compat; prefer icon_id
   intention_id: number | null;
   summary: string | null;
   body_md: string | null;
@@ -513,7 +510,6 @@ export interface LastTimeMediaRow {
   genre_id: number | null; // FK → media_genres  (optional filter)
   status_id: number | null; // FK → media_statuses (optional filter)
   label: string; // required; can't auto-derive from multi-filter
-  emoji: string | null;
   icon_id: number | null;
   sort_order?: number;
   is_active: boolean;
@@ -522,7 +518,6 @@ export interface LastTimeMediaRow {
 export interface LastTimeBooleanRow {
   id: number;
   trackable_id: number;
-  emoji: string | null;
   icon_id: number | null;
   sort_order?: number;
   is_active: boolean;
@@ -531,7 +526,6 @@ export interface LastTimeBooleanRow {
 export interface LastTimeCustomRow {
   id: number;
   custom_value: string;
-  emoji: string | null;
   icon_id: number | null;
   sort_order?: number;
   is_active: boolean;
@@ -703,7 +697,6 @@ export interface MediaNoteRow {
 export interface LastTimeActivityRow {
   id: number;
   activity_name: string;
-  emoji: string | null;
   icon_id: number | null;
   sort_order?: number;
   is_active: boolean;
@@ -721,7 +714,6 @@ export interface LastTimeLogRow {
 export interface LastTimeLatestRow {
   id: number;
   activity_name: string;
-  emoji: string | null;
   icon_id: number | null;
   sort_order?: number;
   is_active: boolean;

@@ -192,8 +192,7 @@ function ChartCard({
           <div key={link.id} className="chart-settings-card__link-row">
             <span className="chart-settings-card__link-name">
               <IconDisplay
-                icon={icons.find(i => i.id === link.trackable.icon_id) ?? null}
-                fallbackEmoji={link.trackable.emoji}
+              icon={icons.find(i => i.id === link.trackable.icon_id) ?? null}
                 size="sm"
               />
               {link.trackable.name}

@@ -112,7 +112,6 @@ export async function getLastTimeEntries(
     results.push({
       id: item.id,
       category: "media",
-      emoji: item.emoji,
       icon_id: item.icon_id,
       label: item.label,
       last_date,
@@ -133,7 +132,7 @@ export async function getLastTimeEntries(
         .in("trackable_id", trackableIds),
       client
         .from("daily_trackables")
-        .select("id, name, emoji, icon_id")
+        .select("id, name, icon_id")
         .in("id", trackableIds),
     ]);
 
@@ -142,7 +141,6 @@ export async function getLastTimeEntries(
         (trackables ?? []) as {
           id: number;
           name: string;
-          emoji: string | null;
           icon_id: number | null;
         }[]
       ).map((t) => [t.id, t]),
@@ -166,7 +164,6 @@ export async function getLastTimeEntries(
       results.push({
         id: item.id,
         category: "boolean",
-        emoji: item.emoji ?? t?.emoji ?? null,
         icon_id: item.icon_id ?? t?.icon_id ?? null,
         label: t?.name ?? `Trackable ${item.trackable_id}`,
         last_date,
@@ -182,7 +179,6 @@ export async function getLastTimeEntries(
     results.push({
       id: item.id,
       category: "custom",
-      emoji: item.emoji,
       icon_id: item.icon_id,
       label: item.custom_value,
       last_date: item.last_date,

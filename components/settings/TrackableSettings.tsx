@@ -79,7 +79,7 @@ function BooleanRow({
     <div className={`manage-item${item.is_active ? '' : ' manage-item--inactive'}`}>
       {editing ? (
         <>
-          <IconPicker icons={icons} value={eIconId} onChange={setEIconId} fallbackEmoji={item.emoji} size="sm" />
+          <IconPicker icons={icons} value={eIconId} onChange={setEIconId} size="sm" />
           <input className="input--flex" value={eName} onChange={e => setEName(e.target.value)}
             placeholder="Name…" autoFocus onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditing(false); }} />
           <div className="manage-item__actions">
@@ -91,7 +91,7 @@ function BooleanRow({
         <>
           <span className="manage-item__name">
 <>
-            <IconDisplay icon={icons.find(i => i.id === item.icon_id) ?? null} fallbackEmoji={item.emoji} size="sm" className="trackable-emoji" />{item.name}
+            <IconDisplay icon={icons.find(i => i.id === item.icon_id) ?? null} size="sm" className="trackable-emoji" />{item.name}
             </>
           </span>
           <div className="manage-item__actions">
@@ -277,7 +277,7 @@ function NumericRow({
     <div className={`manage-item${item.is_active ? '' : ' manage-item--inactive'}`}>
       {editing ? (
         <>
-          <IconPicker icons={icons} value={eIconId} onChange={setEIconId} fallbackEmoji={item.emoji} size="sm" />
+          <IconPicker icons={icons} value={eIconId} onChange={setEIconId} size="sm" />
           <input className="input--flex" value={eName} onChange={e => setEName(e.target.value)}
             placeholder="Name…" autoFocus
             onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditing(false); }} />
@@ -293,7 +293,7 @@ function NumericRow({
           <span className="manage-item__name">
             <IconDisplay
               icon={icons.find(i => i.id === item.icon_id) ?? null}
-              fallbackEmoji={item.emoji} size="sm" className="trackable-emoji"
+               size="sm" className="trackable-emoji"
             />
             {item.name}
           </span>
@@ -500,7 +500,7 @@ export function TrackableSettings({ trackables, categories, icons, onCategoryAdd
           {aggregate.map(t => (
             <div key={t.id} className="manage-item">
               <span className="manage-item__name">
-<><IconDisplay icon={icons.find(i => i.id === t.icon_id) ?? null} fallbackEmoji={t.emoji} size="sm" className="trackable-emoji" />{t.name}</>
+<><IconDisplay icon={icons.find(i => i.id === t.icon_id) ?? null} size="sm" className="trackable-emoji" />{t.name}</>
               </span>
               <span className="badge">aggregate</span>
             </div>

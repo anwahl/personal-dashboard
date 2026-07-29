@@ -91,8 +91,7 @@ export function LastTimeTracker({ entries, icons, compact = false }: Readonly<Pr
         {sorted.map(item => (
           <div key={`${item.category}-${item.id}`} className="last-time-item">
             <IconDisplay
-              icon={icons.find(i => i.id === item.icon_id) ?? null}
-              fallbackEmoji={item.emoji}
+            icon={icons.find(i => i.id === item.icon_id) ?? null}
               size="sm"
               className="last-time-item__emoji"
             />

@@ -115,7 +115,6 @@ export function ChainChart({ chart, data, fromDate, toDate, icons }: Readonly<Pr
                 <foreignObject x={2} y={rowCY - 9} width={18} height={18}>
                   <IconDisplay
                     icon={icons.find(i => i.id === link.trackable.icon_id) ?? null}
-                    fallbackEmoji={link.trackable.emoji ?? '•'}
                     size="sm"
                   />
                 </foreignObject>

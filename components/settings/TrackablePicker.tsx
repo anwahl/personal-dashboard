@@ -96,8 +96,7 @@ export function TrackablePicker({
         {selected ? (
           <>
             <IconDisplay
-              icon={icons.find(i => i.id === selected.icon_id) ?? null}
-              fallbackEmoji={selected.emoji}
+            icon={icons.find(i => i.id === selected.icon_id) ?? null}
               size="sm"
             />
             <span className="trackable-picker__trigger-label">{selected.name}</span>
@@ -130,8 +129,7 @@ export function TrackablePicker({
               onClick={() => select(t)}
             >
               <IconDisplay
-                icon={icons.find(i => i.id === t.icon_id) ?? null}
-                fallbackEmoji={t.emoji}
+              icon={icons.find(i => i.id === t.icon_id) ?? null}
                 size="sm"
               />
               <span className="trackable-picker__option-name">{t.name}</span>

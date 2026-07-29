@@ -7,7 +7,6 @@
  *   icons        — all available IconRows (active)
  *   value        — currently selected icon id (null = none)
  *   onChange     — called with the new icon id (or null to clear)
- *   fallbackEmoji — shown on the trigger when value is null
  *   size         — trigger button icon size ('sm' | 'md')
  */
 
@@ -22,7 +21,6 @@ interface Props {
   icons:          IconRow[];
   value:          number | null;
   onChange:       (iconId: number | null) => void;
-  fallbackEmoji?: string | null;
   size?:          'sm' | 'md';
 }
 
@@ -30,7 +28,6 @@ export function IconPicker({
   icons,
   value,
   onChange,
-  fallbackEmoji,
   size = 'sm',
 }: Readonly<Props>) {
   const [open,   setOpen]   = useState(false);
@@ -72,7 +69,7 @@ export function IconPicker({
         title="Choose icon"
         aria-label="Choose icon"
       >
-        <IconDisplay icon={currentIcon} fallbackEmoji={fallbackEmoji ?? '＋'} size={size} />
+        <IconDisplay icon={currentIcon} size={size} />
       </button>
 
       {open && (

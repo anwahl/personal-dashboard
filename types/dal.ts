@@ -336,7 +336,6 @@ export type LastTimeCategory = "media" | "boolean" | "custom";
 export interface LastTimeEntry {
   id: number; // source row id
   category: LastTimeCategory;
-  emoji: string | null;
   icon_id: number | null;
   label: string; // derived or custom label
   last_date: string | null; // ISO date, null = never

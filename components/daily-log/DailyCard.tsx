@@ -62,7 +62,7 @@ function OverviewTab({
   mode, state, setState,
   trackables, trackableCategories, checkedTrackableIds, toggleBoolean,
   tags, tagIds, toggleTag, addNewTag,
-  icons, dailyFallbackEmoji,
+  icons,
 }: Readonly<{
   mode: Mode;
   state: DailyOverviewState;
@@ -76,7 +76,6 @@ function OverviewTab({
   toggleTag: (id: number) => void;
   addNewTag: (v: string) => Promise<void>;
   icons:               IconRow[];
-  dailyFallbackEmoji:  string | null;
 }>) {
   const set = <K extends keyof DailyOverviewState>(k: K, v: DailyOverviewState[K]) =>
     setState(prev => ({ ...prev, [k]: v }));
@@ -116,7 +115,7 @@ function OverviewTab({
             <div className="habit-grid">
               {items.map(t => (
                 <div key={t.id} className={`habit-btn${checkedTrackableIds.includes(t.id) ? ' habit-btn--done' : ''}`}>
-                  <IconDisplay icon={icons.find(i => i.id === t.icon_id) ?? null} fallbackEmoji={t.emoji} size="sm" className="habit-btn__emoji" />
+                  <IconDisplay icon={icons.find(i => i.id === t.icon_id) ?? null} size="sm" className="habit-btn__emoji" />
                   <span className="habit-btn__label">{t.name}</span>
                 </div>
               ))}
@@ -124,7 +123,7 @@ function OverviewTab({
           </CardSection>
         ))}
 
-        {(state.word || state.dailyIconId != null || dailyFallbackEmoji) && (
+        {(state.word || state.dailyIconId != null) && (
           <CardSection>
             <div className="summary-row">
               <span className="summary-row__label">Word</span>
@@ -136,8 +135,7 @@ function OverviewTab({
               <span className="summary-row__label">Emoji</span>
               <span className="summary-row__value">
                 <IconDisplay
-                  icon={icons.find(i => i.id === state.dailyIconId) ?? null}
-                  fallbackEmoji={dailyFallbackEmoji}
+                icon={icons.find(i => i.id === state.dailyIconId) ?? null}
                   size="md"
                 />
               </span>
@@ -184,7 +182,7 @@ function OverviewTab({
                 className={`habit-btn${checkedTrackableIds.includes(t.id) ? ' habit-btn--done' : ''}`}
                 onClick={() => toggleBoolean(t.id)}
                 >
-                <IconDisplay icon={icons.find(i => i.id === t.icon_id) ?? null} fallbackEmoji={t.emoji} size="sm" className="habit-btn__emoji" />
+                <IconDisplay icon={icons.find(i => i.id === t.icon_id) ?? null} size="sm" className="habit-btn__emoji" />
                 <span className="habit-btn__label">{t.name}</span>
               </button>
             ))}
@@ -207,7 +205,6 @@ function OverviewTab({
               icons={icons}
               value={state.dailyIconId}
               onChange={id => set('dailyIconId', id)}
-              fallbackEmoji={dailyFallbackEmoji}
               size="sm"
             />
           </InputField>
@@ -294,7 +291,7 @@ function MetricsTab({
       {mode === 'view'
         ? group.items.map(t => (
             <div key={t.id} className="metric-display">
-              <IconDisplay icon={icons.find(i => i.id === t.icon_id) ?? null} fallbackEmoji={t.emoji} size="sm" className="metric-display__emoji" />
+              <IconDisplay icon={icons.find(i => i.id === t.icon_id) ?? null} size="sm" className="metric-display__emoji" />
               <span className="metric-display__label">{t.name}</span>
               <Rating value={metricState[t.id] ?? null} />
             </div>
@@ -302,7 +299,7 @@ function MetricsTab({
         : group.items.map(t => (
             <SliderField
               key={t.id}
-              emoji={<IconDisplay icon={icons.find(i => i.id === t.icon_id) ?? null} fallbackEmoji={t.emoji} size="sm" />}
+              emoji={<IconDisplay icon={icons.find(i => i.id === t.icon_id) ?? null} size="sm" />}
               label={t.name}
               value={metricState[t.id] ?? null}
               min={0}
@@ -1037,7 +1034,6 @@ export function DailyCard({
             toggleTag={toggleTag}
             addNewTag={addNewTag}
             icons={reference.icons}
-            dailyFallbackEmoji={entry.daily_emoji}
           />
         )}
 

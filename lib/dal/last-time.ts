@@ -22,7 +22,6 @@ export async function getLastTimeMedia(
 
 export interface LastTimeMediaPayload {
   label: string;
-  emoji?: string | null;
   icon_id?: number | null;
   type_id: number | null;
   genre_id: number | null;
@@ -66,7 +65,6 @@ export async function getLastTimeBoolean(
 
 export interface LastTimeBooleanPayload {
   trackable_id: number;
-  emoji: string | null;
   sort_order: number;
 }
 
@@ -83,17 +81,6 @@ export async function createLastTimeBoolean(
   return data as LastTimeBooleanRow;
 }
 
-export async function updateLastTimeBooleanEmoji(
-  client: Client,
-  id: number,
-  emoji: string | null,
-): Promise<void> {
-  const { error } = await client
-    .from("last_time_boolean")
-    .update({ emoji })
-    .eq("id", id);
-  if (error) throw new Error(`updateLastTimeBooleanEmoji: ${error.message}`);
-}
 
 export async function deleteLastTimeBoolean(
   client: Client,
@@ -121,7 +108,6 @@ export async function getLastTimeCustom(
 
 export interface LastTimeCustomPayload {
   custom_value: string;
-  emoji?: string | null;
   icon_id?: number | null;
   sort_order?: number;
 }

@@ -76,7 +76,6 @@ export function HabitHeatmap({ chart, data, fromDate, toDate, icons }: Readonly<
                 <foreignObject x={0} y={y + ROW_H / 2 - 9} width={18} height={18}>
                   <IconDisplay
                     icon={icons.find(i => i.id === link.trackable.icon_id) ?? null}
-                    fallbackEmoji={link.trackable.emoji}
                     size="sm"
                   />
                 </foreignObject>

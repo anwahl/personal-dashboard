@@ -164,7 +164,7 @@ function MediaSection({ mediaTypes, mediaGenres, mediaStatuses, icons }: Readonl
           </p>
           {items.map(item => (
             <ItemRow key={item.id} label={item.label} subtitle={subtitle(item)} icon={icons.find(i => i.id === item.icon_id) ?? null} onDelete={() => remove_m(item.id)}>
-              <IconPicker icons={icons} value={item.icon_id} onChange={id => updateIcon_m(item.id, id)} fallbackEmoji={item.emoji} size="sm" />
+              <IconPicker icons={icons} value={item.icon_id} onChange={id => updateIcon_m(item.id, id)} size="sm" />
               <input type="text" className="input--flex" defaultValue={item.label}
                 placeholder="Label…"
                 onBlur={e => { if (e.target.value.trim()) update(item.id, { label: e.target.value.trim() }); }} />
@@ -233,7 +233,6 @@ function BooleanSection({ trackables, icons }: Readonly<Pick<Props, 'trackables'
     try {
       const data = await createLastTimeBoolean(supabase, {
         trackable_id: Number.parseInt(trackId),
-        emoji: null,
         sort_order: items.length,
       });
       setItems(prev => [...prev, data]);
@@ -268,7 +267,7 @@ function BooleanSection({ trackables, icons }: Readonly<Pick<Props, 'trackables'
         <div className="last-time-section__body">
           {items.map(item => (
             <ItemRow key={item.id} label={label(item)} icon={icons.find(i => i.id === (item.icon_id ?? trackables.find(t => t.id === item.trackable_id)?.icon_id)) ?? null} onDelete={() => remove_b(item.id)}>
-              <IconPicker icons={icons} value={item.icon_id} onChange={id => updateIcon_b(item.id, id)} fallbackEmoji={item.emoji} size="sm" />
+              <IconPicker icons={icons} value={item.icon_id} onChange={id => updateIcon_b(item.id, id)} size="sm" />
               <span className="manage-item__name">
                 {trackables.find(t => t.id === item.trackable_id)?.name ?? `#${item.trackable_id}`}
               </span>
@@ -353,7 +352,7 @@ function CustomSection({ icons }: Readonly<{ icons: IconRow[] }>) {
         <div className="last-time-section__body">
           {items.map(item => (
             <ItemRow key={item.id} label={item.custom_value} icon={icons.find(i => i.id === item.icon_id) ?? null} onDelete={() => remove_c(item.id)}>
-              <IconPicker icons={icons} value={item.icon_id} onChange={id => updateIcon_c(item.id, id)} fallbackEmoji={item.emoji} size="sm" />
+              <IconPicker icons={icons} value={item.icon_id} onChange={id => updateIcon_c(item.id, id)} size="sm" />
               <input type="text" className="input--flex" defaultValue={item.custom_value}
                 placeholder="Activity name…"
                 onBlur={e => { if (e.target.value.trim()) update_label_c(item.id, { custom_value: e.target.value.trim() }); }} />
