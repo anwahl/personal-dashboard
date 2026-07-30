@@ -764,15 +764,6 @@ function SleepTab({
                 <span className="sleep-view__context-value">{r.opt}</span>
               </div>
             ))}
-            {reference.timingCategories.map(cat => {
-                const te = priorSleep?.timing_entries.find(e => e.timing_category_id === cat.id);
-                const opt = reference.timingOptions.find(o => o.id === te?.timing_option_id);
-                return opt ? (
-                  <p key={cat.id} style={{ fontSize: '0.83rem', color: 'var(--text-muted)', margin: '0 0 4px' }}>
-                    {cat.category_name}: {opt.option_name}
-                  </p>
-                ) : null;
-            })}
             {priorSleep?.today_pre_bed_activity && (
               <div className="sleep-view__context-row">
                 <span className="sleep-view__context-label">Activity</span>
@@ -786,6 +777,7 @@ function SleepTab({
   }
   
   /* -- Edit mode ─────────────────────────────────────────────────────────────── */
+
   return (
     <div>
       {/* ── Previous night context ── */}
@@ -798,15 +790,6 @@ function SleepTab({
               <span className="sleep-view__context-value">{r.opt}</span>
             </div>
           ))}
-          {reference.timingCategories.map(cat => {
-              const te = priorSleep?.timing_entries.find(e => e.timing_category_id === cat.id);
-              const opt = reference.timingOptions.find(o => o.id === te?.timing_option_id);
-              return opt ? (
-                <p key={cat.id} style={{ fontSize: '0.83rem', color: 'var(--text-muted)', margin: '0 0 4px' }}>
-                  {cat.category_name}: {opt.option_name}
-                </p>
-              ) : null;
-          })}
           {priorSleep?.today_pre_bed_activity && (
             <div className="sleep-view__context-row">
               <span className="sleep-view__context-label">Activity</span>
