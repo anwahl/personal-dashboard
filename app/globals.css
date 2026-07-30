@@ -115,8 +115,8 @@ html, body {
 /* ── This thing ──────────────────────────────────────────────────────────────*/
 
 .vertical-rule {
-  border-left: 2px solid #333; 
-  height: 100px;               
+  border-left: 2px solid var(--text-muted); 
+  height: 100%;               
   margin: 0 20px;              
 }
 
