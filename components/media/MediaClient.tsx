@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter }              from 'next/navigation';
 import { createClient }           from '@/lib/supabase/client';
-import { Button, TabBar, InputField, Markdown }                   from '@/components/ui';
+import { Button, TabBar, InputField, SliderField, Markdown }                   from '@/components/ui';
 import {
   getMediaNotes, createMediaNote, deleteMediaNote,
   updateMediaEntry, createMediaEntry, addMediaStatusEntry, deleteMediaEntry,
