@@ -57,7 +57,7 @@ interface FormState {
   title:         string;
   status_id:     string;
   status_date:   string;
-  rating:        string;
+  rating:        number;
   platform:      string;
   creator:       string;
   notes:         string;
@@ -67,7 +67,7 @@ interface FormState {
 const EMPTY_FORM: FormState = {
   media_type_id: '', title: '', status_id: '',
   status_date: localTodayISO(),
-  rating: '', platform: '', creator: '', notes: '', review: '',
+  rating: null, platform: '', creator: '', notes: '', review: '',
 };
 
 function entryToForm(e: MediaEntryDetail): FormState {
@@ -76,7 +76,7 @@ function entryToForm(e: MediaEntryDetail): FormState {
     title:         e.title,
     status_id:     e.current_status ? String(e.current_status.id) : '',
     status_date:   e.latest_status_date ?? localTodayISO(),
-    rating:        e.rating ? String(e.rating) : '',
+    rating:        e.rating,
     platform:      e.platform ?? '',
     creator:       e.creator  ?? '',
     notes:         e.notes    ?? '',
@@ -230,10 +230,8 @@ function MediaForm({ form, setForm, mediaTypes, mediaStatuses, statusTypeLinks, 
         </InputField>
       </div>
       <div className="field-grid">
-        <InputField label="Rating (1-10)" id="mf-rating">
-          <input id="mf-rating" type="number" min={1} max={10} value={form.rating}
-            onChange={e => set('rating', e.target.value)} />
-        </InputField>
+        <SliderField id="mf-rating" emoji="⭐" label="Rating" value={form.rating} min={0} max={10}
+              onChange={e => set('rating', e.target.value)} />
       </div>
       <InputField label="Notes (while consuming)" id="mf-notes">
         <textarea id="mf-notes" value={form.notes} onChange={e => set('notes', e.target.value)} className="textarea--short" />
@@ -414,7 +412,7 @@ export function MediaClient({ entries, mediaTypes, mediaStatuses, statusTypeLink
       const payload = {
         media_type_id: Number.parseInt(form.media_type_id),
         title:         form.title,
-        rating:        form.rating  ? Number.parseInt(form.rating)  : null,
+        rating:        form.rating   || null,
         platform:      form.platform || null,
         creator:       form.creator  || null,
         notes:         form.notes    || null,

@@ -64,7 +64,7 @@ interface FormState {
   title:     string;
   creator:   string;
   platform:  string;
-  rating:    string;
+  rating:    number;
   notes:     string;
   review:    string;
   status_id:   string;
@@ -76,7 +76,7 @@ function entryToForm(e: MediaEntryDetail): FormState {
     title:       e.title,
     creator:     e.creator   ?? '',
     platform:    e.platform  ?? '',
-    rating:      e.rating    != null ? String(e.rating) : '',
+    rating:      e.rating,
     notes:       e.notes     ?? '',
     review:      e.review    ?? '',
     status_id:   e.current_status ? String(e.current_status.id) : '',
@@ -134,7 +134,7 @@ export function MediaDetailClient({
         title:    form.title.trim(),
         creator:  form.creator.trim()  || null,
         platform: form.platform.trim() || null,
-        rating:   form.rating          ? Number.parseInt(form.rating) : null,
+        rating:   form.rating          || null,
         notes:    form.notes.trim()    || null,
         review:   form.review.trim()   || null,
       };
