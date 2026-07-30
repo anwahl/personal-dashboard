@@ -91,7 +91,7 @@ export function buildRRule(task: TaskRow): string | null {
   if (task.recurrence_end_date) {
     // End of the end date in UTC
     const until = new Date(task.recurrence_end_date + 'T23:59:59Z');
-    parts.push(`UNTIL=${toICalDateTime(localISODate(until)}`);
+    parts.push(`UNTIL=${toICalDateTime(localISODate(until))}`);
   }
 
   return `RRULE:${parts.join(';')}`;

@@ -182,6 +182,6 @@ export function getWeekDates(anchorDate: string): string[] {
   return Array.from({ length: 7 }, (_, i) => {
     const wd = new Date(d);
     wd.setDate(d.getDate() - dow + i);
-    return localISODate(wd)slice(0, 10);
+    return localISODate(wd).slice(0, 10);
   });
 }
