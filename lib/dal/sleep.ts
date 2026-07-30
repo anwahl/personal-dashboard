@@ -16,7 +16,7 @@ import type {
   SleepEntryUpdate,
   PriorSleepContext,
 } from "@/types/dal";
-import { addDays, localISODateFromDateString } "@/lib/utils/dates";
+import { addDays, localISODateFromDateString } from "@/lib/utils/dates";
 
 type Client = SupabaseClient;
 
