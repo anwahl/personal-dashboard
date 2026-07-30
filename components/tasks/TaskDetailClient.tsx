@@ -1,7 +1,7 @@
 'use client';
 
 import { InputField, SaveStatus, SaveState, Button, ConfirmButton, Markdown } from '@/components/ui';
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter }             from 'next/navigation';
 import { createClient }          from '@/lib/supabase/client';
 import { updateTask, completeTask, deleteTask, spawnNextRecurrence } from '@/lib/dal/tasks';
@@ -38,7 +38,17 @@ export function TaskDetailClient({ task, statuses, priorities, people }: Readonl
     const d = new Date(iso); const p = (n: number) => String(n).padStart(2, '0');
     return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
   };
-  const [reminderAt,          setReminderAt]          = useState(task.reminder_at ? toLocalInput(task.reminder_at) : '');
+  const [reminderAt, setReminderAt] = useState(
+      task.reminder_at        ? toLocalInput(task.reminder_at)  :
+      task.due_date           ? toLocalInput(task.due_date)     :
+      ''
+  );
+  useEffect(() => { 
+    if (!reminderAt && dueDate) {
+        setReminderAt(toLocalInput(dueDate));
+    }
+  }, [dueDate]);
+
   const [recurrenceFrequency, setRecurrenceFrequency] = useState(task.recurrence_frequency ?? '');
   const [recurrenceInterval,  setRecurrenceInterval]  = useState(String(task.recurrence_interval ?? 1));
   const [recurrenceDays,      setRecurrenceDays]      = useState(task.recurrence_days ?? '');
