@@ -6,7 +6,8 @@ import {
   updateChartSortOrders, deleteChartDefinition,
 } from '@/lib/dal/charts';
 import { createClient }          from '@/lib/supabase/client';
-import { Button, IconDisplay, TrackablePicker, ConfirmButton } from '@/components/ui';
+import { Button, IconDisplay, ConfirmButton } from '@/components/ui';
+import { TrackablePicker }       from '@/components/settings/TrackablePicker'; 
 import { ManageableList }        from './ManageableList';
 import type { ChartDefinitionDetail, ChartCategoryRow } from '@/types/dal';
 import type { DailyTrackableRow, ChartType, MetricRole, IconRow } from '@/types/schema';
