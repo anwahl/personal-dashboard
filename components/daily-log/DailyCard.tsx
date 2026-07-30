@@ -764,7 +764,7 @@ function SleepTab({
               </div>
             ))}
             {reference.timingCategories.map(cat => {
-                const te = priorSleep.timing_entries.find(e => e.timing_category_id === cat.id);
+                const te = priorSleep?.timing_entries.find(e => e.timing_category_id === cat.id);
                 const opt = reference.timingOptions.find(o => o.id === te?.timing_option_id);
                 return opt ? (
                   <p key={cat.id} style={{ fontSize: '0.83rem', color: 'var(--text-muted)', margin: '0 0 4px' }}>
@@ -775,7 +775,7 @@ function SleepTab({
             {priorSleep?.today_pre_bed_activity && (
               <div className="sleep-view__context-row">
                 <span className="sleep-view__context-label">Activity</span>
-                <span className="sleep-view__context-value">{priorSleep.today_pre_bed_activity}</span>
+                <span className="sleep-view__context-value">{priorSleep?.today_pre_bed_activity}</span>
               </div>
             )}
           </CardSection>
@@ -789,8 +789,8 @@ function SleepTab({
       {priorSleep && (
         <div className="prior-context">
           <p className="prior-context__title">Prior night</p>
-          {priorSleep.today_pre_bed_activity && (
-            <p className="prior-context__text">Activity: {priorSleep.today_pre_bed_activity}</p>
+          {priorSleep?.today_pre_bed_activity && (
+            <p className="prior-context__text">Activity: {priorSleep?.today_pre_bed_activity}</p>
           )}
         </div>
       )}
