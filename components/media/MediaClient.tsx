@@ -230,7 +230,7 @@ function MediaForm({ form, setForm, mediaTypes, mediaStatuses, statusTypeLinks, 
         </InputField>
       </div>
       <div className="field-grid">
-        <SliderField id="mf-rating" emoji="⭐" label="Rating" value={form.rating} min={0} max={10}
+        <SliderField emoji="⭐" label="Rating" value={form.rating} min={0} max={10}
               onChange={e => set('rating', e.target.value)} />
       </div>
       <InputField label="Notes (while consuming)" id="mf-notes">
