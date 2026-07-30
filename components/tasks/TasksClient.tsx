@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter }             from 'next/navigation';
 import { createClient }          from '@/lib/supabase/client';
-import { localTodayISO }         from '@/lib/utils/dates';
+import { localTodayISO, localISODateFromDateString }         from '@/lib/utils/dates';
 import { createTask, updateTask, completeTask, deleteTask, spawnNextRecurrence } from '@/lib/dal/tasks';
 import { Button }                from '@/components/ui/Button';
 import { TabBar }                from '@/components/ui/Controls';
@@ -42,7 +42,7 @@ function fmtDate(d: string | null) {
 
 function isOverdue(t: TaskDetail): boolean {
   const ref = t.due_date;
-  return !!ref && ref < new Date().toISOString().slice(0, 10) && !t.status.is_terminal;
+  return !!ref && ref < localTodayISO() && !t.status.is_terminal;
 }
 
 // ── Task item ─────────────────────────────────────────────────────────────────
@@ -407,8 +407,7 @@ export function TasksClient({ active, completed, statuses, priorities, people }:
     setSaving(true);
     try {
     const reminderPayload = data.reminder_at ? {
-      reminder_at:          new Date(data.reminder_at).toISOString(),
-      recurrence_frequency: (data.recurrence_frequency || null) as TaskRow['recurrence_frequency'],
+        reminder_at:         localISODateFromDateString(data.reminder_at),      recurrence_frequency: (data.recurrence_frequency || null) as TaskRow['recurrence_frequency'],
       recurrence_interval:  data.recurrence_interval ? Number.parseInt(data.recurrence_interval) : null,
       recurrence_days:      data.recurrence_days      || null,
       recurrence_end_date:  data.recurrence_end_date  || null,
@@ -447,7 +446,7 @@ export function TasksClient({ active, completed, statuses, priorities, people }:
     setSaving(true);
     try {
     const reminderPayload = data.reminder_at ? {
-      reminder_at:          new Date(data.reminder_at).toISOString(),
+      reminder_at:          localISODateFromDateString(data.reminder_at),
       recurrence_frequency: (data.recurrence_frequency || null) as TaskRow['recurrence_frequency'],
       recurrence_interval:  data.recurrence_interval ? Number.parseInt(data.recurrence_interval) : null,
       recurrence_days:      data.recurrence_days      || null,

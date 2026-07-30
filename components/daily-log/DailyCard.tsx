@@ -109,20 +109,13 @@ function OverviewTab({
   if (mode === 'view') {
     return (
       <div>
-        {categorizedGroups.map(({ label, items }) => (
-          <CardSection key={label}>
-            <CardSectionLabel>{label}</CardSectionLabel>
-            <div className="habit-grid">
-              {items.map(t => (
-                <div key={t.id} className={`habit-btn${checkedTrackableIds.includes(t.id) ? ' habit-btn--done' : ''}`}>
-                  <IconDisplay icon={icons.find(i => i.id === t.icon_id) ?? null} size="sm" className="habit-btn__emoji" />
-                  <span className="habit-btn__label">{t.name}</span>
-                </div>
-              ))}
-            </div>
+        {state.summary && (
+          <CardSection>
+            <CardSectionLabel>Summary</CardSectionLabel>
+            <p className="daily-card__summary-text">{state.summary}</p>
           </CardSection>
-        ))}
-
+        )}
+      
         {(state.word || state.dailyIconId != null) && (
           <CardSection>
             <div className="summary-row">
@@ -142,13 +135,20 @@ function OverviewTab({
             </div>
           </CardSection>
         )}
-
-        {state.summary && (
-          <CardSection>
-            <CardSectionLabel>Summary</CardSectionLabel>
-            <p className="daily-card__summary-text">{state.summary}</p>
+        
+        {categorizedGroups.map(({ label, items }) => (
+          <CardSection key={label}>
+            <CardSectionLabel>{label}</CardSectionLabel>
+            <div className="habit-grid">
+              {items.map(t => (
+                <div key={t.id} className={`habit-btn${checkedTrackableIds.includes(t.id) ? ' habit-btn--done' : ''}`}>
+                  <IconDisplay icon={icons.find(i => i.id === t.icon_id) ?? null} size="sm" className="habit-btn__emoji" />
+                  <span className="habit-btn__label">{t.name}</span>
+                </div>
+              ))}
+            </div>
           </CardSection>
-        )}
+        ))}
 
         {activeTags.length > 0 && (
           <CardSection>
@@ -173,24 +173,16 @@ function OverviewTab({
 
   return (
     <div>
-      {categorizedGroups.map(({ label, items }) => (
-        <CardSection key={label}>
-          <CardSectionLabel>{label}</CardSectionLabel>
-          <div className="habit-grid">
-            {items.map(t => (
-              <button key={t.id} type="button"
-                className={`habit-btn${checkedTrackableIds.includes(t.id) ? ' habit-btn--done' : ''}`}
-                onClick={() => toggleBoolean(t.id)}
-                >
-                <IconDisplay icon={icons.find(i => i.id === t.icon_id) ?? null} size="sm" className="habit-btn__emoji" />
-                <span className="habit-btn__label">{t.name}</span>
-              </button>
-            ))}
-          </div>
-        </CardSection>
-      ))}
-
       <CardSection>
+        <InputField label="Summary" id="summary">
+          <textarea
+            id="summary"
+            value={state.summary}
+            placeholder="How did today go? What did you do?"
+            onChange={e => set('summary', e.target.value)}
+            className="textarea--tall"
+          />
+        </InputField>
         <div className="field-grid">
           <InputField label="Word of the day" id="word">
             <input
@@ -209,16 +201,24 @@ function OverviewTab({
             />
           </InputField>
         </div>
-        <InputField label="Summary" id="summary">
-          <textarea
-            id="summary"
-            value={state.summary}
-            placeholder="How did today go?"
-            onChange={e => set('summary', e.target.value)}
-            className="textarea--short"
-          />
-        </InputField>
       </CardSection>
+        
+      {categorizedGroups.map(({ label, items }) => (
+        <CardSection key={label}>
+          <CardSectionLabel>{label}</CardSectionLabel>
+          <div className="habit-grid">
+            {items.map(t => (
+              <button key={t.id} type="button"
+                className={`habit-btn${checkedTrackableIds.includes(t.id) ? ' habit-btn--done' : ''}`}
+                onClick={() => toggleBoolean(t.id)}
+                >
+                <IconDisplay icon={icons.find(i => i.id === t.icon_id) ?? null} size="sm" className="habit-btn__emoji" />
+                <span className="habit-btn__label">{t.name}</span>
+              </button>
+            ))}
+          </div>
+        </CardSection>
+      ))}
 
       <CardSection>
         <CardSectionLabel>Tags</CardSectionLabel>
@@ -626,9 +626,6 @@ function SleepTab({
     const eventNames   = sleepState.sleepEventIds.map(id =>
       reference.sleepEventTypes.find(t => t.id === id)?.type_name ?? String(id)
     );
-    const consumeNames = sleepState.consumptionIds.map(id =>
-      reference.consumptionTypes.find(t => t.id === id)?.type_name ?? String(id)
-    );
     const timingRows = Object.entries(sleepState.timingMap).map(([catIdStr, optId]) => {
       const catId = Number(catIdStr);
       const cat   = reference.timingCategories.find(c => c.id === catId);
@@ -637,20 +634,16 @@ function SleepTab({
     }).filter(Boolean) as { cat: string; opt: string }[];
 
     const hasTonightContext =
-      timingRows.length > 0 || consumeNames.length > 0 || sleepState.preBedActivity;
+      timingRows.length > 0 || sleepState.preBedActivity;
 
     // Prior night lookups
-    const priorConsumeNames = priorSleep?.consumption_ids.map(id =>
-      reference.consumptionTypes.find(t => t.id === id)?.type_name ?? String(id)
-    ) ?? [];
     const priorTimingRows = (priorSleep?.timing_entries ?? []).map(te => {
       const cat = reference.timingCategories.find(c => c.id === te.timing_category_id);
       const opt = reference.timingOptions.find(o => o.id === te.timing_option_id);
       return cat && opt ? { cat: cat.category_name, opt: opt.option_name } : null;
     }).filter(Boolean) as { cat: string; opt: string }[];
     const hasPriorContext =
-      priorTimingRows.length > 0 || priorConsumeNames.length > 0 ||
-      !!priorSleep?.today_pre_bed_activity;
+      priorTimingRows.length > 0 || !!priorSleep?.today_pre_bed_activity;
 
     return (
       <div>
@@ -743,12 +736,6 @@ function SleepTab({
                 <span className="sleep-view__context-value">{r.opt}</span>
               </div>
             ))}
-            {consumeNames.length > 0 && (
-              <div className="sleep-view__context-row">
-                <span className="sleep-view__context-label">Consumed</span>
-                <span className="sleep-view__context-value">{consumeNames.join(', ')}</span>
-              </div>
-            )}
             {sleepState.preBedActivity && (
               <div className="sleep-view__context-row">
                 <span className="sleep-view__context-label">Activity</span>
@@ -776,12 +763,15 @@ function SleepTab({
                 <span className="sleep-view__context-value">{r.opt}</span>
               </div>
             ))}
-            {priorConsumeNames.length > 0 && (
-              <div className="sleep-view__context-row">
-                <span className="sleep-view__context-label">Consumed</span>
-                <span className="sleep-view__context-value">{priorConsumeNames.join(', ')}</span>
-              </div>
-            )}
+            {reference.timingCategories.map(cat => {
+                const te = priorSleep.timing_entries.find(e => e.timing_category_id === cat.id);
+                const opt = reference.timingOptions.find(o => o.id === te?.timing_option_id);
+                return opt ? (
+                  <p key={cat.id} style={{ fontSize: '0.83rem', color: 'var(--text-muted)', margin: '0 0 4px' }}>
+                    {cat.category_name}: {opt.option_name}
+                  </p>
+                ) : null;
+            })}
             {priorSleep?.today_pre_bed_activity && (
               <div className="sleep-view__context-row">
                 <span className="sleep-view__context-label">Activity</span>

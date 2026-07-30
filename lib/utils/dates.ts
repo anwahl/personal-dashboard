@@ -17,6 +17,24 @@ export function localTodayISO(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+/**
+ * Returns the provided date as ISO date using the browser's LOCAL timezone.
+ */
+export function localISODateFromDateString(dateStr: string): string {
+    const date = new Date(dateStr + "T12:00:00");
+    const tzOffset = date.getTimezoneOffset() * 60000;
+    const localISOTime = (new Date(date - tzOffset)).toISOString().slice(0, -1);
+
+    return localISOTime;
+}
+
+export function localISODate(date: Date): string {
+    const tzOffset = date.getTimezoneOffset() * 60000;
+    const localISOTime = (new Date(date - tzOffset)).toISOString().slice(0, -1);
+
+    return localISOTime;
+}
+
 // ── Date arithmetic ───────────────────────────────────────────────────────────
 
 /**
@@ -26,7 +44,7 @@ export function localTodayISO(): string {
 export function addDays(dateStr: string, n: number): string {
   const d = new Date(dateStr + "T12:00:00");
   d.setDate(d.getDate() + n);
-  return d.toISOString().slice(0, 10);
+  return localISODate(d).slice(0, 10);
 }
 
 // ── Formatting ────────────────────────────────────────────────────────────────
@@ -156,4 +174,14 @@ export function formatWeekRange(sundayStr: string): string {
     ? String(sat.getDate())
     : sat.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   return `${startLabel}–${endLabel}`;
+}
+
+export function getWeekDates(anchorDate: string): string[] {
+  const d = new Date(anchorDate + "T12:00:00");
+  const dow = d.getDay();
+  return Array.from({ length: 7 }, (_, i) => {
+    const wd = new Date(d);
+    wd.setDate(d.getDate() - dow + i);
+    return localISODate(wd)slice(0, 10);
+  });
 }

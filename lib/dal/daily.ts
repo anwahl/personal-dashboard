@@ -19,37 +19,9 @@ import type {
   WeekDayData,
 } from "@/types/dal";
 import { getRandomIntention } from "./reference";
+import { getWeekDates } from "@/lib/utils/dates";
 
 type Client = SupabaseClient;
-
-// ── Date helpers ──────────────────────────────────────────────────────────────
-
-/** Local date — avoids UTC/server timezone mismatch. */
-export function localTodayISO(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-/** Server-side ISO — use only where timezone drift doesn't matter (DAL range queries). */
-export function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-export function addDays(dateStr: string, n: number): string {
-  const d = new Date(dateStr + "T12:00:00");
-  d.setDate(d.getDate() + n);
-  return d.toISOString().slice(0, 10);
-}
-
-export function getWeekDates(anchorDate: string): string[] {
-  const d = new Date(anchorDate + "T12:00:00");
-  const dow = d.getDay();
-  return Array.from({ length: 7 }, (_, i) => {
-    const wd = new Date(d);
-    wd.setDate(d.getDate() - dow + i);
-    return wd.toISOString().slice(0, 10);
-  });
-}
 
 // ── Read ──────────────────────────────────────────────────────────────────────
 

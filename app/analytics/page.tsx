@@ -3,15 +3,16 @@ import { getChartDefinitions, getIconsRef } from '@/lib/dal/reference';
 import { getCombinedTrackingData } from '@/lib/dal/analytics';
 import { AnalyticsClient }         from '@/components/analytics/AnalyticsClient';
 import type { TrackType }          from '@/types/schema';
+import { localTodayISO, localISODate } "@/lib/utils/dates";
 
 export default async function AnalyticsPage() {
   // Initial server render at 90 days — each chart can change its own range client-side
   const DEFAULT_DAYS = 90;
-  const toDate   = new Date().toISOString().slice(0, 10);
+  const toDate   = localTodayISO();
   const fromDate = (() => {
     const d = new Date();
     d.setDate(d.getDate() - DEFAULT_DAYS);
-    return d.toISOString().slice(0, 10);
+    return localISODate(d);
   })();
 
   const supabase = await createClient();

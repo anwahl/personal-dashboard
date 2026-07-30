@@ -8,6 +8,7 @@ import type {
   PersonRow,
 } from "@/types/schema";
 import type { TaskDetail, TaskInsert, TaskUpdate } from "@/types/dal";
+import { localTodayISO, localISODate }         from '@/lib/utils/dates';
 
 type Client = SupabaseClient;
 
@@ -133,7 +134,7 @@ export async function completeTask(
   // completed_at is a TIMESTAMPTZ — UTC ISO string is correct here (it's an instant, not a date)
   await updateTask(client, id, {
     status_id: doneStatusId,
-    completed_at: new Date().toISOString(),
+    completed_at: localTodayISO(),
   });
 }
 
@@ -181,7 +182,7 @@ export async function getTasksByDateContext(
   client: Client,
   date: string,
 ): Promise<TaskContextData> {
-  const { addDays } = await import("./daily");
+  const { addDays } = await import("@/lib/utils/dates");
   const tomorrow = addDays(date, 1);
   const terminalIds = await getTerminalStatusIds(client);
 
@@ -305,7 +306,7 @@ export async function spawnNextRecurrence(
   if (!next) return null;
 
   // Check recurrence end
-  if (task.recurrence_end_date && next.toISOString().slice(0, 10) > task.recurrence_end_date) {
+  if (task.recurrence_end_date && localISODate(next).slice(0, 10) > task.recurrence_end_date) {
     return null;
   }
 
@@ -313,12 +314,12 @@ export async function spawnNextRecurrence(
     title:                task.title,
     status_id:            defaultStatusId,
     priority_id:          task.priority_id,
-    due_date:             next.toISOString().slice(0, 10),
+    due_date:             localISODate(next),
     due_time:             task.due_time ?? null,
     person_id:            task.person_id,
     body_md:              task.body_md,
     completed_at:         null,
-    reminder_at:          next.toISOString(),
+    reminder_at:          localISODate(next),
     recurrence_frequency: task.recurrence_frequency,
     recurrence_interval:  task.recurrence_interval,
     recurrence_days:      task.recurrence_days,

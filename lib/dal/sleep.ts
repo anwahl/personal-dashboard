@@ -16,7 +16,7 @@ import type {
   SleepEntryUpdate,
   PriorSleepContext,
 } from "@/types/dal";
-import { addDays } from "./daily";
+import { addDays, localISODateFromDateString } "@/lib/utils/dates";
 
 type Client = SupabaseClient;
 
@@ -102,7 +102,7 @@ export async function getPriorSleepContext(
   currentDate: string,
   currentEntryId: number,
 ): Promise<PriorSleepContext | null> {
-  const priorDate = addDays(currentDate, -1);
+  const priorDate = addDays(localISODateFromDateString(currentDate), -1);
 
   // Find prior day's daily entry
   const { data: priorEntry } = await client

@@ -12,6 +12,7 @@
  */
 
 import type { TaskRow } from '@/types/schema';
+import { localTodayISO, localISODate, localISODateFromDateString } from '@/lib/utils/dates';
 
 // ── Low-level formatting ──────────────────────────────────────────────────────
 
@@ -90,7 +91,7 @@ export function buildRRule(task: TaskRow): string | null {
   if (task.recurrence_end_date) {
     // End of the end date in UTC
     const until = new Date(task.recurrence_end_date + 'T23:59:59Z');
-    parts.push(`UNTIL=${toICalDateTime(until.toISOString())}`);
+    parts.push(`UNTIL=${toICalDateTime(localISODate(until)}`);
   }
 
   return `RRULE:${parts.join(';')}`;
@@ -106,9 +107,9 @@ export function buildRRule(task: TaskRow): string | null {
 function buildVEvent(task: TaskRow, now: string): string {
   if (!task.reminder_at) return '';
 
-  const dtStart = toICalDateTime(new Date(task.reminder_at).toISOString());
+  const dtStart = toICalDateTime(localISODateFromDateString(task.reminder_at));
   const dtEnd   = toICalDateTime(
-    new Date(new Date(task.reminder_at).getTime() + 15 * 60_000).toISOString()
+    localISODate(new Date(task.reminder_at).getTime() + 15 * 60_000)
   );
   const dtstamp = toICalDateTime(now);
   const uid     = `task-${task.id}@personal-dashboard`;
@@ -152,7 +153,7 @@ function buildVEvent(task: TaskRow, now: string): string {
  * Only tasks with a non-null reminder_at are included.
  */
 export function buildVCalendar(tasks: TaskRow[], calName = 'Task Reminders'): string {
-  const now = new Date().toISOString();
+  const now = localTodayISO();
 
   const events = tasks
     .filter(t => t.reminder_at != null)
