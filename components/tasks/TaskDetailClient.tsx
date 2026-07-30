@@ -10,6 +10,7 @@ import { ConfirmButton }         from '@/components/ui/ConfirmButton';
 import type { TaskDetail, TaskStatusRow, TaskPriorityRow } from '@/types/dal';
 import type { PersonRow, TagRow }from '@/types/schema';
 import { formatMediumDate, localISODateFromDateString } from '@/lib/utils/dates';
+import { Markdown }  from '@/components/ui/Markdown';
 
 interface Props {
   task:       TaskDetail;
@@ -156,7 +157,9 @@ export function TaskDetailClient({ task, statuses, priorities, people }: Readonl
         {bodyMd && (
           <div className="detail-page__body">
             <p className="detail-page__body-label">Notes</p>
-            <pre className="detail-page__body-text">{bodyMd}</pre>
+            <div className="detail-page__body-markdown">
+                <Markdown>{bodyMd}</Markdown>
+            </div>
           </div>
         )}
       </div>

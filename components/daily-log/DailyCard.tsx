@@ -22,6 +22,7 @@ import { Chip, ChipGroup } from '@/components/ui/Chip';
 import { InputField, SaveState } from '@/components/ui/Display';
 import { IconDisplay }  from '@/components/ui/IconDisplay';
 import { IconPicker }   from '@/components/ui/IconPicker';
+import { Markdown }  from '@/components/ui/Markdown';
 
 import { TagSelector }   from '@/components/ui/TagSelector';
 import type {
@@ -112,7 +113,9 @@ function OverviewTab({
         {state.summary && (
           <CardSection>
             <CardSectionLabel>Summary</CardSectionLabel>
-            <p className="daily-card__summary-text">{state.summary}</p>
+            <div className="detail-page__body-markdown">
+                <Markdown>{state.summary}</Markdown>
+            </div>
           </CardSection>
         )}
       

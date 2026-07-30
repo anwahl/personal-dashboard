@@ -116,7 +116,7 @@ html, body {
 
 .vertical-rule {
   border-left: 2px solid var(--text-muted); 
-  height: 25px;               
+  height: 50px;               
   margin: 0 20px;              
 }
 
@@ -704,6 +704,7 @@ textarea {
 .field-grid--3 { grid-template-columns: 1fr 1fr 1fr; }
 
 /* ── View mode summary items ─────────────────────────────────────────────────*/
+
 .summary-row {
   display: flex;
   align-items: baseline;
@@ -2377,6 +2378,10 @@ a.appt-secondary:last-child { border-bottom: none; }
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 10px 12px;
+}
+
+.detail-page__body-markdown {
+    font-size: 0.88rem;
 }
 
 .appt-detail-countdown {

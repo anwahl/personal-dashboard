@@ -13,6 +13,7 @@ import type { FieldChangeEntry }     from '@/lib/dal/prescriptions';
 import { createTask }                from '@/lib/dal/tasks';
 import { Button }                    from '@/components/ui/Button';
 import { ConfirmButton }             from '@/components/ui/ConfirmButton';
+import { Markdown }  from '@/components/ui/Markdown';
 import type { AppointmentDetail, PrescriptionDetail } from '@/types/dal';
 import type {
   AppointmentTypeRow, PersonRow, ProviderRow,
@@ -471,13 +472,17 @@ export function AppointmentDetailClient({
         {questions && (
           <div className="detail-page__body">
             <p className="detail-page__body-label">Questions</p>
-            <pre className="detail-page__body-text">{questions}</pre>
+            <div className="detail-page__body-markdown">
+                <Markdown>{questions}</Markdown>
+            </div>
           </div>
         )}
         {notes && (
           <div className="detail-page__body">
             <p className="detail-page__body-label">Notes</p>
-            <pre className="detail-page__body-text">{notes}</pre>
+            <div className="detail-page__body-markdown">
+                <Markdown>{notes}</Markdown>
+            </div>
           </div>
         )}
 
