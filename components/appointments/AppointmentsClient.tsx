@@ -10,6 +10,7 @@ import { InputField }            from '@/components/ui/Display';
 import { localTodayISO, daysUntil, formatMediumDate, formatTime } from '@/lib/utils/dates';
 import type { AppointmentDetail }    from '@/types/dal';
 import type { AppointmentTypeRow, PersonRow, ProviderRow } from '@/types/schema';
+import { Markdown }  from '@/components/ui/Markdown';
 
 interface Props {
   upcoming:         AppointmentDetail[];
@@ -58,13 +59,17 @@ function ApptRow({ appt, onEdit }: Readonly<{ appt: AppointmentDetail; onEdit: (
           {appt.questions && (
             <>
               <p className="expand-panel__label">Questions to ask</p>
-              <p className="expand-panel__text">{appt.questions}</p>
+              <div className="detail-page__body-markdown">
+                <Markdown>{appt.questions}</Markdown>
+              </div>
             </>
           )}
           {appt.notes && (
             <>
               <p className="expand-panel__label">Notes</p>
-              <p className="expand-panel__text">{appt.notes}</p>
+              <div className="detail-page__body-markdown">
+                <Markdown>{appt.notes}</Markdown>
+              </div>
             </>
           )}
           {!appt.questions && !appt.notes && (
