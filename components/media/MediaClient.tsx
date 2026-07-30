@@ -57,7 +57,7 @@ interface FormState {
   title:         string;
   status_id:     string;
   status_date:   string;
-  rating:        number;
+  rating:        number | null;
   platform:      string;
   creator:       string;
   notes:         string;

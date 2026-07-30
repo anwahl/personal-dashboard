@@ -64,7 +64,7 @@ interface FormState {
   title:     string;
   creator:   string;
   platform:  string;
-  rating:    number;
+  rating:    number | null;
   notes:     string;
   review:    string;
   status_id:   string;
