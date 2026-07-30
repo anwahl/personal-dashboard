@@ -156,7 +156,7 @@ function MediaForm({ form, setForm, mediaTypes, mediaStatuses, statusTypeLinks, 
   saving: boolean;
 }>) {
   const [showSearch, setShowSearch] = useState(false);
-  const set = (k: keyof FormState, v: string) => setForm(p => ({ ...p, [k]: v }));
+  const set = (k: keyof FormState, v: string | number) => setForm(p => ({ ...p, [k]: v }));
 
   const activeType    = mediaTypes.find(t => String(t.id) === form.media_type_id);
   const filteredStats = form.media_type_id

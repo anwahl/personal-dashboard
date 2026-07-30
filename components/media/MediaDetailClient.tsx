@@ -165,7 +165,7 @@ export function MediaDetailClient({
 
   // ── View mode ────────────────────────────────────────────────────────────────
 
-  const set = (k: keyof FormState, v: string) => setForm(p => ({ ...p, [k]: v }));
+  const set = (k: keyof FormState, v: string | number) => setForm(p => ({ ...p, [k]: v }));
   const filteredStatuses = validStatusesForType(entry.media_type_id, mediaStatuses, statusTypeLinks);
 
   if (mode === 'view') {
