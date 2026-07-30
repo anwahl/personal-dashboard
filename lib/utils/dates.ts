@@ -22,17 +22,47 @@ export function localTodayISO(): string {
  */
 export function localISODateFromDateString(dateStr: string): string {
     const date = new Date(dateStr + "T12:00:00");
+    const offsetMin = date.getTimezoneOffset();
+    const offsetSign = offsetMin <= 0 ? '+' : '-';
+    const absOffsetMin = Math.abs(offsetMin);
+    
+    // Format timezone hours and minutes (e.g., 06:00)
+    const hh = String(Math.floor(absOffsetMin / 60)).padStart(2, '0');
+    const mm = String(absOffsetMin % 60).padStart(2, '0');
+    const tzOffset = `${offsetSign}${hh}:${mm}`;
+
+    // Shift date by timezone offset to construct exact local parts
+    const localShifted = new Date(date.getTime() - (offsetMin * 60 * 1000));
+    const pureISO = localShifted.toISOString().slice(0, -1); // Remove trailing 'Z'
+
+    return `${pureISO}${tzOffset}`;
+    
+    /*const date = new Date(dateStr + "T12:00:00");
     const tzOffset = date.getTimezoneOffset() * 60000;
     const localISOTime = (new Date(date.getTime() - tzOffset)).toISOString().slice(0, -1);
 
-    return localISOTime;
+    return localISOTime;*/
 }
 
 export function localISODate(date: Date): string {
-    const tzOffset = date.getTimezoneOffset() * 60000;
+    const offsetMin = date.getTimezoneOffset();
+    const offsetSign = offsetMin <= 0 ? '+' : '-';
+    const absOffsetMin = Math.abs(offsetMin);
+    
+    // Format timezone hours and minutes (e.g., 06:00)
+    const hh = String(Math.floor(absOffsetMin / 60)).padStart(2, '0');
+    const mm = String(absOffsetMin % 60).padStart(2, '0');
+    const tzOffset = `${offsetSign}${hh}:${mm}`;
+
+    // Shift date by timezone offset to construct exact local parts
+    const localShifted = new Date(date.getTime() - (offsetMin * 60 * 1000));
+    const pureISO = localShifted.toISOString().slice(0, -1); // Remove trailing 'Z'
+
+    return `${pureISO}${tzOffset}`;
+   /* const tzOffset = date.getTimezoneOffset() * 60000;
     const localISOTime = (new Date(date.getTime() - tzOffset)).toISOString().slice(0, -1);
 
-    return localISOTime;
+    return localISOTime; */
 }
 
 // ── Date arithmetic ───────────────────────────────────────────────────────────
