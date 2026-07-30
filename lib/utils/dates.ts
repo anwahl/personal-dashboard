@@ -30,7 +30,7 @@ export function localISODateFromDateString(dateStr: string): string {
 
 export function localISODate(date: Date): string {
     const tzOffset = date.getTimezoneOffset() * 60000;
-    const localISOTime = (new Date(date - tzOffset)).toISOString().slice(0, -1);
+    const localISOTime = (new Date(date.getTime() - tzOffset)).toISOString().slice(0, -1);
 
     return localISOTime;
 }
