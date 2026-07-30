@@ -52,7 +52,7 @@ export function TaskDetailClient({ task, statuses, priorities, people }: Readonl
     setSaveState('saving');
     try {
       const reminderPayload = reminderAt ? {
-        reminder_at:          localISODate(reminderAt),
+        reminder_at:          new Date(localISODate(reminderAt)),
         recurrence_frequency: (recurrenceFrequency || null) as import('@/types/schema').TaskRow['recurrence_frequency'],
         recurrence_interval:  recurrenceInterval ? Number.parseInt(recurrenceInterval) : null,
         recurrence_days:      recurrenceDays || null,

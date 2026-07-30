@@ -18,7 +18,7 @@ import { TabBar }   from '@/components/ui/Controls';
 import { Button }   from '@/components/ui/Button';
 import type { TaskDetail, TaskStatusRow, TaskPriorityRow } from '@/types/dal';
 import type { PersonRow }       from '@/types/schema';
-import { addDays } from '@/lib/utils/dates';
+import { addDays, localISOToday } from '@/lib/utils/dates';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
