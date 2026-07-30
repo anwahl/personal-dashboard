@@ -7,7 +7,7 @@ import { createClient }          from '@/lib/supabase/client';
 import { updateTask, completeTask, deleteTask, spawnNextRecurrence } from '@/lib/dal/tasks';
 import type { TaskDetail, TaskStatusRow, TaskPriorityRow } from '@/types/dal';
 import type { PersonRow, TagRow }from '@/types/schema';
-import { formatMediumDate, localISODateFromDateString } from '@/lib/utils/dates';
+import { formatMediumDate, localISODateFromDateString, localISODateTimeFromDateString } from '@/lib/utils/dates';
 
 interface Props {
   task:       TaskDetail;
@@ -39,15 +39,15 @@ export function TaskDetailClient({ task, statuses, priorities, people }: Readonl
     return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
   };
   const [reminderAt, setReminderAt] = useState(
-      task.reminder_at        ? toLocalInput(task.reminder_at)  :
-      task.due_date           ? toLocalInput(task.due_date)     :
+      task.reminder_at        ? localISODateFromDateString(task.reminder_at)  :
+      task.due_date           ? localISODateFromDateString(task.due_date)     :
       ''
   );
   useEffect(() => { 
-    if (!reminderAt && dueDate) {
-        setReminderAt(toLocalInput(dueDate));
+    if (!reminderAt && (dueDate && dueTime)) {
+        setReminderAt(localISODateTimeFromDateString(dueDate + (dueTime ? dueTime : '12:00:00')));
     }
-  }, [dueDate]);
+  }, [dueDate, dueTime]);
 
   const [recurrenceFrequency, setRecurrenceFrequency] = useState(task.recurrence_frequency ?? '');
   const [recurrenceInterval,  setRecurrenceInterval]  = useState(String(task.recurrence_interval ?? 1));

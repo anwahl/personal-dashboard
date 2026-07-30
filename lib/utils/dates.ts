@@ -38,12 +38,26 @@ export function localISODateFromDateString(dateStr: string): string {
     const newDate = new Date(`${pureISO}${tzOffset}`);
     
     return `${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, "0")}-${String(newDate.getDate()).padStart(2, "0")}`;
-    
-    /*const date = new Date(dateStr + "T12:00:00");
-    const tzOffset = date.getTimezoneOffset() * 60000;
-    const localISOTime = (new Date(date.getTime() - tzOffset)).toISOString().slice(0, -1);
+}
 
-    return localISOTime;*/
+export function localISODateTimeFromDateString(dateStr: string): string {
+    const date = new Date(dateStr);
+    const offsetMin = date.getTimezoneOffset();
+    const offsetSign = offsetMin <= 0 ? '+' : '-';
+    const absOffsetMin = Math.abs(offsetMin);
+    
+    // Format timezone hours and minutes (e.g., 06:00)
+    const hh = String(Math.floor(absOffsetMin / 60)).padStart(2, '0');
+    const mm = String(absOffsetMin % 60).padStart(2, '0');
+    const tzOffset = `${offsetSign}${hh}:${mm}`;
+
+    // Shift date by timezone offset to construct exact local parts
+    const localShifted = new Date(date.getTime() - (offsetMin * 60 * 1000));
+    const pureISO = localShifted.toISOString().slice(0, -1); // Remove trailing 'Z'
+
+    const newDate = new Date(`${pureISO}${tzOffset}`);
+    
+    return `${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, "0")}-${String(newDate.getDate()).padStart(2, "0")}T${String(newDate.getHours())}:${String(newDate.getMinutes())}`;
 }
 
 export function localISODate(date: Date): string {
@@ -63,10 +77,6 @@ export function localISODate(date: Date): string {
     const newDate = new Date(`${pureISO}${tzOffset}`);
     
     return `${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, "0")}-${String(newDate.getDate()).padStart(2, "0")}`;
-   /* const tzOffset = date.getTimezoneOffset() * 60000;
-    const localISOTime = (new Date(date.getTime() - tzOffset)).toISOString().slice(0, -1);
-
-    return localISOTime; */
 }
 
 // ── Date arithmetic ───────────────────────────────────────────────────────────
