@@ -115,12 +115,11 @@ html, body {
 /* ── This thing ──────────────────────────────────────────────────────────────*/
 
 .vertical-rule {
-  width: 2px;
-  height: 100%;
-  background-color: var(--text-muted);
-  color: var(--text-muted);
-  margin: 0;
+  border-left: 2px solid #333; 
+  height: 100px;               
+  margin: 0 20px;              
 }
+
 
 /* ── Card ────────────────────────────────────────────────────────────────────*/
 .card {

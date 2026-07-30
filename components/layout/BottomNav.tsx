@@ -26,7 +26,7 @@ export function BottomNav() {
         );
       })}
       
-    <hr className="vertical-rule" />
+    <div class="vertical-rule"></div>
       
     <Link
       key ="/settings"
