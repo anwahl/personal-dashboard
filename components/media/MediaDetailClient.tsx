@@ -15,7 +15,7 @@ import {
   getMediaNotes, createMediaNote, deleteMediaNote,
   updateMediaEntry, addMediaStatusEntry, deleteMediaEntry,
 } from '@/lib/dal/media';
-import { Button, ConfirmButton, InputField, Markdown } from '@/components/ui';
+import { Button, ConfirmButton, InputField, SliderField, Markdown } from '@/components/ui';
 import { localTodayISO, formatShortDate } from '@/lib/utils/dates';
 import type { MediaEntryDetail }  from '@/types/dal';
 import type {
