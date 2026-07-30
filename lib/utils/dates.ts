@@ -23,7 +23,7 @@ export function localTodayISO(): string {
 export function localISODateFromDateString(dateStr: string): string {
     const date = new Date(dateStr + "T12:00:00");
     const tzOffset = date.getTimezoneOffset() * 60000;
-    const localISOTime = (new Date(date - tzOffset)).toISOString().slice(0, -1);
+    const localISOTime = (new Date(date.getTime() - tzOffset)).toISOString().slice(0, -1);
 
     return localISOTime;
 }
