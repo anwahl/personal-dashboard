@@ -618,6 +618,16 @@ function SleepTab({
   const set = <K extends keyof SleepFormState>(k: K, v: SleepFormState[K]) =>
     setSleepState(prev => ({ ...prev, [k]: v }));
 
+  // Prior night lookups
+  const priorTimingRows = (priorSleep?.timing_entries ?? []).map(te => {
+    const cat = reference.timingCategories.find(c => c.id === te.timing_category_id);
+    const opt = reference.timingOptions.find(o => o.id === te.timing_option_id);
+    return cat && opt ? { cat: cat.category_name, opt: opt.option_name } : null;
+  }).filter(Boolean) as { cat: string; opt: string }[];
+  
+  const hasPriorContext =
+    priorTimingRows.length > 0 || !!priorSleep?.today_pre_bed_activity;
+
   if (mode === 'view') {
     const noData = !hasSleepData && sleepState.quality == null && !sleepState.hoursSlept;
     if (noData) return <p className="empty-state">Sleep not logged.</p>;
@@ -635,15 +645,6 @@ function SleepTab({
 
     const hasTonightContext =
       timingRows.length > 0 || sleepState.preBedActivity;
-
-    // Prior night lookups
-    const priorTimingRows = (priorSleep?.timing_entries ?? []).map(te => {
-      const cat = reference.timingCategories.find(c => c.id === te.timing_category_id);
-      const opt = reference.timingOptions.find(o => o.id === te.timing_option_id);
-      return cat && opt ? { cat: cat.category_name, opt: opt.option_name } : null;
-    }).filter(Boolean) as { cat: string; opt: string }[];
-    const hasPriorContext =
-      priorTimingRows.length > 0 || !!priorSleep?.today_pre_bed_activity;
 
     return (
       <div>
@@ -783,16 +784,36 @@ function SleepTab({
       </div>
     );
   }
-
+  
+  /* -- Edit mode ─────────────────────────────────────────────────────────────── */
   return (
     <div>
-      {priorSleep && (
-        <div className="prior-context">
-          <p className="prior-context__title">Prior night</p>
+      {/* ── Previous night context ── */}
+      {hasPriorContext && (
+        <CardSection>
+          <CardSectionLabel>Previous night</CardSectionLabel>
+          {priorTimingRows.map(r => (
+            <div key={r.cat} className="sleep-view__context-row">
+              <span className="sleep-view__context-label">{r.cat}</span>
+              <span className="sleep-view__context-value">{r.opt}</span>
+            </div>
+          ))}
+          {reference.timingCategories.map(cat => {
+              const te = priorSleep?.timing_entries.find(e => e.timing_category_id === cat.id);
+              const opt = reference.timingOptions.find(o => o.id === te?.timing_option_id);
+              return opt ? (
+                <p key={cat.id} style={{ fontSize: '0.83rem', color: 'var(--text-muted)', margin: '0 0 4px' }}>
+                  {cat.category_name}: {opt.option_name}
+                </p>
+              ) : null;
+          })}
           {priorSleep?.today_pre_bed_activity && (
-            <p className="prior-context__text">Activity: {priorSleep?.today_pre_bed_activity}</p>
+            <div className="sleep-view__context-row">
+              <span className="sleep-view__context-label">Activity</span>
+              <span className="sleep-view__context-value">{priorSleep?.today_pre_bed_activity}</span>
+            </div>
           )}
-        </div>
+        </CardSection>
       )}
 
       <CardSection>
