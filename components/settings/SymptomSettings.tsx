@@ -9,7 +9,7 @@ import {
 import { batchSetSortOrder } from '@/lib/dal/settings';
 import { bySortOrder, normalizedReorderUpdates } from '@/lib/utils/sort';
 import { createClient }        from '@/lib/supabase/client';
-import { Button }              from '@/components/ui/Button';
+import { Button }              from '@/components/ui';
 import { CategoryBlock, ChildItem } from '@/components/settings/CategoryBlock';
 import type { SymptomCategoryWithTypes } from '@/types/dal';
 

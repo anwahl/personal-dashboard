@@ -14,17 +14,8 @@ import { createClient }    from '@/lib/supabase/client';
 import { togglePrescriptionEntry } from '@/lib/dal/daily';
 import { setEssResponse }          from '@/lib/dal/ess';
 import { formatTime } from '@/lib/utils/dates';
-import { Card, CardHeader, CardTitle, CardBody, CardSection, CardSectionLabel } from '@/components/ui/Card';
-import { TabBar, Toggle }          from '@/components/ui/Controls';
+import { Card, CardHeader, CardTitle, CardBody, CardSection, CardSectionLabel, TabBar, Toggle, SliderField, Chip, ChipGroup, InputField, SaveState, IconDisplay, IconPicker, Markdown, TagSelector } from '@/components/ui';
 import { JournalTab }       from './JournalTab';
-import { SliderField }     from '@/components/ui/SliderField';
-import { Chip, ChipGroup } from '@/components/ui/Chip';
-import { InputField, SaveState } from '@/components/ui/Display';
-import { IconDisplay }  from '@/components/ui/IconDisplay';
-import { IconPicker }   from '@/components/ui/IconPicker';
-import { Markdown }  from '@/components/ui/Markdown';
-
-import { TagSelector }   from '@/components/ui/TagSelector';
 import type {
   JournalCategoryWithPrompts, DailyEntryDetail,
   EssEntryDetail, PrescriptionDetail, PriorSleepContext, ReferenceData,

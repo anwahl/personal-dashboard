@@ -3,14 +3,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter }              from 'next/navigation';
 import { createClient }           from '@/lib/supabase/client';
-import { Button }                   from '@/components/ui/Button';
+import { Button, TabBar, InputField, Markdown }                   from '@/components/ui';
 import {
   getMediaNotes, createMediaNote, deleteMediaNote,
   updateMediaEntry, createMediaEntry, addMediaStatusEntry, deleteMediaEntry,
-} from '@/lib/dal/media';
-import { TabBar }                 from '@/components/ui/Controls';
-import { InputField }             from '@/components/ui/Display';
-import { Markdown }               from '@/components/ui/Markdown';
+  } from '@/lib/dal/media';
 import type { MediaEntryDetail }  from '@/types/dal';
 import { formatMediumDate, localTodayISO } from '@/lib/utils/dates';
 import type {
@@ -307,9 +304,14 @@ function MediaItemView({ entry, onEdit, onClose }: Readonly<{
         )}
       </div>
 
-      {entry.notes  && <><p className="expand-panel__label">Notes</p><Markdown>{entry.notes}</Markdown></>}
-      {entry.review && <><p className="expand-panel__label">Review</p><Markdown>{entry.review}</Markdown></>}
-
+      {entry.notes  && <><p className="expand-panel__label">Notes</p>
+        <div className="detail-page__body-markdown">
+            <Markdown>{entry.notes}</Markdown>
+        </div></>}
+      {entry.review && <><p className="expand-panel__label">Review</p>
+        <div className="detail-page__body-markdown">
+            <Markdown>{entry.review}</Markdown>
+        </div></>}
       <p className="expand-panel__label">Additional Notes</p>
       {!loading && notes.length === 0 && (
         <p className="note-empty">No notes yet.</p>
@@ -320,7 +322,9 @@ function MediaItemView({ entry, onEdit, onClose }: Readonly<{
             <span className="media-note__date-badge">{formatMediumDate(n.note_date)}</span>
             <Button variant="ghost" size="icon" onClick={() => deleteNote(n.id)} title="Delete note">✕</Button>
           </div>
-          <Markdown>{n.body_md}</Markdown>
+          <div className="detail-page__body-markdown">
+            <Markdown>{n.body_md}</Markdown>
+          </div>
         </div>
       ))}
 

@@ -20,9 +20,7 @@ import {
   createPerson, updatePersonField,
 } from '@/lib/dal/people';
 import { createClient }  from '@/lib/supabase/client';
-import { Button }        from '@/components/ui/Button';
-import { ConfirmButton } from '@/components/ui/ConfirmButton';
-import { InputField }    from '@/components/ui/Display';
+import { Button, ConfirmButton, InputField } from '@/components/ui';
 import type { PersonRow, PeopleCategoryRow, InfoFieldTypeRow, LogSchemaFieldRow,
               LogSchemaFieldOptionRow } from '@/types/schema';
 import { ManageableList } from './ManageableList';

@@ -1,6 +1,6 @@
 'use client';
 
-import { InputField, SaveStatus, SaveState } from '@/components/ui/Display';
+import { InputField, SaveStatus, SaveState, ConfirmButton, Markdown, Button } from '@/components/ui';
 import { useState, useCallback }             from 'react';
 import { useRouter }                         from 'next/navigation';
 import { createClient }                      from '@/lib/supabase/client';
@@ -11,9 +11,6 @@ import {
 import { applyPrescriptionChanges }  from '@/lib/dal/prescriptions';
 import type { FieldChangeEntry }     from '@/lib/dal/prescriptions';
 import { createTask }                from '@/lib/dal/tasks';
-import { Button }                    from '@/components/ui/Button';
-import { ConfirmButton }             from '@/components/ui/ConfirmButton';
-import { Markdown }  from '@/components/ui/Markdown';
 import type { AppointmentDetail, PrescriptionDetail } from '@/types/dal';
 import type {
   AppointmentTypeRow, PersonRow, ProviderRow,

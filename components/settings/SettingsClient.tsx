@@ -1,7 +1,7 @@
 'use client';
 
 import { useState }               from 'react';
-import { TabBar }                  from '@/components/ui/Controls';
+import { TabBar }                  from '@/components/ui';
 import { ManageableList }          from './ManageableList';
 import { SymptomSettings }         from './SymptomSettings';
 import { JournalSettings }         from './JournalSettings';

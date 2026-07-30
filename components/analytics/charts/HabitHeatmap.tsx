@@ -9,7 +9,7 @@
  */
 
 import { ChartEmptyState } from './ChartEmptyState';
-import { IconDisplay }      from '@/components/ui/IconDisplay';
+import { IconDisplay }      from '@/components/ui';
 import type { ChartDefinitionDetail, TrackingDataPoint } from '@/types/dal';
 import type { IconRow } from '@/types/schema';
 

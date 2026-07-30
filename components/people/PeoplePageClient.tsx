@@ -1,6 +1,6 @@
 'use client';
 
-import { InputField, SaveStatus, SaveState } from '@/components/ui/Display';
+import { InputField, SaveStatus, SaveState, Card, CardHeader, CardBody, CardSection, CardSectionLabel, Button, ConfirmButton } from '@/components/ui';
 import { useState, useCallback } from 'react';
 import { createClient }          from '@/lib/supabase/client';
 import { formatMediumDate, localTodayISO } from '@/lib/utils/dates';
@@ -12,9 +12,6 @@ import {
   addDiagnosis, updateDiagnosis, toggleDiagnosis, deleteDiagnosis,
   updatePersonField,
 }                                from '@/lib/dal/people';
-import { Card, CardHeader, CardBody, CardSection, CardSectionLabel } from '@/components/ui/Card';
-import { Button }                from '@/components/ui/Button';
-import { ConfirmButton }          from '@/components/ui/ConfirmButton';
 import type {
   PersonPageData, InfoGroupWithFields,
   ItemListWithEntries, LogWithSchemaAndEntries, ChecklistWithItems,

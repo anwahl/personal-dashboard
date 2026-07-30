@@ -9,7 +9,7 @@
  */
 
 import { useState }                  from 'react';
-import { TabBar }                     from '@/components/ui/Controls';
+import { TabBar }                     from '@/components/ui';
 import { personSlug }                 from '@/lib/dal/people';
 import type { PersonRow, PeopleCategoryRow } from '@/types/schema';
 

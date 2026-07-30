@@ -1,16 +1,13 @@
 'use client';
 
-import { InputField, SaveStatus, SaveState } from '@/components/ui/Display';
+import { InputField, SaveStatus, SaveState, Button, ConfirmButton, Markdown } from '@/components/ui';
 import { useState, useCallback } from 'react';
 import { useRouter }             from 'next/navigation';
 import { createClient }          from '@/lib/supabase/client';
 import { updateTask, completeTask, deleteTask, spawnNextRecurrence } from '@/lib/dal/tasks';
-import { Button }                from '@/components/ui/Button';
-import { ConfirmButton }         from '@/components/ui/ConfirmButton';
 import type { TaskDetail, TaskStatusRow, TaskPriorityRow } from '@/types/dal';
 import type { PersonRow, TagRow }from '@/types/schema';
 import { formatMediumDate, localISODateFromDateString } from '@/lib/utils/dates';
-import { Markdown }  from '@/components/ui/Markdown';
 
 interface Props {
   task:       TaskDetail;

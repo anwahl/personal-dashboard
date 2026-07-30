@@ -12,7 +12,7 @@
  */
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { IconDisplay }                               from '@/components/ui/IconDisplay';
+import { IconDisplay }                               from '@/components/ui';
 import type { DailyTrackableRow, IconRow }           from '@/types/schema';
 
 interface Props {

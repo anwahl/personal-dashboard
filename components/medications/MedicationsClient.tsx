@@ -5,15 +5,12 @@ import { useRouter }             from 'next/navigation';
 import { updatePrescription, createPrescription } from '@/lib/dal/medications';
 import { applyPrescriptionChanges, getPrescriptionChangesByRx } from '@/lib/dal/prescriptions';
 import type { FieldChangeEntry } from '@/lib/dal/prescriptions';
-import { ConfirmButton } from '@/components/ui/ConfirmButton';
+import { ConfirmButton, Button, InputField, Card, CardHeader, CardTitle, CardBody } from '@/components/ui';
 import { deletePrescriptionChange } from '@/lib/dal/appointments';
-import type { PrescriptionChangeRow, MedicationTimingTypeRow as _TimingType } from '@/types/schema';
+import type { PrescriptionChangeRow, MedicationTimingTypeRow as _TimingType,
+   PersonRow, MedicationRow, MedicationTimingTypeRow, ProviderRow } from '@/types/schema';
 import { createClient }          from '@/lib/supabase/client';
-import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
-import { Button }                from '@/components/ui/Button';
-import { InputField }            from '@/components/ui/Display';
 import type { PrescriptionDetail } from '@/types/dal';
-import type { PersonRow, MedicationRow, MedicationTimingTypeRow, ProviderRow } from '@/types/schema';
 
 interface PrescriptionsByPerson {
   person:        PersonRow;

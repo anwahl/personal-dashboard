@@ -1,6 +1,4 @@
 /**
- * components/ui/IconPicker.tsx
- *
  * Trigger button + searchable modal grid for picking an icon.
  *
  * Props:

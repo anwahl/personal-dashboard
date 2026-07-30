@@ -18,7 +18,7 @@ import {
 
 import { useState, useCallback, useEffect } from 'react';
 import { createClient }              from '@/lib/supabase/client';
-import { Button }                    from '@/components/ui/Button';
+import { Button }                    from '@/components/ui';
 import type { MediaEntryDetail }     from '@/types/dal';
 import type {
   MediaTypeRow, MediaStatusRow, MediaStatusTypeLinkRow,

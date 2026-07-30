@@ -6,7 +6,7 @@
  * secondary list. contextDate is the anchor "today" for countdown math.
  */
 
-import { Card, CardHeader, CardTitle, CardBody, CardSection } from '@/components/ui/Card';
+import { Card, CardHeader, CardTitle, CardBody, CardSection } from '@/components/ui';
 import type { AppointmentDetail } from '@/types/dal';
 import { daysUntil, formatMediumDate } from '@/lib/utils/dates';
 

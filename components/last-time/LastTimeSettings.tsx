@@ -14,12 +14,9 @@ import {
   getLastTimeCustom,   createLastTimeCustom,   updateLastTimeCustom,   deleteLastTimeCustom,
 } from '@/lib/dal/last-time';
 import { createClient }   from '@/lib/supabase/client';
-import { Button }         from '@/components/ui/Button';
-import { IconDisplay }    from '@/components/ui/IconDisplay';
-import { IconPicker }     from '@/components/ui/IconPicker';
+import { Button, IconDisplay, IconPicker, ConfirmButton } from '@/components/ui';
 import { TrackablePicker } from '@/components/settings/TrackablePicker';
 import { setIconId }      from '@/lib/dal/icons';
-import { ConfirmButton }  from '@/components/ui/ConfirmButton';
 import type {
   DailyTrackableRow,
   MediaTypeRow,

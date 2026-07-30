@@ -7,12 +7,11 @@
  * Currently: iCal calendar feed subscription URL.
  */
 
-import { useState }              from 'react';
-import { createClient }          from '@/lib/supabase/client';
+import { useState }                from 'react';
+import { createClient }            from '@/lib/supabase/client';
 import { regenerateCalendarToken } from '@/lib/dal/calendar';
-import { Button }                from '@/components/ui/Button';
-import { ConfirmButton }         from '@/components/ui/ConfirmButton';
-import type { CalendarTokenRow } from '@/types/schema';
+import { Button, ConfirmButton }   from '@/components/ui';
+import type { CalendarTokenRow }   from '@/types/schema';
 
 interface Props {
   token: CalendarTokenRow | null;

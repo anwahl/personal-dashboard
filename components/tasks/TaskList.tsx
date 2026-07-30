@@ -13,9 +13,7 @@
 import { createTask, completeTask, TaskContextData } from '@/lib/dal/tasks';
 import { useState, useCallback } from 'react';
 import { createClient }          from '@/lib/supabase/client';
-import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
-import { TabBar }   from '@/components/ui/Controls';
-import { Button }   from '@/components/ui/Button';
+import { Card, CardHeader, CardTitle, CardBody, TabBar, Button } from '@/components/ui';
 import type { TaskDetail, TaskStatusRow, TaskPriorityRow } from '@/types/dal';
 import type { PersonRow }       from '@/types/schema';
 import { addDays } from '@/lib/utils/dates';

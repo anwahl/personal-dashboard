@@ -5,9 +5,7 @@ import { useRouter }             from 'next/navigation';
 import { createClient }          from '@/lib/supabase/client';
 import { localTodayISO, localISODateFromDateString }         from '@/lib/utils/dates';
 import { createTask, updateTask, completeTask, deleteTask, spawnNextRecurrence } from '@/lib/dal/tasks';
-import { Button }                from '@/components/ui/Button';
-import { TabBar }                from '@/components/ui/Controls';
-import { InputField }            from '@/components/ui/Display';
+import { Button, TabBar, InputField }                from '@/components/ui';
 import type { TaskDetail }       from '@/types/dal';
 import type { TaskStatusRow, TaskPriorityRow, PersonRow, TaskRow } from '@/types/schema';
 

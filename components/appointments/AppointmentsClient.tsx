@@ -5,12 +5,10 @@ import { useRouter }             from 'next/navigation';
 import Link                      from 'next/link';
 import { createClient }          from '@/lib/supabase/client';
 import { createAppointment, updateAppointment, deleteAppointment } from '@/lib/dal/appointments';
-import { Button }                from '@/components/ui/Button';
-import { InputField }            from '@/components/ui/Display';
+import { Button, InputField, Markdown } from '@/components/ui';
 import { localTodayISO, daysUntil, formatMediumDate, formatTime } from '@/lib/utils/dates';
 import type { AppointmentDetail }    from '@/types/dal';
 import type { AppointmentTypeRow, PersonRow, ProviderRow } from '@/types/schema';
-import { Markdown }  from '@/components/ui/Markdown';
 
 interface Props {
   upcoming:         AppointmentDetail[];

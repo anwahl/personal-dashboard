@@ -14,8 +14,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { Button }        from '@/components/ui/Button';
-import { ConfirmButton } from '@/components/ui/ConfirmButton';
+import { Button, ConfirmButton }        from '@/components/ui';
 
 // ── CategoryBlock ─────────────────────────────────────────────────────────────
 

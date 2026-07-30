@@ -16,7 +16,7 @@ import {
 import { bySortOrder, normalizedReorderUpdates } from '@/lib/utils/sort';
 import { batchSetSortOrder } from '@/lib/dal/settings';
 import { createClient }        from '@/lib/supabase/client';
-import { Button }              from '@/components/ui/Button';
+import { Button }              from '@/components/ui';
 import { CategoryBlock, ChildItem } from '@/components/settings/CategoryBlock';
 import type { JournalCategoryWithPrompts, WeeklyJournalCategoryWithPrompts } from '@/types/dal';
 

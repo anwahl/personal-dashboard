@@ -15,8 +15,7 @@ import {
   updateProvider,
   toggleProviderActive,
 } from '@/lib/dal/providers';
-import { Button }     from '@/components/ui/Button';
-import { InputField } from '@/components/ui/Display';
+import { Button, InputField }     from '@/components/ui';
 import type { ProviderRow, ProviderTypeRow } from '@/types/schema';
 
 // ── Add form ──────────────────────────────────────────────────────────────────

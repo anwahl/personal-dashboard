@@ -17,9 +17,7 @@ import type { IconRow }               from '@/types/schema';
 import { createIcon, updateIcon, deleteIcon } from '@/lib/dal/icons';
 import { batchSetSortOrder }          from '@/lib/dal/settings';
 import { normalizedReorderUpdates }   from '@/lib/utils/sort';
-import { Button }                     from '@/components/ui/Button';
-import { ConfirmButton }              from '@/components/ui/ConfirmButton';
-import { IconDisplay }                from '@/components/ui/IconDisplay';
+import { Button, ConfirmButton, IconDisplay }                     from '@/components/ui';
 
 interface Props {
   icons: IconRow[];

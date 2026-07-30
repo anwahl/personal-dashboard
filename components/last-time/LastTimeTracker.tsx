@@ -10,9 +10,8 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { createClient }           from '@/lib/supabase/client';
-import { logCustomLastTime }       from '@/lib/dal/lasttime';
-import { Button }                  from '@/components/ui/Button';
-import { IconDisplay }             from '@/components/ui/IconDisplay';
+import { logCustomLastTime }      from '@/lib/dal/lasttime';
+import { Button, IconDisplay }    from '@/components/ui';
 import type { LastTimeEntry }      from '@/types/dal';
 import type { IconRow }            from '@/types/schema';
 import { formatDaysAgo, formatMediumDate, localTodayISO } from '@/lib/utils/dates';

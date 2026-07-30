@@ -20,10 +20,7 @@ import {
 } from '@/lib/dal/settings';
 import { bySortOrder, normalizedReorderUpdates } from '@/lib/utils/sort';
 import { ManageableList }  from './ManageableList';
-import { Button }          from '@/components/ui/Button';
-import { IconDisplay }     from '@/components/ui/IconDisplay';
-import { IconPicker }      from '@/components/ui/IconPicker';
-import { ConfirmButton }   from '@/components/ui/ConfirmButton';
+import { Button, IconDisplay, IconPicker, ConfirmButton } from '@/components/ui';
 import type { DailyTrackableRow, TrackableCategoryRow, IconRow } from '@/types/schema';
 
 interface Props {

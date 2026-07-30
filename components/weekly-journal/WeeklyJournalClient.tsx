@@ -16,9 +16,8 @@ import {
   saveWeeklyResponses,
 } from '@/lib/dal/weekly-journal';
 import { addDays, getSundayOfWeek }  from '@/lib/utils/dates';
-import { Button }                    from '@/components/ui/Button';
-import { SaveStatus }                from '@/components/ui/Display';
-import type { SaveState }            from '@/components/ui/Display';
+import { Button, SaveStatus }        from '@/components/ui';
+import type { SaveState }            from '@/components/ui';
 import type { WeeklyEntryRow }       from '@/types/schema';
 import type {
   WeeklyJournalCategoryWithPrompts,

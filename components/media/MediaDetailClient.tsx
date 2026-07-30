@@ -15,10 +15,7 @@ import {
   getMediaNotes, createMediaNote, deleteMediaNote,
   updateMediaEntry, addMediaStatusEntry, deleteMediaEntry,
 } from '@/lib/dal/media';
-import { Button }                 from '@/components/ui/Button';
-import { ConfirmButton }          from '@/components/ui/ConfirmButton';
-import { InputField } from '@/components/ui/Display';
-import { Markdown }               from '@/components/ui/Markdown';
+import { Button, ConfirmButton, InputField, Markdown } from '@/components/ui';
 import { localTodayISO, formatShortDate } from '@/lib/utils/dates';
 import type { MediaEntryDetail }  from '@/types/dal';
 import type {
@@ -207,7 +204,9 @@ export function MediaDetailClient({
         {entry.notes && (
           <div className="detail-page__body">
             <p className="detail-page__body-label">Notes</p>
-            <Markdown>{entry.notes}</Markdown>
+            <div className="detail-page__body-markdown">
+                <Markdown>{entry.notes}</Markdown>
+            </div>
           </div>
         )}
 
@@ -215,7 +214,9 @@ export function MediaDetailClient({
         {entry.review && (
           <div className="detail-page__body">
             <p className="detail-page__body-label">Review</p>
-            <Markdown>{entry.review}</Markdown>
+            <div className="detail-page__body-markdown">
+                <Markdown>{entry.review}</Markdown>
+            </div>
           </div>
         )}
 
@@ -250,7 +251,9 @@ export function MediaDetailClient({
                 <button type="button" className="media-note__delete"
                   onClick={() => deleteNote(n.id)} title="Delete note">✕</button>
               </div>
-              <Markdown>{n.body_md}</Markdown>
+              <div className="detail-page__body-markdown">
+                <Markdown>{n.body_md}</Markdown>
+              </div>
             </div>
           ))}
 
@@ -318,11 +321,10 @@ export function MediaDetailClient({
             onChange={e => set('platform', e.target.value)} />
         </InputField>
       </div>
+      
+      <SliderField id="md-rating" emoji="⭐" label="Rating" value={form.rating} min={0} max={10}
+              onChange={e => set('rating', e.target.value)} />
 
-      <InputField label="Rating (1–10)" id="md-rating">
-        <input id="md-rating" type="number" min={1} max={10} value={form.rating}
-          onChange={e => set('rating', e.target.value)} style={{ maxWidth: 100 }} />
-      </InputField>
 
       <InputField label="Notes (while consuming)" id="md-notes">
         <textarea id="md-notes" value={form.notes} onChange={e => set('notes', e.target.value)} />

@@ -11,7 +11,7 @@
  */
 
 import { useState, useRef, useEffect } from 'react';
-import { Chip, ChipGroup } from '@/components/ui/Chip';
+import { Chip, ChipGroup } from '@/components/ui';
 import type { TagRow } from '@/types/schema';
 
 interface Props {

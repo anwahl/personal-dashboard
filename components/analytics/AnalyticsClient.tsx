@@ -9,7 +9,7 @@
  */
 
 import { useState }         from 'react';
-import { TabBar }           from '@/components/ui/Controls';
+import { TabBar }           from '@/components/ui';
 import { ChartPanel }       from './ChartPanel';
 import type { ChartDefinitionDetail, TrackingDataPoint } from '@/types/dal';
 import type { IconRow } from '@/types/schema';

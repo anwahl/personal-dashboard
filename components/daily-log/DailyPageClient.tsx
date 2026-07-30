@@ -7,7 +7,7 @@
  * Passes state + setters down to DailyCard (merged card with 6 tabs).
  */
 
-import { SaveStatus, SaveState } from '@/components/ui/Display';
+import { SaveStatus, SaveState, Button } from '@/components/ui';
 import { saveJournalResponses, JournalResponseDetail } from '@/lib/dal/journal';
 import { useState, useCallback } from 'react';
 import { useRouter }              from 'next/navigation';
@@ -18,8 +18,7 @@ import { saveNumericEntries, upsertBooleanEntry, deleteBooleanEntry }           
 import { upsertSleepEntry, upsertNap, deleteNap, upsertWakeEvents,
          setSleepEvents, setSleepTimingEntry, setSleepConsumptionEntries } from '@/lib/dal/sleep';
 import { setDailySymptomEntries, upsertCrash, deleteCrash,
-         upsertAnxiety, deleteAnxiety }                      from '@/lib/dal/symptoms';
-import { Button }      from '@/components/ui/Button';
+    upsertAnxiety, deleteAnxiety }                      from '@/lib/dal/symptoms';
 import { DailyCard }   from './DailyCard';
 import type {
   DailyEntryDetail, SleepEntryDetail, DailySymptomData,

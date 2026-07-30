@@ -13,8 +13,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { createClient }                     from '@/lib/supabase/client';
 import { getBrainDumps, deleteBrainDump }   from '@/lib/dal/daily';
 import { BrainDumpQuickAdd }                from '@/components/brain-dump/BrainDumpQuickAdd';
-import { Button }                           from '@/components/ui/Button';
-import { Markdown }                         from '@/components/ui/Markdown';
+import { Button, Markdown }                 from '@/components/ui';
 import type { BrainDumpWithEntry }          from '@/lib/dal/daily';
 
 function fmtDate(d: string) {

@@ -13,8 +13,7 @@ import { applyPrescriptionChanges, getPrescriptionChangesByRx } from '@/lib/dal/
 import type { FieldChangeEntry }              from '@/lib/dal/prescriptions';
 import { deletePrescriptionChange }           from '@/lib/dal/appointments';
 import { createClient }                       from '@/lib/supabase/client';
-import { Button }                             from '@/components/ui/Button';
-import { ConfirmButton }                      from '@/components/ui/ConfirmButton';
+import { Button, ConfirmButton }              from '@/components/ui';
 import { formatMediumDate }                   from '@/lib/utils/dates';
 import type { PrescriptionDetail }            from '@/types/dal';
 import type { PrescriptionChangeRow, MedicationTimingTypeRow } from '@/types/schema';

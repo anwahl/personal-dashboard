@@ -16,3 +16,5 @@ export type { SaveState } from "./Display";
 export { Markdown }      from "./Markdown";
 export { IconDisplay }   from "./IconDisplay";
 export { IconPicker }    from "./IconPicker";
+export { TagSelector } from "./TagSelector";
+export { Toggle, TabBar } from "./Controls";
