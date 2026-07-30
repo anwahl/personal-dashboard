@@ -323,7 +323,7 @@ export function MediaDetailClient({
       </div>
       
       <SliderField emoji="⭐" label="Rating" value={form.rating} min={0} max={10}
-              onChange={e => set('rating', e.target.value)} />
+              onChange={e => set('rating', e)} />
 
 
       <InputField label="Notes (while consuming)" id="md-notes">

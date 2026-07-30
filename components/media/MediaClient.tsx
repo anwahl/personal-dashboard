@@ -231,7 +231,7 @@ function MediaForm({ form, setForm, mediaTypes, mediaStatuses, statusTypeLinks, 
       </div>
       <div className="field-grid">
         <SliderField emoji="⭐" label="Rating" value={form.rating} min={0} max={10}
-              onChange={e => set('rating', e.target.value)} />
+              onChange={e => set('rating', e)} />
       </div>
       <InputField label="Notes (while consuming)" id="mf-notes">
         <textarea id="mf-notes" value={form.notes} onChange={e => set('notes', e.target.value)} className="textarea--short" />
