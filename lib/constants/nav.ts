@@ -12,7 +12,6 @@ export interface NavItem {
 }
 
 export const NAV_ITEMS: NavItem[] = [
-  { href: "/", emoji: "🏠", label: "Hub" },
   { href: "/daily", emoji: "📅", label: "Today" },
   { href: "/tasks", emoji: "✅", label: "Tasks" },
   { href: "/appointments", emoji: "🏥", label: "Appointments" },

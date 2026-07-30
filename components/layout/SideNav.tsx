@@ -11,7 +11,9 @@ export function SideNav() {
 
   return (
     <nav className="side-nav" aria-label="Main navigation">
-      <div className="side-nav__brand">Dashboard</div>
+      <a href="/">
+        <div className="side-nav__brand">🏠 Dashboard</div>
+      </a>
       <ul className="side-nav__list">
         {NAV_ITEMS.map(({ href, emoji, label }) => {
           const dest   = href === '/daily' ? `/daily/${localTodayISO()}` : href;
@@ -34,13 +36,13 @@ export function SideNav() {
       <SideCalendar />
 
       <div className="side-nav__footer">
-        <a
+        <Link
+          key ="/settings"
           href="/settings"
           className={`side-nav__link side-nav__link--compact${path === '/settings' ? ' side-nav__link--active' : ''}`}
         >
-          <span className="side-nav__link-icon">⚙️</span>
-          Settings
-        </a>
+          <span className="side-nav__link-icon">⚙️ Settings</span>
+        </Link>
       </div>
     </nav>
   );

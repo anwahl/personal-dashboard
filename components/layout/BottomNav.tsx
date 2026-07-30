@@ -25,6 +25,16 @@ export function BottomNav() {
           </Link>
         );
       })}
+
+      <div className="bottom-nav__footer">
+        <Link
+          key ="/settings"
+          href="/settings"
+          className={`bottom-nav__link bottom-nav__link--compact${path === '/settings' ? ' bottom-nav__link--active' : ''}`}
+        >
+          <span className="bottom-nav__link-icon">⚙️ Settings</span>
+        </Link>
+      </div>
     </nav>
   );
 }

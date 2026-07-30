@@ -112,6 +112,16 @@ html, body {
   .col-grid--3 { grid-template-columns: 1fr 1fr 1fr; }
 }
 
+/* ── This thing ──────────────────────────────────────────────────────────────*/
+
+.vertical-rule {
+  width: 1px;
+  height: 100%;
+  border: none;
+  background-color: var(--text-muted);
+  margin: 0;
+}
+
 /* ── Card ────────────────────────────────────────────────────────────────────*/
 .card {
   background: var(--surface);
@@ -588,7 +598,7 @@ textarea {
   font-size: 0.68rem;
   transition: color 0.12s;
   min-height: var(--tap);
-  justify-content: center;
+  justify-content: space-between;
 }
 
 .bottom-nav__link--active { color: var(--accent); font-weight: 600; }
@@ -596,7 +606,11 @@ textarea {
 
 @media (max-width: 767px) {
   .side-nav { display: none; }
-  .bottom-nav { display: flex; }
+  .bottom-nav { 
+    display: flex; 
+    flex-wrap: wrap;
+    justify-content: space-evenly;
+  }
 }
 
 /* ── Habit grid ──────────────────────────────────────────────────────────────*/
