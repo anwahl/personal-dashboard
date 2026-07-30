@@ -485,10 +485,12 @@ function StructureSection({
         </Button>
       )}
       {creating && (
-        <div className="settings-section-gap">
+        <>
           {createForm}
-          <Button size="sm" variant="ghost" onClick={() => setCreating(false)}>Cancel</Button>
-        </div>
+          <div className="settings-section-gap">
+            <Button size="sm" variant="ghost" onClick={() => setCreating(false)}>Cancel</Button>
+          </div>
+        </>
       )}
     </details>
   );
