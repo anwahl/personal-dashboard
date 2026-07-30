@@ -109,7 +109,7 @@ function buildVEvent(task: TaskRow, now: string): string {
 
   const dtStart = toICalDateTime(localISODateFromDateString(task.reminder_at));
   const dtEnd   = toICalDateTime(
-    localISODate(new Date(task.reminder_at).getTime() + 15 * 60_000)
+    localISODate(new Date(task.reminder_at) + 15 * 60_000)
   );
   const dtstamp = toICalDateTime(now);
   const uid     = `task-${task.id}@personal-dashboard`;
