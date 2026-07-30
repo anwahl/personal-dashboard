@@ -9,7 +9,7 @@ import { Button }                from '@/components/ui/Button';
 import { ConfirmButton }         from '@/components/ui/ConfirmButton';
 import type { TaskDetail, TaskStatusRow, TaskPriorityRow } from '@/types/dal';
 import type { PersonRow, TagRow }from '@/types/schema';
-import { formatMediumDate, localISODate } from '@/lib/utils/dates';
+import { formatMediumDate, localISODateFromDateString } from '@/lib/utils/dates';
 
 interface Props {
   task:       TaskDetail;
@@ -52,7 +52,7 @@ export function TaskDetailClient({ task, statuses, priorities, people }: Readonl
     setSaveState('saving');
     try {
       const reminderPayload = reminderAt ? {
-        reminder_at:          new Date(localISODate(reminderAt)),
+        reminder_at:          localISODateFromDateString(reminderAt),
         recurrence_frequency: (recurrenceFrequency || null) as import('@/types/schema').TaskRow['recurrence_frequency'],
         recurrence_interval:  recurrenceInterval ? Number.parseInt(recurrenceInterval) : null,
         recurrence_days:      recurrenceDays || null,
