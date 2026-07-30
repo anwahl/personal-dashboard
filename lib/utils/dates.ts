@@ -21,7 +21,7 @@ export function localTodayISO(): string {
  * Returns the provided date as ISO date using the browser's LOCAL timezone.
  */
 export function localISODateFromDateString(dateStr: string): string {
-    const date = new Date(dateStr);
+    const date = new Date(dateStr + "T12:00:00");
     const offsetMin = date.getTimezoneOffset();
     const offsetSign = offsetMin <= 0 ? '+' : '-';
     const absOffsetMin = Math.abs(offsetMin);
@@ -35,7 +35,9 @@ export function localISODateFromDateString(dateStr: string): string {
     const localShifted = new Date(date.getTime() - (offsetMin * 60 * 1000));
     const pureISO = localShifted.toISOString().slice(0, -1); // Remove trailing 'Z'
 
-    return `${pureISO}${tzOffset}`;
+    const newDate = new Date(`${pureISO}${tzOffset}`);
+    
+    return `${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, "0")}-${String(newDate.getDate()).padStart(2, "0")}`;
     
     /*const date = new Date(dateStr + "T12:00:00");
     const tzOffset = date.getTimezoneOffset() * 60000;
@@ -58,7 +60,9 @@ export function localISODate(date: Date): string {
     const localShifted = new Date(date.getTime() - (offsetMin * 60 * 1000));
     const pureISO = localShifted.toISOString().slice(0, -1); // Remove trailing 'Z'
 
-    return `${pureISO}${tzOffset}`;
+    const newDate = new Date(`${pureISO}${tzOffset}`);
+    
+    return `${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, "0")}-${String(newDate.getDate()).padStart(2, "0")}`;
    /* const tzOffset = date.getTimezoneOffset() * 60000;
     const localISOTime = (new Date(date.getTime() - tzOffset)).toISOString().slice(0, -1);
 
