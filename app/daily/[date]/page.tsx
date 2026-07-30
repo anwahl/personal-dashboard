@@ -1,7 +1,8 @@
 import Link                              from 'next/link';
 import { notFound }                      from 'next/navigation';
 import { createClient }                  from '@/lib/supabase/server';
-import { ensureDailyEntry, addDays }     from '@/lib/dal/daily';
+import { ensureDailyEntry }     from '@/lib/dal/daily';
+import { addDays } from "@/lib/utils/dates";
 import { getSleepEntry, getPriorSleepContext } from '@/lib/dal/sleep';
 import { getDailySymptomData }           from '@/lib/dal/symptoms';
 import { getEssEntry }                   from '@/lib/dal/ess';

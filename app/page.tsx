@@ -1,6 +1,7 @@
 import Link                                     from 'next/link';
 import { createClient }                         from '@/lib/supabase/server';
-import { localTodayISO, getRecentIntention }    from '@/lib/dal/daily';
+import { getRecentIntention }    from '@/lib/dal/daily';
+import { localTodayISO } from "@/lib/utils/dates";
 import { getTasksByDateContext }                from '@/lib/dal/tasks';
 import { getUpcomingAppointments }              from '@/lib/dal/appointments';
 import {  getTaskStatuses, getTaskPriorities, getPeople,
