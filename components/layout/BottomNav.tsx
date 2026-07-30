@@ -25,14 +25,15 @@ export function BottomNav() {
           </Link>
         );
       })}
-
+      <hr className="vertical-rule" />
       <div className="bottom-nav__footer">
         <Link
           key ="/settings"
           href="/settings"
-          className={`bottom-nav__link bottom-nav__link--compact${path === '/settings' ? ' bottom-nav__link--active' : ''}`}
+          className={`bottom-nav__link${path === '/settings' ? ' bottom-nav__link--active' : ''}`}
         >
-          <span className="bottom-nav__link-icon">⚙️ Settings</span>
+          <span className="bottom-nav__link-icon">⚙️</span>
+          Settings
         </Link>
       </div>
     </nav>
