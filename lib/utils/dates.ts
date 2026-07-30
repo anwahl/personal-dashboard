@@ -21,7 +21,7 @@ export function localTodayISO(): string {
  * Returns the provided date as ISO date using the browser's LOCAL timezone.
  */
 export function localISODateFromDateString(dateStr: string): string {
-    const date = new Date(dateStr + "T12:00:00");
+    const date = new Date(dateStr);
     const offsetMin = date.getTimezoneOffset();
     const offsetSign = offsetMin <= 0 ? '+' : '-';
     const absOffsetMin = Math.abs(offsetMin);
