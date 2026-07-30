@@ -13,8 +13,11 @@
   --text-faint:   #5e5462;
 
   --accent:       #CF9893;
+  --accent-secondary: #F5AD51;
   --accent-dim:   rgba(207, 152, 147, 0.14);
+  --accent-secondary-dim: rgba(245, 173, 81, 0.14);
   --accent-hover: rgba(207, 152, 147, 0.25);
+  --accent-secondary-hover: rgba(245, 173, 81, 0.25);
 
   --success:      #7aab4a;
   --success-dim:  rgba(122, 171, 74, 0.14);
@@ -1078,6 +1081,7 @@ textarea {
 }
 .side-calendar__day:hover { background: var(--surface-high); }
 .side-calendar__day--today { background: var(--accent-dim); }
+.side-calendar__day--active { background: var(--accent-secondary-dim); }
 .side-calendar__day--today .side-calendar__day-num { color: var(--accent); font-weight: 700; }
 .side-calendar__day-num {
   font-size: 0.7rem;
