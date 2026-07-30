@@ -26,7 +26,7 @@ export function BottomNav() {
         );
       })}
       
-    <div class="vertical-rule"></div>
+    <div className="vertical-rule"></div>
       
     <Link
       key ="/settings"
