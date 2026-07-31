@@ -19,7 +19,7 @@ export function localTodayISO(): string {
     return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
 }
 
-const toLocalInput = (dateStr: string) => {
+export function toLocalInput(dateStr: string): string {
     const d = new Date(dateStr);
     return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
 };
