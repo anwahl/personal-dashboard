@@ -4,6 +4,8 @@
  * Shared date helpers used across the dashboard.
  * Centralises the ~6 independent copies of localTodayISO, addDays, fmtDate, etc.
  */
+ 
+const p = (n: number) => String(n).padStart(2, '0');
 
 // ── Today helpers ─────────────────────────────────────────────────────────────
 
@@ -13,9 +15,14 @@
  * wrong after ~6pm Mountain Time.
  */
 export function localTodayISO(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const d = new Date();
+    return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
 }
+
+const toLocalInput = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+};
 
 /**
  * Returns the provided date as ISO date using the browser's LOCAL timezone.
@@ -30,14 +37,14 @@ export function localISODateFromDateString(dateStr: string): string {
     const hh = String(Math.floor(absOffsetMin / 60)).padStart(2, '0');
     const mm = String(absOffsetMin % 60).padStart(2, '0');
     const tzOffset = `${offsetSign}${hh}:${mm}`;
-
+    
     // Shift date by timezone offset to construct exact local parts
     const localShifted = new Date(date.getTime() - (offsetMin * 60 * 1000));
     const pureISO = localShifted.toISOString().slice(0, -1); // Remove trailing 'Z'
-
+    
     const newDate = new Date(`${pureISO}${tzOffset}`);
     
-    return `${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, "0")}-${String(newDate.getDate()).padStart(2, "0")}`;
+    return `${newDate.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
 }
 
 export function localISODateTimeFromDateString(dateStr: string): string {
@@ -57,7 +64,7 @@ export function localISODateTimeFromDateString(dateStr: string): string {
 
     const newDate = new Date(`${pureISO}${tzOffset}`);
     
-    return `${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, "0")}-${String(newDate.getDate()).padStart(2, "0")}T${String(newDate.getHours())}:${String(newDate.getMinutes())}`;
+    return `${newDate.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${String(newDate.getHours())}:${String(newDate.getMinutes())}`;
 }
 
 export function localISODate(date: Date): string {
@@ -76,7 +83,7 @@ export function localISODate(date: Date): string {
 
     const newDate = new Date(`${pureISO}${tzOffset}`);
     
-    return `${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, "0")}-${String(newDate.getDate()).padStart(2, "0")}`;
+    return `${newDate.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
 }
 
 // ── Date arithmetic ───────────────────────────────────────────────────────────
