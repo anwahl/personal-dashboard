@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter }             from 'next/navigation';
 import { createClient }          from '@/lib/supabase/client';
-import { localTodayISO, localISODateFromDateString }         from '@/lib/utils/dates';
+import { localTodayISO, toLocalInput,  localISODateFromDateString, formatShortDate }         from '@/lib/utils/dates';
 import { createTask, updateTask, completeTask, deleteTask, spawnNextRecurrence } from '@/lib/dal/tasks';
 import { Button, TabBar, InputField }                from '@/components/ui';
 import type { TaskDetail }       from '@/types/dal';
@@ -30,12 +30,6 @@ function addDays(n: number): string {
   const date = new Date(y, m - 1, d + n);
   const p = (x: number) => String(x).padStart(2, '0');
   return `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())}`;
-}
-
-function fmtDate(d: string | null) {
-  if (!d) return '';
-  const [y, m, day] = d.split('-').map(Number);
-  return new Date(y, m - 1, day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 function isOverdue(t: TaskDetail): boolean {
@@ -78,12 +72,12 @@ function TaskItem({ task, doneStatusId, onComplete, onEdit }: Readonly<{
           <span className={`badge${overdue ? ' badge--danger' : ''}`}>{task.status.status_name}</span>
           {dueDate && (
             <span style={{ color: overdue ? 'var(--danger)' : 'var(--text-faint)' }}>
-  {overdue ? '⚠ ' : ''}{fmtDate(dueDate)}{task.due_time ? ' ' + task.due_time.slice(0,5) : ''}
+  {overdue ? '⚠ ' : ''}{formatShortDate(dueDate)}{task.due_time ? ' ' + task.due_time.slice(0,5) : ''}
             </span>
           )}
           {task.reminder_at && (
             <span className={`task-reminder-badge${isReminderOverdue(task) ? ' task-reminder-badge--overdue' : isReminderSoon(task) ? ' task-reminder-badge--soon' : ''}`}>
-              🔔 {fmtDate(task.reminder_at.slice(0, 10))}
+              🔔 {formatShortDate(task.reminder_at.slice(0, 10))}
               {task.recurrence_frequency && ' ↻'}
             </span>
           )}
@@ -98,12 +92,7 @@ function TaskItem({ task, doneStatusId, onComplete, onEdit }: Readonly<{
 
 // ── Reminder helpers ──────────────────────────────────────────────────────────
 
-/** ISO timestamptz → local datetime string for datetime-local input */
-function toLocalInput(iso: string): string {
-  const d = new Date(iso);
-  const p = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
-}
+/** ISO timestamptz → local datetime string for 
 
 function isReminderOverdue(t: TaskDetail): boolean {
   if (!t.reminder_at || t.status.is_terminal) return false;
@@ -173,17 +162,21 @@ function ReminderSection({ form, set }: Readonly<{ form: EditState; set: (k: key
           type="datetime-local"
           value={form.reminder_at}
           onChange={e => {
-            set('reminder_at', e.target.value);
-            if (!e.target.value) {
-              set('recurrence_frequency', '');
-              set('recurrence_days', '');
-              set('recurrence_end_date', '');
+            setReminderAt(e.target.value); 
+            if (!e.target.value) { 
+                setRecurrenceFrequency(''); 
+                setRecurrenceDays(''); 
+                setRecurrenceEndDate(''); 
             }
           }}
         />
         {hasReminder && (
           <button type="button" className="reminder-section__toggle"
-            onClick={() => { set('reminder_at', ''); set('recurrence_frequency', ''); set('recurrence_days', ''); set('recurrence_end_date', ''); }}>
+            onClick={() => { 
+                setReminderAt('');
+                set('recurrence_frequency', '');
+                set('recurrence_days', '');
+                set('recurrence_end_date', ''); }}>
             ✕ Clear
           </button>
         )}
@@ -254,7 +247,7 @@ function EditPanel({ task, statuses, priorities, people, onSave, onDelete, onCan
 }>) {
   const [form, setForm] = useState<EditState>(taskToEdit(task));
   const set = (k: keyof EditState, v: string) => setForm(p => ({ ...p, [k]: v }));
-
+  
   return (
     <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '14px 16px', marginBottom: 8 }}>
       <InputField label="Title" id="et-title">
@@ -365,7 +358,7 @@ export function TasksClient({ active, completed, statuses, priorities, people }:
 
   const [localActive,    setLocalActive]    = useState(active);
   const [localCompleted, setLocalCompleted] = useState(completed);
-  useEffect(() => { setLocalActive(active); },    [active]);
+  useEffect(() => { setLocalActive(active); },       [active]);
   useEffect(() => { setLocalCompleted(completed); }, [completed]);
 
   const [tab,        setTab]        = useState<TabId>('active');
@@ -377,7 +370,20 @@ export function TasksClient({ active, completed, statuses, priorities, people }:
   const [adding,     setAdding]     = useState(false);
   const [editTask,   setEditTask]   = useState<TaskDetail | null>(null);
   const [saving,     setSaving]     = useState(false);
-
+  
+  // Reminder state
+  const [newReminderAt, setReminderAt] = useState(
+    task.reminder_at        ? toLocalInput(task.reminder_at)                                        :
+    task.due_date           ? task.due_date + (task.due_time ? 'T' + task.due_time : 'T12:00:00')   :
+    ''
+  );
+  useEffect(() => { 
+    if (!task.reminder_at && newDue) {
+        setReminderAt(newDue + (newTime ? 'T' + newTime : 'T12:00:00'));
+    }
+  }, [dueDate]);
+  
+  
   const doneStatusId     = statuses.find(s => s.status_name === 'done')?.id     ?? statuses.find(s => s.is_terminal)?.id ?? 0;
   const todoStatusId     = statuses.find(s => s.status_name === 'todo')?.id     ?? statuses.find(s => !s.is_terminal)?.id ?? 0;
   const normalPriorityId = priorities.find(p => p.priority_name === 'normal')?.id ?? priorities[0]?.id ?? 0;
