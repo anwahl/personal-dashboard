@@ -44,7 +44,7 @@ export function localISODateFromDateString(dateStr: string): string {
     
     const newDate = new Date(`${pureISO}${tzOffset}`);
     
-    return `${newDate.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+    return `${newDate.getFullYear()}-${p(newDate.getMonth()+1)}-${p(newDate.getDate())}`;
 }
 
 export function localISODateTimeFromDateString(dateStr: string): string {
@@ -64,7 +64,7 @@ export function localISODateTimeFromDateString(dateStr: string): string {
 
     const newDate = new Date(`${pureISO}${tzOffset}`);
     
-    return `${newDate.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${String(newDate.getHours())}:${String(newDate.getMinutes())}`;
+    return `${newDate.getFullYear()}-${p(newDate.getMonth()+1)}-${p(newDate.getDate())}T${String(newDate.getHours())}:${String(newDate.getMinutes())}`;
 }
 
 export function localISODate(date: Date): string {
@@ -83,7 +83,7 @@ export function localISODate(date: Date): string {
 
     const newDate = new Date(`${pureISO}${tzOffset}`);
     
-    return `${newDate.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+    return `${newDate.getFullYear()}-${p(newDate.getMonth()+1)}-${p(newDate.getDate())}`;
 }
 
 // ── Date arithmetic ───────────────────────────────────────────────────────────
