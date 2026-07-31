@@ -41,7 +41,7 @@ export function TaskDetailClient({ task, statuses, priorities, people }: Readonl
   );
   useEffect(() => { 
     if (!reminderAt && (dueDate && dueTime)) {
-        setReminderAt(dueDate + (dueTime ? 'T' + dueTime : 'T12:00:00')));
+        setReminderAt(dueDate + (dueTime ? 'T' + dueTime : 'T12:00:00'));
     }
   }, [dueDate]);
 
