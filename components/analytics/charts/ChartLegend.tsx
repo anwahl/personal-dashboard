@@ -24,7 +24,7 @@ interface Props {
   prefix?:  React.ReactNode;
 }
 
-export function ChartLegend({ items, block = false, prefix }: Props) {
+export function ChartLegend({ items, block = false, prefix }: Readonly<Props>) {
   return (
     <div className="chart-info-bar">
       {prefix}

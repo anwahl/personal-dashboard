@@ -9,8 +9,8 @@
  * Use upsert to set, delete to clear.
  */
 
-import type { SupabaseClient } from '@supabase/supabase-js';
-import type { DailyNumericEntryRow } from '@/types/schema';
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { DailyNumericEntryRow } from "@/types/schema";
 
 type Client = SupabaseClient;
 
@@ -19,15 +19,15 @@ type Client = SupabaseClient;
 /** Upsert a single numeric trackable value for an entry. */
 export async function upsertNumericEntry(
   client: Client,
-  entryId:     number,
+  entryId: number,
   trackableId: number,
-  value:       number
+  value: number,
 ): Promise<void> {
   await client
-    .from('daily_numeric_entries')
+    .from("daily_numeric_entries")
     .upsert(
       { entry_id: entryId, trackable_id: trackableId, metric_value: value },
-      { onConflict: 'entry_id,trackable_id' }
+      { onConflict: "entry_id,trackable_id" },
     )
     .throwOnError();
 }
@@ -35,26 +35,26 @@ export async function upsertNumericEntry(
 /** Delete a numeric trackable entry (= "not logged"). */
 export async function deleteNumericEntry(
   client: Client,
-  entryId:     number,
-  trackableId: number
+  entryId: number,
+  trackableId: number,
 ): Promise<void> {
   await client
-    .from('daily_numeric_entries')
+    .from("daily_numeric_entries")
     .delete()
-    .eq('entry_id', entryId)
-    .eq('trackable_id', trackableId)
+    .eq("entry_id", entryId)
+    .eq("trackable_id", trackableId)
     .throwOnError();
 }
 
 /** Fetch all numeric entries for a daily entry. */
 export async function getNumericEntries(
   client: Client,
-  entryId: number
+  entryId: number,
 ): Promise<DailyNumericEntryRow[]> {
   const { data, error } = await client
-    .from('daily_numeric_entries')
-    .select('*')
-    .eq('entry_id', entryId);
+    .from("daily_numeric_entries")
+    .select("*")
+    .eq("entry_id", entryId);
   if (error) throw new Error(`getNumericEntries(${entryId}): ${error.message}`);
   return (data ?? []) as DailyNumericEntryRow[];
 }
@@ -65,8 +65,8 @@ export async function getNumericEntries(
  */
 export async function saveNumericEntries(
   client: Client,
-  entryId:     number,
-  metricState: Record<number, number | null>
+  entryId: number,
+  metricState: Record<number, number | null>,
 ): Promise<void> {
   await Promise.all(
     Object.entries(metricState).map(([idStr, value]) => {
@@ -74,7 +74,7 @@ export async function saveNumericEntries(
       return value !== null
         ? upsertNumericEntry(client, entryId, trackableId, value)
         : deleteNumericEntry(client, entryId, trackableId);
-    })
+    }),
   );
 }
 
@@ -84,13 +84,13 @@ export async function saveNumericEntries(
 export async function upsertBooleanEntry(
   client: Client,
   entryId: number,
-  trackableId: number
+  trackableId: number,
 ): Promise<void> {
   await client
-    .from('habit_entries')
+    .from("habit_entries")
     .upsert(
       { entry_id: entryId, trackable_id: trackableId },
-      { onConflict: 'entry_id,trackable_id' }
+      { onConflict: "entry_id,trackable_id" },
     )
     .throwOnError();
 }
@@ -99,12 +99,27 @@ export async function upsertBooleanEntry(
 export async function deleteBooleanEntry(
   client: Client,
   entryId: number,
-  trackableId: number
+  trackableId: number,
 ): Promise<void> {
   await client
-    .from('habit_entries')
+    .from("habit_entries")
     .delete()
-    .eq('entry_id', entryId)
-    .eq('trackable_id', trackableId)
+    .eq("entry_id", entryId)
+    .eq("trackable_id", trackableId)
     .throwOnError();
+}
+
+// ── Category assignment ───────────────────────────────────────────────────────
+
+/** Assign (or clear) the category for a boolean trackable. */
+export async function setTrackableCategory(
+  client:     Client,
+  trackableId: number,
+  categoryId:  number | null,
+): Promise<void> {
+  const { error } = await client
+    .from('daily_trackables')
+    .update({ category_id: categoryId })
+    .eq('id', trackableId);
+  if (error) throw new Error(`setTrackableCategory: ${error.message}`);
 }

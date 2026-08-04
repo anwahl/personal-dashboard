@@ -1,15 +1,16 @@
 import { createClient }        from '@/lib/supabase/server';
 import { getAllAppointments }   from '@/lib/dal/appointments';
 import { getAppointmentTypes, getPeople } from '@/lib/dal/reference';
+import { getProviders }        from '@/lib/dal/providers';
 import { AppointmentsClient }  from '@/components/appointments/AppointmentsClient';
 
 export default async function AppointmentsPage() {
   const supabase = await createClient();
-  const [{ upcoming, past }, apptTypes, people, { data: providers }] = await Promise.all([
+  const [{ upcoming, past }, apptTypes, people, providers] = await Promise.all([
     getAllAppointments(supabase),
     getAppointmentTypes(supabase),
     getPeople(supabase),
-    supabase.from('providers').select('*').eq('is_active', true).order('provider_name'),
+    getProviders(supabase),   // active only (default)
   ]);
 
   return (
@@ -22,7 +23,7 @@ export default async function AppointmentsPage() {
         past={past}
         appointmentTypes={apptTypes}
         people={people}
-        providers={(providers ?? []) as any[]}
+        providers={providers}
       />
     </div>
   );

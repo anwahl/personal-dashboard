@@ -20,7 +20,7 @@ export const authOptions: NextAuthOptions = {
       type: "oauth",
       wellKnown: `${process.env.AUTHELIA_ISSUER}/.well-known/openid-configuration`,
       idToken: true,
-      issuer: process.env.AUTHELIA_ISSUER, 
+      issuer: process.env.AUTHELIA_ISSUER,
       clientId: process.env.AUTHELIA_CLIENT_ID,
       clientSecret: process.env.AUTHELIA_CLIENT_SECRET,
       authorization: {
@@ -31,7 +31,7 @@ export const authOptions: NextAuthOptions = {
           id: profile.sub,
           name: profile.name || profile.preferred_username,
           email: profile.email,
-        }
+        };
       },
     },
   ],

@@ -14,20 +14,14 @@ import { createClient }    from '@/lib/supabase/client';
 import { togglePrescriptionEntry } from '@/lib/dal/daily';
 import { setEssResponse }          from '@/lib/dal/ess';
 import { formatTime } from '@/lib/utils/dates';
-import { Card, CardHeader, CardTitle, CardBody, CardSection, CardSectionLabel } from '@/components/ui/Card';
-import { TabBar, Toggle }          from '@/components/ui/Controls';
+import { Card, CardHeader, CardTitle, CardBody, CardSection, CardSectionLabel, TabBar, Toggle, SliderField, Chip, ChipGroup, InputField, SaveState, IconDisplay, IconPicker, Markdown, TagSelector } from '@/components/ui';
 import { JournalTab }       from './JournalTab';
-import { SliderField }     from '@/components/ui/SliderField';
-import { Chip, ChipGroup } from '@/components/ui/Chip';
-import { InputField, SaveState } from '@/components/ui/Display';
-
-import { TagSelector }   from '@/components/ui/TagSelector';
 import type {
   JournalCategoryWithPrompts, DailyEntryDetail,
   EssEntryDetail, PrescriptionDetail, PriorSleepContext, ReferenceData,
 } from '@/types/dal';
 import type {  JournalState, DailyOverviewState, SymptomFormState, SleepFormState, MetricState, } from './DailyPageClient';
-import type { EssQuestionTypeRow, EssAnswerTypeRow } from '@/types/schema';
+import type { EssQuestionTypeRow, EssAnswerTypeRow, IconRow } from '@/types/schema';
 
 type Mode = 'view' | 'input';
 
@@ -58,45 +52,65 @@ function Rating({ value, max = SEVERITY_MAX }: Readonly<{ value: number | null |
 
 function OverviewTab({
   mode, state, setState,
-  trackables, checkedTrackableIds, toggleBoolean,
+  trackables, trackableCategories, checkedTrackableIds, toggleBoolean,
   tags, tagIds, toggleTag, addNewTag,
+  icons,
 }: Readonly<{
   mode: Mode;
   state: DailyOverviewState;
   setState: React.Dispatch<React.SetStateAction<DailyOverviewState>>;
-  trackables: ReferenceData['trackables'];
+  trackables:          ReferenceData['trackables'];
+  trackableCategories: ReferenceData['trackableCategories'];
   checkedTrackableIds: number[];
   toggleBoolean: (id: number) => void;
   tags: ReferenceData['tags'];
   tagIds: number[];
   toggleTag: (id: number) => void;
   addNewTag: (v: string) => Promise<void>;
+  icons:               IconRow[];
 }>) {
   const set = <K extends keyof DailyOverviewState>(k: K, v: DailyOverviewState[K]) =>
     setState(prev => ({ ...prev, [k]: v }));
 
   const booleanTrackables = trackables.filter(t => t.track_type === 'boolean');
+
+  // Group boolean trackables by category for display
+  // Category order follows sort_order; uncategorized appear last under 'Habits'
+  const categorizedGroups: { label: string; items: typeof booleanTrackables }[] = [];
+  const categorized = new Map<number, typeof booleanTrackables>();
+  const uncategorized: typeof booleanTrackables = [];
+  for (const t of booleanTrackables) {
+    if (t.category_id != null) {
+      if (!categorized.has(t.category_id)) categorized.set(t.category_id, []);
+      categorized.get(t.category_id)!.push(t);
+    } else {
+      uncategorized.push(t);
+    }
+  }
+  const sortedCats = [...trackableCategories].filter(c => c.is_active).sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+  for (const cat of sortedCats) {
+    const items = categorized.get(cat.id) ?? [];
+    if (items.length > 0) categorizedGroups.push({ label: cat.category_name, items });
+  }
+  if (uncategorized.length > 0) {
+    categorizedGroups.push({ label: categorizedGroups.length === 0 ? 'Habits' : 'Other', items: uncategorized });
+  }
+
   const activeTags = tags.filter(t => tagIds.includes(t.id));
 
   if (mode === 'view') {
     return (
       <div>
-        <CardSection>
-          <CardSectionLabel>Habits</CardSectionLabel>
-          <div className="habit-grid">
-            {booleanTrackables.map(t => (
-              <div
-                key={t.id}
-                className={`habit-btn${checkedTrackableIds.includes(t.id) ? ' habit-btn--done' : ''}`}
-              >
-                <span className="habit-btn__emoji">{t.emoji ?? '•'}</span>
-                <span className="habit-btn__label">{t.name}</span>
-              </div>
-            ))}
-          </div>
-        </CardSection>
-
-        {(state.word || state.dailyEmoji) && (
+        {state.summary && (
+          <CardSection>
+            <CardSectionLabel>Summary</CardSectionLabel>
+            <div className="detail-page__body-markdown">
+                <Markdown>{state.summary}</Markdown>
+            </div>
+          </CardSection>
+        )}
+      
+        {(state.word || state.dailyIconId != null) && (
           <CardSection>
             <div className="summary-row">
               <span className="summary-row__label">Word</span>
@@ -106,19 +120,29 @@ function OverviewTab({
             </div>
             <div className="summary-row">
               <span className="summary-row__label">Emoji</span>
-              <span className={`summary-row__value${!state.dailyEmoji ? ' summary-row__value--empty' : ''}`}>
-                {state.dailyEmoji || '—'}
+              <span className="summary-row__value">
+                <IconDisplay
+                icon={icons.find(i => i.id === state.dailyIconId) ?? null}
+                  size="md"
+                />
               </span>
             </div>
           </CardSection>
         )}
-
-        {state.summary && (
-          <CardSection>
-            <CardSectionLabel>Summary</CardSectionLabel>
-            <p className="daily-card__summary-text">{state.summary}</p>
+        
+        {categorizedGroups.map(({ label, items }) => (
+          <CardSection key={label}>
+            <CardSectionLabel>{label}</CardSectionLabel>
+            <div className="habit-grid">
+              {items.map(t => (
+                <div key={t.id} className={`habit-btn${checkedTrackableIds.includes(t.id) ? ' habit-btn--done' : ''}`}>
+                  <IconDisplay icon={icons.find(i => i.id === t.icon_id) ?? null} size="sm" className="habit-btn__emoji" />
+                  <span className="habit-btn__label">{t.name}</span>
+                </div>
+              ))}
+            </div>
           </CardSection>
-        )}
+        ))}
 
         {activeTags.length > 0 && (
           <CardSection>
@@ -144,23 +168,15 @@ function OverviewTab({
   return (
     <div>
       <CardSection>
-        <CardSectionLabel>Habits</CardSectionLabel>
-        <div className="habit-grid">
-          {booleanTrackables.map(t => (
-            <button
-              key={t.id}
-              type="button"
-              className={`habit-btn${checkedTrackableIds.includes(t.id) ? ' habit-btn--done' : ''}`}
-              onClick={() => toggleBoolean(t.id)}
-            >
-              <span className="habit-btn__emoji">{t.emoji ?? '•'}</span>
-              <span className="habit-btn__label">{t.name}</span>
-            </button>
-          ))}
-        </div>
-      </CardSection>
-
-      <CardSection>
+        <InputField label="Summary" id="summary">
+          <textarea
+            id="summary"
+            value={state.summary}
+            placeholder="How did today go? What did you do?"
+            onChange={e => set('summary', e.target.value)}
+            className="textarea--tall"
+          />
+        </InputField>
         <div className="field-grid">
           <InputField label="Word of the day" id="word">
             <input
@@ -170,25 +186,33 @@ function OverviewTab({
               onChange={e => set('word', e.target.value)}
             />
           </InputField>
-          <InputField label="Daily emoji" id="daily-emoji">
-            <input
-              id="daily-emoji" type="text"
-              value={state.dailyEmoji}
-              placeholder="🌟"
-              onChange={e => set('dailyEmoji', e.target.value)}
+          <InputField label="Daily icon" id="daily-icon">
+            <IconPicker
+              icons={icons}
+              value={state.dailyIconId}
+              onChange={id => set('dailyIconId', id)}
+              size="sm"
             />
           </InputField>
         </div>
-        <InputField label="Summary" id="summary">
-          <textarea
-            id="summary"
-            value={state.summary}
-            placeholder="How did today go?"
-            onChange={e => set('summary', e.target.value)}
-            className="textarea--short"
-          />
-        </InputField>
       </CardSection>
+        
+      {categorizedGroups.map(({ label, items }) => (
+        <CardSection key={label}>
+          <CardSectionLabel>{label}</CardSectionLabel>
+          <div className="habit-grid">
+            {items.map(t => (
+              <button key={t.id} type="button"
+                className={`habit-btn${checkedTrackableIds.includes(t.id) ? ' habit-btn--done' : ''}`}
+                onClick={() => toggleBoolean(t.id)}
+                >
+                <IconDisplay icon={icons.find(i => i.id === t.icon_id) ?? null} size="sm" className="habit-btn__emoji" />
+                <span className="habit-btn__label">{t.name}</span>
+              </button>
+            ))}
+          </div>
+        </CardSection>
+      ))}
 
       <CardSection>
         <CardSectionLabel>Tags</CardSectionLabel>
@@ -217,12 +241,14 @@ function OverviewTab({
 // ── Metrics tab ───────────────────────────────────────────────────────────────
 
 function MetricsTab({
-  mode, trackables, metricState, setMetricState,
+  mode, trackables, trackableCategories, metricState, setMetricState, icons,
 }: Readonly<{
   mode: Mode;
   trackables: ReferenceData['trackables'];
+  trackableCategories: ReferenceData['trackableCategories'];
   metricState: MetricState;
   setMetricState: React.Dispatch<React.SetStateAction<MetricState>>;
+  icons: IconRow[];
 }>) {
   const numericTrackables = trackables.filter(t => t.track_type === 'numeric');
 
@@ -230,35 +256,56 @@ function MetricsTab({
     return <p className="empty-state">No numeric metrics configured.</p>;
   }
 
-  if (mode === 'view') {
-    return (
-      <div>
-        {numericTrackables.map(t => (
-          <div key={t.id} className="metric-display">
-            <span className="metric-display__emoji">{t.emoji ?? '•'}</span>
-            <span className="metric-display__label">{t.name}</span>
-            <Rating value={metricState[t.id] ?? null} />
-          </div>
-        ))}
-      </div>
-    );
+  // Group by category (same pattern as boolean metrics in OverviewTab)
+  type Group = { label: string; items: typeof numericTrackables };
+  const groups: Group[] = [];
+  const byCategory = new Map<number, typeof numericTrackables>();
+  const uncategorized: typeof numericTrackables = [];
+
+  for (const t of numericTrackables) {
+    if (t.category_id != null) {
+      if (!byCategory.has(t.category_id)) byCategory.set(t.category_id, []);
+      byCategory.get(t.category_id)!.push(t);
+    } else {
+      uncategorized.push(t);
+    }
   }
 
-  return (
-    <div>
-      {numericTrackables.map(t => (
-        <SliderField
-          key={t.id}
-          emoji={t.emoji ?? '•'}
-          label={t.name}
-          value={metricState[t.id] ?? null}
-          min={0}
-          max={SEVERITY_MAX}
-          onChange={v => setMetricState(prev => ({ ...prev, [t.id]: v }))}
-        />
-      ))}
+  for (const cat of [...trackableCategories].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))) {
+    const items = byCategory.get(cat.id);
+    if (items?.length) groups.push({ label: cat.category_name, items });
+  }
+  if (uncategorized.length) {
+    groups.push({ label: groups.length > 0 ? 'Other' : '', items: uncategorized });
+  }
+
+  const renderGroup = (group: Group) => (
+    <div key={group.label}>
+      {group.label && <p className="category-group__label">{group.label}</p>}
+      {mode === 'view'
+        ? group.items.map(t => (
+            <div key={t.id} className="metric-display">
+              <IconDisplay icon={icons.find(i => i.id === t.icon_id) ?? null} size="sm" className="metric-display__emoji" />
+              <span className="metric-display__label">{t.name}</span>
+              <Rating value={metricState[t.id] ?? null} />
+            </div>
+          ))
+        : group.items.map(t => (
+            <SliderField
+              key={t.id}
+              emoji={<IconDisplay icon={icons.find(i => i.id === t.icon_id) ?? null} size="sm" />}
+              label={t.name}
+              value={metricState[t.id] ?? null}
+              min={0}
+              max={SEVERITY_MAX}
+              onChange={v => setMetricState(prev => ({ ...prev, [t.id]: v }))}
+            />
+          ))
+      }
     </div>
   );
+
+  return <div>{groups.map(renderGroup)}</div>;
 }
 
 // ── Symptoms tab ──────────────────────────────────────────────────────────────
@@ -565,6 +612,16 @@ function SleepTab({
   const set = <K extends keyof SleepFormState>(k: K, v: SleepFormState[K]) =>
     setSleepState(prev => ({ ...prev, [k]: v }));
 
+  // Prior night lookups
+  const priorTimingRows = (priorSleep?.timing_entries ?? []).map(te => {
+    const cat = reference.timingCategories.find(c => c.id === te.timing_category_id);
+    const opt = reference.timingOptions.find(o => o.id === te.timing_option_id);
+    return cat && opt ? { cat: cat.category_name, opt: opt.option_name } : null;
+  }).filter(Boolean) as { cat: string; opt: string }[];
+  
+  const hasPriorContext =
+    priorTimingRows.length > 0 || !!priorSleep?.today_pre_bed_activity;
+
   if (mode === 'view') {
     const noData = !hasSleepData && sleepState.quality == null && !sleepState.hoursSlept;
     if (noData) return <p className="empty-state">Sleep not logged.</p>;
@@ -572,9 +629,6 @@ function SleepTab({
     // Lookup helpers
     const eventNames   = sleepState.sleepEventIds.map(id =>
       reference.sleepEventTypes.find(t => t.id === id)?.type_name ?? String(id)
-    );
-    const consumeNames = sleepState.consumptionIds.map(id =>
-      reference.consumptionTypes.find(t => t.id === id)?.type_name ?? String(id)
     );
     const timingRows = Object.entries(sleepState.timingMap).map(([catIdStr, optId]) => {
       const catId = Number(catIdStr);
@@ -584,20 +638,7 @@ function SleepTab({
     }).filter(Boolean) as { cat: string; opt: string }[];
 
     const hasTonightContext =
-      timingRows.length > 0 || consumeNames.length > 0 || sleepState.preBedActivity;
-
-    // Prior night lookups
-    const priorConsumeNames = priorSleep?.consumption_ids.map(id =>
-      reference.consumptionTypes.find(t => t.id === id)?.type_name ?? String(id)
-    ) ?? [];
-    const priorTimingRows = (priorSleep?.timing_entries ?? []).map(te => {
-      const cat = reference.timingCategories.find(c => c.id === te.timing_category_id);
-      const opt = reference.timingOptions.find(o => o.id === te.timing_option_id);
-      return cat && opt ? { cat: cat.category_name, opt: opt.option_name } : null;
-    }).filter(Boolean) as { cat: string; opt: string }[];
-    const hasPriorContext =
-      priorTimingRows.length > 0 || priorConsumeNames.length > 0 ||
-      !!priorSleep?.today_pre_bed_activity;
+      timingRows.length > 0 || sleepState.preBedActivity;
 
     return (
       <div>
@@ -690,12 +731,6 @@ function SleepTab({
                 <span className="sleep-view__context-value">{r.opt}</span>
               </div>
             ))}
-            {consumeNames.length > 0 && (
-              <div className="sleep-view__context-row">
-                <span className="sleep-view__context-label">Consumed</span>
-                <span className="sleep-view__context-value">{consumeNames.join(', ')}</span>
-              </div>
-            )}
             {sleepState.preBedActivity && (
               <div className="sleep-view__context-row">
                 <span className="sleep-view__context-label">Activity</span>
@@ -723,16 +758,10 @@ function SleepTab({
                 <span className="sleep-view__context-value">{r.opt}</span>
               </div>
             ))}
-            {priorConsumeNames.length > 0 && (
-              <div className="sleep-view__context-row">
-                <span className="sleep-view__context-label">Consumed</span>
-                <span className="sleep-view__context-value">{priorConsumeNames.join(', ')}</span>
-              </div>
-            )}
             {priorSleep?.today_pre_bed_activity && (
               <div className="sleep-view__context-row">
                 <span className="sleep-view__context-label">Activity</span>
-                <span className="sleep-view__context-value">{priorSleep.today_pre_bed_activity}</span>
+                <span className="sleep-view__context-value">{priorSleep?.today_pre_bed_activity}</span>
               </div>
             )}
           </CardSection>
@@ -740,16 +769,28 @@ function SleepTab({
       </div>
     );
   }
+  
+  /* -- Edit mode ─────────────────────────────────────────────────────────────── */
 
   return (
     <div>
-      {priorSleep && (
-        <div className="prior-context">
-          <p className="prior-context__title">Prior night</p>
-          {priorSleep.today_pre_bed_activity && (
-            <p className="prior-context__text">Activity: {priorSleep.today_pre_bed_activity}</p>
+      {/* ── Previous night context ── */}
+      {hasPriorContext && (
+        <CardSection>
+          <CardSectionLabel>Previous night</CardSectionLabel>
+          {priorTimingRows.map(r => (
+            <div key={r.cat} className="sleep-view__context-row">
+              <span className="sleep-view__context-label">{r.cat}</span>
+              <span className="sleep-view__context-value">{r.opt}</span>
+            </div>
+          ))}
+          {priorSleep?.today_pre_bed_activity && (
+            <div className="sleep-view__context-row">
+              <span className="sleep-view__context-label">Activity</span>
+              <span className="sleep-view__context-value">{priorSleep?.today_pre_bed_activity}</span>
+            </div>
           )}
-        </div>
+        </CardSection>
       )}
 
       <CardSection>
@@ -844,31 +885,49 @@ function SleepTab({
 
       <CardSection>
         <CardSectionLabel>Tonight's context</CardSectionLabel>
-        {reference.timingCategories.map(cat => (
-          <div key={cat.id} className="daily-card__timing-group">
-            <p className="card__section-label">{cat.category_name}</p>
-            <ChipGroup>
-              {reference.timingOptions.map(opt => (
-                <Chip key={opt.id} active={sleepState.timingMap[cat.id] === opt.id} small
-                  onClick={() => set('timingMap', { ...sleepState.timingMap, [cat.id]: opt.id })}>
-                  {opt.option_name}
-                </Chip>
-              ))}
-            </ChipGroup>
-          </div>
-        ))}
+        {reference.timingCategories.map(cat => {
+          const selected = sleepState.timingMap[cat.id];
+          const clearTiming = () => {
+            const next = { ...sleepState.timingMap };
+            delete next[cat.id];
+            set('timingMap', next);
+          };
+          return (
+            <div key={cat.id} className="daily-card__timing-group">
+              <p className="card__section-label">{cat.category_name}</p>
+              <ChipGroup>
+                {reference.timingOptions
+                  .filter(opt => opt.option_name.toLowerCase() !== 'none')
+                  .map(opt => (
+                    <Chip key={opt.id} active={selected === opt.id} small
+                      onClick={() => set('timingMap', { ...sleepState.timingMap, [cat.id]: opt.id })}>
+                      {opt.option_name}
+                    </Chip>
+                  ))}
+                {selected && (
+                  <Chip small onClick={clearTiming}>✕ clear</Chip>
+                )}
+              </ChipGroup>
+            </div>
+          );
+        })}
         <p className="card__section-label card__section-label--spaced">Pre-bed consumption</p>
         <ChipGroup>
-          {reference.consumptionTypes.map(t => (
-            <Chip key={t.id} active={sleepState.consumptionIds.includes(t.id)} small
-              onClick={() => set('consumptionIds',
-                sleepState.consumptionIds.includes(t.id)
-                  ? sleepState.consumptionIds.filter(id => id !== t.id)
-                  : [...sleepState.consumptionIds, t.id]
-              )}>
-              {t.type_name}
-            </Chip>
-          ))}
+          {reference.consumptionTypes
+            .filter(t => t.type_name.toLowerCase() !== 'none')
+            .map(t => (
+              <Chip key={t.id} active={sleepState.consumptionIds.includes(t.id)} small
+                onClick={() => set('consumptionIds',
+                  sleepState.consumptionIds.includes(t.id)
+                    ? sleepState.consumptionIds.filter(id => id !== t.id)
+                    : [...sleepState.consumptionIds, t.id]
+                )}>
+                {t.type_name}
+              </Chip>
+            ))}
+          {sleepState.consumptionIds.length > 0 && (
+            <Chip small onClick={() => set('consumptionIds', [])}>✕ clear</Chip>
+          )}
         </ChipGroup>
         <div className="daily-card__timing-group">
           <InputField label="Pre-bed activity" id="pre-bed-activity">
@@ -955,12 +1014,14 @@ export function DailyCard({
             state={overviewState}
             setState={setOverviewState}
             trackables={reference.trackables}
+            trackableCategories={reference.trackableCategories}
             checkedTrackableIds={checkedTrackableIds}
             toggleBoolean={toggleBoolean}
             tags={reference.tags}
             tagIds={tagIds}
             toggleTag={toggleTag}
             addNewTag={addNewTag}
+            icons={reference.icons}
           />
         )}
 
@@ -968,8 +1029,10 @@ export function DailyCard({
           <MetricsTab
             mode={mode}
             trackables={reference.trackables}
+            trackableCategories={reference.trackableCategories}
             metricState={metricState}
             setMetricState={setMetricState}
+            icons={reference.icons}
           />
         )}
 

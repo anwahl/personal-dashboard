@@ -11,7 +11,9 @@
  */
 
 import { ChartEmptyState } from './ChartEmptyState';
+import { IconDisplay }      from '@/components/ui';
 import type { ChartDefinitionDetail, TrackingDataPoint } from '@/types/dal';
+import type { IconRow } from '@/types/schema';
 import { localTodayISO } from '@/lib/utils/dates';
 
 interface Props {
@@ -19,6 +21,7 @@ interface Props {
   data:     TrackingDataPoint[];
   fromDate: string;
   toDate:   string;
+  icons:    IconRow[];
 }
 
 const CIRCLE_R = 5;
@@ -44,7 +47,7 @@ function buildDates(fromDate: string, toDate: string): string[] {
   return dates;
 }
 
-export function ChainChart({ chart, data, fromDate, toDate }: Props) {
+export function ChainChart({ chart, data, fromDate, toDate, icons }: Readonly<Props>) {
   const seriesLinks = chart.links.filter(l => l.metric_role === 'series');
 
   if (!seriesLinks.length) {
@@ -108,10 +111,13 @@ export function ChainChart({ chart, data, fromDate, toDate }: Props) {
 
             return (
               <g key={`row-${link.trackable_id}`}>
-                {/* Emoji label */}
-                <text x={2} y={rowCY + 5} className="chain-row-emoji">
-                  {link.trackable.emoji ?? '•'}
-                </text>
+                {/* Icon label */}
+                <foreignObject x={2} y={rowCY - 9} width={18} height={18}>
+                  <IconDisplay
+                    icon={icons.find(i => i.id === link.trackable.icon_id) ?? null}
+                    size="sm"
+                  />
+                </foreignObject>
                 {/* Name label */}
                 <text x={22} y={rowCY + 4} className="chain-row-name">
                   {link.trackable.name}

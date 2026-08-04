@@ -1,33 +1,27 @@
 import { createClient }                         from '@/lib/supabase/server';
 import { getAllPrescriptions }                  from '@/lib/dal/prescriptions';
-import { getMedicationTimingTypes, getPeople }  from '@/lib/dal/reference';
+import { getMedicationTimingTypes, getAssignablePeople, getMedications } from '@/lib/dal/reference';
+import { getProviders }                         from '@/lib/dal/providers';
 import { MedicationsClient }                    from '@/components/medications/MedicationsClient';
 
 export default async function MedicationsPage() {
   const supabase = await createClient();
-  const people   = await getPeople(supabase);
-  const timings  = await getMedicationTimingTypes(supabase);
 
-  // Fetch all prescriptions per person
+  const [people, timings, medications, providers] = await Promise.all([
+    getAssignablePeople(supabase),
+    getMedicationTimingTypes(supabase),
+    getMedications(supabase),
+    getProviders(supabase),
+  ]);
+
   const allPrescriptions = await Promise.all(
-    people.map(p => getAllPrescriptions(supabase, p.id))
+    people.map(p => getAllPrescriptions(supabase, p.id)),
   );
 
   const prescriptionsByPerson = people.map((p, i) => ({
-    person: p,
+    person:        p,
     prescriptions: allPrescriptions[i],
   }));
-
-  const { data: medications } = await supabase
-    .from('medications')
-    .select('*')
-    .order('medication_name');
-
-  const { data: providers } = await supabase
-    .from('providers')
-    .select('*')
-    .eq('is_active', true)
-    .order('provider_name');
 
   return (
     <div className="page-content">
@@ -36,10 +30,10 @@ export default async function MedicationsPage() {
       </div>
       <MedicationsClient
         prescriptionsByPerson={prescriptionsByPerson}
-        medications={(medications ?? []) as any[]}
+        medications={medications}
         timingTypes={timings}
         people={people}
-        providers={(providers ?? []) as any[]}
+        providers={providers}
       />
     </div>
   );

@@ -11,10 +11,11 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter }              from 'next/navigation';
 import { createClient }           from '@/lib/supabase/client';
-import { Button }                 from '@/components/ui/Button';
-import { ConfirmButton }          from '@/components/ui/ConfirmButton';
-import { InputField } from '@/components/ui/Display';
-import { Markdown }               from '@/components/ui/Markdown';
+import {
+  getMediaNotes, createMediaNote, deleteMediaNote,
+  updateMediaEntry, addMediaStatusEntry, deleteMediaEntry,
+} from '@/lib/dal/media';
+import { Button, ConfirmButton, InputField, SliderField, Markdown } from '@/components/ui';
 import { localTodayISO, formatShortDate } from '@/lib/utils/dates';
 import type { MediaEntryDetail }  from '@/types/dal';
 import type {
@@ -63,7 +64,7 @@ interface FormState {
   title:     string;
   creator:   string;
   platform:  string;
-  rating:    string;
+  rating:    number | null;
   notes:     string;
   review:    string;
   status_id:   string;
@@ -75,7 +76,7 @@ function entryToForm(e: MediaEntryDetail): FormState {
     title:       e.title,
     creator:     e.creator   ?? '',
     platform:    e.platform  ?? '',
-    rating:      e.rating    != null ? String(e.rating) : '',
+    rating:      e.rating,
     notes:       e.notes     ?? '',
     review:      e.review    ?? '',
     status_id:   e.current_status ? String(e.current_status.id) : '',
@@ -91,7 +92,7 @@ export function MediaDetailClient({
   const supabase = createClient();
   const router   = useRouter();
 
-  const [entry,     setEntry]     = useState(initial);
+  const [entry]     = useState(initial);
   const [mode,      setMode]      = useState<'view' | 'edit'>('view');
   const [form,      setForm]      = useState<FormState>(() => entryToForm(initial));
   const [saving,    setSaving]    = useState(false);
@@ -106,29 +107,21 @@ export function MediaDetailClient({
   const [addingNote, setAddingNote] = useState(false);
 
   useEffect(() => {
-    supabase.from('media_notes').select('*')
-      .eq('media_entry_id', entry.id)
-      .order('note_date', { ascending: false })
-      .then(({ data }) => {
-        setNotes((data ?? []) as MediaNoteRow[]);
-        setNotesLoaded(true);
-      });
+    getMediaNotes(supabase, entry.id).then(notes => { setNotes(notes); setNotesLoaded(true); });
   }, [entry.id]);
 
   const addNote = useCallback(async () => {
     if (!newNote.trim()) return;
     setAddingNote(true);
     try {
-      const { data } = await supabase.from('media_notes')
-        .insert({ media_entry_id: entry.id, note_date: noteDate, body_md: newNote.trim() })
-        .select().single();
-      if (data) setNotes(prev => [data as MediaNoteRow, ...prev]);
+      const note = await createMediaNote(supabase, entry.id, noteDate, newNote.trim());
+      setNotes(prev => [note, ...prev]);
       setNewNote('');
     } finally { setAddingNote(false); }
   }, [supabase, entry.id, noteDate, newNote]);
 
   const deleteNote = useCallback(async (id: number) => {
-    await supabase.from('media_notes').delete().eq('id', id);
+    await deleteMediaNote(supabase, id);
     setNotes(prev => prev.filter(n => n.id !== id));
   }, [supabase]);
 
@@ -141,21 +134,19 @@ export function MediaDetailClient({
         title:    form.title.trim(),
         creator:  form.creator.trim()  || null,
         platform: form.platform.trim() || null,
-        rating:   form.rating          ? Number.parseInt(form.rating) : null,
+        rating:   form.rating          || null,
         notes:    form.notes.trim()    || null,
         review:   form.review.trim()   || null,
       };
 
-      await supabase.from('media_entries').update(payload).eq('id', entry.id).throwOnError();
+      await updateMediaEntry(supabase, entry.id, payload);
 
       // Log new status if changed
       const statusChanged = String(entry.current_status?.id ?? '') !== form.status_id;
       if (form.status_id && statusChanged) {
-        await supabase.from('media_status_entries').insert({
-          media_entry_id: entry.id,
-          status_id:      Number.parseInt(form.status_id),
-          status_date:    form.status_date || localTodayISO(),
-        }).throwOnError();
+        await addMediaStatusEntry(supabase,
+          entry.id, Number.parseInt(form.status_id), form.status_date || localTodayISO(),
+        );
       }
 
       router.refresh();
@@ -168,13 +159,13 @@ export function MediaDetailClient({
   // ── Delete ──────────────────────────────────────────────────────────────────
 
   const handleDelete = useCallback(async () => {
-    await supabase.from('media_entries').delete().eq('id', entry.id);
+    await deleteMediaEntry(supabase, entry.id);
     router.push('/media');
   }, [supabase, entry.id, router]);
 
   // ── View mode ────────────────────────────────────────────────────────────────
 
-  const set = (k: keyof FormState, v: string) => setForm(p => ({ ...p, [k]: v }));
+  const set = (k: keyof FormState, v: string | number) => setForm(p => ({ ...p, [k]: v }));
   const filteredStatuses = validStatusesForType(entry.media_type_id, mediaStatuses, statusTypeLinks);
 
   if (mode === 'view') {
@@ -213,7 +204,9 @@ export function MediaDetailClient({
         {entry.notes && (
           <div className="detail-page__body">
             <p className="detail-page__body-label">Notes</p>
-            <Markdown>{entry.notes}</Markdown>
+            <div className="detail-page__body-markdown">
+                <Markdown>{entry.notes}</Markdown>
+            </div>
           </div>
         )}
 
@@ -221,7 +214,9 @@ export function MediaDetailClient({
         {entry.review && (
           <div className="detail-page__body">
             <p className="detail-page__body-label">Review</p>
-            <Markdown>{entry.review}</Markdown>
+            <div className="detail-page__body-markdown">
+                <Markdown>{entry.review}</Markdown>
+            </div>
           </div>
         )}
 
@@ -256,7 +251,9 @@ export function MediaDetailClient({
                 <button type="button" className="media-note__delete"
                   onClick={() => deleteNote(n.id)} title="Delete note">✕</button>
               </div>
-              <Markdown>{n.body_md}</Markdown>
+              <div className="detail-page__body-markdown">
+                <Markdown>{n.body_md}</Markdown>
+              </div>
             </div>
           ))}
 
@@ -324,11 +321,10 @@ export function MediaDetailClient({
             onChange={e => set('platform', e.target.value)} />
         </InputField>
       </div>
+      
+      <SliderField emoji="⭐" label="Rating" value={form.rating} min={0} max={10}
+              onChange={e => set('rating', e)} />
 
-      <InputField label="Rating (1–10)" id="md-rating">
-        <input id="md-rating" type="number" min={1} max={10} value={form.rating}
-          onChange={e => set('rating', e.target.value)} style={{ maxWidth: 100 }} />
-      </InputField>
 
       <InputField label="Notes (while consuming)" id="md-notes">
         <textarea id="md-notes" value={form.notes} onChange={e => set('notes', e.target.value)} />

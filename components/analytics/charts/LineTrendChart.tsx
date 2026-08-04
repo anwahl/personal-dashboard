@@ -18,7 +18,7 @@ interface Props {
   data:  TrackingDataPoint[];
 }
 
-export function LineTrendChart({ chart, data }: Props) {
+export function LineTrendChart({ chart, data }: Readonly<Props>) {
   const seriesLinks = chart.links.filter(l => l.metric_role === 'series');
   const [hoveredDate, setHoveredDate] = useState<string | null>(null);
 

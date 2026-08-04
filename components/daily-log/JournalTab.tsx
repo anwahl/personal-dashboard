@@ -17,9 +17,7 @@
  *   - Responses grouped by category, read-only
  */
 
-import { SaveStatus, SaveState } from '@/components/ui/Display';
-import { useId }       from 'react';
-import { Button }      from '@/components/ui/Button';
+import { SaveStatus, SaveState, Button } from '@/components/ui';
 import type { JournalCategoryWithPrompts } from '@/types/dal';
 import type { JournalCard, JournalState } from './DailyPageClient';
 
@@ -42,22 +40,22 @@ function nextId() { return `j-${++_seq}`; }
 
 function pickRandom<T>(arr: T[], excluding?: T[]): T | null {
   const pool = excluding?.length ? arr.filter(x => !excluding.includes(x)) : arr;
-  if (!pool.length) return arr.length ? arr[Math.floor(Math.random() * arr.length)] : null;
-  return pool[Math.floor(Math.random() * pool.length)];
+  if (!pool.length) return arr.length ? arr[crypto.getRandomValues(new Uint32Array(1))[0] % arr.length] : null;
+  return pool[crypto.getRandomValues(new Uint32Array(1))[0] % pool.length];
 }
 
 // ── PromptCard ────────────────────────────────────────────────────────────────
 
 function PromptCard({
   card, category, allCards, onUpdate, onShuffle, onRemove,
-}: {
+}: Readonly<{
   card:      JournalCard;
   category:  JournalCategoryWithPrompts;
   allCards:  JournalState;
   onUpdate:  (id: string, text: string) => void;
   onShuffle: (id: string) => void;
   onRemove:  (id: string) => void;
-}) {
+}>) {
   return (
     <div className="journal-prompt-card">
       <p className="journal-prompt-card__prompt">{card.promptText}</p>
@@ -84,7 +82,7 @@ function PromptCard({
 
 function CategorySection({
   category, cards, allCards, onUpdate, onShuffle, onRemove, onAddAnother,
-}: {
+}: Readonly<{
   category:    JournalCategoryWithPrompts;
   cards:       JournalCard[];
   allCards:    JournalState;
@@ -92,7 +90,7 @@ function CategorySection({
   onShuffle:   (id: string) => void;
   onRemove:    (id: string) => void;
   onAddAnother:(categoryId: number) => void;
-}) {
+}>) {
   if (cards.length === 0) return null;
   return (
     <div className="journal-category-section">
@@ -121,7 +119,7 @@ function CategorySection({
 
 // ── JournalTab ────────────────────────────────────────────────────────────────
 
-export function JournalTab({ mode, entryId, categories, state, setState, onSave, saveState }: Props) {
+export function JournalTab({ mode, entryId, categories, state, setState, onSave, saveState }: Readonly<Props>) {
 
   // Which category IDs are currently active (have cards)
   const activeCategoryIds = new Set(state.map(c => c.categoryId));
@@ -132,10 +130,10 @@ export function JournalTab({ mode, entryId, categories, state, setState, onSave,
       setState(prev => prev.filter(c => c.categoryId !== cat.id));
     } else {
       // Activate — add one random prompt card
-      const existingPromptIds = state
+      const existingPromptIds = new Set(state
         .filter(c => c.categoryId === cat.id)
-        .map(c => c.promptId);
-      const prompt = pickRandom(cat.prompts, cat.prompts.filter(p => existingPromptIds.includes(p.id)));
+        .map(c => c.promptId));
+      const prompt = pickRandom(cat.prompts, cat.prompts.filter(p => existingPromptIds.has(p.id)));
       if (!prompt) return;
       setState(prev => [...prev, {
         clientId:    nextId(),
@@ -151,11 +149,12 @@ export function JournalTab({ mode, entryId, categories, state, setState, onSave,
   const addAnother = (categoryId: number) => {
     const cat = categories.find(c => c.id === categoryId);
     if (!cat) return;
-    const usedPromptIds = state.filter(c => c.categoryId === categoryId).map(c => c.promptId);
-    const unusedPrompts = cat.prompts.filter(p => !usedPromptIds.includes(p.id));
+    const usedPromptIds = new Set(state.filter(c => c.categoryId === categoryId).map(c => c.promptId));
+    const unusedPrompts = cat.prompts.filter(p => !usedPromptIds.has(p.id));
     const pool          = unusedPrompts.length ? unusedPrompts : cat.prompts;
     if (!pool.length) return;
-    const prompt = pool[Math.floor(Math.random() * pool.length)];
+    const prompt = pickRandom(pool);
+    if (!prompt) return;
     setState(prev => [...prev, {
       clientId:    nextId(),
       categoryId,
@@ -175,10 +174,10 @@ export function JournalTab({ mode, entryId, categories, state, setState, onSave,
     if (!card) return;
     const cat = categories.find(c => c.id === card.categoryId);
     if (!cat) return;
-    const usedIds = state
+    const usedIds = new Set(state
       .filter(c => c.categoryId === card.categoryId && c.clientId !== clientId)
-      .map(c => c.promptId);
-    const pool = cat.prompts.filter(p => !usedIds.includes(p.id));
+      .map(c => c.promptId));
+    const pool = cat.prompts.filter(p => !usedIds.has(p.id));
     const next = pickRandom(pool.length ? pool : cat.prompts);
     if (!next) return;
     setState(prev => prev.map(c =>

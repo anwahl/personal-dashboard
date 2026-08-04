@@ -11,7 +11,7 @@
 import { useState } from 'react';
 import { createClient }             from '@/lib/supabase/client';
 import { createStandaloneBrainDump } from '@/lib/dal/daily';
-import { Button }                   from '@/components/ui/Button';
+import { Button }                   from '@/components/ui';
 import { localTodayISO } from '@/lib/utils/dates';
 
 interface Props {
@@ -31,7 +31,7 @@ export function BrainDumpQuickAdd({
   onSaved,
   placeholder = 'Brain dump…',
   compact = false,
-}: Props) {
+}: Readonly<Props>) {
   const supabase = createClient();
   const [body,   setBody]   = useState('');
   const [date,   setDate]   = useState(dumpDate ?? localTodayISO());

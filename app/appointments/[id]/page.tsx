@@ -1,7 +1,13 @@
 import { notFound }                from 'next/navigation';
 import { createClient }            from '@/lib/supabase/server';
-import { getAppointmentById }      from '@/lib/dal/appointments';
-import { getAppointmentTypes, getPeople } from '@/lib/dal/reference';
+import { getAppointmentById, getPrescriptionChanges } from '@/lib/dal/appointments';
+import {
+  getAppointmentTypes, getPeople,
+  getTaskStatuses, getTaskPriorities,
+  getMedicationTimingTypes,
+} from '@/lib/dal/reference';
+import { getProviders }            from '@/lib/dal/providers';
+import { getActivePrescriptions }  from '@/lib/dal/prescriptions';
 import { AppointmentDetailClient } from '@/components/appointments/AppointmentDetailClient';
 
 interface Props {
@@ -17,11 +23,22 @@ export default async function AppointmentDetailPage({ params }: Readonly<Props>)
   const appt     = await getAppointmentById(supabase, numId);
   if (!appt) notFound();
 
-  // Fetch providers (need full list for edit form)
-  const [apptTypes, people, { data: providers }] = await Promise.all([
+  const [
+    apptTypes, people, providers,
+    taskStatuses, taskPriorities, medicationTimings,
+    activePrescriptions, prescriptionChanges, parentAppt,
+  ] = await Promise.all([
     getAppointmentTypes(supabase),
     getPeople(supabase),
-    supabase.from('providers').select('*').order('provider_name'),
+    getProviders(supabase, true),
+    getTaskStatuses(supabase),
+    getTaskPriorities(supabase),
+    getMedicationTimingTypes(supabase),
+    getActivePrescriptions(supabase, appt.person_id),
+    getPrescriptionChanges(supabase, numId),
+    appt.followup_for_id
+      ? getAppointmentById(supabase, appt.followup_for_id)
+      : Promise.resolve(null),
   ]);
 
   return (
@@ -32,9 +49,15 @@ export default async function AppointmentDetailPage({ params }: Readonly<Props>)
       </div>
       <AppointmentDetailClient
         appointment={appt}
+        parentAppt={parentAppt}
         appointmentTypes={apptTypes}
         people={people}
-        providers={providers ?? []}
+        providers={providers}
+        taskStatuses={taskStatuses}
+        taskPriorities={taskPriorities}
+        medicationTimings={medicationTimings}
+        activePrescriptions={activePrescriptions}
+        prescriptionChanges={prescriptionChanges}
       />
     </div>
   );

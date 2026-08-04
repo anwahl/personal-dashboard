@@ -13,8 +13,11 @@
   --text-faint:   #5e5462;
 
   --accent:       #CF9893;
+  --accent-secondary: #F5AD51;
   --accent-dim:   rgba(207, 152, 147, 0.14);
+  --accent-secondary-dim: rgba(245, 173, 81, 0.14);
   --accent-hover: rgba(207, 152, 147, 0.25);
+  --accent-secondary-hover: rgba(245, 173, 81, 0.25);
 
   --success:      #7aab4a;
   --success-dim:  rgba(122, 171, 74, 0.14);
@@ -38,6 +41,8 @@
 
 /* ── Base ────────────────────────────────────────────────────────────────────*/
 *, *::before, *::after { box-sizing: border-box; }
+
+.hidden { display: none !important; }
 
 html, body {
   margin: 0; padding: 0; height: 100%;
@@ -109,6 +114,15 @@ html, body {
 @media (min-width: 900px) {
   .col-grid--3 { grid-template-columns: 1fr 1fr 1fr; }
 }
+
+/* ── This thing ──────────────────────────────────────────────────────────────*/
+
+.vertical-rule {
+  border-left: 2px solid var(--text-muted); 
+  height: 50px;               
+  margin: 0 20px;              
+}
+
 
 /* ── Card ────────────────────────────────────────────────────────────────────*/
 .card {
@@ -457,6 +471,7 @@ input[type="text"],
 input[type="time"],
 input[type="number"],
 input[type="date"],
+input[type="datetime-local"],
 textarea,
 select {
   width: 100%;
@@ -478,6 +493,7 @@ input[type="text"]:focus,
 input[type="time"]:focus,
 input[type="number"]:focus,
 input[type="date"]:focus,
+input[type="datetime-local"]:focus,
 textarea:focus,
 select:focus {
   border-color: var(--accent);
@@ -584,7 +600,7 @@ textarea {
   font-size: 0.68rem;
   transition: color 0.12s;
   min-height: var(--tap);
-  justify-content: center;
+  justify-content: space-between;
 }
 
 .bottom-nav__link--active { color: var(--accent); font-weight: 600; }
@@ -592,7 +608,11 @@ textarea {
 
 @media (max-width: 767px) {
   .side-nav { display: none; }
-  .bottom-nav { display: flex; }
+  .bottom-nav { 
+    display: flex; 
+    flex-wrap: wrap;
+    justify-content: space-evenly;
+  }
 }
 
 /* ── Habit grid ──────────────────────────────────────────────────────────────*/
@@ -687,6 +707,7 @@ textarea {
 .field-grid--3 { grid-template-columns: 1fr 1fr 1fr; }
 
 /* ── View mode summary items ─────────────────────────────────────────────────*/
+
 .summary-row {
   display: flex;
   align-items: baseline;
@@ -1060,6 +1081,7 @@ textarea {
 }
 .side-calendar__day:hover { background: var(--surface-high); }
 .side-calendar__day--today { background: var(--accent-dim); }
+.side-calendar__day--active { background: var(--accent-secondary-dim); }
 .side-calendar__day--today .side-calendar__day-num { color: var(--accent); font-weight: 700; }
 .side-calendar__day-num {
   font-size: 0.7rem;
@@ -1131,7 +1153,6 @@ textarea {
 }
 
 /* ── Prose (markdown output) ─────────────────────────────────────────────────*/
-.prose { }
 .prose p  { font-size: 0.88rem; color: var(--text-muted); margin: 0 0 6px; line-height: 1.55; }
 .prose p:last-child { margin-bottom: 0; }
 .prose ul, .prose ol { margin: 0 0 6px; padding-left: 18px; }
@@ -1224,6 +1245,7 @@ textarea {
 .manage-item:last-child { border-bottom: none; }
 .manage-item--inactive { opacity: 0.45; }
 .manage-item__name { flex: 1; font-size: 0.88rem; color: var(--text); }
+.manage-item__name--italic { font-style: italic; }
 .manage-item__edit-input { flex: 1; }
 .manage-item__meta { font-size: 0.75rem; color: var(--text-faint); }
 .manage-item__actions { display: flex; gap: 4px; flex-shrink: 0; }
@@ -1738,11 +1760,6 @@ textarea {
   flex-wrap: wrap;
   padding-top: 8px;
   border-top: 1px solid var(--border);
-}
-
-.badge--warn {
-  background: color-mix(in srgb, var(--warn) 20%, transparent);
-  color: var(--warn);
 }
 
 .badge--muted {
@@ -2365,6 +2382,10 @@ a.appt-secondary:last-child { border-bottom: none; }
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 10px 12px;
+}
+
+.detail-page__body-markdown {
+    font-size: 0.88rem;
 }
 
 .appt-detail-countdown {
@@ -3155,3 +3176,598 @@ a.appt-secondary:last-child { border-bottom: none; }
 
 /* ── QuickMediaLog linked body ───────────────────────────────────────────────*/
 .item-body-link:hover .qml-item__title { color: var(--accent); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CLEANUP PASS — 2026-07-26
+   Converts previously-inline styles to reusable CSS classes.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Form panel (card variant) — large inset form for add/edit ───────────── */
+.form-panel--card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+.form-panel__title   { font-weight: 700; margin: 0 0 14px; }
+.form-panel__actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ── Category block — categories with toggleable children (Symptoms, Journal) */
+.category-block {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.category-block__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.category-block__name         { font-size: 0.82rem; font-weight: 700; color: var(--text); }
+.category-block__name--inactive { color: var(--text-faint); }
+.category-block__count        { color: var(--text-faint); font-weight: 400; }
+.category-block__body         { padding-left: 12px; }
+.category-block__details      { margin-top: 4px; }
+.category-block__summary      { font-size: var(--font-size-xs); color: var(--text-faint); cursor: pointer; }
+.category-block__add-row      { display: flex; gap: 6px; margin-top: 6px; }
+.category-block__footer       { display: flex; gap: 6px; padding-top: 8px; }
+
+/* ── List item additions ─────────────────────────────────────────────────── */
+/* Chevron ▲/▼ used in collapsible list rows */
+.list-item__chevron { color: var(--text-faint); font-size: 0.75rem; flex-shrink: 0; }
+/* Used when expanded — rounds only top corners, expand-panel handles bottom */
+.list-item--expanded { border-radius: var(--radius-sm) var(--radius-sm) 0 0 !important; }
+
+/* ── Expand panel additions ──────────────────────────────────────────────── */
+.expand-panel__empty   { color: var(--text-faint); font-size: var(--font-size-sm); margin: 0; }
+.expand-panel__actions { margin-top: 10px; }
+
+/* ── Search panel BEM children ───────────────────────────────────────────── */
+.search-panel__header  { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.search-panel__loading { font-size: var(--font-size-xs); color: var(--text-faint); margin-top: 4px; display: block; }
+.search-panel__empty   { padding: 10px 14px; font-size: var(--font-size-sm); color: var(--text-faint); }
+.search-trigger-row    { margin-bottom: 10px; } /* spacing below a "search and pull" trigger button */
+
+/* ── Media page layout ───────────────────────────────────────────────────── */
+.media-header         { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.media-header__tabs   { flex: 1; }
+.media-header__action { margin-left: 8px; flex-shrink: 0; }
+.media-section-group  { margin-bottom: 20px; }
+
+/* Item-view (expand panel) for media entries */
+.media-entry__creator { font-size: 0.85rem; color: var(--text-muted); margin: 0 0 4px; }
+.media-entry__badges  { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.media-entry__updated { font-size: var(--font-size-xs); color: var(--text-faint); }
+
+/* ── Note add form (media notes and similar) ─────────────────────────────── */
+.note-add-row        { display: flex; gap: 6px; align-items: flex-start; margin-top: 8px; }
+.note-add-row__date  { width: 140px; }
+.note-add-row__text  { flex: 1; min-height: 50px; resize: vertical; }
+.note-add-actions    { display: flex; gap: 8px; margin-top: 10px; }
+.note-empty {
+  font-size: var(--font-size-sm);
+  color: var(--text-faint);
+  font-style: italic;
+  margin-bottom: 8px;
+}
+
+/* ── Toggle button — plain/ghost for show-past, collapse toggles ─────────── */
+.toggle-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-faint);
+  font-size: var(--font-size-xs);
+  padding: 4px 0;
+}
+.toggle-btn:hover         { color: var(--text); }
+.toggle-btn-section       { margin-top: 20px; }   /* outer wrapper for toggle + content */
+.toggle-btn-section__body { margin-top: 8px; }    /* content revealed after toggle */
+.settings-section-gap     { margin-top: 32px; }   /* space before a settings block that follows page content */
+
+/* ── Input width utilities ───────────────────────────────────────────────── */
+/* Used in add-rows where inputs must fit alongside sibling elements */
+.input--short { width: 48px;  flex: none; }   /* emoji character input */
+.input--sm    { width: 80px;  flex: none; }   /* short override field (emoji override, etc.) */
+.input--date  { width: 150px; flex: none; }   /* date picker in add rows */
+.input--flex  { flex: 1; min-width: 0; }      /* fills remaining space in flex row */
+
+/* ── CategoryBlock additions (Sprint 1) ──────────────────────────────────────*/
+/* Right-side action group in the category header */
+.category-block__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+/* Inline input that replaces the category name while renaming */
+.category-block__name-input {
+  font-size: 0.82rem;
+  font-weight: 700;
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Manage item edit block (Sprint 1) ───────────────────────────────────────*/
+/* Inline edit layout for LastTimeSettings item rows */
+.manage-item__edit-block {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+/* ── Sprint 1 fixes ──────────────────────────────────────────────────────────*/
+/* Narrow select for field-type dropdowns in structure create forms */
+.input--sm-select { width: 110px; flex: none; }
+
+/* ── Structure sub-panels (PeopleStructureSettings) ──────────────────────────*/
+/* Indented panel showing sub-items (fields, columns, checklist items) */
+.structure-sub-panel {
+  padding: 8px 0 4px 12px;
+  border-left: 2px solid var(--border);
+  margin: 4px 0 8px;
+}
+.structure-sub-panel__add-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+/* Small badge showing field_type inline with field label */
+.field-type-badge {
+  font-size: var(--font-size-xs);
+  color: var(--text-faint);
+  background: var(--surface-high);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1px 5px;
+  flex-shrink: 0;
+}
+
+/* ── Weekly journal ──────────────────────────────────────────────────────────*/
+.week-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.week-nav__btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  padding: 4px 10px;
+  line-height: 1;
+}
+.week-nav__btn:hover { color: var(--text); background: var(--surface-high); }
+.week-nav__label     { flex: 1; text-align: center; font-weight: 600; }
+.journal-category-section { margin-bottom: 24px; }
+
+/* ── Side calendar: week number column ───────────────────────────────────────*/
+.side-calendar__grid--with-weeks {
+  display: grid;
+  grid-template-columns: 16px repeat(7, 1fr);
+  gap: 1px;
+}
+.side-calendar__week-label {
+  font-size: 0.55rem;
+  color: var(--text-faint);
+  text-align: center;
+  padding: 2px 1px;
+}
+.side-calendar__week-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.55rem;
+  color: var(--text-faint);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  cursor: pointer;
+  line-height: 1;
+}
+.side-calendar__week-num:hover              { background: var(--surface-high); color: var(--accent); }
+.side-calendar__week-num--has-entry         { color: var(--accent); font-weight: 700; }
+
+/* ── Settings section divider ────────────────────────────────────────────────*/
+.settings-section-gap {
+  display: block;
+  height: 1px;
+  background: var(--border);
+  margin: 24px 0 20px;
+}
+
+/* ── Appointment detail additions ────────────────────────────────────────────*/
+.appt-quick-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 16px 0;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.appt-section        { margin-top: 20px; }
+.appt-section__body  { margin-top: 10px; }
+.appt-med-change-form {
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.field-label {
+  display: block;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: var(--letter-spacing-label);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.text-link {
+  color: var(--accent);
+  text-decoration: none;
+}
+.text-link:hover { text-decoration: underline; }
+
+/* ── Follow-up form ──────────────────────────────────────────────────────────*/
+.follow-up-form {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  flex: 1;
+}
+.follow-up-form__title { font-weight: 700; margin: 0 0 10px; font-size: var(--font-size-body); }
+.follow-up-form__hint  { font-size: var(--font-size-xs); color: var(--text-faint); margin: 6px 0 10px; }
+
+/* ── Prescription field change row ───────────────────────────────────────────*/
+.rx-field-change-row {
+  display: grid;
+  grid-template-columns: 140px 1fr auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+.rx-field-change-row:last-of-type { border-bottom: none; }
+.rx-field-change-row__label { font-size: var(--font-size-sm); font-weight: 600; color: var(--text-muted); }
+.rx-field-change-row__prev  { font-size: var(--font-size-sm); color: var(--text-faint); }
+.rx-field-change-row__arrow { color: var(--text-faint); flex-shrink: 0; text-align: center; }
+.rx-field-change-row__input { min-width: 0; }
+.appt-section__history { margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   ICONS SYSTEM
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Icon display ─────────────────────────────────────────────────────────────*/
+/* Sized container for inline SVG icons; falls back gracefully to emoji text.   */
+.icon-display {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.icon-display--sm  { width: 20px; height: 20px; }
+.icon-display--md  { width: 28px; height: 28px; }
+.icon-display--lg  { width: 40px; height: 40px; }
+.icon-display svg  { width: 100%; height: 100%; display: block; }
+
+/* ── Icon picker trigger button ───────────────────────────────────────────────*/
+.icon-picker-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-high);
+  cursor: pointer;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  transition: border-color 0.12s;
+  padding: 0;
+}
+.icon-picker-btn:hover { border-color: var(--border-focus); }
+
+/* ── Icon picker overlay & modal ──────────────────────────────────────────────*/
+.icon-picker-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.icon-picker-modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: var(--box-shadow-standard);
+}
+.icon-picker-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.icon-picker-modal__title {
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: var(--text);
+}
+.icon-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  gap: 6px;
+  overflow-y: auto;
+  flex: 1;
+  padding-right: 2px; /* breathing room for scrollbar */
+}
+.icon-picker-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: none;
+  cursor: pointer;
+  color: var(--text);
+  transition: border-color 0.1s, background 0.1s;
+}
+.icon-picker-cell:hover         { border-color: var(--border-focus); background: var(--surface-high); }
+.icon-picker-cell--active       { border-color: var(--accent); background: var(--accent-dim); }
+.icon-picker-cell__icon         { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
+.icon-picker-cell__name {
+  font-size: 0.64rem;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.2;
+  word-break: break-word;
+  max-width: 100%;
+}
+.icon-picker-cell--none .icon-picker-cell__icon { font-size: 1.1rem; color: var(--text-faint); }
+.icon-picker-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: var(--text-faint);
+  font-size: 0.82rem;
+  padding: 20px 0;
+  margin: 0;
+}
+
+/* ── Icon settings list ───────────────────────────────────────────────────────*/
+.icon-settings-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.icon-settings-item:last-child    { border-bottom: none; }
+.icon-settings-item--inactive     { opacity: 0.45; }
+.icon-settings-item__preview      { flex-shrink: 0; }
+.icon-settings-item__fields       { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
+.icon-settings-item__name         { font-size: 0.88rem; color: var(--text); }
+.icon-settings-item__tags         { font-size: 0.75rem; color: var(--text-faint); }
+.icon-settings-item__sort         { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
+.icon-settings-item__actions      { display: flex; gap: 4px; flex-shrink: 0; }
+
+/* ── Icon add form ────────────────────────────────────────────────────────────*/
+.icon-add-form {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.icon-add-form__row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.icon-add-form__preview {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-high);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.icon-add-form__preview svg { width: 100%; height: 100%; display: block; }
+
+/* ── Icon add form detail classes ─────────────────────────────────────────────*/
+.icon-add-form__fields         { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.icon-add-form__svg-preview    { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.icon-add-form__placeholder    { font-size: 1.4rem; color: var(--text-faint); }
+.form-error                    { font-size: 0.75rem; color: var(--danger); margin: 0; }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   TRACKABLE PICKER — custom icon-aware dropdown for metric selection
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.trackable-picker              { position: relative; flex: 1; min-width: 0; }
+.trackable-picker__trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-high);
+  color: var(--text);
+  font-size: 0.82rem;
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.trackable-picker__trigger:hover   { border-color: var(--border-focus); }
+.trackable-picker__trigger--open   { border-color: var(--accent); }
+.trackable-picker__placeholder     { color: var(--text-faint); }
+.trackable-picker__trigger-label   { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+.trackable-picker__caret           { color: var(--text-faint); font-size: 0.65rem; flex-shrink: 0; }
+.trackable-picker__dropdown {
+  /* position/top/left/width/z-index applied inline (position:fixed) so the
+     dropdown renders in viewport space, escaping any overflow:hidden parent */
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--box-shadow-standard);
+  max-height: 220px;
+  overflow-y: auto;
+}
+.trackable-picker__option {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  color: var(--text);
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+}
+.trackable-picker__option:hover          { background: var(--surface-high); }
+.trackable-picker__option--selected      { background: var(--accent-dim); }
+.trackable-picker__option-name           { flex: 1; }
+.trackable-picker__option-type           { font-size: 0.7rem; color: var(--text-faint); flex-shrink: 0; }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   TASK REMINDERS
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Reminder badge in task meta row ─────────────────────────────────────────*/
+.task-reminder-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+.task-reminder-badge--overdue   { color: var(--danger); }
+.task-reminder-badge--soon      { color: var(--accent); }
+
+/* ── Overdue reminder: pulsing left border on the list-item ──────────────────*/
+@keyframes reminder-pulse {
+  0%, 100% { box-shadow: inset 3px 0 0 var(--danger); }
+  50%       { box-shadow: inset 3px 0 0 transparent;   }
+}
+.list-item--reminder-overdue {
+  animation: reminder-pulse 2s ease-in-out infinite;
+}
+
+/* ── Reminder form section ───────────────────────────────────────────────────*/
+.reminder-section {
+  border-top: 1px solid var(--border);
+  margin-top: 10px;
+  padding-top: 10px;
+}
+.reminder-section__toggle {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 8px;
+}
+.reminder-section__toggle:hover { color: var(--text); }
+.reminder-section__fields       { display: flex; flex-direction: column; gap: 8px; }
+.reminder-section__row          { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.reminder-section__label        { font-size: 0.75rem; color: var(--text-muted); min-width: 64px; }
+.reminder-section__interval     { width: 52px; }
+.reminder-section__unit          { font-size: 0.8rem; color: var(--text-muted); }
+
+/* ── Weekday chip toggles ────────────────────────────────────────────────────*/
+.weekday-chips                  { display: flex; gap: 4px; flex-wrap: wrap; }
+.weekday-chip {
+  padding: 3px 7px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.72rem;
+  cursor: pointer;
+  background: none;
+  color: var(--text-muted);
+  transition: border-color 0.1s, background 0.1s, color 0.1s;
+}
+.weekday-chip:hover            { border-color: var(--border-focus); color: var(--text); }
+.weekday-chip--active          { border-color: var(--accent); background: var(--accent-dim); color: var(--text); }
+
+/* ── Integrations settings ───────────────────────────────────────────────────*/
+.ical-url-row                  { display: flex; gap: 8px; align-items: center; margin: 10px 0; }
+.ical-url-input                { flex: 1; font-family: monospace; font-size: 0.75rem; }
+.ical-instructions             { font-size: 0.82rem; color: var(--text-muted); line-height: 1.6; margin: 12px 0 0; }
+.ical-instructions li          { margin: 4px 0; }
+
+/* ── Metric / boolean category group header (daily card Metrics tab) ─────────*/
+.category-group__label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-faint);
+  margin: 12px 0 6px;
+}
+.category-group__label:first-child { margin-top: 0; }
+
+/* ── Mobile: prevent date/time inputs collapsing when empty ──────────────────*/
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"] {
+  min-height: 42px;
+}
+
+/* ── Collapsible settings sections ──────────────────────────────────────────*/
+.settings-section--collapsible > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0;
+}
+.settings-section--collapsible > summary::-webkit-details-marker { display: none; }
+.settings-section--collapsible > summary .settings-section__caret {
+  font-size: 0.7rem;
+  color: var(--text-faint);
+  transition: transform 0.15s;
+}
+.settings-section--collapsible[open] > summary .settings-section__caret {
+  transform: rotate(90deg);
+}
+.settings-section--collapsible[open] > summary {
+  margin-bottom: 8px;
+}

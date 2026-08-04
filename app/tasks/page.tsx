@@ -1,6 +1,6 @@
 import { createClient }   from '@/lib/supabase/server';
 import { getActiveTasks, getCompletedTasks } from '@/lib/dal/tasks';
-import { getTaskStatuses, getTaskPriorities, getPeople } from '@/lib/dal/reference';
+import { getTaskStatuses, getTaskPriorities, getAssignablePeople } from '@/lib/dal/reference';
 import { TasksClient }    from '@/components/tasks/TasksClient';
 
 export default async function TasksPage() {
@@ -10,7 +10,7 @@ export default async function TasksPage() {
     getCompletedTasks(supabase, 30),
     getTaskStatuses(supabase, true),   // include all for form
     getTaskPriorities(supabase),
-    getPeople(supabase),
+    getAssignablePeople(supabase),
   ]);
 
   return (

@@ -1,7 +1,8 @@
 import Link                              from 'next/link';
 import { notFound }                      from 'next/navigation';
 import { createClient }                  from '@/lib/supabase/server';
-import { ensureDailyEntry, addDays }     from '@/lib/dal/daily';
+import { ensureDailyEntry }     from '@/lib/dal/daily';
+import { addDays } from "@/lib/utils/dates";
 import { getSleepEntry, getPriorSleepContext } from '@/lib/dal/sleep';
 import { getDailySymptomData }           from '@/lib/dal/symptoms';
 import { getEssEntry }                   from '@/lib/dal/ess';
@@ -71,7 +72,7 @@ export default async function DailyPage({ params }: Readonly<Props>) {
 
       <div className="page-header">
         <h1 className="page-header__title">
-          {entry.icon ? `${entry.icon} ` : ''}{formatDate(date)}
+          {formatDate(date)}
         </h1>
       </div>
 

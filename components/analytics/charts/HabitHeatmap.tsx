@@ -9,16 +9,19 @@
  */
 
 import { ChartEmptyState } from './ChartEmptyState';
+import { IconDisplay }      from '@/components/ui';
 import type { ChartDefinitionDetail, TrackingDataPoint } from '@/types/dal';
+import type { IconRow } from '@/types/schema';
 
 interface Props {
   chart:    ChartDefinitionDetail;
   data:     TrackingDataPoint[];
   fromDate: string;
   toDate:   string;
+  icons:    IconRow[];
 }
 
-export function HabitHeatmap({ chart, data, fromDate, toDate }: Props) {
+export function HabitHeatmap({ chart, data, fromDate, toDate, icons }: Readonly<Props>) {
   const seriesLinks = chart.links.filter(l => l.metric_role === 'series');
 
   if (!seriesLinks.length) {
@@ -70,8 +73,14 @@ export function HabitHeatmap({ chart, data, fromDate, toDate }: Props) {
 
             return (
               <g key={id}>
-                <text x={0} y={y + ROW_H / 2 + 4} className="chart-tick" textAnchor="start">
-                  {link.trackable.emoji ?? ''} {link.trackable.name}
+                <foreignObject x={0} y={y + ROW_H / 2 - 9} width={18} height={18}>
+                  <IconDisplay
+                    icon={icons.find(i => i.id === link.trackable.icon_id) ?? null}
+                    size="sm"
+                  />
+                </foreignObject>
+                <text x={20} y={y + ROW_H / 2 + 4} className="chart-tick" textAnchor="start">
+                  {link.trackable.name}
                 </text>
                 {dates.map((date, colIdx) => {
                   const done = (byDate.get(date)?.[id] ?? 0) >= 1;

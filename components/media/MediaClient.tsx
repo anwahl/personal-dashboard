@@ -3,10 +3,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter }              from 'next/navigation';
 import { createClient }           from '@/lib/supabase/client';
-import { Button }                 from '@/components/ui/Button';
-import { TabBar }                 from '@/components/ui/Controls';
-import { InputField }             from '@/components/ui/Display';
-import { Markdown }               from '@/components/ui/Markdown';
+import { Button, TabBar, InputField, SliderField, Markdown }                   from '@/components/ui';
+import {
+  getMediaNotes, createMediaNote, deleteMediaNote,
+  updateMediaEntry, createMediaEntry, addMediaStatusEntry, deleteMediaEntry,
+  } from '@/lib/dal/media';
 import type { MediaEntryDetail }  from '@/types/dal';
 import { formatMediumDate, localTodayISO } from '@/lib/utils/dates';
 import type {
@@ -16,9 +17,9 @@ import type {
 import type { MediaSearchResult } from '@/app/api/media-search/route';
 
 interface Props {
-  entries:        MediaEntryDetail[];
-  mediaTypes:     MediaTypeRow[];
-  mediaStatuses:  MediaStatusRow[];
+  entries:         MediaEntryDetail[];
+  mediaTypes:      MediaTypeRow[];
+  mediaStatuses:   MediaStatusRow[];
   statusTypeLinks: MediaStatusTypeLinkRow[];
 }
 
@@ -33,12 +34,10 @@ function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-/** Returns statuses valid for a given media type.
- *  A status is valid if it has NO type links (universal) OR has a link for this type. */
 function validStatusesForType(
   mediaTypeId: number,
   allStatuses: MediaStatusRow[],
-  links: MediaStatusTypeLinkRow[]
+  links: MediaStatusTypeLinkRow[],
 ): MediaStatusRow[] {
   const linked = new Map<number, Set<number>>();
   for (const l of links) {
@@ -58,7 +57,7 @@ interface FormState {
   title:         string;
   status_id:     string;
   status_date:   string;
-  rating:        string;
+  rating:        number | null;
   platform:      string;
   creator:       string;
   notes:         string;
@@ -68,7 +67,7 @@ interface FormState {
 const EMPTY_FORM: FormState = {
   media_type_id: '', title: '', status_id: '',
   status_date: localTodayISO(),
-  rating: '', platform: '', creator: '', notes: '', review: '',
+  rating: null, platform: '', creator: '', notes: '', review: '',
 };
 
 function entryToForm(e: MediaEntryDetail): FormState {
@@ -77,7 +76,7 @@ function entryToForm(e: MediaEntryDetail): FormState {
     title:         e.title,
     status_id:     e.current_status ? String(e.current_status.id) : '',
     status_date:   e.latest_status_date ?? localTodayISO(),
-    rating:        e.rating ? String(e.rating) : '',
+    rating:        e.rating,
     platform:      e.platform ?? '',
     creator:       e.creator  ?? '',
     notes:         e.notes    ?? '',
@@ -113,11 +112,11 @@ function SearchPanel({ mediaTypeSlug, onSelect }: Readonly<{
   };
 
   return (
-    <div className="search-panel" style={{ marginBottom: 12 }}>
-      <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)' }}>
+    <div className="search-panel">
+      <div className="search-panel__header">
         <input type="text" value={query} onChange={e => handleInput(e.target.value)}
           placeholder={`Search ${capitalize(mediaTypeSlug)}…`} autoFocus />
-        {loading && <span style={{ fontSize: '0.75rem', color: 'var(--text-faint)', marginTop: 4, display: 'block' }}>Searching…</span>}
+        {loading && <span className="search-panel__loading">Searching…</span>}
       </div>
       {results.map(r => (
         <button
@@ -129,14 +128,14 @@ function SearchPanel({ mediaTypeSlug, onSelect }: Readonly<{
         >
           <span className="search-result__title">{r.title}</span>
           <span className="search-result__meta">
-            {r.creator && <span>{r.creator} · </span>}
-            {r.year    && <span>{r.year} · </span>}
+            {r.creator  && <span>{r.creator} · </span>}
+            {r.year     && <span>{r.year} · </span>}
             {r.platform && <span>{r.platform}</span>}
           </span>
         </button>
       ))}
       {query.trim() && !loading && results.length === 0 && (
-        <div style={{ padding: '10px 14px', fontSize: '0.82rem', color: 'var(--text-faint)' }}>No results found.</div>
+        <div className="search-panel__empty">No results found.</div>
       )}
     </div>
   );
@@ -157,10 +156,10 @@ function MediaForm({ form, setForm, mediaTypes, mediaStatuses, statusTypeLinks, 
   saving: boolean;
 }>) {
   const [showSearch, setShowSearch] = useState(false);
-  const set = (k: keyof FormState, v: string) => setForm(p => ({ ...p, [k]: v }));
+  const set = (k: keyof FormState, v: string | number) => setForm(p => ({ ...p, [k]: v }));
 
-  const activeType     = mediaTypes.find(t => String(t.id) === form.media_type_id);
-  const filteredStats  = form.media_type_id
+  const activeType    = mediaTypes.find(t => String(t.id) === form.media_type_id);
+  const filteredStats = form.media_type_id
     ? validStatusesForType(Number(form.media_type_id), mediaStatuses, statusTypeLinks)
     : mediaStatuses;
 
@@ -176,8 +175,8 @@ function MediaForm({ form, setForm, mediaTypes, mediaStatuses, statusTypeLinks, 
   };
 
   return (
-    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '16px 20px', marginBottom: 16 }}>
-      <p style={{ fontWeight: 700, margin: '0 0 14px' }}>{editId ? 'Edit entry' : 'Add entry'}</p>
+    <div className="form-panel--card">
+      <p className="form-panel__title">{editId ? 'Edit entry' : 'Add entry'}</p>
 
       <div className="field-grid">
         <InputField label="Type" id="mf-type">
@@ -206,7 +205,7 @@ function MediaForm({ form, setForm, mediaTypes, mediaStatuses, statusTypeLinks, 
       </div>
 
       {activeType && !showSearch && (
-        <div style={{ marginBottom: 10 }}>
+        <div className="search-trigger-row">
           <Button size="sm" variant="ghost" onClick={() => setShowSearch(true)}>
             🔍 Search and Pull from {capitalize(activeType.type_name)} database…
           </Button>
@@ -231,19 +230,17 @@ function MediaForm({ form, setForm, mediaTypes, mediaStatuses, statusTypeLinks, 
         </InputField>
       </div>
       <div className="field-grid">
-        <InputField label="Rating (1-10)" id="mf-rating">
-          <input id="mf-rating" type="number" min={1} max={10} value={form.rating}
-            onChange={e => set('rating', e.target.value)} />
-        </InputField>
+        <SliderField emoji="⭐" label="Rating" value={form.rating} min={0} max={10}
+              onChange={e => set('rating', e)} />
       </div>
       <InputField label="Notes (while consuming)" id="mf-notes">
-        <textarea id="mf-notes" value={form.notes} onChange={e => set('notes', e.target.value)} style={{ minHeight: 60 }} />
+        <textarea id="mf-notes" value={form.notes} onChange={e => set('notes', e.target.value)} className="textarea--short" />
       </InputField>
       <InputField label="Review (after finishing)" id="mf-review">
-        <textarea id="mf-review" value={form.review} onChange={e => set('review', e.target.value)} style={{ minHeight: 60 }} />
+        <textarea id="mf-review" value={form.review} onChange={e => set('review', e.target.value)} className="textarea--short" />
       </InputField>
 
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div className="form-panel__actions">
         <Button variant="accent" onClick={onSave} disabled={saving || !form.title.trim() || !form.media_type_id}>
           {saving ? 'Saving…' : editId ? 'Update' : 'Add'}
         </Button>
@@ -269,79 +266,78 @@ function MediaItemView({ entry, onEdit, onClose }: Readonly<{
   const [loading,    setLoading]    = useState(true);
 
   useEffect(() => {
-    supabase.from('media_notes').select('*')
-      .eq('media_entry_id', entry.id)
-      .order('note_date', { ascending: false })
-      .then(({ data }) => { setNotes((data ?? []) as MediaNoteRow[]); setLoading(false); });
+    getMediaNotes(supabase, entry.id).then(notes => { setNotes(notes); setLoading(false); });
   }, [entry.id]);
 
   const addNote = useCallback(async () => {
     if (!newNote.trim()) return;
     setAddingNote(true);
     try {
-      const { data } = await supabase.from('media_notes')
-        .insert({ media_entry_id: entry.id, note_date: noteDate, body_md: newNote.trim() })
-        .select().single();
-      if (data) setNotes(prev => [data as MediaNoteRow, ...prev]);
+      const note = await createMediaNote(supabase, entry.id, noteDate, newNote.trim());
+      setNotes(prev => [note, ...prev]);
       setNewNote('');
     } finally { setAddingNote(false); }
   }, [supabase, entry.id, noteDate, newNote]);
 
   const deleteNote = useCallback(async (id: number) => {
-    await supabase.from('media_notes').delete().eq('id', id);
+    await deleteMediaNote(supabase, id);
     setNotes(prev => prev.filter(n => n.id !== id));
   }, [supabase]);
 
   return (
     <div className="expand-panel">
       {entry.creator && (
-        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0 0 4px' }}>
-          by {entry.creator}
-        </p>
+        <p className="media-entry__creator">by {entry.creator}</p>
       )}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+      <div className="media-entry__badges">
         {entry.current_status && (
           <span className="badge">
             {STATUS_EMOJI[entry.current_status.status_name] ?? ''} {entry.current_status.status_name}
           </span>
         )}
-        {entry.rating != null && <span className="badge badge--accent">{entry.rating}/10</span>}
-        {entry.platform && <span className="badge">{entry.platform}</span>}
+        {entry.rating  != null && <span className="badge badge--accent">{entry.rating}/10</span>}
+        {entry.platform        && <span className="badge">{entry.platform}</span>}
         {entry.latest_status_date && (
-          <span style={{ fontSize: '0.76rem', color: 'var(--text-faint)' }}>
-            Updated {entry.latest_status_date}
-          </span>
+          <span className="media-entry__updated">Updated {entry.latest_status_date}</span>
         )}
       </div>
 
-      {entry.notes  && <><p className="expand-panel__label">Notes</p><Markdown>{entry.notes}</Markdown></>}
-      {entry.review && <><p className="expand-panel__label" style={{ marginTop: 8 }}>Review</p><Markdown>{entry.review}</Markdown></>}
-
-      <p className="expand-panel__label" style={{ marginTop: 14 }}>Additional Notes</p>
+      {entry.notes  && <><p className="expand-panel__label">Notes</p>
+        <div className="detail-page__body-markdown">
+            <Markdown>{entry.notes}</Markdown>
+        </div></>}
+      {entry.review && <><p className="expand-panel__label">Review</p>
+        <div className="detail-page__body-markdown">
+            <Markdown>{entry.review}</Markdown>
+        </div></>}
+      <p className="expand-panel__label">Additional Notes</p>
       {!loading && notes.length === 0 && (
-        <p style={{ fontSize: '0.82rem', color: 'var(--text-faint)', fontStyle: 'italic', marginBottom: 8 }}>No notes yet.</p>
+        <p className="note-empty">No notes yet.</p>
       )}
       {!loading && notes.map(n => (
         <div key={n.id} className="media-note">
           <div className="media-note__header">
             <span className="media-note__date-badge">{formatMediumDate(n.note_date)}</span>
-            <button type="button" className="media-note__delete" onClick={() => deleteNote(n.id)} title="Delete note">✕</button>
+            <Button variant="ghost" size="icon" onClick={() => deleteNote(n.id)} title="Delete note">✕</Button>
           </div>
-          <Markdown>{n.body_md}</Markdown>
+          <div className="detail-page__body-markdown">
+            <Markdown>{n.body_md}</Markdown>
+          </div>
         </div>
       ))}
 
-      <div style={{ display: 'flex', gap: 6, alignItems: 'flex-start', marginTop: 8 }}>
-        <input type="date" value={noteDate} onChange={e => setNoteDate(e.target.value)} style={{ width: 140 }} />
+      <div className="note-add-row">
+        <input type="date" value={noteDate} onChange={e => setNoteDate(e.target.value)}
+          className="note-add-row__date" />
         <textarea value={newNote} onChange={e => setNewNote(e.target.value)}
-          placeholder="Add a note…" style={{ flex: 1, minHeight: 50, resize: 'vertical' }}
+          placeholder="Add a note…" className="note-add-row__text"
           onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) addNote(); }} />
         <Button size="sm" variant="accent" onClick={addNote} disabled={addingNote || !newNote.trim()}>
           {addingNote ? '…' : 'Add'}
         </Button>
       </div>
 
-      <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+      <div className="note-add-actions">
         <Button size="sm" variant="ghost" onClick={onEdit}>✏️ Edit</Button>
         <Button size="sm" variant="ghost" onClick={onClose}>✕ Close</Button>
       </div>
@@ -356,13 +352,12 @@ function MediaItem({ entry, isExpanded, onToggle }: Readonly<{
   isExpanded: boolean;
   onToggle: () => void;
 }>) {
-
   return (
-    <button
-      type="button"
-      className="list-item"
+    <Button
+      variant="ghost"
+      className={`list-item${isExpanded ? ' list-item--expanded' : ''}`}
       onClick={onToggle}
-      style={{ borderRadius: isExpanded ? 'var(--radius-sm) var(--radius-sm) 0 0' : undefined }}>
+    >
       <div className="list-item__body">
         <div className="list-item__title">{entry.title}</div>
         <div className="list-item__meta">
@@ -375,9 +370,9 @@ function MediaItem({ entry, isExpanded, onToggle }: Readonly<{
       </div>
       <div className="list-item__actions">
         {entry.rating != null && <span className="badge">{entry.rating}/10</span>}
-        <span style={{ color: 'var(--text-faint)', fontSize: '0.75rem' }}>{isExpanded ? '▲' : '▼'}</span>
+        <span className="list-item__chevron">{isExpanded ? '▲' : '▼'}</span>
       </div>
-    </button>
+    </Button>
   );
 }
 
@@ -417,7 +412,7 @@ export function MediaClient({ entries, mediaTypes, mediaStatuses, statusTypeLink
       const payload = {
         media_type_id: Number.parseInt(form.media_type_id),
         title:         form.title,
-        rating:        form.rating  ? Number.parseInt(form.rating)  : null,
+        rating:        form.rating   || null,
         platform:      form.platform || null,
         creator:       form.creator  || null,
         notes:         form.notes    || null,
@@ -426,22 +421,18 @@ export function MediaClient({ entries, mediaTypes, mediaStatuses, statusTypeLink
 
       let entryId: number;
       if (editEntry) {
-        await supabase.from('media_entries').update(payload).eq('id', editEntry.id);
+        await updateMediaEntry(supabase, editEntry.id, payload);
         entryId = editEntry.id;
       } else {
-        const { data, error } = await supabase.from('media_entries').insert(payload).select().single();
-        if (error || !data) throw new Error('Failed to create entry');
+        const data = await createMediaEntry(supabase, payload);
+        if (!data) throw new Error('Failed to create entry');
         entryId = (data as { id: number }).id;
       }
 
-      // Log a status entry if status is selected and it changed (or it's a new entry)
       const statusChanged = !editEntry || String(editEntry.current_status?.id ?? '') !== form.status_id;
       if (form.status_id && statusChanged) {
-        await supabase.from('media_status_entries').insert({
-          media_entry_id: entryId,
-          status_id:      Number.parseInt(form.status_id),
-          status_date:    form.status_date || localTodayISO(),
-        });
+        await addMediaStatusEntry(supabase,
+          entryId, Number.parseInt(form.status_id), form.status_date || localTodayISO());
       }
 
       router.refresh();
@@ -452,7 +443,7 @@ export function MediaClient({ entries, mediaTypes, mediaStatuses, statusTypeLink
   const remove = useCallback(async () => {
     if (!editEntry || !confirm('Delete this entry?')) return;
     setSaving(true);
-    try { await supabase.from('media_entries').delete().eq('id', editEntry.id); router.refresh(); cancel(); }
+    try { await deleteMediaEntry(supabase, editEntry.id); router.refresh(); cancel(); }
     finally { setSaving(false); }
   }, [supabase, editEntry, router]);
 
@@ -464,14 +455,10 @@ export function MediaClient({ entries, mediaTypes, mediaStatuses, statusTypeLink
     setShowAddForm(false);
   };
 
-  const toggleExpandedEntry = (id: number) => {
-    setExpandedId(prev => prev === id ? null : id);
-  };
-
-  const closeExpandedEntry = () => setExpandedId(null);
-
-  const makeEntryToggle = (id: number) => () => toggleExpandedEntry(id);
-  const makeEntryEdit = (entry: MediaEntryDetail) => () => openEdit(entry);
+  const toggleExpandedEntry = (id: number) => setExpandedId(prev => prev === id ? null : id);
+  const closeExpandedEntry  = () => setExpandedId(null);
+  const makeEntryToggle = (id: number)           => () => toggleExpandedEntry(id);
+  const makeEntryEdit   = (e: MediaEntryDetail)  => () => openEdit(e);
 
   const renderEntryRow = (entry: MediaEntryDetail) => {
     const isExpanded = expandedId === entry.id;
@@ -485,8 +472,7 @@ export function MediaClient({ entries, mediaTypes, mediaStatuses, statusTypeLink
     );
   };
 
-  // Group by current status
-  const grouped = mediaStatuses.reduce<Record<string, MediaEntryDetail[]>>((acc, s) => {
+  const grouped   = mediaStatuses.reduce<Record<string, MediaEntryDetail[]>>((acc, s) => {
     const inStatus = filtered.filter(e => e.current_status?.id === s.id);
     if (inStatus.length > 0) acc[s.status_name] = inStatus;
     return acc;
@@ -495,11 +481,13 @@ export function MediaClient({ entries, mediaTypes, mediaStatuses, statusTypeLink
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-        <div style={{ flex: 1 }}>
+      <div className="media-header">
+        <div className="media-header__tabs">
           <TabBar tabs={typeTabs} active={activeTypeId} onChange={handleTypeChange} />
         </div>
-        <Button variant="accent" size="sm" onClick={openAdd} style={{ marginLeft: 8, flexShrink: 0 }}>+ Add</Button>
+        <div className="media-header__action">
+          <Button variant="accent" size="sm" onClick={openAdd}>+ Add</Button>
+        </div>
       </div>
 
       {showAddForm && (
@@ -515,7 +503,7 @@ export function MediaClient({ entries, mediaTypes, mediaStatuses, statusTypeLink
       {filtered.length === 0 && !showAddForm && <p className="empty-state">Nothing here yet.</p>}
 
       {Object.entries(grouped).map(([statusName, items]) => (
-        <div key={statusName} style={{ marginBottom: 20 }}>
+        <div key={statusName} className="media-section-group">
           <div className="section-divider">
             {STATUS_EMOJI[statusName] ?? ''} {capitalize(statusName)} ({items.length})
           </div>
@@ -524,7 +512,7 @@ export function MediaClient({ entries, mediaTypes, mediaStatuses, statusTypeLink
       ))}
 
       {ungrouped.length > 0 && (
-        <div style={{ marginBottom: 20 }}>
+        <div className="media-section-group">
           <div className="section-divider">No status</div>
           {ungrouped.map(renderEntryRow)}
         </div>

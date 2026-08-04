@@ -13,6 +13,8 @@
 .problems
 
 
+*.patch
+
 # testing
 /coverage
 

@@ -20,6 +20,7 @@ import { TimelineScatterChart }      from './charts/TimelineScatterChart';
 import { ChainChart }                from './charts/ChainChart';
 import { HabitHeatmap }              from './charts/HabitHeatmap';
 import type { ChartDefinitionDetail, TrackingDataPoint } from '@/types/dal';
+import type { IconRow } from '@/types/schema';
 import type { ChartType, TrackType } from '@/types/schema';
 import { localTodayISO } from '@/lib/utils/dates';
 
@@ -58,19 +59,20 @@ function toDateFromDays(days: number): { fromDate: string; toDate: string } {
 
 // ── Inner chart renderer (pure presentation) ──────────────────────────────────
 
-function ChartRenderer({ chart, data, fromDate, toDate }: {
+function ChartRenderer({ chart, data, fromDate, toDate, icons }: Readonly<{
   chart:    ChartDefinitionDetail;
   data:     TrackingDataPoint[];
   fromDate: string;
   toDate:   string;
-}) {
+  icons:    IconRow[];
+}>) {
   switch (chart.chart_type) {
     case 'scatter':  return <ScatterChart chart={chart} data={data} />;
     case 'line':     return <LineTrendChart chart={chart} data={data} />;
     case 'bar':      return <BarChart chart={chart} data={data} />;
     case 'timeline': return <TimelineScatterChart chart={chart} data={data} />;
-    case 'heatmap':  return <HabitHeatmap chart={chart} data={data} fromDate={fromDate} toDate={toDate} />;
-    case 'chain':    return <ChainChart chart={chart} data={data} fromDate={fromDate} toDate={toDate} />;
+    case 'heatmap':  return <HabitHeatmap chart={chart} data={data} fromDate={fromDate} toDate={toDate} icons={icons} />;
+    case 'chain':    return <ChainChart chart={chart} data={data} fromDate={fromDate} toDate={toDate} icons={icons} />;
     default:         return null;
   }
 }
@@ -82,9 +84,10 @@ interface Props {
   initialData: TrackingDataPoint[];
   fromDate:    string;
   toDate:      string;
+  icons:       IconRow[];
 }
 
-export function ChartPanel({ chart, initialData, fromDate, toDate }: Props) {
+export function ChartPanel({ chart, initialData, fromDate, toDate, icons }: Readonly<Props>) {
   const supabase = createClient();
 
   const defaultRange = DEFAULT_RANGE[chart.chart_type] ?? 90;
@@ -135,7 +138,7 @@ export function ChartPanel({ chart, initialData, fromDate, toDate }: Props) {
 
       {/* Chart (dimmed while loading new range data) */}
       <div style={{ opacity: loading ? 0.45 : 1, transition: 'opacity 0.15s' }}>
-        <ChartRenderer chart={chart} data={data} fromDate={from} toDate={to} />
+        <ChartRenderer chart={chart} data={data} fromDate={from} toDate={to} icons={icons} />
       </div>
     </div>
   );

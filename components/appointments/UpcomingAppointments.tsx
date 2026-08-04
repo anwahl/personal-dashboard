@@ -6,7 +6,7 @@
  * secondary list. contextDate is the anchor "today" for countdown math.
  */
 
-import { Card, CardHeader, CardTitle, CardBody, CardSection } from '@/components/ui/Card';
+import { Card, CardHeader, CardTitle, CardBody, CardSection } from '@/components/ui';
 import type { AppointmentDetail } from '@/types/dal';
 import { daysUntil, formatMediumDate } from '@/lib/utils/dates';
 
@@ -27,7 +27,7 @@ function apptLabel(appt: AppointmentDetail): string {
   return provider ? `${type} · ${provider}` : type;
 }
 
-export function UpcomingAppointments({ appointments, contextDate }: Props) {
+export function UpcomingAppointments({ appointments, contextDate }: Readonly<Props>) {
   if (appointments.length === 0) {
     return (
       <Card>

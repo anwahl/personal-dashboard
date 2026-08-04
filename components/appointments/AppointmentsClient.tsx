@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter }             from 'next/navigation';
+import Link                      from 'next/link';
 import { createClient }          from '@/lib/supabase/client';
 import { createAppointment, updateAppointment, deleteAppointment } from '@/lib/dal/appointments';
-import { Button }                from '@/components/ui/Button';
-import { InputField }            from '@/components/ui/Display';
+import { Button, InputField, Markdown } from '@/components/ui';
+import { localTodayISO, daysUntil, formatMediumDate, formatTime } from '@/lib/utils/dates';
 import type { AppointmentDetail }    from '@/types/dal';
 import type { AppointmentTypeRow, PersonRow, ProviderRow } from '@/types/schema';
 
@@ -17,40 +18,17 @@ interface Props {
   providers:        ProviderRow[];
 }
 
-function fmtDate(d: string) {
-  const [y, m, day] = d.split('-').map(Number);
-  return new Date(y, m - 1, day).toLocaleDateString('en-US', {
-    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
-  });
-}
+// ── Appointment row (collapsible) ─────────────────────────────────────────────
 
-function fmtTime(t: string | null) {
-  if (!t) return '';
-  const [h, m] = t.split(':').map(Number);
-  return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
-}
-
-function daysUntil(d: string) {
-  const today  = new Date(); today.setHours(0, 0, 0, 0);
-  const diff   = Math.round((new Date(d + 'T00:00:00').getTime() - today.getTime()) / 86400000);
-  if (diff === 0) return 'Today';
-  if (diff === 1) return 'Tomorrow';
-  if (diff < 0)   return `${Math.abs(diff)}d ago`;
-  return `In ${diff}d`;
-}
-
-// ── Appointment row (collapsible) ──────────────────────────────────────────────
-
-function ApptRow({ appt, onEdit }: { appt: AppointmentDetail; onEdit: () => void }) {
+function ApptRow({ appt, onEdit }: Readonly<{ appt: AppointmentDetail; onEdit: () => void }>) {
   const [expanded, setExpanded] = useState(false);
-  const isPast = appt.appointment_date < new Date().toISOString().slice(0, 10);
+  const isPast = appt.appointment_date < localTodayISO();
 
   return (
     <>
       <div
-        className={`list-item${isPast ? ' list-item--muted' : ''}`}
+        className={`list-item${isPast ? ' list-item--muted' : ''}${expanded ? ' list-item--expanded' : ''}`}
         onClick={() => setExpanded(e => !e)}
-        style={{ borderRadius: expanded ? 'var(--radius-sm) var(--radius-sm) 0 0' : undefined }}
       >
         <div className="list-item__body">
           <div className="list-item__title">
@@ -58,14 +36,19 @@ function ApptRow({ appt, onEdit }: { appt: AppointmentDetail; onEdit: () => void
             {appt.provider ? ` · ${appt.provider.provider_name ?? appt.provider.practice_name ?? ''}` : ''}
           </div>
           <div className="list-item__meta">
-            <span>{fmtDate(appt.appointment_date)}{appt.appointment_time ? ` · ${fmtTime(appt.appointment_time)}` : ''}</span>
-            {appt.person && <span>For: {appt.person.person_name}</span>}
+            <span>
+              {formatMediumDate(appt.appointment_date)}
+              {appt.appointment_time ? ` · ${formatTime(appt.appointment_time)}` : ''}
+            </span>
+            {appt.person  && <span>For: {appt.person.person_name}</span>}
             {appt.location && <span>📍 {appt.location}</span>}
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span className={`badge${!isPast ? ' badge--accent' : ''}`}>{daysUntil(appt.appointment_date)}</span>
-          <span style={{ color: 'var(--text-faint)', fontSize: '0.75rem' }}>{expanded ? '▲' : '▼'}</span>
+        <div className="list-item__actions">
+          <span className={`badge${!isPast ? ' badge--accent' : ''}`}>
+            {daysUntil(appt.appointment_date)}
+          </span>
+          <span className="list-item__chevron">{expanded ? '▲' : '▼'}</span>
         </div>
       </div>
 
@@ -74,19 +57,26 @@ function ApptRow({ appt, onEdit }: { appt: AppointmentDetail; onEdit: () => void
           {appt.questions && (
             <>
               <p className="expand-panel__label">Questions to ask</p>
-              <p className="expand-panel__text">{appt.questions}</p>
+              <div className="detail-page__body-markdown">
+                <Markdown>{appt.questions}</Markdown>
+              </div>
             </>
           )}
           {appt.notes && (
             <>
               <p className="expand-panel__label">Notes</p>
-              <p className="expand-panel__text">{appt.notes}</p>
+              <div className="detail-page__body-markdown">
+                <Markdown>{appt.notes}</Markdown>
+              </div>
             </>
           )}
           {!appt.questions && !appt.notes && (
-            <p style={{ color: 'var(--text-faint)', fontSize: '0.82rem', margin: 0 }}>No questions or notes.</p>
+            <p className="expand-panel__empty">No questions or notes.</p>
           )}
-          <div style={{ marginTop: 10 }}>
+          <div className="expand-panel__actions">
+            <Link href={`/appointments/${appt.id}`} className="btn btn--ghost btn--sm">
+              View Details →
+            </Link>
             <Button size="sm" variant="ghost" onClick={e => { e.stopPropagation(); onEdit(); }}>
               ✏️ Edit
             </Button>
@@ -123,17 +113,17 @@ function toForm(a: AppointmentDetail): FormState {
   };
 }
 
-function ApptForm({ form, setForm, people, appointmentTypes, providers, onSave, onCancel, onDelete, editId, saving }: {
+function ApptForm({ form, setForm, people, appointmentTypes, providers, onSave, onCancel, onDelete, editId, saving }: Readonly<{
   form: FormState; setForm: React.Dispatch<React.SetStateAction<FormState>>;
   people: PersonRow[]; appointmentTypes: AppointmentTypeRow[]; providers: ProviderRow[];
   onSave: () => void; onCancel: () => void; onDelete?: () => void;
   editId?: number; saving: boolean;
-}) {
+}>) {
   const set = (k: keyof FormState, v: string) => setForm(p => ({ ...p, [k]: v }));
 
   return (
-    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '16px 20px', marginBottom: 16 }}>
-      <p style={{ fontWeight: 700, marginBottom: 14, margin: '0 0 14px' }}>{editId ? 'Edit Appointment' : 'New Appointment'}</p>
+    <div className="form-panel--card">
+      <p className="form-panel__title">{editId ? 'Edit Appointment' : 'New Appointment'}</p>
 
       <div className="field-grid">
         <InputField label="Date" id="a-date">
@@ -167,13 +157,13 @@ function ApptForm({ form, setForm, people, appointmentTypes, providers, onSave, 
         <input id="a-location" type="text" value={form.location} onChange={e => set('location', e.target.value)} placeholder="Office, telehealth…" />
       </InputField>
       <InputField label="Questions to ask" id="a-questions">
-        <textarea id="a-questions" value={form.questions} onChange={e => set('questions', e.target.value)} placeholder="Topics to cover…" style={{ minHeight: 70 }} />
+        <textarea id="a-questions" value={form.questions} onChange={e => set('questions', e.target.value)} placeholder="Topics to cover…" className="textarea--short" />
       </InputField>
       <InputField label="Notes" id="a-notes">
-        <textarea id="a-notes" value={form.notes} onChange={e => set('notes', e.target.value)} placeholder="Notes from the appointment…" style={{ minHeight: 70 }} />
+        <textarea id="a-notes" value={form.notes} onChange={e => set('notes', e.target.value)} placeholder="Notes from the appointment…" className="textarea--short" />
       </InputField>
 
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      <div className="form-panel__actions">
         <Button variant="accent" onClick={onSave} disabled={saving || !form.appointment_date || !form.person_id}>
           {saving ? 'Saving…' : editId ? 'Update' : 'Add Appointment'}
         </Button>
@@ -186,21 +176,20 @@ function ApptForm({ form, setForm, people, appointmentTypes, providers, onSave, 
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
-export function AppointmentsClient({ upcoming, past, appointmentTypes, people, providers }: Props) {
+export function AppointmentsClient({ upcoming, past, appointmentTypes, people, providers }: Readonly<Props>) {
   const supabase = createClient();
   const router   = useRouter();
 
-  // Sync local state when server re-renders after router.refresh()
   const [localUpcoming, setLocalUpcoming] = useState(upcoming);
   const [localPast,     setLocalPast]     = useState(past);
   useEffect(() => { setLocalUpcoming(upcoming); }, [upcoming]);
   useEffect(() => { setLocalPast(past); }, [past]);
 
-  const [showForm,    setShowForm]   = useState(false);
-  const [showPast,    setShowPast]   = useState(false);
-  const [editTarget,  setEditTarget] = useState<AppointmentDetail | null>(null);
-  const [form,        setForm]       = useState<FormState>(EMPTY);
-  const [saving,      setSaving]     = useState(false);
+  const [showForm,   setShowForm]   = useState(false);
+  const [showPast,   setShowPast]   = useState(false);
+  const [editTarget, setEditTarget] = useState<AppointmentDetail | null>(null);
+  const [form,       setForm]       = useState<FormState>(EMPTY);
+  const [saving,     setSaving]     = useState(false);
 
   const openNew  = () => { setEditTarget(null); setForm(EMPTY); setShowForm(true); };
   const openEdit = (a: AppointmentDetail) => { setEditTarget(a); setForm(toForm(a)); setShowForm(true); };
@@ -212,9 +201,9 @@ export function AppointmentsClient({ upcoming, past, appointmentTypes, people, p
       const payload = {
         appointment_date:    form.appointment_date,
         appointment_time:    form.appointment_time    || null,
-        person_id:           parseInt(form.person_id),
-        provider_id:         form.provider_id         ? parseInt(form.provider_id)         : null,
-        appointment_type_id: form.appointment_type_id ? parseInt(form.appointment_type_id) : null,
+        person_id:           Number.parseInt(form.person_id),
+        provider_id:         form.provider_id         ? Number.parseInt(form.provider_id)         : null,
+        appointment_type_id: form.appointment_type_id ? Number.parseInt(form.appointment_type_id) : null,
         location:  form.location  || null,
         questions: form.questions || null,
         notes:     form.notes     || null,
@@ -222,7 +211,7 @@ export function AppointmentsClient({ upcoming, past, appointmentTypes, people, p
       };
       if (editTarget) await updateAppointment(supabase, editTarget.id, payload);
       else            await createAppointment(supabase, payload);
-      router.refresh();   // causes server re-render → useEffect syncs local state
+      router.refresh();
       cancel();
     } finally {
       setSaving(false);
@@ -252,7 +241,7 @@ export function AppointmentsClient({ upcoming, past, appointmentTypes, people, p
           editId={editTarget?.id} saving={saving}
         />
       ) : (
-        <div style={{ marginBottom: 16 }}>
+        <div className="page-actions">
           <Button variant="accent" onClick={openNew}>+ New Appointment</Button>
         </div>
       )}
@@ -263,17 +252,17 @@ export function AppointmentsClient({ upcoming, past, appointmentTypes, people, p
         : localUpcoming.map(a => <ApptRow key={a.id} appt={a} onEdit={() => openEdit(a)} />)
       }
 
-      <div style={{ marginTop: 20 }}>
-        <button
-          type="button"
+      <div className="toggle-btn-section">
+        <Button
+          variant="ghost"
+          className="toggle-btn"
           onClick={() => setShowPast(s => !s)}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', fontSize: '0.78rem', padding: '4px 0' }}
         >
           {showPast ? '▲ Hide' : '▼ Show'} past appointments ({localPast.length})
-        </button>
+        </Button>
 
         {showPast && (
-          <div style={{ marginTop: 8 }}>
+          <div className="toggle-btn-section__body">
             {localPast.length === 0
               ? <p className="empty-state">No past appointments on record.</p>
               : localPast.map(a => <ApptRow key={a.id} appt={a} onEdit={() => openEdit(a)} />)

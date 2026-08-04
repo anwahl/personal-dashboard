@@ -1,10 +1,11 @@
 import Link                                     from 'next/link';
 import { createClient }                         from '@/lib/supabase/server';
-import { localTodayISO, getRecentIntention }    from '@/lib/dal/daily';
+import { getRecentIntention }    from '@/lib/dal/daily';
+import { localTodayISO } from "@/lib/utils/dates";
 import { getTasksByDateContext }                from '@/lib/dal/tasks';
 import { getUpcomingAppointments }              from '@/lib/dal/appointments';
 import {  getTaskStatuses, getTaskPriorities, getPeople,
-          getMediaTypes, getMediaStatuses, getMediaStatusTypeLinks } 
+          getMediaTypes, getMediaStatuses, getMediaStatusTypeLinks, getIconsRef } 
                                                 from '@/lib/dal/reference';
 import { HubClock }                             from '@/components/hub/HubClock';
 import { LastTimeTracker }                      from '@/components/last-time/LastTimeTracker';
@@ -20,7 +21,7 @@ export default async function HubPage() {
 
   const [
     taskData, appointments, intention, statuses, priorities, people,
-    lastTimeEntries, inProgressMedia, mediaTypes, mediaStatuses, statusTypeLinks,
+    lastTimeEntries, icons, inProgressMedia, mediaTypes, mediaStatuses, statusTypeLinks,
   ] = await Promise.all([
     getTasksByDateContext(supabase, today),
     getUpcomingAppointments(supabase, today, 8),
@@ -29,6 +30,7 @@ export default async function HubPage() {
     getTaskPriorities(supabase),
     getPeople(supabase),
     getLastTimeEntries(supabase),
+    getIconsRef(supabase),
     getInProgressMediaEntries(supabase),
     getMediaTypes(supabase),
     getMediaStatuses(supabase),
@@ -68,7 +70,7 @@ export default async function HubPage() {
 
       {/* ── Secondary row ── */}
       <div className="hub-grid">
-        <LastTimeTracker entries={lastTimeEntries} compact />
+        <LastTimeTracker entries={lastTimeEntries} icons={icons} compact />
         <QuickMediaLog
           initialEntries={inProgressMedia}
           mediaTypes={mediaTypes}

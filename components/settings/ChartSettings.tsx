@@ -1,12 +1,16 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import {
+  toggleChartActive, setChartCategory, removeChartLink,
+  updateChartSortOrders, deleteChartDefinition,
+} from '@/lib/dal/charts';
 import { createClient }          from '@/lib/supabase/client';
-import { Button }                from '@/components/ui/Button';
-import { ConfirmButton }         from '@/components/ui/ConfirmButton';
+import { Button, IconDisplay, ConfirmButton } from '@/components/ui';
+import { TrackablePicker }       from '@/components/settings/TrackablePicker'; 
 import { ManageableList }        from './ManageableList';
 import type { ChartDefinitionDetail, ChartCategoryRow } from '@/types/dal';
-import type { DailyTrackableRow, ChartType, MetricRole } from '@/types/schema';
+import type { DailyTrackableRow, ChartType, MetricRole, IconRow } from '@/types/schema';
 
 // ── Chart type metadata ───────────────────────────────────────────────────────
 
@@ -71,17 +75,18 @@ function matchesFilter(chart: ChartDefinitionDetail, q: string): boolean {
 // ── ChartCard ─────────────────────────────────────────────────────────────────
 
 function ChartCard({
-  chart, idx, total, trackables, categories,
+  chart, idx, total, trackables, categories, icons,
   onMove, onDelete,
-}: {
+}: Readonly<{
   chart:      ChartDefinitionDetail;
   idx:        number;
   total:      number;
   trackables: DailyTrackableRow[];
   categories: ChartCategoryRow[];
+  icons:      IconRow[];
   onMove:    (id: number, dir: 'up' | 'down') => Promise<void>;
   onDelete:  (id: number) => Promise<void>;
-}) {
+}>) {
   const supabase = createClient();
   const [links,      setLinks]      = useState(chart.links);
   const [active,     setActive]     = useState(chart.is_active);
@@ -97,18 +102,24 @@ function ChartCard({
 
   const toggleActive = async () => {
     const next = !active; setActive(next);
-    await supabase.from('chart_definitions').update({ is_active: next }).eq('id', chart.id);
+    await toggleChartActive(supabase, chart.id, next);
   };
 
   const changeCategory = async (catId: string) => {
     const id = catId === '' ? null : Number(catId);
     setCategoryId(id);
-    await supabase.from('chart_definitions').update({ category_id: id }).eq('id', chart.id);
+    await setChartCategory(supabase, chart.id, id);
   };
 
   const addLink = useCallback(async () => {
     const tid = Number(selT);
     if (!tid || linkedIds.has(tid)) return;
+    // Block configurations that would violate chart constraints
+    const existingRoles = links.map(l => l.metric_role);
+    if (chart.chart_type === 'scatter') {
+      if (selRole === 'x_axis' && existingRoles.filter(r => r === 'x_axis').length >= 1) return;
+      if (selRole === 'y_axis' && existingRoles.filter(r => r === 'y_axis').length >= 1) return;
+    }
     setSaving(true);
     try {
       const { data, error } = await supabase
@@ -124,7 +135,7 @@ function ChartCard({
 
   const removeLink = async (linkId: number) => {
     setLinks(prev => prev.filter(l => l.id !== linkId));
-    await supabase.from('chart_trackable_links').delete().eq('id', linkId);
+    await removeChartLink(supabase, linkId);
   };
 
   const handleDelete = async () => {
@@ -178,7 +189,11 @@ function ChartCard({
         {links.map(link => (
           <div key={link.id} className="chart-settings-card__link-row">
             <span className="chart-settings-card__link-name">
-              {link.trackable.emoji ?? ''} {link.trackable.name}
+              <IconDisplay
+              icon={icons.find(i => i.id === link.trackable.icon_id) ?? null}
+                size="sm"
+              />
+              {link.trackable.name}
             </span>
             <span className="badge">{ROLE_LABELS[link.metric_role]}</span>
             <Button variant="danger" size="icon" onClick={() => removeLink(link.id)}>✕</Button>
@@ -188,16 +203,28 @@ function ChartCard({
 
       {/* Add metric */}
       <div className="chart-settings-card__add-row">
-        <select value={selT} onChange={e => setSelT(e.target.value)} className="settings-select">
-          <option value="">Add metric…</option>
-          {trackables.filter(t => !linkedIds.has(t.id)).map(t => (
-            <option key={t.id} value={t.id}>{t.emoji ?? ''} {t.name} ({t.track_type})</option>
-          ))}
-        </select>
+        <TrackablePicker
+          trackables={trackables.filter(t => !linkedIds.has(t.id))}
+          icons={icons}
+          value={selT}
+          onChange={setSelT}
+          placeholder="Add metric…"
+          showType
+        />
         <select value={selRole} onChange={e => setSelRole(e.target.value as MetricRole)} className="settings-select">
           {roleOptions.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
         </select>
-        <Button variant="accent" size="sm" onClick={addLink} disabled={!selT || saving}>+ Add</Button>
+        <Button variant="accent" size="sm" onClick={addLink}
+          disabled={!selT || saving || (() => {
+            if (!selT) return false;
+            const roles = links.map(l => l.metric_role);
+            if (chart.chart_type === 'scatter') {
+              if (selRole === 'x_axis' && roles.filter(r => r === 'x_axis').length >= 1) return true;
+              if (selRole === 'y_axis' && roles.filter(r => r === 'y_axis').length >= 1) return true;
+            }
+            return false;
+          })()}
+        >+ Add</Button>
       </div>
     </div>
   );
@@ -205,10 +232,10 @@ function ChartCard({
 
 // ── New chart form ────────────────────────────────────────────────────────────
 
-function NewChartForm({ categories, onCreated }: {
+function NewChartForm({ categories, onCreated }: Readonly<{
   categories: ChartCategoryRow[];
   onCreated:  (chart: ChartDefinitionDetail) => void;
-}) {
+}>) {
   const supabase  = createClient();
   const [title,    setTitle]    = useState('');
   const [type,     setType]     = useState<ChartType>('line');
@@ -260,12 +287,13 @@ interface Props {
   chartDefinitions: ChartDefinitionDetail[];
   trackables:       DailyTrackableRow[];
   categories:       ChartCategoryRow[];
+  icons:            IconRow[];
 }
 
-export function ChartSettings({ chartDefinitions, trackables, categories }: Props) {
+export function ChartSettings({ chartDefinitions, trackables, categories, icons }: Readonly<Props>) {
   const supabase = createClient();
   const [charts, setCharts] = useState(
-    [...chartDefinitions].sort((a, b) => a.sort_order - b.sort_order)
+    [...chartDefinitions].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
   );
   const [filter, setFilter] = useState('');
   const [showNew, setShowNew] = useState(false);
@@ -276,29 +304,29 @@ export function ChartSettings({ chartDefinitions, trackables, categories }: Prop
   };
 
   const handleMove = useCallback(async (chartId: number, dir: 'up' | 'down') => {
-    const sorted = [...charts].sort((a, b) => a.sort_order - b.sort_order);
+    const sorted = [...charts].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
     const idx    = sorted.findIndex(c => c.id === chartId);
     const other  = dir === 'up' ? idx - 1 : idx + 1;
     if (other < 0 || other >= sorted.length) return;
     const [a, b] = [sorted[idx], sorted[other]];
+    if (a.sort_order == null || b.sort_order == null) return;
+    const aSort = a.sort_order;
+    const bSort = b.sort_order;
     setCharts(charts.map(c =>
-      c.id === a.id ? { ...c, sort_order: b.sort_order } :
-      c.id === b.id ? { ...c, sort_order: a.sort_order } : c
-    ).sort((x, y) => x.sort_order - y.sort_order));
-    await Promise.all([
-      supabase.from('chart_definitions').update({ sort_order: b.sort_order }).eq('id', a.id),
-      supabase.from('chart_definitions').update({ sort_order: a.sort_order }).eq('id', b.id),
-    ]);
+      c.id === a.id ? { ...c, sort_order: bSort } :
+      c.id === b.id ? { ...c, sort_order: aSort } : c
+    ).sort((x, y) => (x.sort_order ?? 0) - (y.sort_order ?? 0)));
+    await updateChartSortOrders(supabase, [{ id: a.id, sort_order: bSort }, { id: b.id, sort_order: aSort }]);
   }, [charts, supabase]);
 
   const handleDelete = useCallback(async (chartId: number) => {
     setCharts(prev => prev.filter(c => c.id !== chartId));
-    await supabase.from('chart_definitions').delete().eq('id', chartId);
+    await deleteChartDefinition(supabase, chartId);
   }, [supabase]);
 
   // Filtered + sorted
   const filtered = charts.filter(c => matchesFilter(c, filter))
-    .sort((a, b) => a.sort_order - b.sort_order);
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
 
   // Group filtered charts by chart_type
   const typeOrder: ChartType[] = ['scatter', 'line', 'bar', 'timeline', 'heatmap'];
@@ -363,11 +391,17 @@ export function ChartSettings({ chartDefinitions, trackables, categories }: Prop
       {/* Charts grouped by type */}
       {[...byType.entries()].map(([type, group]) => {
         if (!group.length) return null;
+        const hasIssues = group.some(c => getWarnings(c.chart_type, c.links).length > 0);
         return (
-          <div key={type} className="chart-settings-type-group">
-            <h3 className="chart-settings-type-group__heading">
-              {CHART_TYPE_META[type].label}
-            </h3>
+          <details key={type} className="chart-settings-type-group settings-section--collapsible" open>
+            <summary className="settings-section__header" style={{ padding: '8px 0' }}>
+              <span className="chart-settings-type-group__heading" style={{ margin: 0 }}>
+                {CHART_TYPE_META[type].label}
+                <span className="manage-item__meta" style={{ marginLeft: 8 }}>{group.length}</span>
+                {hasIssues && <span className="badge badge--warn" style={{ marginLeft: 6 }}>issues</span>}
+              </span>
+              <span className="settings-section__caret">▸</span>
+            </summary>
             {group.map(chart => (
               <ChartCard
                 key={chart.id}
@@ -376,11 +410,12 @@ export function ChartSettings({ chartDefinitions, trackables, categories }: Prop
                 total={flatFiltered.length}
                 trackables={trackables}
                 categories={categories}
+                icons={icons}
                 onMove={handleMove}
                 onDelete={handleDelete}
               />
             ))}
-          </div>
+          </details>
         );
       })}
     </div>

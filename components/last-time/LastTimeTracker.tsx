@@ -8,15 +8,17 @@
  * Sort options: sort_order (default) or days_ago ascending.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { createClient }           from '@/lib/supabase/client';
-import { logCustomLastTime }       from '@/lib/dal/lasttime';
-import { Button }                  from '@/components/ui/Button';
+import { logCustomLastTime }      from '@/lib/dal/lasttime';
+import { Button, IconDisplay }    from '@/components/ui';
 import type { LastTimeEntry }      from '@/types/dal';
+import type { IconRow }            from '@/types/schema';
 import { formatDaysAgo, formatMediumDate, localTodayISO } from '@/lib/utils/dates';
 
 interface Props {
   entries:  LastTimeEntry[];
+  icons:    IconRow[];
   compact?: boolean;
 }
 
@@ -28,15 +30,18 @@ function daysAgoColor(days: number | null): string {
   return 'var(--danger)';
 }
 
-export function LastTimeTracker({ entries, compact = false }: Props) {
+export function LastTimeTracker({ entries, icons, compact = false }: Readonly<Props>) {
   const supabase = createClient();
   const [items,   setItems]   = useState<LastTimeEntry[]>(entries);
   const [sortBy,  setSortBy]  = useState<'order' | 'recent'>('order');
   const [logging, setLogging] = useState<Set<number>>(new Set());
 
+  // Re-sync when server refreshes (router.refresh() from LastTimeSettings)
+  useEffect(() => { setItems(entries); }, [entries]);
+
   const sorted = [...items].sort((a, b) =>
     sortBy === 'order'
-      ? a.sort_order - b.sort_order
+      ? (a.sort_order ?? 0) - (b.sort_order ?? 0)
       : (a.days_ago ?? 99999) - (b.days_ago ?? 99999)
   );
 
@@ -47,7 +52,9 @@ export function LastTimeTracker({ entries, compact = false }: Props) {
       const today = localTodayISO();
       await logCustomLastTime(supabase, item.custom_id, today);
       setItems(prev => prev.map(i =>
-        i.id === item.id ? { ...i, last_date: today, days_ago: 0 } : i
+        // IDs can collide across source tables — match category too
+        i.id === item.id && i.category === item.category
+          ? { ...i, last_date: today, days_ago: 0 } : i
       ));
     } finally {
       setLogging(prev => { const n = new Set(prev); n.delete(item.id); return n; });
@@ -82,7 +89,11 @@ export function LastTimeTracker({ entries, compact = false }: Props) {
       <div className="last-time-list">
         {sorted.map(item => (
           <div key={`${item.category}-${item.id}`} className="last-time-item">
-            <span className="last-time-item__emoji">{item.emoji ?? '•'}</span>
+            <IconDisplay
+            icon={icons.find(i => i.id === item.icon_id) ?? null}
+              size="sm"
+              className="last-time-item__emoji"
+            />
             <div className="last-time-item__body">
               <span className="last-time-item__label">{item.label}</span>
               {!compact && item.last_date && (

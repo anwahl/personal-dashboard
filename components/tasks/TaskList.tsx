@@ -13,9 +13,7 @@
 import { createTask, completeTask, TaskContextData } from '@/lib/dal/tasks';
 import { useState, useCallback } from 'react';
 import { createClient }          from '@/lib/supabase/client';
-import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
-import { TabBar }   from '@/components/ui/Controls';
-import { Button }   from '@/components/ui/Button';
+import { Card, CardHeader, CardTitle, CardBody, TabBar, Button } from '@/components/ui';
 import type { TaskDetail, TaskStatusRow, TaskPriorityRow } from '@/types/dal';
 import type { PersonRow }       from '@/types/schema';
 import { addDays } from '@/lib/utils/dates';
@@ -36,16 +34,20 @@ function priorityDotClass(name: string): string {
   return 'task-item__dot--medium';
 }
 
+function formatLabel(base: string, count: number) {
+  return count ? `${base} (${count})` : base;
+}
+
 // ── TaskItem ──────────────────────────────────────────────────────────────────
 
 function TaskItem({
   task, contextDate, showDueDate, onComplete,
-}: {
+}: Readonly<{
   task:        TaskDetail;
   contextDate: string;
   showDueDate?: boolean;
   onComplete:  (id: number) => Promise<void>;
-}) {
+}>) {
   const [busy, setBusy] = useState(false);
 
   const handleComplete = async () => {
@@ -76,6 +78,11 @@ function TaskItem({
               {isOverdue ? `Overdue · ` : ''}{fmtShortDate(task.due_date)}
             </span>
           )}
+          {task.reminder_at && !task.status.is_terminal && (
+            <span className={`task-reminder-badge${new Date(task.reminder_at) < new Date() ? ' task-reminder-badge--overdue' : ''}`}>
+              🔔{task.recurrence_frequency ? ' ↻' : ''}
+            </span>
+          )}
           {task.person && (
             <span className="task-item__person">{task.person.person_name}</span>
           )}
@@ -95,12 +102,12 @@ function QuickAdd({
   defaultDueDate,
   showDatePicker,
   onAdd,
-}: {
+}: Readonly<{
   placeholder:    string;
   defaultDueDate: string | null;
   showDatePicker?: boolean;
   onAdd: (title: string, dueDate: string | null) => Promise<void>;
-}) {
+}>) {
   const [title,   setTitle]   = useState('');
   const [date,    setDate]    = useState(defaultDueDate ?? '');
   const [saving,  setSaving]  = useState(false);
@@ -154,7 +161,7 @@ interface Props {
   people:       PersonRow[];
 }
 
-export function TaskList({ contextDate, initialData, statuses, priorities }: Props) {
+export function TaskList({ contextDate, initialData, statuses, priorities }: Readonly<Props>) {
   const supabase = createClient();
   const [data, setData] = useState<TaskContextData>(initialData);
   const [tab,  setTab]  = useState<TabId>('today');
@@ -162,16 +169,17 @@ export function TaskList({ contextDate, initialData, statuses, priorities }: Pro
   // First non-terminal status = default for new tasks
   const defaultStatus   = statuses.find(s => !s.is_terminal) ?? statuses[0];
   // Lowest-sort-order priority = default
-  const defaultPriority = [...priorities].sort((a, b) => a.sort_order - b.sort_order)[0];
+  const defaultPriority = [...priorities].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0];
   // Terminal status for completing
   const doneStatus = statuses.find(s => s.is_terminal);
 
   const TABS: { id: TabId; label: string }[] = [
-    { id: 'today',       label: `Today${data.today.length       ? ` (${data.today.length})`       : ''}` },
-    { id: 'tomorrow',    label: `Tomorrow${data.tomorrow.length  ? ` (${data.tomorrow.length})`    : ''}` },
-    { id: 'upcoming',    label: `Upcoming${data.upcoming.length  ? ` (${data.upcoming.length})`    : ''}` },
-    { id: 'unscheduled', label: `No Date${data.unscheduled.length ? ` (${data.unscheduled.length})` : ''}` },
+    { id: 'today',       label: formatLabel('Today', data.today.length) },
+    { id: 'tomorrow',    label: formatLabel('Tomorrow', data.tomorrow.length) },
+    { id: 'upcoming',    label: formatLabel('Upcoming', data.upcoming.length) },
+    { id: 'unscheduled', label: formatLabel('No Date', data.unscheduled.length) },
   ];
+
 
   const bucket = data[tab];
 
@@ -183,7 +191,6 @@ export function TaskList({ contextDate, initialData, statuses, priorities }: Pro
       status_id:    defaultStatus.id,
       priority_id:  defaultPriority.id,
       due_date:     dueDate,
-      scheduled_date: null,
       person_id:    null,
       body_md:      null,
       completed_at: null,
