@@ -176,7 +176,8 @@ function ReminderSection({ form, set }: Readonly<{ form: EditState; set: (k: key
                 setReminderAt('');
                 set('recurrence_frequency', '');
                 set('recurrence_days', '');
-                set('recurrence_end_date', ''); }}>
+                set('recurrence_end_date', '');
+            }}>
             ✕ Clear
           </button>
         )}
@@ -373,15 +374,15 @@ export function TasksClient({ active, completed, statuses, priorities, people }:
   
   // Reminder state
   const [newReminderAt, setReminderAt] = useState(
-    task.reminder_at        ? toLocalInput(task.reminder_at)                                        :
-    task.due_date           ? task.due_date + (task.due_time ? 'T' + task.due_time : 'T12:00:00')   :
+    task.reminder_at    ? toLocalInput(task.reminder_at)                                        :
+    task.due_date       ? task.due_date + (task.due_time ? 'T' + task.due_time : 'T12:00:00')    :
     ''
   );
   useEffect(() => { 
     if (!task.reminder_at && newDue) {
         setReminderAt(newDue + (newTime ? 'T' + newTime : 'T12:00:00'));
     }
-  }, [dueDate]);
+  }, [newDue]);
   
   
   const doneStatusId     = statuses.find(s => s.status_name === 'done')?.id     ?? statuses.find(s => s.is_terminal)?.id ?? 0;
@@ -410,29 +411,31 @@ export function TasksClient({ active, completed, statuses, priorities, people }:
   const fullAdd = useCallback(async (data: EditState) => {
     setSaving(true);
     try {
-    const reminderPayload = data.reminder_at ? {
-        reminder_at:         localISODateFromDateString(data.reminder_at),      recurrence_frequency: (data.recurrence_frequency || null) as TaskRow['recurrence_frequency'],
-      recurrence_interval:  data.recurrence_interval ? Number.parseInt(data.recurrence_interval) : null,
-      recurrence_days:      data.recurrence_days      || null,
-      recurrence_end_date:  data.recurrence_end_date  || null,
-    } : {
-      reminder_at: null, recurrence_frequency: null, recurrence_interval: null,
-      recurrence_days: null, recurrence_end_date: null,
-    };
-      await createTask(supabase, {
-        title:          data.title.trim(),
-        status_id:      Number.parseInt(data.status_id),
-        priority_id:    Number.parseInt(data.priority_id),
-        due_date:       data.due_date       || null,
-        due_time:       data.due_time       || null,
-        person_id:      data.person_id      ? Number.parseInt(data.person_id) : null,
-        body_md:        data.body_md        || null,
-        completed_at:   null,
-        ...reminderPayload,
-      });
-      setShowFull(false);
-      router.refresh();
-    } finally { setSaving(false); }
+        const reminderPayload = data.reminder_at ? {
+            reminder_at:         localISODateFromDateString(data.reminder_at),      recurrence_frequency: (data.recurrence_frequency || null) as TaskRow['recurrence_frequency'],
+          recurrence_interval:  data.recurrence_interval ? Number.parseInt(data.recurrence_interval) : null,
+          recurrence_days:      data.recurrence_days      || null,
+          recurrence_end_date:  data.recurrence_end_date  || null,
+        } : {
+          reminder_at: null, recurrence_frequency: null, recurrence_interval: null,
+          recurrence_days: null, recurrence_end_date: null,
+        };
+        await createTask(supabase, {
+            title:          data.title.trim(),
+            status_id:      Number.parseInt(data.status_id),
+            priority_id:    Number.parseInt(data.priority_id),
+            due_date:       data.due_date       || null,
+            due_time:       data.due_time       || null,
+            person_id:      data.person_id      ? Number.parseInt(data.person_id) : null,
+            body_md:        data.body_md        || null,
+            completed_at:   null,
+            ...reminderPayload,
+          });
+        setShowFull(false);
+        router.refresh();
+    } finally { 
+        setSaving(false); 
+    }
   }, [supabase, router]);
 
   const complete = useCallback(async (id: number) => {
@@ -493,54 +496,55 @@ export function TasksClient({ active, completed, statuses, priorities, people }:
 
   return (
     <div>
-      {showFull ? (
-        <FullAddForm
-          statuses={statuses} priorities={priorities} people={people}
-          todoStatusId={todoStatusId} normalPriorityId={normalPriorityId}
-          onSave={fullAdd} onCancel={() => setShowFull(false)} saving={saving}
-        />
-      ) : (
-        <>
-          {/* Quick add row */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8, alignItems: 'center' }}>
-            <input
-              type="text"
-              value={newTitle}
-              onChange={e => setNewTitle(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && quickAdd()}
-              placeholder="Quick add task…"
-              style={{ flex: '1 1 180px', minWidth: 120 }}
-            />
-            <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap' }}>
-              <input
-                type="date"
-                value={newDue}
-                onChange={e => setNewDue(e.target.value)}
-                style={{ width: 140 }}
-              />
-              <input
-                type="time"
-                value={newTime}
-                onChange={e => setNewTime(e.target.value)}
-                style={{ width: 100 }}
-              />
-              {/* Date shortcuts */}
-              <div className="date-shortcuts">
-                <Button size="sm" variant="ghost" onClick={() => setNewDue(addDays(1))}>Tomorrow</Button>
-                <Button size="sm" variant="ghost" onClick={() => setNewDue(addDays(7))}>Next week</Button>
+      {showFull ? 
+          (<FullAddForm
+              statuses={statuses} priorities={priorities} people={people}
+              todoStatusId={todoStatusId} normalPriorityId={normalPriorityId}
+              onSave={fullAdd} onCancel={() => setShowFull(false)} saving={saving}
+            />)
+        : (
+             <>
+              {/* Quick add row */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8, alignItems: 'center' }}>
+                <input
+                  type="text"
+                  value={newTitle}
+                  onChange={e => setNewTitle(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && quickAdd()}
+                  placeholder="Quick add task…"
+                  style={{ flex: '1 1 180px', minWidth: 120 }}
+                />
+                <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <input
+                    type="date"
+                    value={newDue}
+                    onChange={e => setNewDue(e.target.value)}
+                    style={{ width: 140 }}
+                  />
+                  <input
+                    type="time"
+                    value={newTime}
+                    onChange={e => setNewTime(e.target.value)}
+                    style={{ width: 100 }}
+                  />
+                  {/* Date shortcuts */}
+                  <div className="date-shortcuts">
+                    <Button size="sm" variant="ghost" onClick={() => setNewDue(addDays(1))}>Tomorrow</Button>
+                    <Button size="sm" variant="ghost" onClick={() => setNewDue(addDays(7))}>Next week</Button>
+                  </div>
+                </div>
+                <select value={newPerson} onChange={e => setNewPerson(e.target.value)} style={{ width: 110 }}>
+                  <option value="">Anyone</option>
+                  {people.map(p => <option key={p.id} value={p.id}>{p.person_name}</option>)}
+                </select>
+                <Button variant="accent" onClick={quickAdd} disabled={adding || !newTitle.trim()}>
+                  {adding ? '…' : '+ Quick'}
+                </Button>
+                <Button variant="ghost" onClick={() => setShowFull(true)}>Full Add</Button>
               </div>
-            </div>
-            <select value={newPerson} onChange={e => setNewPerson(e.target.value)} style={{ width: 110 }}>
-              <option value="">Anyone</option>
-              {people.map(p => <option key={p.id} value={p.id}>{p.person_name}</option>)}
-            </select>
-            <Button variant="accent" onClick={quickAdd} disabled={adding || !newTitle.trim()}>
-              {adding ? '…' : '+ Quick'}
-            </Button>
-            <Button variant="ghost" onClick={() => setShowFull(true)}>Full Add</Button>
-          </div>
-        </>
-      )}
+            </>
+          )
+      }
 
       <TabBar tabs={TABS} active={tab} onChange={setTab} />
 
