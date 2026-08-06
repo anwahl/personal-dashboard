@@ -112,7 +112,7 @@
 
   --bg:           var(--dark-purple-shade-600);
   --surface:      var(--dark-purple-shade-500);
-  --surface-high: var(--blue-shade-500)
+  --surface-high: var(--blue-shade-500);
   --border:       var(--dark-purple-shade-300);
   --border-focus: var(--dark-purple-shade-200);
 
@@ -158,8 +158,10 @@
   --radius:           14px;
   --radius-lg:        20px;
   --radius-ex-lg:     25px;
-  --radius-ex-lger:   30px;
+  --radius-ex-lger:   35px;
+
   --tap:              44px;
+  --tap-min:          35px;
 
   --font-sans: system-ui, -apple-system, sans-serif;
 
@@ -685,7 +687,7 @@ textarea {
 
 .side-nav__brand,
 .side-nav__footer {
-  padding: 6px 10px;
+  padding: 4px 10px;
   font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -694,18 +696,19 @@ textarea {
 }
 
 .side-nav__brand {
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--nav-border);
+  padding-bottom: 12px;
 }
 
 .side-nav__footer {
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--nav-border);
+  padding-top: 12px;
 }
 
 .side-nav__list {
   list-style: none;
   margin: 0;
-  padding: 0 20px 0 35px;
-  flex: 1;
+  padding: 12px 35px 15px;
 }
 
 .side-nav__link {
@@ -717,10 +720,9 @@ textarea {
   border-radius: var(--radius-sm);
   text-decoration: none;
   color: var(--text-nav);
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   transition: background 0.12s, color 0.12s;
-  min-height: var(--tap);
-  margin: 3px 0;
+  min-height: var(--tap-min);
 }
 
 .side-nav__link:hover { 
@@ -771,8 +773,6 @@ textarea {
 .bottom-nav__link--active { color: var(--accent); font-weight: 600; }
 .bottom-nav__link-icon { font-size: 1.3rem; line-height: 1; }
 
-
-
 .mobile-nav {
   display: none;
   width: fit-content;
@@ -780,7 +780,7 @@ textarea {
   background-color: var(--nav-bg);
   gap: 15px;
   margin: 0 auto;
-  padding: 10px 15px;
+  padding: 5px 8px;
   border: 1px solid var(--nav-border);
   position: fixed;
   bottom: 15; left: 0; right: 0;
@@ -789,7 +789,7 @@ textarea {
 
 .mobile-nav--item {
   padding: 3px;
-  border-radius: var(--radius-ex-lg);
+  border-radius: var(--radius-ex-lger);
 }
 
 .mobile-nav--item:not(.mobile-nav--item_selected),
@@ -871,7 +871,7 @@ textarea {
 
 .mobile-nav--item_selected {
   cursor: pointer;
-  border-radius: var(--radius-ex-lg);
+  border-radius: var(--radius-ex-lger);
   border: 1px solid var(--nav-sl-border);
   background-color: var(--nav-selected);
 }
@@ -1331,7 +1331,7 @@ textarea {
 /* ── Sidebar calendar ────────────────────────────────────────────────────────*/
 .side-calendar {
   padding: 12px 8px 8px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--nav-border);
   margin-top: 12px;
 }
 .side-calendar__nav {

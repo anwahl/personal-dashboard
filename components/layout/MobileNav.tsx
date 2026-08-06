@@ -27,7 +27,7 @@ export function MobileNavBar() {
                                 href={dest}>
                                 <Icon
                                     svg_data={svg_data}
-                                    size="lg"
+                                    size="md"
                                     className="mobile-nav--item_icon"
                                 />
                                 {active ?   
