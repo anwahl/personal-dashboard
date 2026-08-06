@@ -11,9 +11,11 @@ export function SideNav() {
 
   return (
     <nav className="side-nav" aria-label="Main navigation">
-      <a href="/">
-        <div className="side-nav__brand">🏠 Dashboard</div>
-      </a>
+      <div className="side-nav__brand">
+        <Link className='side-nav__link' href='/'>
+          🏠 Dashboard
+        </Link>
+      </div>
       <ul className="side-nav__list">
         {NAV_ITEMS.map(({ href, emoji, label }) => {
           const dest   = href === '/daily' ? `/daily/${localTodayISO()}` : href;
@@ -37,11 +39,10 @@ export function SideNav() {
 
       <div className="side-nav__footer">
         <Link
-          key ="/settings"
           href="/settings"
-          className={`side-nav__link side-nav__link--compact${path === '/settings' ? ' side-nav__link--active' : ''}`}
+          className={`side-nav__link${path === '/settings' ? ' side-nav__link--active' : ''}`}
         >
-          <span className="side-nav__link-icon">⚙️ Settings</span>
+          ⚙️ Settings
         </Link>
       </div>
     </nav>

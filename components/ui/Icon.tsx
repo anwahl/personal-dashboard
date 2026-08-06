@@ -9,37 +9,27 @@
  *   md — 28×28px   (picker grid, buttons)
  *   lg — 40×40px   (settings list preview)
  */
-
-import type { IconRow } from '@/types/schema';
 import { cleanSvg } from "@/lib/utils/svg";
 
 interface Props {
-  icon?:          IconRow | null;
-  size?:          'sm' | 'md' | 'lg';
-  className?:     string;
+  svg_data:         string;
+  size?:            'sm' | 'md' | 'lg';
+  className?:       string;
 }
 
-export function IconDisplay({
-  icon,
+export function Icon({
+  svg_data  = '',
   size      = 'md',
   className = '',
 }: Readonly<Props>) {
-  const cls = `icon-display icon-display--${size}${className ? ` ${className}` : ''}`;
+    const cls = `icon-display icon-display--${size}${className ? ` ${className}` : ''}`;
 
-  if (icon?.svg_data) {
     return (
-      <span
+        <span
         className={cls}
         // eslint-disable-next-line react/no-danger
-        dangerouslySetInnerHTML={{ __html: cleanSvg(icon.svg_data) }}
+        dangerouslySetInnerHTML={{ __html: cleanSvg(svg_data) }}
         aria-hidden="true"
-      />
+        />
     );
-  }
-
-  return (
-    <span className={cls}>
-      {'•'}
-    </span>
-  );
 }

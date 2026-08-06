@@ -58,7 +58,7 @@ export function SideCalendar() {
     supabase.from('weekly_entries').select('week_start_date')
       .gte('week_start_date', fromSun).lte('week_start_date', to)
       .then(({ data }) => setWeeklyDates(new Set((data ?? []).map((r: { week_start_date: string }) => r.week_start_date))));
-  }, [year, month]);
+  }, [year, month]);//FIXME Move the queries outta here
 
   const days = buildCalendarDays(year, month);
   const weeks: { date: string; thisMonth: boolean }[][] = [];
@@ -108,8 +108,9 @@ export function SideCalendar() {
                 ].filter(Boolean).join(' ');
                 return (
                   <Link key={date} href={`/daily/${date}`} className={cls} aria-label={date}>
-                    <span className="side-calendar__day-num">{dayNum}</span>
-                    {hasDot && <span className="side-calendar__dot" />}
+                    <span className={`side-calendar__day-num${hasDot ? ' side-calendar__dot' : ''}`}>
+                      {dayNum}
+                    </span> 
                   </Link>
                 );
               })}
