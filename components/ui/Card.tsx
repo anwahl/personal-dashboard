@@ -30,7 +30,13 @@ export function CardFooter({ children, className, style }: Readonly<CardProps>) 
 }
 
 export function CardSection({ children, className, style }: Readonly<CardProps>) {
-  return <div className={['card__section', className].filter(Boolean).join(' ')} style={style}>{children}</div>;
+  return <>
+          <div  className={['card__section', className].filter(Boolean).join(' ')}
+                style={style}>
+                  {children}
+          </div>
+          <hr />
+        </>
 }
 
 export function CardSectionLabel({ children }: Readonly<{ children: ReactNode }>) {

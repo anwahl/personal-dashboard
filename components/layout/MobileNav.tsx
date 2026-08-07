@@ -48,17 +48,17 @@ export function MobileNavBar() {
                     />
                     <div className="mobile-nav--menu-content">
                         <span className="mobile-nav--menu-title">Menu</span>
+                        <hr className="hr-sm" />
                         {MENU_ITEMS.map(({ href, emoji, label }) => (
-                            <span key={href} className='mobile-nav--menu-link-wrapper'>
-                                <Link 
-                                    href={href}
-                                    className="mobile-nav--menu-link" 
-                                    onClick={() => setMenuOpen(false)}
-                                >
-                                    <span className="mobile-nav--menu-link-icon">{emoji}</span>
-                                    {label}
-                                </Link>
-                            </span>
+                            <Link 
+                                key={href}
+                                href={href}
+                                className="mobile-nav--menu-link" 
+                                onClick={() => setMenuOpen(false)}
+                            >
+                                <span className="mobile-nav--menu-link-icon">{emoji}</span>
+                                {label}
+                            </Link>
                         ))}
                     </div>
                 </div>

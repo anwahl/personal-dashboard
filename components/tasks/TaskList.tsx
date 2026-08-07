@@ -10,7 +10,7 @@
  * Each tab has a quickadd row. Upcoming tab shows an inline date picker.
  */
 
-import { createTask, completeTask, TaskContextData } from '@/lib/dal/tasks';
+import { createTask, updateTaskStatus, TaskContextData } from '@/lib/dal/tasks';
 import { useState, useCallback } from 'react';
 import { createClient }          from '@/lib/supabase/client';
 import { Card, CardHeader, CardTitle, CardBody, TabBar, Button } from '@/components/ui';
@@ -216,7 +216,7 @@ export function TaskList({ contextDate, initialData, statuses, priorities }: Rea
 
   const handleComplete = useCallback(async (taskId: number) => {
     if (!doneStatus) return;
-    await completeTask(supabase, taskId, doneStatus.id);
+    await updateTaskStatus(supabase, taskId, doneStatus.id);
     setData(prev => ({
       today:       prev.today.filter(t => t.id !== taskId),
       tomorrow:    prev.tomorrow.filter(t => t.id !== taskId),

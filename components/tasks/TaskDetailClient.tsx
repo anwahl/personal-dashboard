@@ -1,10 +1,10 @@
 'use client';
 
-import { InputField, SaveStatus, SaveState, Button, ConfirmButton, Markdown } from '@/components/ui';
+import { InputField, SaveStatus, SaveState, Button, ConfirmButton, Markdown, Card, CardBody, CardTitle, CardHeader, CardSection, CardSectionLabel } from '@/components/ui';
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter }             from 'next/navigation';
 import { createClient }          from '@/lib/supabase/client';
-import { updateTask, completeTask, deleteTask, spawnNextRecurrence } from '@/lib/dal/tasks';
+import { updateTask, updateTaskStatus, deleteTask, spawnNextRecurrence } from '@/lib/dal/tasks';
 import type { TaskDetail, TaskStatusRow, TaskPriorityRow } from '@/types/dal';
 import type { PersonRow, TagRow }from '@/types/schema';
 import { formatMediumDate, localISODateFromDateString, localISODateTimeFromDateString, toLocalInput } from '@/lib/utils/dates';
@@ -89,7 +89,7 @@ export function TaskDetailClient({ task, statuses, priorities, people }: Readonl
   const complete = useCallback(async () => {
     if (!doneStatus) return;
     const todoStatus = statuses.find(s => !s.is_terminal);
-    await completeTask(supabase, task.id, doneStatus.id);
+    await updateTaskStatus(supabase, task.id, doneStatus.id);
     if (task.recurrence_frequency && task.reminder_at && todoStatus) {
       await spawnNextRecurrence(supabase, task, todoStatus.id);
     }
@@ -106,184 +106,202 @@ export function TaskDetailClient({ task, statuses, priorities, people }: Readonl
 
   if (mode === 'view') {
     return (
-      <div>
-        <div className="detail-page__header">
-          <h2 className="detail-page__title">{title}</h2>
-          <div className="detail-page__actions">
-            {!task.completed_at && doneStatus && (
-              <Button variant="accent" size="sm" onClick={complete}>✓ Complete</Button>
-            )}
-            <Button variant="ghost" size="sm" onClick={() => setMode('edit')}>✏️ Edit</Button>
-            <ConfirmButton onConfirm={remove} disabled={deleting}>✕ Delete</ConfirmButton>
-          </div>
-        </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>View Task</CardTitle>
+        </CardHeader>
+        <CardBody>
+          <div>
+            <div className="detail-page__header">
+              <h2 className="detail-page__title">{title}</h2>
+              <div className="detail-page__actions">
+                {!task.completed_at && doneStatus && (
+                  <Button variant="accent" size="sm" onClick={complete}>✓ Complete</Button>
+                )}
+                <Button variant="ghost" size="sm" onClick={() => setMode('edit')}>✏️ Edit</Button>
+                <ConfirmButton onConfirm={remove} disabled={deleting}>✕ Delete</ConfirmButton>
+              </div>
+            </div>
 
-        <dl className="detail-page__fields">
-          <div className="detail-page__field">
-            <dt>Status</dt>
-            <dd>
-              <span className="badge">{task.status.status_name}</span>
-              {task.completed_at && (
-                <span className="detail-page__field-note">
-                  Completed {new Date(task.completed_at).toLocaleDateString()}
-                </span>
+            <dl className="detail-page__fields">
+              <div className="detail-page__field">
+                <dt>Status</dt>
+                <dd>
+                  <span className="badge">{task.status.status_name}</span>
+                  {task.completed_at && (
+                    <span className="detail-page__field-note">
+                      Completed {new Date(task.completed_at).toLocaleDateString()}
+                    </span>
+                  )}
+                </dd>
+              </div>
+              <div className="detail-page__field">
+                <dt>Priority</dt>
+                <dd><span className="badge">{task.priority.priority_name}</span></dd>
+              </div>
+              <div className="detail-page__field">
+                <dt>Due</dt>
+                <dd>{formatMediumDate(task.due_date)}{task.due_time ? ' · ' + task.due_time.slice(0,5) : ''}</dd>
+              </div>
+              {task.person && (
+                <div className="detail-page__field">
+                  <dt>Person</dt>
+                  <dd>{task.person.person_name}</dd>
+                </div>
               )}
-            </dd>
-          </div>
-          <div className="detail-page__field">
-            <dt>Priority</dt>
-            <dd><span className="badge">{task.priority.priority_name}</span></dd>
-          </div>
-          <div className="detail-page__field">
-            <dt>Due</dt>
-            <dd>{formatMediumDate(task.due_date)}{task.due_time ? ' · ' + task.due_time.slice(0,5) : ''}</dd>
-          </div>
-          {task.person && (
-            <div className="detail-page__field">
-              <dt>Person</dt>
-              <dd>{task.person.person_name}</dd>
-            </div>
-          )}
-          {task.reminder_at && (
-            <div className="detail-page__field">
-              <dt>Reminder</dt>
-              <dd className={`task-reminder-badge${
-                (task.reminder_at && !task.status.is_terminal && new Date(task.reminder_at) < new Date()) ? ' task-reminder-badge--overdue' : ''
-              }`}>
-                🔔 {new Date(task.reminder_at).toLocaleString()}
-                {task.recurrence_frequency && ` ↻ ${task.recurrence_frequency}`}
-              </dd>
-            </div>
-          )}
-        </dl>
+              {task.reminder_at && (
+                <div className="detail-page__field">
+                  <dt>Reminder</dt>
+                  <dd className={`task-reminder-badge${
+                    (task.reminder_at && !task.status.is_terminal && new Date(task.reminder_at) < new Date()) ? ' task-reminder-badge--overdue' : ''
+                  }`}>
+                    🔔 {new Date(task.reminder_at).toLocaleString()}
+                    {task.recurrence_frequency && ` ↻ ${task.recurrence_frequency}`}
+                  </dd>
+                </div>
+              )}
+            </dl>
+            
 
-        {bodyMd && (
-          <div className="detail-page__body">
-            <p className="detail-page__body-label">Notes</p>
-            <div className="detail-page__body-markdown">
-                <Markdown>{bodyMd}</Markdown>
-            </div>
+            {bodyMd && (
+              <div className="detail-page__body">
+                <p className="detail-page__body-label">Notes</p>
+                <div className="detail-page__body-markdown">
+                    <Markdown>{bodyMd}</Markdown>
+                </div>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </CardBody>
+      </Card>
     );
   }
 
   // Edit mode
   return (
-    <div>
-      <InputField label="Title" id="td-title">
-        <input id="td-title" type="text" value={title}
-          onChange={e => setTitle(e.target.value)} />
-      </InputField>
+    <Card>
+      <CardHeader>
+        <CardTitle>Edit Task</CardTitle>
+      </CardHeader>
+      <CardBody>
+          <div>
+          <CardSection>
+            <CardSectionLabel>Details</CardSectionLabel>
+            <InputField label="Title" id="td-title">
+              <input id="td-title" type="text" value={title}
+                onChange={e => setTitle(e.target.value)} />
+            </InputField>
 
-      <div className="field-grid">
-        <InputField label="Status" id="td-status">
-          <select id="td-status" value={statusId} onChange={e => setStatusId(e.target.value)}>
-            {statuses.map(s => <option key={s.id} value={s.id}>{s.status_name}</option>)}
-          </select>
-        </InputField>
-        <InputField label="Priority" id="td-priority">
-          <select id="td-priority" value={priorityId} onChange={e => setPriorityId(e.target.value)}>
-            {priorities.map(p => <option key={p.id} value={p.id}>{p.priority_name}</option>)}
-          </select>
-        </InputField>
-      </div>
-
-      <div className="field-grid">
-        <InputField label="Due date" id="td-due">
-          <input id="td-due" type="date" value={dueDate}
-            onChange={e => setDueDate(e.target.value)} />
-        </InputField>
-        <InputField label="Time" id="td-time">
-          <input id="td-time" type="time" value={dueTime}
-            onChange={e => setDueTime(e.target.value)} />
-        </InputField>
-        <InputField label="Person" id="td-person">
-          <select id="td-person" value={personId} onChange={e => setPersonId(e.target.value)}>
-            <option value="">No person</option>
-            {people.map(p => <option key={p.id} value={p.id}>{p.person_name}</option>)}
-          </select>
-        </InputField>
-      </div>
-
-      <InputField label="Notes" id="td-body">
-        <textarea id="td-body" value={bodyMd}
-          onChange={e => setBodyMd(e.target.value)} />
-      </InputField>
-
-      {/* Reminder section */}
-      <div className="reminder-section" style={{ marginTop: 16 }}>
-        <div className="reminder-section__row">
-          <span className="reminder-section__label">Reminder</span>
-          <input type="datetime-local" value={reminderAt}
-            onChange={e => {
-                setReminderAt(e.target.value);
-                if (!e.target.value) {
-                    setRecurrenceFrequency('');
-                    setRecurrenceDays('');
-                    setRecurrenceEndDate(''); 
-                }
-            }}
-          />
-          {reminderAt && 
-              <button type="button" className="reminder-section__toggle" onClick={() => {
-                    setReminderAt('');
-                    setRecurrenceFrequency('');
-                    setRecurrenceDays('');
-                    setRecurrenceEndDate(''); }}>
-                ✕ Clear
-              </button>
-          }
-        </div>
-        {reminderAt && (
-          <div className="reminder-section__fields">
-            <div className="reminder-section__row">
-              <span className="reminder-section__label">Repeat</span>
-              <select value={recurrenceFrequency} onChange={e => { setRecurrenceFrequency(e.target.value); setRecurrenceDays(''); }}>
-                <option value="">No repeat</option>
-                <option value="daily">Daily</option>
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-                <option value="yearly">Yearly</option>
-              </select>
+            <div className="field-grid">
+              <InputField label="Status" id="td-status">
+                <select id="td-status" value={statusId} onChange={e => setStatusId(e.target.value)}>
+                  {statuses.map(s => <option key={s.id} value={s.id}>{s.status_name}</option>)}
+                </select>
+              </InputField>
+              <InputField label="Priority" id="td-priority">
+                <select id="td-priority" value={priorityId} onChange={e => setPriorityId(e.target.value)}>
+                  {priorities.map(p => <option key={p.id} value={p.id}>{p.priority_name}</option>)}
+                </select>
+              </InputField>
             </div>
-            {recurrenceFrequency && (
-              <>
-                <div className="reminder-section__row">
-                  <span className="reminder-section__label">Every</span>
-                  <input type="number" min="1" max="99" className="reminder-section__interval"
-                    value={recurrenceInterval} onChange={e => setRecurrenceInterval(e.target.value)} />
-                </div>
-                {recurrenceFrequency === 'weekly' && (
-                  <div className="reminder-section__row">
-                    <span className="reminder-section__label">On</span>
-                    <div className="weekday-chips">
-                      {[{code:'MO',label:'Mo'},{code:'TU',label:'Tu'},{code:'WE',label:'We'},{code:'TH',label:'Th'},{code:'FR',label:'Fr'},{code:'SA',label:'Sa'},{code:'SU',label:'Su'}].map(({code,label}) => {
-                        const active = recurrenceDays.split(',').includes(code);
-                        return <button key={code} type="button" className={`weekday-chip${active ? ' weekday-chip--active' : ''}`} onClick={() => { const d = recurrenceDays.split(',').filter(Boolean); setRecurrenceDays(active ? d.filter(x=>x!==code).join(',') : [...d,code].join(',')); }}>{label}</button>;
-                      })}
-                    </div>
-                  </div>
-                )}
-                <div className="reminder-section__row">
-                  <span className="reminder-section__label">Until</span>
-                  <input type="date" value={recurrenceEndDate} onChange={e => setRecurrenceEndDate(e.target.value)} />
-                  {recurrenceEndDate && <button type="button" className="reminder-section__toggle" onClick={() => setRecurrenceEndDate('')}>✕</button>}
-                </div>
-              </>
-            )}
-          </div>
-        )}
-      </div>
 
-      <div className="page-actions">
-        <Button variant="accent" onClick={save} disabled={saveState === 'saving'}>
-          {saveState === 'saving' ? 'Saving…' : 'Save'}
-        </Button>
-        <Button variant="ghost" onClick={() => setMode('view')}>Cancel</Button>
-        <SaveStatus state={saveState} />
-      </div>
-    </div>
+            <div className="field-grid">
+              <InputField label="Due date" id="td-due">
+                <input id="td-due" type="date" value={dueDate}
+                  onChange={e => setDueDate(e.target.value)} />
+              </InputField>
+              <InputField label="Time" id="td-time">
+                <input id="td-time" type="time" value={dueTime}
+                  onChange={e => setDueTime(e.target.value)} />
+              </InputField>
+              <InputField label="Person" id="td-person">
+                <select id="td-person" value={personId} onChange={e => setPersonId(e.target.value)}>
+                  <option value="">No person</option>
+                  {people.map(p => <option key={p.id} value={p.id}>{p.person_name}</option>)}
+                </select>
+              </InputField>
+            </div>
+
+            <InputField label="Notes" id="td-body">
+              <textarea id="td-body" value={bodyMd}
+                onChange={e => setBodyMd(e.target.value)} />
+            </InputField>
+          </CardSection>
+          {/* Reminder section */}
+          <CardSection>
+            <CardSectionLabel>Reminders and Recurrences</CardSectionLabel>
+            <div className="reminder-section__row">
+              <span className="reminder-section__label">Reminder</span>
+              <input type="datetime-local" value={reminderAt}
+                onChange={e => {
+                    setReminderAt(e.target.value);
+                    if (!e.target.value) {
+                        setRecurrenceFrequency('');
+                        setRecurrenceDays('');
+                        setRecurrenceEndDate(''); 
+                    }
+                }}
+              />
+              {reminderAt && 
+                  <button type="button" className="reminder-section__toggle" onClick={() => {
+                        setReminderAt('');
+                        setRecurrenceFrequency('');
+                        setRecurrenceDays('');
+                        setRecurrenceEndDate(''); }}>
+                    ✕ Clear
+                  </button>
+              }
+            </div>
+            {reminderAt && (
+              <div className="reminder-section__fields">
+                <div className="reminder-section__row">
+                  <span className="reminder-section__label">Repeat</span>
+                  <select value={recurrenceFrequency} onChange={e => { setRecurrenceFrequency(e.target.value); setRecurrenceDays(''); }}>
+                    <option value="">No repeat</option>
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="yearly">Yearly</option>
+                  </select>
+                </div>
+                {recurrenceFrequency && (
+                  <>
+                    <div className="reminder-section__row">
+                      <span className="reminder-section__label">Every</span>
+                      <input type="number" min="1" max="99" className="reminder-section__interval"
+                        value={recurrenceInterval} onChange={e => setRecurrenceInterval(e.target.value)} />
+                    </div>
+                    {recurrenceFrequency === 'weekly' && (
+                      <div className="reminder-section__row">
+                        <span className="reminder-section__label">On</span>
+                        <div className="weekday-chips">
+                          {[{code:'MO',label:'Mo'},{code:'TU',label:'Tu'},{code:'WE',label:'We'},{code:'TH',label:'Th'},{code:'FR',label:'Fr'},{code:'SA',label:'Sa'},{code:'SU',label:'Su'}].map(({code,label}) => {
+                            const active = recurrenceDays.split(',').includes(code);
+                            return <button key={code} type="button" className={`weekday-chip${active ? ' weekday-chip--active' : ''}`} onClick={() => { const d = recurrenceDays.split(',').filter(Boolean); setRecurrenceDays(active ? d.filter(x=>x!==code).join(',') : [...d,code].join(',')); }}>{label}</button>;
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    <div className="reminder-section__row">
+                      <span className="reminder-section__label">Until</span>
+                      <input type="date" value={recurrenceEndDate} onChange={e => setRecurrenceEndDate(e.target.value)} />
+                      {recurrenceEndDate && <button type="button" className="reminder-section__toggle" onClick={() => setRecurrenceEndDate('')}>✕</button>}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </CardSection>
+
+          <div className="page-actions">
+            <Button variant="accent" onClick={save} disabled={saveState === 'saving'}>
+              {saveState === 'saving' ? 'Saving…' : 'Save'}
+            </Button>
+            <Button variant="ghost" onClick={() => setMode('view')}>Cancel</Button>
+            <SaveStatus state={saveState} />
+          </div>
+        </div>
+      </CardBody>
+    </Card>
   );
 }

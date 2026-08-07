@@ -86,19 +86,36 @@ function DiagnosisSection({ diagnoses: initial, mode, personId }: Readonly<{
       {active.map(d => (
         <div key={d.id}>
           {editId === d.id ? (
+            <>
             <div className="manage-item">
               <div className="manage-item__edit-block">
-                <input className="input--flex" value={editName} onChange={e => setEditName(e.target.value)}
-                  placeholder="Diagnosis name…" autoFocus
-                  onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditId(null); }} />
-                <input type="date" className="input--date" value={editDate} onChange={e => setEditDate(e.target.value)} />
-                <input className="input--flex" value={editNotes} onChange={e => setEditNotes(e.target.value)} placeholder="Notes…" />
-              </div>
-              <div className="manage-item__actions">
-                <Button size="sm" variant="accent" onClick={saveEdit} disabled={!editName.trim()}>✓</Button>
-                <Button size="sm" variant="ghost"  onClick={() => setEditId(null)}>✕</Button>
+                <InputField label="Diagnosis" id="diagnosis">
+                  <input id="diagnosis" type="text" value={editName}
+                    onChange={e => setEditName(e.target.value)}
+                    placeholder="Diagnosis name…" autoFocus
+                    onKeyDown={e => { if (e.key === 'Enter') saveEdit();
+                      if (e.key === 'Escape') setEditId(null); }} />
+                </InputField>
+                <InputField label="Date" id="diagnosis-date">
+                  <input type="date" id="diagnosis-date"
+                    value={editDate} onChange={e => setEditDate(e.target.value)} />
+                </InputField>
               </div>
             </div>
+            <div className="manage-item">
+              <div className="manage-item__edit-block">
+                <InputField label="Notes" id="diagnosis-notes">
+                  <textarea value={editNotes}
+                    onChange={e => setEditNotes(e.target.value)}
+                    placeholder="Notes…" />
+                </InputField>
+              </div>
+            </div>
+            <div className="manage-item__actions">
+              <Button size="sm" variant="accent" onClick={saveEdit} disabled={!editName.trim()}>✓</Button>
+              <Button size="sm" variant="ghost"  onClick={() => setEditId(null)}>✕</Button>
+            </div>
+            </>
           ) : (
             <div className="manage-item">
               <span className="manage-item__name">
@@ -131,13 +148,28 @@ function DiagnosisSection({ diagnoses: initial, mode, personId }: Readonly<{
           </div>
         </details>
       )}
-      <div className="manage-add-row">
-        <input className="input--flex" value={newName} onChange={e => setNewName(e.target.value)}
-          placeholder="Diagnosis name…" onKeyDown={e => e.key === 'Enter' && addItem()} />
-        <input type="date" className="input--date" value={newDate} onChange={e => setNewDate(e.target.value)} />
-        <input className="input--flex" value={newNotes} onChange={e => setNewNotes(e.target.value)} placeholder="Notes…" />
-        <Button size="sm" variant="accent" onClick={addItem} disabled={adding || !newName.trim()}>+ Add</Button>
+      <>
+      <hr />
+      <div className="manage-item">
+        <div className="manage-item__edit-block">
+          <InputField label="Add Diagnosis" id="new-diagnosis">
+            <input id="new-diagnosis" type="text" className="input--flex" value={newName} onChange={e => setNewName(e.target.value)}
+              placeholder="Diagnosis name…" onKeyDown={e => e.key === 'Enter' && addItem()} />
+          </InputField>
+          <InputField label="Diagnosis Date" id="new-diagnosis-date">
+            <input id="new-diagnosis-date" type="date" className="input--date" value={newDate} onChange={e => setNewDate(e.target.value)} />
+          </InputField>
+        </div>
       </div>
+      <div className="manage-item">
+        <div className="manage-item__edit-block">
+          <InputField label="Notes" id="new-diagnosis-notes">
+            <textarea id="new-diagnosis-notes" className="input--flex" value={newNotes} onChange={e => setNewNotes(e.target.value)} placeholder="Notes…" />
+          </InputField>
+        </div>
+      </div>
+      <Button size="sm" variant="accent" onClick={addItem} disabled={adding || !newName.trim()}>+ Add</Button>
+      </>
     </CardSection>
   );
 }
@@ -554,7 +586,7 @@ export function PeoplePageClient({ data, peopleCategories }: Readonly<{ data: Pe
 
         <CardBody>
           <DiagnosisSection diagnoses={diagnoses} mode={mode} personId={person.id} />
-
+          <hr />
           {prescriptions.length > 0 && (
             <CardSection>
               <CardSectionLabel>Active Prescriptions</CardSectionLabel>
