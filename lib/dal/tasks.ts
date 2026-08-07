@@ -126,14 +126,14 @@ export async function updateTask(
   if (error) throw new Error(`updateTask: ${error.message}`);
 }
 
-export async function completeTask(
+export async function updateTaskStatus(
   client: Client,
   id: number,
-  doneStatusId: number,
+  statusId: number,
 ): Promise<void> {
   // completed_at is a TIMESTAMPTZ — UTC ISO string is correct here (it's an instant, not a date)
   await updateTask(client, id, {
-    status_id: doneStatusId,
+    status_id: statusId,
     completed_at: localTodayISO(),
   });
 }

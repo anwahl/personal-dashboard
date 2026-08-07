@@ -112,7 +112,7 @@
 
   --bg:           var(--dark-purple-shade-600);
   --surface:      var(--dark-purple-shade-500);
-  --surface-high: var(--blue-shade-500)
+  --surface-high: var(--blue-shade-500);
   --border:       var(--dark-purple-shade-300);
   --border-focus: var(--dark-purple-shade-200);
 
@@ -146,6 +146,11 @@
   --accent-hover: color-mix(in srgb, var(--pink-pale-500) 25%, transparent);
   --accent-secondary-hover: color-mix(in srgb, var(--orange-pale-500) 25%, transparent);
 
+  --not-done: color-mix(in srgb, var(--raspberry-pale-400) 35%, transparent);
+  --not-done-border: color-mix(in srgb, var(--raspberry-pale-300) 55%, transparent);
+  --done:     color-mix(in srgb, var(--green-pale-600) 15%, transparent);
+  --done-border:     color-mix(in srgb, var(--green-pale-400) 55%, transparent);
+
   --success:      var(--green-shade-100);
   --success-dim:  color-mix(in srgb, var(--green-shade-100) 15%, transparent);;
   --warn:         var(--yellow-pale-500);
@@ -158,8 +163,10 @@
   --radius:           14px;
   --radius-lg:        20px;
   --radius-ex-lg:     25px;
-  --radius-ex-lger:   30px;
+  --radius-ex-lger:   35px;
+
   --tap:              44px;
+  --tap-min:          35px;
 
   --font-sans: system-ui, -apple-system, sans-serif;
 
@@ -250,6 +257,19 @@ html, body {
   border-left: 2px solid var(--text-muted); 
   height: 50px;               
   margin: 0 20px;              
+}
+
+hr,
+hr.hr-lg {
+  border: none;
+  height: 1px;
+  background-color: var(--border);
+  width: 85%;
+  margin: 15px auto;
+}
+
+hr.hr-sm {
+  margin: 3px auto;
 }
 
 
@@ -580,7 +600,12 @@ html, body {
 }
 
 /* ── Form inputs ─────────────────────────────────────────────────────────────*/
-.field { margin-bottom: 12px; }
+.field { 
+  margin-bottom: 12px;
+  flex-grow: 1;
+  flex-shrink: 0;
+  min-width: 280px;
+}
 
 .field__label {
   display: block;
@@ -685,7 +710,7 @@ textarea {
 
 .side-nav__brand,
 .side-nav__footer {
-  padding: 6px 10px;
+  padding: 4px 10px;
   font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -694,18 +719,19 @@ textarea {
 }
 
 .side-nav__brand {
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--nav-border);
+  padding-bottom: 12px;
 }
 
 .side-nav__footer {
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--nav-border);
+  padding-top: 12px;
 }
 
 .side-nav__list {
   list-style: none;
   margin: 0;
-  padding: 0 20px 0 35px;
-  flex: 1;
+  padding: 12px 35px 15px;
 }
 
 .side-nav__link {
@@ -717,10 +743,9 @@ textarea {
   border-radius: var(--radius-sm);
   text-decoration: none;
   color: var(--text-nav);
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   transition: background 0.12s, color 0.12s;
-  min-height: var(--tap);
-  margin: 3px 0;
+  min-height: var(--tap-min);
 }
 
 .side-nav__link:hover { 
@@ -771,8 +796,6 @@ textarea {
 .bottom-nav__link--active { color: var(--accent); font-weight: 600; }
 .bottom-nav__link-icon { font-size: 1.3rem; line-height: 1; }
 
-
-
 .mobile-nav {
   display: none;
   width: fit-content;
@@ -780,7 +803,7 @@ textarea {
   background-color: var(--nav-bg);
   gap: 15px;
   margin: 0 auto;
-  padding: 10px 15px;
+  padding: 5px 8px;
   border: 1px solid var(--nav-border);
   position: fixed;
   bottom: 15; left: 0; right: 0;
@@ -788,8 +811,8 @@ textarea {
 }
 
 .mobile-nav--item {
-  padding: 3px;
-  border-radius: var(--radius-ex-lg);
+  padding: 3px 1px;
+  border-radius: var(--radius-ex-lger);
 }
 
 .mobile-nav--item:not(.mobile-nav--item_selected),
@@ -813,34 +836,30 @@ textarea {
   z-index: 101;
   display: flex;
   align-items: flex-end;
-  box-shadow: var(--box-shadow-standard);  
 }
 
 .mobile-nav--menu-content {
   display: grid;
   grid-template-columns: minmax(0, max-content);
-  justify-content: center;    
+  justify-content: center;
   width: 100%;
   position: relative;
   width: 100%;
-  border: 1px solid var(--border-focus);
-  background-color: var(--surface-high);
+  border: 1px solid var(--nav-border);
+  background-color: var(--nav-bg);
   border-radius: var(--radius-ex-lg);
   gap: 7px;
-  padding: 15px;
+  padding: 20px;
   z-index: 102;
   min-width: fit-content;
-}
-
-.mobile-nav--menu-link-wrapper {
-  max-width: 100%;
+  box-shadow: var(--box-shadow-standard);
 }
 
 .mobile-nav--menu-link {
   text-decoration: none;
   color: var(--text-nav);
   font-weight: bold;
-  font-size: 1.3rem;
+  font-size: 1.2em;
   transition: color 0.35s ease;
   line-height: 1.5;
   font-family: var(--font-family-item);
@@ -849,7 +868,7 @@ textarea {
 .mobile-nav--menu-title {
   color: var(--text-title);
   font-weight: bold;
-  font-size: 1.7rem;
+  font-size: 1.5em;
   transition: color 0.35s ease;
   line-height: 1.5;
   font-family: var(--font-family-header);
@@ -871,7 +890,7 @@ textarea {
 
 .mobile-nav--item_selected {
   cursor: pointer;
-  border-radius: var(--radius-ex-lg);
+  border-radius: var(--radius-ex-lger);
   border: 1px solid var(--nav-sl-border);
   background-color: var(--nav-selected);
 }
@@ -882,7 +901,7 @@ textarea {
 }
 
 .mobile-nav--item_selected_text {
-  font-size: 1.3rem;
+  font-size: 1.1rem;
   font-family: var(--font-family-item);
   color: var(--text-nav);
 }
@@ -898,7 +917,7 @@ textarea {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   text-decoration: none;
   color: var(--text-faint);
   font-weight: bold;
@@ -1201,10 +1220,11 @@ textarea {
 @media (max-width: 767px) {
   .page-actions {
     position: fixed;
-    width: 75%;
+    max-width: 55%;
+    min-width: fit-content;
     border-radius: var(--radius-lg);
     margin: 0 auto;
-    bottom: calc(115px + env(safe-area-inset-bottom));
+    bottom: calc(85px + env(safe-area-inset-bottom));
     left: 0;
     right: 0;
     background: var(--surface);
@@ -1240,11 +1260,6 @@ textarea {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 12px 14px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  margin-bottom: 6px;
   cursor: pointer;
   transition: border-color 0.15s;
   -webkit-tap-highlight-color: transparent;
@@ -1331,7 +1346,7 @@ textarea {
 /* ── Sidebar calendar ────────────────────────────────────────────────────────*/
 .side-calendar {
   padding: 12px 8px 8px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--nav-border);
   margin-top: 12px;
 }
 .side-calendar__nav {
@@ -1586,7 +1601,7 @@ textarea {
   align-items: center;
   gap: 8px;
   padding: 7px 0;
-  border-bottom: 1px solid var(--border);
+  /* border-bottom: 1px solid var(--border); */
 }
 .manage-item:last-child { border-bottom: none; }
 .manage-item--inactive { opacity: 0.45; }

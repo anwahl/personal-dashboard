@@ -12,11 +12,11 @@ import {
 import {
   createTask,
   updateTask,
-  completeTask,
+  updateTaskStatus,
   deleteTask,
   spawnNextRecurrence,
 } from "@/lib/dal/tasks";
-import { Button, TabBar, InputField } from "@/components/ui";
+import { Button, TabBar, InputField, CardSection, CardSectionLabel, Card, CardBody } from "@/components/ui";
 import type { TaskDetail } from "@/types/dal";
 import type {
   TaskStatusRow,
@@ -71,63 +71,81 @@ function TaskItem({
   const dueDate = task.due_date;
 
   return (
-    <div
-      className={`list-item${done ? " list-item--muted" : ""}${isReminderOverdue(task) ? " list-item--reminder-overdue" : ""}`}
-    >
-      <div
-        className={`priority-dot ${PRIORITY_COLOR[task.priority.priority_name] ?? "priority-dot--normal"}`}
-      />
-
-      {!done && (
-        <button
-          type="button"
-          onClick={() => onComplete(task.id)}
-          style={{
-            width: 22,
-            height: 22,
-            borderRadius: "50%",
-            border: "2px solid var(--border)",
-            background: "transparent",
-            cursor: "pointer",
-            flexShrink: 0,
-            transition: "all 0.15s",
-            //FIXME
-          }}
-          title="Mark done"
-        />
-      )}
-
-      <div className="list-item__body" onClick={() => onEdit(task)}>
+    <Card>
+      <CardBody 
+        className={`list-item${done ? " list-item--muted" : ""}
+        ${isReminderOverdue(task) ? " list-item--reminder-overdue" : ""}`}>
         <div
-          className={`list-item__title${done ? " list-item__title--strike" : ""}`}
-        >
-          {task.title}
-        </div>
-        <div className="list-item__meta">
-          <span className={`badge${overdue ? " badge--danger" : ""}`}>
-            {task.status.status_name}
-          </span>
-          {dueDate && (
-            <span
-              style={{ color: overdue ? "var(--danger)" : "var(--text-faint)" }}//FIXME
-            >
-              {overdue ? "⚠ " : ""}
-              {formatShortDate(dueDate)}
-              {task.due_time ? " " + task.due_time.slice(0, 5) : ""}
+          className={`priority-dot ${PRIORITY_COLOR[task.priority.priority_name] ?? "priority-dot--normal"}`}
+        />
+
+        {!done ? (
+          <button
+            type="button"
+            onClick={() => onComplete(task.id)}
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: "50%",
+              border: "2px solid var(--not-done-border)",
+              background: "var(--not-done)",
+              cursor: "pointer",
+              flexShrink: 0,
+              transition: "all 0.15s",
+              //FIXME
+            }}
+            title="Mark Done"
+          />
+        ) : 
+        <button
+            type="button"
+            onClick={() => onComplete(task.id)}
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: "50%",
+              border: "2px solid var(--done-border)",
+              background: "var(--done)",
+              cursor: "pointer",
+              flexShrink: 0,
+              transition: "all 0.15s",
+              //FIXME
+            }}
+            title="Mark Not Done"
+          />}
+
+        <div className="list-item__body" onClick={() => onEdit(task)}>
+          <div
+            className={`list-item__title${done ? " list-item__title--strike" : ""}`}
+          >
+            {task.title}
+          </div>
+          <div className="list-item__meta">
+            <span className={`badge${overdue ? " badge--danger" : ""}`}>
+              {task.status.status_name}
             </span>
-          )}
-          {task.reminder_at && (
-            <span
-              className={`task-reminder-badge${isReminderOverdue(task) ? " task-reminder-badge--overdue" : isReminderSoon(task) ? " task-reminder-badge--soon" : ""}`}
-            >
-              🔔 {formatShortDate(task.reminder_at.slice(0, 10))}
-              {task.recurrence_frequency && " ↻"}
-            </span>
-          )}
-          {task.person && <span>{task.person.person_name}</span>}
+            {dueDate && (
+              <span
+                style={{ color: overdue ? "var(--danger)" : "var(--text-faint)" }}//FIXME
+              >
+                {overdue ? "⚠ " : ""}
+                {formatShortDate(dueDate)}
+                {task.due_time ? " " + task.due_time.slice(0, 5) : ""}
+              </span>
+            )}
+            {task.reminder_at && (
+              <span
+                className={`task-reminder-badge${isReminderOverdue(task) ? " task-reminder-badge--overdue" : isReminderSoon(task) ? " task-reminder-badge--soon" : ""}`}
+              >
+                🔔 {formatShortDate(task.reminder_at.slice(0, 10))}
+                {task.recurrence_frequency && " ↻"}
+              </span>
+            )}
+            {task.person && <span>{task.person.person_name}</span>}
+          </div>
         </div>
-      </div>
-    </div>
+      </CardBody>
+    </Card>
   );
 }
 
@@ -218,7 +236,8 @@ function ReminderSection({
     : [];
 
   return (
-    <div className="reminder-section">
+    <CardSection>
+      <CardSectionLabel>Reminders and Recurrences</CardSectionLabel>
       <div className="reminder-section__row">
         <span className="reminder-section__label">Reminder</span>
         <input
@@ -330,7 +349,7 @@ function ReminderSection({
           )}
         </div>
       )}
-    </div>
+    </CardSection>
   );
 }
 
@@ -358,109 +377,108 @@ function EditPanel({
     setForm((p) => ({ ...p, [k]: v }));
 
   return (
-    <div
-      style={{
-        background: "var(--surface)",
-        border: "1px solid var(--border)",
-        borderRadius: "var(--radius-sm)",
-        padding: "14px 16px",
-        marginBottom: 8,
-        //FIXME  This should be a class.
-      }}
-    >
-      <InputField label="Title" id="et-title">
-        <input
-          id="et-title"
-          type="text"
-          value={form.title}
-          onChange={(e) => set("title", e.target.value)}
-        />
-      </InputField>
-      <div className="field-grid">
-        <InputField label="Status" id="et-status">
-          <select
-            id="et-status"
-            value={form.status_id}
-            onChange={(e) => set("status_id", e.target.value)}
+    <Card>
+      <CardBody>
+        <CardSection>
+          <CardSectionLabel>Details</CardSectionLabel>
+            <InputField label="Title" id="et-title">
+              <input
+                id="et-title"
+                type="text"
+                value={form.title}
+                onChange={(e) => set("title", e.target.value)}
+              />
+            </InputField>
+            <div className="field-grid">
+              <InputField label="Status" id="et-status">
+                <select
+                  id="et-status"
+                  value={form.status_id}
+                  onChange={(e) => set("status_id", e.target.value)}
+                >
+                  {statuses.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.status_name}
+                    </option>
+                  ))}
+                </select>
+              </InputField>
+              <InputField label="Priority" id="et-priority">
+                <select
+                  id="et-priority"
+                  value={form.priority_id}
+                  onChange={(e) => set("priority_id", e.target.value)}
+                >
+                  {priorities.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.priority_name}
+                    </option>
+                  ))}
+                </select>
+              </InputField>
+            </div>
+            <div className="field-grid">
+              <InputField label="Due date" id="et-due">
+                <input
+                  id="et-due"
+                  type="date"
+                  value={form.due_date}
+                  onChange={(e) => set("due_date", e.target.value)}
+                />
+              </InputField>
+              <InputField label="Time" id="et-time">
+                <input
+                  id="et-time"
+                  type="time"
+                  value={form.due_time}
+                  onChange={(e) => set("due_time", e.target.value)}
+                />
+              </InputField>
+              <InputField label="For" id="et-person">
+                <select
+                  id="et-person"
+                  value={form.person_id}
+                  onChange={(e) => set("person_id", e.target.value)}
+                >
+                  <option value="">Anyone</option>
+                  {people.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.person_name}
+                    </option>
+                  ))}
+                </select>
+              </InputField>
+            </div>
+            <InputField label="Notes" id="et-body">
+              <textarea
+                id="et-body"
+                value={form.body_md}
+                onChange={(e) => set("body_md", e.target.value)}
+                style={{ minHeight: 60 }}
+              />
+            </InputField>
+        </CardSection>
+
+        <ReminderSection form={form} set={set} />
+        
+        <div style={{ display: "flex", gap: 8, marginTop: 10 }}>{/* //FIXME  page-actions ? */}
+          <Button
+            variant="accent"
+            onClick={() => onSave(form)}
+            disabled={saving || !form.title.trim()}
           >
-            {statuses.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.status_name}
-              </option>
-            ))}
-          </select>
-        </InputField>
-        <InputField label="Priority" id="et-priority">
-          <select
-            id="et-priority"
-            value={form.priority_id}
-            onChange={(e) => set("priority_id", e.target.value)}
-          >
-            {priorities.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.priority_name}
-              </option>
-            ))}
-          </select>
-        </InputField>
-      </div>
-      <div className="field-grid">
-        <InputField label="Due date" id="et-due">
-          <input
-            id="et-due"
-            type="date"
-            value={form.due_date}
-            onChange={(e) => set("due_date", e.target.value)}
-          />
-        </InputField>
-        <InputField label="Time" id="et-time">
-          <input
-            id="et-time"
-            type="time"
-            value={form.due_time}
-            onChange={(e) => set("due_time", e.target.value)}
-          />
-        </InputField>
-        <InputField label="For" id="et-person">
-          <select
-            id="et-person"
-            value={form.person_id}
-            onChange={(e) => set("person_id", e.target.value)}
-          >
-            <option value="">Anyone</option>
-            {people.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.person_name}
-              </option>
-            ))}
-          </select>
-        </InputField>
-      </div>
-      <InputField label="Notes" id="et-body">
-        <textarea
-          id="et-body"
-          value={form.body_md}
-          onChange={(e) => set("body_md", e.target.value)}
-          style={{ minHeight: 60 }}
-        />
-      </InputField>
-      <ReminderSection form={form} set={set} />
-      <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-        <Button
-          variant="accent"
-          onClick={() => onSave(form)}
-          disabled={saving || !form.title.trim()}
-        >
-          {saving ? "Saving…" : "Update"}
-        </Button>
-        <Button variant="ghost" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button variant="danger" onClick={onDelete} disabled={saving}>
-          Delete
-        </Button>
-      </div>
-    </div>
+            {saving ? "Saving…" : "Update"}
+          </Button>
+          <Button variant="ghost" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={onDelete} disabled={saving}>
+            Delete
+          </Button>
+        </div>
+
+      </CardBody>
+    </Card>
   );
 }
 
@@ -501,8 +519,8 @@ function FullAddForm({
   });
   const set = (k: keyof EditState, v: string) =>
     setForm((p) => ({ ...p, [k]: v }));
+ 
   // Reminder state
-  
   const [reminder_at, setReminderAt] = useState(
     form.reminder_at
       ? toLocalInput(form.reminder_at)
@@ -640,6 +658,8 @@ export function TasksClient({
   const [editTask, setEditTask] = useState<TaskDetail | null>(null);
   const [saving, setSaving] = useState(false);
 
+
+  //FIXME not data agnostic
   const doneStatusId =
     statuses.find((s) => s.status_name === "done")?.id ??
     statuses.find((s) => s.is_terminal)?.id ??
@@ -729,8 +749,18 @@ export function TasksClient({
 
   const complete = useCallback(
     async (id: number) => {
-      const task = localActive.find((t) => t.id === id) ?? null;
-      await completeTask(supabase, id, doneStatusId);
+      const task = localActive.find((t) => t.id === id)
+        ?? localCompleted.find((t) => t.id === id);
+      
+      if (task === undefined) {
+        return;
+      }
+
+      !task.status.is_terminal ? 
+        await updateTaskStatus(supabase, id, doneStatusId)
+      :
+        await updateTaskStatus(supabase, id, todoStatusId);
+        
       // Spawn next occurrence for recurring tasks
       if (task?.recurrence_frequency && task.reminder_at) {
         await spawnNextRecurrence(supabase, task as TaskRow, todoStatusId);
