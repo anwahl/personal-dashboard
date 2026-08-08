@@ -18,7 +18,7 @@ import {
 
 import { useState, useCallback, useEffect } from 'react';
 import { createClient }              from '@/lib/supabase/client';
-import { Button }                    from '@/components/ui';
+import { Button, Card, CardBody }                    from '@/components/ui';
 import type { MediaEntryDetail }     from '@/types/dal';
 import type {
   MediaTypeRow, MediaStatusRow, MediaStatusTypeLinkRow,
@@ -184,55 +184,57 @@ export function QuickMediaLog({
     : mediaStatuses;
 
   return (
-    <div className="quick-media-log">
-      <div className="quick-media-log__header">
-        <span className="quick-media-log__title">
-          🎬 Now Playing
-        </span>
-        <Button variant="ghost" size="sm" onClick={() => setShowAdd(s => !s)}>
-          {showAdd ? '✕' : '+ Add'}
-        </Button>
-      </div>
+    <Card>
+      <CardBody>
+        <div className="quick-media-log__header">
+          <span className="quick-media-log__title">
+            🎬 Now Playing
+          </span>
+          <Button variant="ghost" size="sm" onClick={() => setShowAdd(s => !s)}>
+            {showAdd ? '✕' : '+ Add'}
+          </Button>
+        </div>
 
-      {showAdd && (
-        <div className="qml-add-form">
-          <div className="qml-add-form__row">
-            <input type="text" value={title} onChange={e => setTitle(e.target.value)}
-              placeholder="Title…" className="qml-add-form__title"
-              onKeyDown={e => { if (e.key === 'Enter') handleAdd(); }} />
-            <select value={typeId} onChange={e => setTypeId(e.target.value)} className="settings-select">
-              {mediaTypes.map(t => <option key={t.id} value={t.id}>{capitalize(t.type_name)}</option>)}
-            </select>
-            <select value={statusId} onChange={e => setStatusId(e.target.value)} className="settings-select">
-              <option value="">No status</option>
-              {validStatuses.map(s => (
-                <option key={s.id} value={s.id}>
-                  {STATUS_EMOJI[s.status_name] ?? ''} {s.status_name}
-                </option>
-              ))}
-            </select>
-            <Button variant="accent" size="sm" onClick={handleAdd} disabled={!title.trim() || saving}>
-              {saving ? '…' : 'Add'}
-            </Button>
+        {showAdd && (
+          <div className="qml-add-form">
+            <div className="qml-add-form__row">
+              <input type="text" value={title} onChange={e => setTitle(e.target.value)}
+                placeholder="Title…" className="qml-add-form__title"
+                onKeyDown={e => { if (e.key === 'Enter') handleAdd(); }} />
+              <select value={typeId} onChange={e => setTypeId(e.target.value)} className="settings-select">
+                {mediaTypes.map(t => <option key={t.id} value={t.id}>{capitalize(t.type_name)}</option>)}
+              </select>
+              <select value={statusId} onChange={e => setStatusId(e.target.value)} className="settings-select">
+                <option value="">No status</option>
+                {validStatuses.map(s => (
+                  <option key={s.id} value={s.id}>
+                    {STATUS_EMOJI[s.status_name] ?? ''} {s.status_name}
+                  </option>
+                ))}
+              </select>
+              <Button variant="accent" size="sm" onClick={handleAdd} disabled={!title.trim() || saving}>
+                {saving ? '…' : 'Add'}
+              </Button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {inProgress.length === 0 && !showAdd && (
-        <p className="empty-state">Nothing in progress.</p>
-      )}
+        {inProgress.length === 0 && !showAdd && (
+          <p className="empty-state">Nothing in progress.</p>
+        )}
 
-      {Object.entries(grouped).map(([typeName, items]) => (
-        <div key={typeName} className="qml-group">
-          <div className="qml-group__label">{capitalize(typeName)}</div>
-          {items.map(e => (
-            <NowPlayingItem key={e.id} entry={e}
-              allStatuses={mediaStatuses} statusTypeLinks={statusTypeLinks}
-              onStatusChange={handleStatusChange}
-            />
-          ))}
-        </div>
-      ))}
-    </div>
+        {Object.entries(grouped).map(([typeName, items]) => (
+          <div key={typeName} className="qml-group">
+            <div className="qml-group__label">{capitalize(typeName)}</div>
+            {items.map(e => (
+              <NowPlayingItem key={e.id} entry={e}
+                allStatuses={mediaStatuses} statusTypeLinks={statusTypeLinks}
+                onStatusChange={handleStatusChange}
+              />
+            ))}
+          </div>
+        ))}
+      </CardBody>
+    </Card>
   );
 }

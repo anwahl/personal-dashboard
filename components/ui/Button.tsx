@@ -1,8 +1,8 @@
 import type { ButtonHTMLAttributes, AnchorHTMLAttributes, ReactNode } from 'react';
 import Link from 'next/link';
 
-type Variant = 'default' | 'accent' | 'ghost' | 'danger';
-type Size    = 'default' | 'sm' | 'icon';
+type Variant = 'default' | 'accent' | 'ghost' | 'action' | 'danger';
+type Size    = 'default' | 'sm' | 'icon' | 'check';
 
 interface BaseProps {
   variant?: Variant;

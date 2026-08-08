@@ -12,7 +12,7 @@ import { LastTimeTracker }                      from '@/components/last-time/Las
 import { QuickMediaLog }                        from '@/components/media/QuickMediaLog';
 import { getLastTimeEntries }                   from '@/lib/dal/lasttime';
 import { getInProgressMediaEntries }            from '@/lib/dal/media';
-import { TaskList }                             from '@/components/tasks/TaskList';
+import { QuickAdd, TaskList }                             from '@/components/tasks/TaskList';
 import { UpcomingAppointments }                 from '@/components/appointments/UpcomingAppointments';
 
 export default async function HubPage() {
@@ -55,13 +55,19 @@ export default async function HubPage() {
 
       {/* ── Main grid ── */}
       <div className="hub-grid">
-        <TaskList
-          contextDate={today}
-          initialData={taskData}
-          statuses={statuses}
-          priorities={priorities}
-          people={people}
-        />
+        <div className="hub-sub-grid">
+          <TaskList
+            contextDate={today}
+            initialData={taskData}
+            statuses={statuses}
+            people={people}
+          />
+          <QuickAdd
+            statuses={statuses} 
+            priorities={priorities}
+            people={people}
+          />
+        </div>
         <UpcomingAppointments
           appointments={appointments}
           contextDate={today}

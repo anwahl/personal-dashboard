@@ -11,7 +11,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { createClient }           from '@/lib/supabase/client';
 import { logCustomLastTime }      from '@/lib/dal/lasttime';
-import { Button, IconDisplay }    from '@/components/ui';
+import { Button, Card, CardBody, IconDisplay }    from '@/components/ui';
 import type { LastTimeEntry }      from '@/types/dal';
 import type { IconRow }            from '@/types/schema';
 import { formatDaysAgo, formatMediumDate, localTodayISO } from '@/lib/utils/dates';
@@ -62,64 +62,66 @@ export function LastTimeTracker({ entries, icons, compact = false }: Readonly<Pr
   }, [supabase, logging]);
 
   return (
-    <div className="last-time-tracker">
-      {!compact && (
-        <div className="last-time-tracker__controls">
-          <button
-            type="button"
-            className={`last-time-sort-btn${sortBy === 'order' ? ' last-time-sort-btn--active' : ''}`}
-            onClick={() => setSortBy('order')}
-          >
-            Custom order
-          </button>
-          <button
-            type="button"
-            className={`last-time-sort-btn${sortBy === 'recent' ? ' last-time-sort-btn--active' : ''}`}
-            onClick={() => setSortBy('recent')}
-          >
-            Most recent first
-          </button>
-        </div>
-      )}
+    <Card>
+      <CardBody>
+        {!compact && (
+          <div className="last-time-tracker__controls">
+            <button
+              type="button"
+              className={`last-time-sort-btn${sortBy === 'order' ? ' last-time-sort-btn--active' : ''}`}
+              onClick={() => setSortBy('order')}
+            >
+              Custom order
+            </button>
+            <button
+              type="button"
+              className={`last-time-sort-btn${sortBy === 'recent' ? ' last-time-sort-btn--active' : ''}`}
+              onClick={() => setSortBy('recent')}
+            >
+              Most recent first
+            </button>
+          </div>
+        )}
 
-      {sorted.length === 0 && (
-        <p className="empty-state">No items configured. Add them in Settings → Last Time.</p>
-      )}
+        {sorted.length === 0 && (
+          <p className="empty-state">No items configured. Add them in Settings → Last Time.</p>
+        )}
 
-      <div className="last-time-list">
-        {sorted.map(item => (
-          <div key={`${item.category}-${item.id}`} className="last-time-item">
-            <IconDisplay
-            icon={icons.find(i => i.id === item.icon_id) ?? null}
-              size="sm"
-              className="last-time-item__emoji"
-            />
-            <div className="last-time-item__body">
-              <span className="last-time-item__label">{item.label}</span>
-              {!compact && item.last_date && (
-                <span className="last-time-item__date">{formatMediumDate(item.last_date)}</span>
+        <div className="last-time-list">
+          {sorted.map(item => (
+            <div key={`${item.category}-${item.id}`} className="last-time-item">
+              <IconDisplay
+              icon={icons.find(i => i.id === item.icon_id) ?? null}
+                size="sm"
+                className="last-time-item__emoji"
+              />
+              <div className="last-time-item__body">
+                <span className="last-time-item__label">{item.label}</span>
+                {!compact && item.last_date && (
+                  <span className="last-time-item__date">{formatMediumDate(item.last_date)}</span>
+                )}
+              </div>
+              <span
+                className="last-time-item__ago"
+                style={{ color: daysAgoColor(item.days_ago) }}
+              >
+                {formatDaysAgo(item.days_ago)}
+              </span>
+              {item.category === 'custom' && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => logToday(item)}
+                  disabled={logging.has(item.id)}
+                  title="Log today"
+                >
+                  {logging.has(item.id) ? '…' : '✓'}
+                </Button>
               )}
             </div>
-            <span
-              className="last-time-item__ago"
-              style={{ color: daysAgoColor(item.days_ago) }}
-            >
-              {formatDaysAgo(item.days_ago)}
-            </span>
-            {item.category === 'custom' && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => logToday(item)}
-                disabled={logging.has(item.id)}
-                title="Log today"
-              >
-                {logging.has(item.id) ? '…' : '✓'}
-              </Button>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
+          ))}
+        </div>
+      </CardBody>
+    </Card>
   );
 }

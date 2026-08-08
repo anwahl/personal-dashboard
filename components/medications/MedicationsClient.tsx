@@ -11,6 +11,7 @@ import type { PrescriptionChangeRow, MedicationTimingTypeRow as _TimingType,
    PersonRow, MedicationRow, MedicationTimingTypeRow, ProviderRow } from '@/types/schema';
 import { createClient }          from '@/lib/supabase/client';
 import type { PrescriptionDetail } from '@/types/dal';
+import { RX_FIELDS, RxFieldKey } from '@/lib/constants/prescriptions';
 
 interface PrescriptionsByPerson {
   person:        PersonRow;
@@ -43,17 +44,6 @@ const EMPTY_FORM: FormState = {
   alias: '', dose: '', timing_type_id: '', purpose: '',
   prescriber_id: '', start_date: '', discontinued_date: '',
 };
-
-const RX_FIELDS = [
-  { key: 'dose',              label: 'Dose',              type: 'text'   },
-  { key: 'timing_type_id',    label: 'Timing',            type: 'timing' },
-  { key: 'purpose',           label: 'Purpose',           type: 'text'   },
-  { key: 'alias',             label: 'Alias / Nickname',  type: 'text'   },
-  { key: 'start_date',        label: 'Start Date',        type: 'date'   },
-  { key: 'discontinued_date', label: 'Discontinued Date', type: 'date'   },
-  { key: 'is_active',         label: 'Status',            type: 'status' },
-] as const;
-type RxFieldKey = typeof RX_FIELDS[number]['key'];
 
 interface PendingChange {
   uid: string; fieldKey: RxFieldKey; fieldLabel: string;

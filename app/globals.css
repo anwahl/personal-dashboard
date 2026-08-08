@@ -116,6 +116,12 @@
   --border:       var(--dark-purple-shade-300);
   --border-focus: var(--dark-purple-shade-200);
 
+  --surface-high-border:  var(--blue-shade-300);
+  --surface-border:       var(--dark-purple-shade-200);
+
+  --surface-high-hover:  color-mix(in srgb, var(--blue-shade-500) 45%, transparent);
+  --surface-hover:       color-mix(in srgb, var(--dark-purple-shade-500) 45%, transparent);
+
   --nav-bg:               var(--blue-shade-600);
   --nav-border:           var(--dark-purple-shade-200);
   --nav-item:             var(--blue-shade-300);
@@ -127,7 +133,11 @@
   --text:         var(--blue-pale-100);
   --text-muted:   var(--dark-purple-pale-200);
   --text-faint:   var(--dark-purple-pale-300);
-  
+
+  --text-alt:           var(--pink-pale-100);
+  --text-alt-muted:     var(--orange-pale-200);
+  --text-alt-faint:     var(--raspberry-pale-200);
+
   --text-title:   var(--raspberry-pale-400);
   
   --text-nav:     var(--blue-pale-300);
@@ -146,10 +156,16 @@
   --accent-hover: color-mix(in srgb, var(--pink-pale-500) 25%, transparent);
   --accent-secondary-hover: color-mix(in srgb, var(--orange-pale-500) 25%, transparent);
 
-  --not-done: color-mix(in srgb, var(--raspberry-pale-400) 35%, transparent);
-  --not-done-border: color-mix(in srgb, var(--raspberry-pale-300) 55%, transparent);
+  --not-done: color-mix(in srgb, var(--raspberry-shade-100) 25%, transparent);
+  --not-done-border: color-mix(in srgb, var(--raspberry-pale-500) 55%, transparent);
+  --not-done-hover: color-mix(in srgb, var(--raspberry-pale-600) 65%, transparent);
+  --not-done-border-hover: color-mix(in srgb, var(--raspberry-pale-300) 75%, transparent);
   --done:     color-mix(in srgb, var(--green-pale-600) 15%, transparent);
   --done-border:     color-mix(in srgb, var(--green-pale-400) 55%, transparent);
+  --done-hover: color-mix(in srgb, var(--green-pale-600) 45%, transparent);
+  --done-border-hover:     color-mix(in srgb, var(--green-pale-400) 35%, transparent);
+
+
 
   --success:      var(--green-shade-100);
   --success-dim:  color-mix(in srgb, var(--green-shade-100) 15%, transparent);;
@@ -273,6 +289,10 @@ hr.hr-sm {
 }
 
 
+.no-content {
+  padding: 5px;
+}
+
 /* ── Card ────────────────────────────────────────────────────────────────────*/
 .card {
   background: var(--surface);
@@ -383,6 +403,31 @@ hr.hr-sm {
   color: var(--text);
 }
 
+.btn--action {
+  width: 60px;
+  font-size: .7rem !important;
+  border-radius: var(--radius-lg);
+  border-color: var(--surface-high-border);
+  background: var(--surface-high);
+  color: var(--text-alt);
+}
+
+.btn--action:hover:not(:disabled) {
+  border-color: var(--surface-hover);
+  background: var(--surface-high-hover);
+  color: var(--text-alt-muted);
+}
+
+.btn--check {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  min-height: 0;
+  min-width: 0;
+  padding: 0;
+}
+
 .btn--sm {
   padding: 6px 12px;
   font-size: 0.8rem;
@@ -406,7 +451,7 @@ hr.hr-sm {
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--text-muted);
-  font-size: 0.8rem;
+  font-size: 1rem;
   font-family: var(--font-family-tag);
   cursor: pointer;
   user-select: none;
@@ -431,6 +476,42 @@ hr.hr-sm {
   padding: 4px 10px;
   font-size: 0.75rem;
   min-height: 32px;
+}
+
+.chip--accent {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.chip--success {
+  border-color: var(--success);
+  color: var(--success);
+  background: var(--success-dim);
+}
+
+.chip--warn {
+  border-color: var(--warn);
+  color: var(--warn);
+  background: var(--warn-dim);
+}
+
+.chip--danger {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: var(--danger-dim);
+}
+
+.chip--done {
+  border-color: var(--done-border);
+  color: var(--text-alt);
+  background: var(--done);
+}
+
+.chip--due {
+  border-color: var(--not-done-border);
+  color: var(--text-alt);
+  background: var(--not-done);
 }
 
 /* ── Tab bar ─────────────────────────────────────────────────────────────────*/
@@ -604,7 +685,7 @@ hr.hr-sm {
   margin-bottom: 12px;
   flex-grow: 1;
   flex-shrink: 0;
-  min-width: 280px;
+  min-width: 200px;
 }
 
 .field__label {
@@ -620,7 +701,10 @@ hr.hr-sm {
   padding: 6px 0;
 }
 
-.field__value--empty { color: var(--text-faint); font-style: italic; }
+.field__value--empty { 
+  color: var(--text-faint);
+  font-style: italic; 
+}
 
 .field__input,
 input[type="text"],
@@ -654,6 +738,24 @@ textarea:focus,
 select:focus {
   border-color: var(--accent);
   outline: none;
+}
+
+.field__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 15px;
+  margin: 0 5px 20px;
+}
+
+.field-grid:has(+ .field__actions) {
+  margin-bottom: 0;
+}
+
+.field-grid:has(+ .field__actions) .field__value,
+.field:has(+ .field__actions),
+.field-grid:has(+ .field__actions) .field {
+  margin-bottom: 5px;
 }
 
 input::placeholder,
@@ -2232,8 +2334,26 @@ input[type="color"] {
 .hub-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  align-items: start;
+  align-items: stretch;
+  justify-items: stretch;
+}
+
+.hub-sub-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  margin: 16px;
+}
+
+.hub-sub-grid > * {
+  margin: 6px 0;
+}
+
+.hub-sub-grid > *:last-child {
+  margin-bottom: 0;
+}
+
+.hub-sub-grid > *:first-child {
+  margin-top: 0;
 }
 
 @media (max-width: 700px) {
@@ -2272,27 +2392,32 @@ input[type="color"] {
 
 .task-item__check {
   flex-shrink: 0;
-  width: 20px;
-  height: 20px;
-  border: 1.5px solid var(--border);
-  border-radius: 50%;
-  background: none;
-  cursor: pointer;
-  font-size: 0.75rem;
-  color: var(--text-faint);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 1px;
-  transition: border-color 0.15s, color 0.15s;
+  transition: all 0.15s;
 }
 
-.task-item__check:hover {
-  border-color: var(--success);
-  color: var(--success);
+.task-item__check.task-item__is-checked {
+  border: 2px solid var(--done-border);
+  background: var(--done);
 }
 
-.task-item__check--busy { opacity: 0.5; cursor: default; }
+.task-item__check.task-item__is-unchecked {
+  border: 2px solid var(--not-done-border);
+  background: var(--not-done);
+}
+
+.task-item__check.task-item__is-checked:hover {
+  border: 2px solid var(--done-border-hover);
+  background: var(--done-hover);
+}
+
+.task-item__check.task-item__is-unchecked:hover {
+  border: 2px solid var(--not-done-border-hover);
+  background: var(--not-done-hover);
+}
+
+.task-item__check--busy {
+  opacity: 0.5; cursor: default;
+}
 
 .task-item__body {
   flex: 1;
@@ -3577,7 +3702,13 @@ a.appt-secondary:last-child { border-bottom: none; }
 
 /* ── List item additions ─────────────────────────────────────────────────── */
 /* Chevron ▲/▼ used in collapsible list rows */
-.list-item__chevron { color: var(--text-faint); font-size: 0.75rem; flex-shrink: 0; }
+.list-item__chevron { 
+  color: var(--text-faint);
+  font-size: 0.75rem;
+  flex-shrink: 0;
+  cursor: pointer;
+  padding: 5px 10px;
+}
 /* Used when expanded — rounds only top corners, expand-panel handles bottom */
 .list-item--expanded { border-radius: var(--radius-sm) var(--radius-sm) 0 0 !important; }
 

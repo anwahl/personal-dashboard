@@ -17,20 +17,7 @@ import { Button, ConfirmButton }              from '@/components/ui';
 import { formatMediumDate }                   from '@/lib/utils/dates';
 import type { PrescriptionDetail }            from '@/types/dal';
 import type { PrescriptionChangeRow, MedicationTimingTypeRow } from '@/types/schema';
-
-// ── Field definitions (source of truth: these are the prescription columns) ──
-// Kept here in the prescription detail context — matches appointment changes logic
-export const RX_FIELDS = [
-  { key: 'dose',              label: 'Dose',              type: 'text'   },
-  { key: 'timing_type_id',    label: 'Timing',            type: 'timing' },
-  { key: 'purpose',           label: 'Purpose',           type: 'text'   },
-  { key: 'alias',             label: 'Alias / Nickname',  type: 'text'   },
-  { key: 'start_date',        label: 'Start Date',        type: 'date'   },
-  { key: 'discontinued_date', label: 'Discontinued Date', type: 'date'   },
-  { key: 'is_active',         label: 'Status',            type: 'status' },
-] as const;
-
-type RxFieldKey = typeof RX_FIELDS[number]['key'];
+import { RX_FIELDS, RxFieldKey } from '@/lib/constants/prescriptions';
 
 interface PendingChange {
   uid:           string;

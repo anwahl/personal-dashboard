@@ -2,7 +2,6 @@
  * lib/utils/dates.ts
  *
  * Shared date helpers used across the dashboard.
- * Centralises the ~6 independent copies of localTodayISO, addDays, fmtDate, etc.
  */
  
 const p = (n: number) => String(n).padStart(2, '0');
@@ -106,26 +105,67 @@ export function addDays(dateStr: string, n: number): string {
  */
 export function formatLongDate(d: string | null): string {
   if (!d) return "—";
-  const [y, m, day] = d.split("-").map(Number);
-  return new Date(y, m - 1, day).toLocaleDateString("en-US", {
+  
+  // Split date and time parts (e.g., "2026-08-08T14:30:00" -> ["2026-08-08", "14:30:00"])
+  const [datePart, timePart] = d.split("T");
+  const [y, m, day] = datePart.split("-").map(Number);
+  
+  const dateObj = new Date(y, m - 1, day);
+  const formattedDate = dateObj.toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
     year: "numeric",
   });
+
+  if (!timePart) return formattedDate;
+
+  // Parse hours and minutes from the time part
+  const [h, min] = timePart.split(":").map(Number);
+  const timeObj = new Date();
+  timeObj.setHours(h, min);
+
+  const formattedTime = timeObj.toLocaleTimeString("en-US", {
+    hour12: true,
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+
+  return `${formattedDate} at ${formattedTime}`;
 }
+
 
 /**
  * "Jan 15, 2026"
  */
 export function formatMediumDate(d: string | null): string {
   if (!d) return "—";
-  const [y, m, day] = d.split("-").map(Number);
-  return new Date(y, m - 1, day).toLocaleDateString("en-US", {
+  
+  // Split date and time parts (e.g., "2026-08-08T14:30:00" -> ["2026-08-08", "14:30:00"])
+  const [datePart, timePart] = d.split("T");
+  const [y, m, day] = datePart.split("-").map(Number);
+  
+  const dateObj = new Date(y, m - 1, day);
+  const formattedDate = dateObj.toLocaleDateString("en-US", {
     month: "long",
     day: "numeric",
     year: "numeric",
   });
+
+  if (!timePart) return formattedDate;
+
+  // Parse hours and minutes from the time part
+  const [h, min] = timePart.split(":").map(Number);
+  const timeObj = new Date();
+  timeObj.setHours(h, min);
+
+  const formattedTime = timeObj.toLocaleTimeString("en-US", {
+    hour12: true,
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+
+  return `${formattedDate} at ${formattedTime}`;
 }
 
 /**
@@ -133,11 +173,31 @@ export function formatMediumDate(d: string | null): string {
  */
 export function formatShortDate(d: string | null): string {
   if (!d) return "—";
-  const [y, m, day] = d.split("-").map(Number);
-  return new Date(y, m - 1, day).toLocaleDateString("en-US", {
+  
+  // Split date and time parts (e.g., "2026-08-08T14:30:00" -> ["2026-08-08", "14:30:00"])
+  const [datePart, timePart] = d.split("T");
+  const [y, m, day] = datePart.split("-").map(Number);
+  
+  const dateObj = new Date(y, m - 1, day);
+  const formattedDate = dateObj.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
   });
+
+  if (!timePart) return formattedDate;
+
+  // Parse hours and minutes from the time part
+  const [h, min] = timePart.split(":").map(Number);
+  const timeObj = new Date();
+  timeObj.setHours(h, min);
+
+  const formattedTime = timeObj.toLocaleTimeString("en-US", {
+    hour12: true,
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+
+  return `${formattedDate} at ${formattedTime}`;
 }
 
 // ── Relative helpers ──────────────────────────────────────────────────────────

@@ -5,8 +5,8 @@ import Link                    from 'next/link';
 import { usePathname }         from 'next/navigation';
 import { createClient }        from '@/lib/supabase/client';
 import { localTodayISO, getSundayOfWeek, getSundayWeekNumber } from '@/lib/utils/dates';
+import { DAY_LABELS } from '@/lib/constants/dates';
 
-const DAY_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 const pad = (n: number) => String(n).padStart(2, '0');
 
 function buildCalendarDays(year: number, month: number) {

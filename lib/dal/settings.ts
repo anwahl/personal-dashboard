@@ -10,7 +10,6 @@ export type ManageableTable =
   | "tags"
   | "intentions"
   | "sleep_event_types"
-  | "habits"
   | "providers"
   | "medications"
   | "chart_categories"

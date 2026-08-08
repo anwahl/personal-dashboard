@@ -15,13 +15,7 @@ import { getBrainDumps, deleteBrainDump }   from '@/lib/dal/daily';
 import { BrainDumpQuickAdd }                from '@/components/brain-dump/BrainDumpQuickAdd';
 import { Button, Markdown }                 from '@/components/ui';
 import type { BrainDumpWithEntry }          from '@/lib/dal/daily';
-
-function fmtDate(d: string) {
-  const [y, m, day] = d.split('-').map(Number);
-  return new Date(y, m - 1, day).toLocaleDateString('en-US', {
-    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
-  });
-}//FIXME
+import { formatMediumDate } from '@/lib/utils/dates';
 
 function BrainDumpCard({ dump, onDelete }: Readonly<{ 
     dump: BrainDumpWithEntry; 
@@ -35,7 +29,7 @@ function BrainDumpCard({ dump, onDelete }: Readonly<{
   return (
     <div className="brain-dump-card">
       <div className="brain-dump-card__header">
-        <div className="brain-dump-card__date">{fmtDate(dump.dump_date)}</div>
+        <div className="brain-dump-card__date">{formatMediumDate(dump.dump_date)}</div>
         {dump.entry_date && dump.entry_date !== dump.dump_date && (
           <a href={`/daily/${dump.entry_date}`} className="brain-dump-card__entry-link">
             → {dump.entry_date}

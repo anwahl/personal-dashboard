@@ -1,26 +1,19 @@
 'use client';
 
-import React from 'react';
-
 /**
  * TrackableSettings
  *
  * - Boolean category management via ManageableList
- * - Boolean trackables via CategorizedBooleanList (CRUD + category select)
- * - Numeric trackables via CategorizedNumericList (CRUD + category select)
+ * - Boolean + Numeric trackables via TrackableSection (wraps ManageableList)
  * - Aggregate metrics read-only
  */
 
-import { useState, useCallback } from 'react';
-import { createClient }          from '@/lib/supabase/client';
-import { setTrackableCategory }  from '@/lib/dal/trackables';
-import {
-  toggleSettingsItem, updateSettingsItem, deleteSettingsItem,
-  batchSetSortOrder,
-} from '@/lib/dal/settings';
-import { bySortOrder, normalizedReorderUpdates } from '@/lib/utils/sort';
-import { ManageableList }  from './ManageableList';
-import { Button, IconDisplay, IconPicker, ConfirmButton } from '@/components/ui';
+import React from 'react';
+import { createClient }           from '@/lib/supabase/client';
+import { setTrackableCategory }   from '@/lib/dal/trackables';
+import { ManageableList }         from './ManageableList';
+import type { AddField }          from './ManageableList';
+import { IconDisplay }            from '@/components/ui/IconDisplay';
 import type { DailyTrackableRow, TrackableCategoryRow, IconRow } from '@/types/schema';
 
 interface Props {
@@ -31,432 +24,98 @@ interface Props {
   onTrackableAdded?: (t: DailyTrackableRow) => void;
 }
 
-// ── Single boolean trackable row (full CRUD + category select) ─────────────────
+// ── TrackableSection ─────────────────────────────────────────────────────────
+// Replaces CategorizedBooleanList + CategorizedNumericList.
+// Differences between types are expressed as config, not duplicate components.
 
-function BooleanRow({
-  item, categories, isFirst, isLast, icons,
-  onUpdate, onCategoryChange, onToggle, onDelete, onMoveUp, onMoveDown,
+function TrackableSection({
+  type,
+  initialItems,
+  categories,
+  icons,
+  onTrackableAdded,
 }: Readonly<{
-  item:             DailyTrackableRow;
-  categories:       TrackableCategoryRow[];
-  isFirst:          boolean;
-  isLast:           boolean;
-  onUpdate:         (id: number, iconId: number | null, name: string) => Promise<void>;
-  icons:            IconRow[];
-  onCategoryChange: (id: number, catId: number | null) => Promise<void>;
-  onToggle:         (id: number, active: boolean)       => Promise<void>;
-  onDelete:         (id: number)                        => Promise<void>;
-  onMoveUp:         () => void;
-  onMoveDown:       () => void;
-}>) {
-  const [editing,  setEditing]  = useState(false);
-  const [eIconId,  setEIconId]  = useState<number | null>(item.icon_id ?? null);
-  const [eName,    setEName]    = useState(item.name);
-  const [saving,   setSaving]   = useState(false);
-
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const saveEdit = async () => {
-    if (!eName.trim()) return;
-    setSaving(true);
-    setSaveError(null);
-    try {
-      await onUpdate(item.id, eIconId, eName);
-      setEditing(false);
-    } catch (e) {
-      setSaveError(String(e));
-    } finally { setSaving(false); }
-  };
-
-  const handleCat = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const catId = e.target.value ? Number.parseInt(e.target.value) : null;
-    await onCategoryChange(item.id, catId);
-  };
-
-  return (
-    <div className={`manage-item${item.is_active ? '' : ' manage-item--inactive'}`}>
-      {editing ? (
-        <>
-          <IconPicker icons={icons} value={eIconId} onChange={setEIconId} size="sm" />
-          <input className="input--flex" value={eName} onChange={e => setEName(e.target.value)}
-            placeholder="Name…" autoFocus onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditing(false); }} />
-          <div className="manage-item__actions">
-            <Button size="sm" variant="accent" onClick={saveEdit} disabled={saving || !eName.trim()}>✓</Button>
-            <Button size="sm" variant="ghost"  onClick={() => setEditing(false)}>✕</Button>
-          </div>
-        </>
-      ) : (
-        <>
-          <span className="manage-item__name">
-<>
-            <IconDisplay icon={icons.find(i => i.id === item.icon_id) ?? null} size="sm" className="trackable-emoji" />{item.name}
-            </>
-          </span>
-          <div className="manage-item__actions">
-            {item.is_active && (
-              <>
-                <Button size="icon" variant="ghost" onClick={onMoveUp}   disabled={isFirst} title="Move up">↑</Button>
-                <Button size="icon" variant="ghost" onClick={onMoveDown} disabled={isLast}  title="Move down">↓</Button>
-              </>
-            )}
-            {item.is_active && (
-              <select className="settings-select" value={item.category_id ?? ''} onChange={handleCat} title="Category">
-                <option value="">No category</option>
-                {categories.filter(c => c.is_active).map(c => (
-                  <option key={c.id} value={c.id}>{c.category_name}</option>
-                ))}
-              </select>
-            )}
-            <Button size="icon" variant="ghost" onClick={() => { setEIconId(item.icon_id ?? null); setEName(item.name); setEditing(true); }} title="Edit">✏️</Button>
-            <Button size="sm"   variant={item.is_active ? 'ghost' : 'accent'} onClick={() => onToggle(item.id, !item.is_active)}>
-              {item.is_active ? 'Deactivate' : 'Activate'}
-            </Button>
-            <ConfirmButton onConfirm={() => onDelete(item.id)} size="sm">✕</ConfirmButton>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-// ── CategorizedBooleanList ────────────────────────────────────────────────────
-
-function CategorizedBooleanList({ initialItems, categories, icons, onTrackableAdded }: Readonly<{
+  type:              'boolean' | 'numeric';
   initialItems:      DailyTrackableRow[];
   categories:        TrackableCategoryRow[];
   icons:             IconRow[];
   onTrackableAdded?: (t: DailyTrackableRow) => void;
 }>) {
-  const supabase = createClient();
-  const [items,   setItems]   = useState<DailyTrackableRow[]>(initialItems);
-  const [eIconId,      setEIconId]      = useState<number | null>(null);
-  const [eName,        setEName]        = useState('');
-  const [eCategoryId,  setECategoryId]  = useState<number | null>(null);
-  const [adding,       setAdding]       = useState(false);
+  const supabase  = createClient();
+  const isNumeric = type === 'numeric';
 
-  const active   = items.filter(i =>  i.is_active).sort(bySortOrder);
-  const inactive = items.filter(i => !i.is_active).sort(bySortOrder);
-
-  const onUpdate = useCallback(async (id: number, iconId: number | null, name: string) => {
-    await updateSettingsItem(supabase, 'daily_trackables', id, { icon_id: iconId ?? null, name: name.trim() });
-    setItems(prev => prev.map(t => t.id === id ? { ...t, icon_id: iconId ?? null, name: name.trim() } : t));
-  }, [supabase]);
-
-  const onCategoryChange = useCallback(async (id: number, catId: number | null) => {
-    await setTrackableCategory(supabase, id, catId);
-    setItems(prev => prev.map(t => t.id === id ? { ...t, category_id: catId } : t));
-  }, [supabase]);
-
-  const onToggle = useCallback(async (id: number, active: boolean) => {
-    await toggleSettingsItem(supabase, 'daily_trackables', id, active);
-    setItems(prev => prev.map(t => t.id === id ? { ...t, is_active: active } : t));
-  }, [supabase]);
-
-  const onDelete = useCallback(async (id: number) => {
-    await deleteSettingsItem(supabase, 'daily_trackables', id);
-    setItems(prev => prev.filter(t => t.id !== id));
-  }, [supabase]);
-
-  const onMove = useCallback(async (id: number, direction: 'up' | 'down') => {
-    const sorted  = items.filter(i => i.is_active).sort(bySortOrder);
-    const idx     = sorted.findIndex(t => t.id === id);
-    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
-    if (swapIdx < 0 || swapIdx >= sorted.length) return;
-    const updates = normalizedReorderUpdates(sorted, idx, swapIdx);
-    const map     = new Map(updates.map(u => [u.id, u.sort_order]));
-    setItems(prev => prev.map(t => map.has(t.id) ? { ...t, sort_order: map.get(t.id)! } : t));
-    await batchSetSortOrder(supabase, 'daily_trackables', updates);
-  }, [supabase, items]);
-
-  const add = useCallback(async () => {
-    if (!eName.trim() || adding) return;
-    setAdding(true);
-    try {
-      const payload = { track_type: 'boolean', name: eName.trim(), icon_id: eIconId, category_id: eCategoryId, sort_order: active.length };
-      const { data, error } = await supabase.from('daily_trackables').insert(payload).select().single();
-      if (error) throw new Error(error.message);
-      const newItem = data as DailyTrackableRow;
-      setItems(prev => [...prev, newItem]);
-      onTrackableAdded?.(newItem);
-      setEIconId(null); setEName(''); setECategoryId(null);
-    } finally { setAdding(false); }
-  }, [supabase, eName, eIconId, active.length, adding]);
+  const addFields: AddField[] = [
+    { key: 'icon_id',   type: 'icon',  label: 'Icon' },
+    { key: 'name',      type: 'text',  label: 'Name', placeholder: 'Metric name…', required: true },
+    ...(isNumeric
+      ? [{ key: 'color_hex', type: 'color' as const, label: 'Color', width: 36 }]
+      : []),
+    {
+      key:        'category_id',
+      type:       'select' as const,
+      label:      'Category',
+      parseAs:    'int'  as const,
+      showInEdit: false,   // inline dropdown in renderRowActions handles editing
+      options:    categories.filter(c => c.is_active).map(c => ({
+        value: String(c.id),
+        label: c.category_name,
+      })),
+    },
+  ];
 
   return (
-    <div className="settings-section">
-      <div className="settings-section__header">
-        <span className="settings-section__title">Boolean Metrics</span>
-        <span className="manage-item__meta">{active.length} active</span>
-      </div>
-      <p className="settings-section__desc">
-        Done / not-done trackables on the daily Overview tab. Use the category dropdown to group them.
-      </p>
-
-      <div className="manage-list">
-        {active.length === 0 && <p className="empty-state">None active.</p>}
-        {active.map((t, idx) => (
-          <BooleanRow key={t.id} item={t} categories={categories} icons={icons}
-            isFirst={idx === 0} isLast={idx === active.length - 1}
-            onUpdate={onUpdate} onCategoryChange={onCategoryChange}
-            onToggle={onToggle} onDelete={onDelete}
-            onMoveUp={() => onMove(t.id, 'up')}
-            onMoveDown={() => onMove(t.id, 'down')}
+    <ManageableList
+      title={isNumeric ? 'Numeric Metrics' : 'Boolean Metrics'}
+      description={
+        isNumeric
+          ? 'Slider-based (0–10) trackables on the Metrics tab. Categories group them with headers.'
+          : 'Done / not-done trackables on the daily Overview tab. Use the category dropdown to group them.'
+      }
+      tableName="daily_trackables"
+      nameColumn="name"
+      items={initialItems}
+      addFields={addFields}
+      extraDefaultFields={{ track_type: type }}
+      icons={icons}
+      onItemAdded={onTrackableAdded}
+      renderName={(item: DailyTrackableRow) => (
+        <>
+          <IconDisplay
+            icon={icons.find(i => i.id === item.icon_id) ?? null}
+            size="sm"
+            className="trackable-emoji"
           />
-        ))}
-      </div>
-
-      {inactive.length > 0 && (
-        <details className="manage-inactive">
-          <summary className="manage-inactive__summary">{inactive.length} inactive</summary>
-          <div className="manage-inactive__body">
-            {inactive.map(t => (
-              <BooleanRow key={t.id} item={t} categories={categories} icons={icons}
-                isFirst={false} isLast={false}
-                onUpdate={onUpdate} onCategoryChange={onCategoryChange}
-                onToggle={onToggle} onDelete={onDelete}
-                onMoveUp={() => {}} onMoveDown={() => {}}
-              />
-            ))}
-          </div>
-        </details>
-      )}
-
-      <div className="manage-add-row">
-        <IconPicker icons={icons} value={eIconId} onChange={setEIconId} size="sm" />
-        <input type="text" value={eName} onChange={e => setEName(e.target.value)}
-          placeholder="Metric name…" className="input--flex"
-          onKeyDown={e => e.key === 'Enter' && add()} />
-        <select value={eCategoryId ?? ''} onChange={e => setECategoryId(e.target.value ? Number.parseInt(e.target.value) : null)}>
-          <option value="">No category</option>
-          {categories.filter(c => c.is_active).map(c => (
-            <option key={c.id} value={c.id}>{c.category_name}</option>
-          ))}
-        </select>
-        <Button size="sm" variant="accent" onClick={add} disabled={adding || !eName.trim()}>
-          {adding ? '…' : '+ Add'}
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-// ── CategorizedNumericList ────────────────────────────────────────────────────
-
-function NumericRow({
-  item, categories, icons, isFirst, isLast,
-  onUpdate, onCategoryChange, onToggle, onDelete, onMoveUp, onMoveDown,
-}: Readonly<{
-  item:             DailyTrackableRow;
-  categories:       TrackableCategoryRow[];
-  icons:            IconRow[];
-  isFirst:          boolean;
-  isLast:           boolean;
-  onUpdate:         (id: number, iconId: number | null, name: string, colorHex: string | null) => Promise<void>;
-  onCategoryChange: (id: number, catId: number | null) => Promise<void>;
-  onToggle:         (id: number, active: boolean) => Promise<void>;
-  onDelete:         (id: number) => Promise<void>;
-  onMoveUp:         () => void;
-  onMoveDown:       () => void;
-}>) {
-  const [editing, setEditing] = useState(false);
-  const [eIconId, setEIconId] = useState<number | null>(item.icon_id ?? null);
-  const [eName,   setEName]   = useState(item.name);
-  const [eColor,  setEColor]  = useState(item.color_hex ?? '#888888');
-  const [saving,  setSaving]  = useState(false);
-
-  const saveEdit = async () => {
-    if (!eName.trim()) return;
-    setSaving(true);
-    try { await onUpdate(item.id, eIconId, eName, eColor || null); setEditing(false); }
-    finally { setSaving(false); }
-  };
-
-  return (
-    <div className={`manage-item${item.is_active ? '' : ' manage-item--inactive'}`}>
-      {editing ? (
-        <>
-          <IconPicker icons={icons} value={eIconId} onChange={setEIconId} size="sm" />
-          <input className="input--flex" value={eName} onChange={e => setEName(e.target.value)}
-            placeholder="Name…" autoFocus
-            onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditing(false); }} />
-          <input type="color" value={eColor} onChange={e => setEColor(e.target.value)}
-            style={{ width: 36, height: 32, padding: 2 }} />
-          <div className="manage-item__actions">
-              <Button size="sm" variant="accent" onClick={saveEdit} disabled={saving || !eName.trim()}>✓</Button>
-              <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>✕</Button>
-            </div>
-        </>
-      ) : (
-        <>
-          <span className="manage-item__name">
-            <IconDisplay
-              icon={icons.find(i => i.id === item.icon_id) ?? null}
-               size="sm" className="trackable-emoji"
-            />
-            {item.name}
-          </span>
-          {item.color_hex && (
-            <span className="badge" style={{ background: item.color_hex, color: '#fff', border: 'none' }}>&nbsp;</span>
+          {item.name}
+          {isNumeric && item.color_hex && (
+            <span className="badge" style={{ background: item.color_hex, color: '#fff', border: 'none' }}>
+              &nbsp;
+            </span>
           )}
-          <div className="manage-item__actions">
-            {item.is_active && (
-              <>
-                <Button size="icon" variant="ghost" onClick={onMoveUp}   disabled={isFirst} title="Move up">↑</Button>
-                <Button size="icon" variant="ghost" onClick={onMoveDown} disabled={isLast}  title="Move down">↓</Button>
-              </>
-            )}
-            {item.is_active && (
-              <select
-                className="settings-select"
-                value={item.category_id ?? ''}
-                onChange={e => onCategoryChange(item.id, e.target.value ? Number.parseInt(e.target.value) : null)}
-                title="Category"
-              >
-                <option value="">No category</option>
-                {categories.filter(c => c.is_active).map(c => (
-                  <option key={c.id} value={c.id}>{c.category_name}</option>
-                ))}
-              </select>
-            )}
-            <Button size="icon" variant="ghost"
-              onClick={() => { setEIconId(item.icon_id ?? null); setEName(item.name); setEColor(item.color_hex ?? '#888888'); setEditing(true); }}
-              title="Edit">✏️</Button>
-            <Button size="sm" variant={item.is_active ? 'ghost' : 'accent'}
-              onClick={() => onToggle(item.id, !item.is_active)}>
-              {item.is_active ? 'Deactivate' : 'Activate'}
-            </Button>
-            <ConfirmButton onConfirm={() => onDelete(item.id)} size="sm">✕</ConfirmButton>
-          </div>
         </>
       )}
-    </div>
-  );
-}
-
-function CategorizedNumericList({ initialItems, categories, icons, onTrackableAdded }: Readonly<{
-  initialItems:      DailyTrackableRow[];
-  categories:        TrackableCategoryRow[];
-  icons:             IconRow[];
-  onTrackableAdded?: (t: DailyTrackableRow) => void;
-}>) {
-  const supabase = createClient();
-  const [items,       setItems]       = useState<DailyTrackableRow[]>(initialItems);
-  const [eIconId,     setEIconId]     = useState<number | null>(null);
-  const [eName,       setEName]       = useState('');
-  const [eColor,      setEColor]      = useState('#888888');
-  const [eCategoryId, setECategoryId] = useState<number | null>(null);
-  const [adding,      setAdding]      = useState(false);
-
-  const active   = items.filter(i =>  i.is_active).sort(bySortOrder);
-  const inactive = items.filter(i => !i.is_active).sort(bySortOrder);
-
-  const onUpdate = useCallback(async (id: number, iconId: number | null, name: string, colorHex: string | null) => {
-    await updateSettingsItem(supabase, 'daily_trackables', id, { icon_id: iconId ?? null, name: name.trim(), color_hex: colorHex });
-    setItems(prev => prev.map(t => t.id === id ? { ...t, icon_id: iconId ?? null, name: name.trim(), color_hex: colorHex } : t));
-  }, [supabase]);
-
-  const onCategoryChange = useCallback(async (id: number, catId: number | null) => {
-    await setTrackableCategory(supabase, id, catId);
-    setItems(prev => prev.map(t => t.id === id ? { ...t, category_id: catId } : t));
-  }, [supabase]);
-
-  const onToggle = useCallback(async (id: number, isActive: boolean) => {
-    await toggleSettingsItem(supabase, 'daily_trackables', id, isActive);
-    setItems(prev => prev.map(t => t.id === id ? { ...t, is_active: isActive } : t));
-  }, [supabase]);
-
-  const onDelete = useCallback(async (id: number) => {
-    await deleteSettingsItem(supabase, 'daily_trackables', id);
-    setItems(prev => prev.filter(t => t.id !== id));
-  }, [supabase]);
-
-  const onMove = useCallback(async (id: number, direction: 'up' | 'down') => {
-    const sorted  = items.filter(i => i.is_active).sort(bySortOrder);
-    const idx     = sorted.findIndex(t => t.id === id);
-    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
-    if (swapIdx < 0 || swapIdx >= sorted.length) return;
-    const updates = normalizedReorderUpdates(sorted, idx, swapIdx);
-    const map     = new Map(updates.map(u => [u.id, u.sort_order]));
-    setItems(prev => prev.map(t => map.has(t.id) ? { ...t, sort_order: map.get(t.id)! } : t));
-    await batchSetSortOrder(supabase, 'daily_trackables', updates);
-  }, [supabase, items]);
-
-  const add = useCallback(async () => {
-    if (!eName.trim() || adding) return;
-    setAdding(true);
-    try {
-      const payload = {
-        track_type: 'numeric', name: eName.trim(), icon_id: eIconId,
-        color_hex: eColor || null, category_id: eCategoryId, sort_order: active.length,
-      };
-      const { data, error } = await supabase.from('daily_trackables').insert(payload).select().single();
-      if (error) throw new Error(error.message);
-      const newItem = data as DailyTrackableRow;
-      setItems(prev => [...prev, newItem]);
-      setEIconId(null); setEName(''); setEColor('#888888'); setECategoryId(null);
-      onTrackableAdded?.(newItem);
-    } finally { setAdding(false); }
-  }, [supabase, eName, eIconId, eColor, eCategoryId, active.length, adding]);
-
-  return (
-    <div className="settings-section">
-      <div className="settings-section__header">
-        <span className="settings-section__title">Numeric Metrics</span>
-        <span className="manage-item__meta">{active.length} active</span>
-      </div>
-      <p className="settings-section__desc">
-        Slider-based (0–10) trackables on the Metrics tab. Categories group them with headers.
-      </p>
-
-      <div className="manage-list">
-        {active.length === 0 && <p className="empty-state">None active.</p>}
-        {active.map((t, idx) => (
-          <NumericRow key={t.id} item={t} categories={categories} icons={icons}
-            isFirst={idx === 0} isLast={idx === active.length - 1}
-            onUpdate={onUpdate} onCategoryChange={onCategoryChange}
-            onToggle={onToggle} onDelete={onDelete}
-            onMoveUp={() => onMove(t.id, 'up')}
-            onMoveDown={() => onMove(t.id, 'down')}
-          />
-        ))}
-      </div>
-
-      {inactive.length > 0 && (
-        <details className="manage-inactive">
-          <summary className="manage-inactive__summary">{inactive.length} inactive</summary>
-          <div className="manage-inactive__body">
-            {inactive.map(t => (
-              <NumericRow key={t.id} item={t} categories={categories} icons={icons}
-                isFirst={false} isLast={false}
-                onUpdate={onUpdate} onCategoryChange={onCategoryChange}
-                onToggle={onToggle} onDelete={onDelete}
-                onMoveUp={() => {}} onMoveDown={() => {}}
-              />
+      renderRowActions={(item: DailyTrackableRow, updateItem) =>
+        item.is_active ? (
+          <select
+            className="settings-select"
+            value={item.category_id ?? ''}
+            title="Category"
+            onChange={async e => {
+              const catId = e.target.value ? Number.parseInt(e.target.value) : null;
+              await setTrackableCategory(supabase, item.id, catId);
+              updateItem(item.id, { category_id: catId });
+            }}
+          >
+            <option value="">No category</option>
+            {categories.filter(c => c.is_active).map(c => (
+              <option key={c.id} value={c.id}>{c.category_name}</option>
             ))}
-          </div>
-        </details>
-      )}
-
-      <div className="manage-add-row">
-        <IconPicker icons={icons} value={eIconId} onChange={setEIconId} size="sm" />
-        <input type="text" value={eName} onChange={e => setEName(e.target.value)}
-          placeholder="Metric name…" className="input--flex"
-          onKeyDown={e => e.key === 'Enter' && add()} />
-        <input type="color" value={eColor} onChange={e => setEColor(e.target.value)}
-          style={{ width: 36, height: 32, padding: 2 }} />
-        <select value={eCategoryId ?? ''}
-          onChange={e => setECategoryId(e.target.value ? Number.parseInt(e.target.value) : null)}>
-          <option value="">No category</option>
-          {categories.filter(c => c.is_active).map(c => (
-            <option key={c.id} value={c.id}>{c.category_name}</option>
-          ))}
-        </select>
-        <Button size="sm" variant="accent" onClick={add} disabled={adding || !eName.trim()}>
-          {adding ? '…' : '+ Add'}
-        </Button>
-      </div>
-    </div>
+          </select>
+        ) : null
+      }
+    />
   );
 }
+
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
@@ -484,9 +143,9 @@ export function TrackableSettings({ trackables, categories, icons, onCategoryAdd
         }}
       />
 
-      <CategorizedBooleanList initialItems={boolean} categories={liveCategories} icons={icons} onTrackableAdded={onTrackableAdded} />
+      <TrackableSection type="boolean" initialItems={boolean} categories={liveCategories} icons={icons} onTrackableAdded={onTrackableAdded} />
 
-      <CategorizedNumericList initialItems={numeric} categories={liveCategories} icons={icons} onTrackableAdded={onTrackableAdded} />
+      <TrackableSection type="numeric" initialItems={numeric} categories={liveCategories} icons={icons} onTrackableAdded={onTrackableAdded} />
 
       {aggregate.length > 0 && (
         <div className="settings-section">

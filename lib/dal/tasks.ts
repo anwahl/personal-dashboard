@@ -164,11 +164,14 @@ export async function getTaskById(
 
 // ── Date-context queries ──────────────────────────────────────────────────────
 
+export type TasksTabId = 'today' | 'tomorrow' | 'upcoming' | 'unscheduled' | 'done';
+
 export interface TaskContextData {
-  today: TaskDetail[];
-  tomorrow: TaskDetail[];
-  upcoming: TaskDetail[];
-  unscheduled: TaskDetail[];
+  today:          TaskDetail[];
+  tomorrow:       TaskDetail[];
+  upcoming:       TaskDetail[];
+  unscheduled:    TaskDetail[];
+  done:           TaskDetail[];
 }
 
 /**
@@ -184,7 +187,6 @@ export async function getTasksByDateContext(
 ): Promise<TaskContextData> {
   const { addDays } = await import("@/lib/utils/dates");
   const tomorrow = addDays(date, 1);
-  const terminalIds = await getTerminalStatusIds(client);
 
   let q = client
     .from("tasks")
@@ -192,22 +194,26 @@ export async function getTasksByDateContext(
     .order("due_date", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: false });
 
-  if (terminalIds.length > 0) {
-    q = q.not("status_id", "in", `(${terminalIds.join(",")})`);
-  }
-
   const { data, error } = await q;
   if (error) throw new Error(`getTasksByDateContext: ${error.message}`);
-
   const enriched = await enrich(client, (data ?? []) as TaskRow[]);
 
   return {
-    today: enriched.filter((t) => t.due_date !== null && t.due_date <= date),
-    tomorrow: enriched.filter((t) => t.due_date === tomorrow),
-    upcoming: enriched.filter(
-      (t) => t.due_date !== null && t.due_date > tomorrow,
-    ),
-    unscheduled: enriched.filter((t) => t.due_date === null),
+    today: enriched.filter((t) => 
+      t.due_date !== null && t.due_date <= date
+      && t.status.is_terminal !== true),
+    tomorrow: enriched.filter((t) => 
+      t.due_date === tomorrow
+      && t.status.is_terminal !== true),
+    upcoming: enriched.filter((t) =>
+      t.due_date !== null
+      && t.due_date > tomorrow
+      && t.status.is_terminal !== true),
+    unscheduled: enriched.filter((t) => 
+      t.due_date === null
+      && t.status.is_terminal !== true),
+    done: enriched.filter((t) =>
+      t.status.is_terminal === true),
   };
 }
 

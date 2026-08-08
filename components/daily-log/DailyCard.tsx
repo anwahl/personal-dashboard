@@ -22,20 +22,9 @@ import type {
 } from '@/types/dal';
 import type {  JournalState, DailyOverviewState, SymptomFormState, SleepFormState, MetricState, } from './DailyPageClient';
 import type { EssQuestionTypeRow, EssAnswerTypeRow, IconRow } from '@/types/schema';
+import { DAILY_TABS, DailyTabId } from '@/lib/constants/nav';
 
 type Mode = 'view' | 'input';
-
-const TABS = [
-  { id: 'overview',  label: '📋 Overview'  },
-  { id: 'metrics',   label: '📊 Metrics'   },
-  { id: 'symptoms',  label: '🩺 Symptoms'  },
-  { id: 'sleep',     label: '💤 Sleep'     },
-  { id: 'meds',      label: '💊 Meds'      },
-  { id: 'ess',       label: '😴 ESS'       },
-  { id: 'journal',   label: '📓 Journal'  },
-] as const satisfies { id: string; label: string }[];
-
-type TabId = typeof TABS[number]['id'];
 
 const SEVERITY_MAX = 10;
 
@@ -998,7 +987,7 @@ export function DailyCard({
   priorSleep, ess, prescriptions, reference,
   journalState, setJournalState, journalCategories, onSaveJournal, journalSaveState,
 }: Readonly<Props>) {
-  const [tab, setTab] = useState<TabId>('overview');
+  const [tab, setTab] = useState<DailyTabId>('overview');
 
   return (
     <Card>
@@ -1006,7 +995,7 @@ export function DailyCard({
         <CardTitle>📋 Daily Entry</CardTitle>
       </CardHeader>
       <CardBody>
-        <TabBar tabs={TABS} active={tab} onChange={setTab} />
+        <TabBar tabs={DAILY_TABS} active={tab} onChange={setTab} />
 
         {tab === 'overview' && (
           <OverviewTab

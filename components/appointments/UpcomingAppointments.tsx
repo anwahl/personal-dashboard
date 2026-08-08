@@ -8,17 +8,11 @@
 
 import { Card, CardHeader, CardTitle, CardBody, CardSection } from '@/components/ui';
 import type { AppointmentDetail } from '@/types/dal';
-import { daysUntil, formatMediumDate } from '@/lib/utils/dates';
+import { daysUntil, formatMediumDate, formatTime } from '@/lib/utils/dates';
 
 interface Props {
   appointments: AppointmentDetail[];
   contextDate:  string;
-}
-
-function fmtTime(t: string | null): string {
-  if (!t) return '';
-  const [h, m] = t.split(':').map(Number);
-  return ` · ${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
 }
 
 function apptLabel(appt: AppointmentDetail): string {
@@ -57,7 +51,7 @@ export function UpcomingAppointments({ appointments, contextDate }: Readonly<Pro
               {countdown}
             </div>
             <div className="appt-primary__date">
-              {formatMediumDate(primary.appointment_date)}{fmtTime(primary.appointment_time)}
+              {formatMediumDate(primary.appointment_date)}{formatTime(primary.appointment_time)}
             </div>
           </div>
         </a>

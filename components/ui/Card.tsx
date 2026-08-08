@@ -10,6 +10,10 @@ export function Card({ children, className, style }: Readonly<CardProps>) {
   return <div className={['card', className].filter(Boolean).join(' ')} style={style}>{children}</div>;
 }
 
+export function SubCard({ children, className, style }: Readonly<CardProps>) {
+  return <div className={['card__sub', className].filter(Boolean).join(' ')} style={style}>{children}</div>;
+}
+
 export function CardHeader({ children, className, style }: Readonly<CardProps>) {
   return <div className={['card__header', className].filter(Boolean).join(' ')} style={style}>{children}</div>;
 }
