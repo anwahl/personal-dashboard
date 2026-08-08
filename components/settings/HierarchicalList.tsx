@@ -264,6 +264,7 @@ export function HierarchicalList({
             name={ch.name}
             is_active={ch.is_active}
             italic={childItalic}
+            multiline={childInputType === 'textarea'}
             isFirst={idx === 0}
             isLast={idx === activeChildren.length - 1}
             onMoveUp={()     => moveChild(cat.id, ch.id, 'up')}
@@ -285,6 +286,7 @@ export function HierarchicalList({
                 name={ch.name}
                 is_active={ch.is_active}
                 italic={childItalic}
+                multiline={childInputType === 'textarea'}
                 isFirst={false} isLast={false}
                 onMoveUp={() => {}} onMoveDown={() => {}}
                 onRename={name    => renameChild(cat.id, ch.id, name)}
