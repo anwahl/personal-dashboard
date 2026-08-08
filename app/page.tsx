@@ -12,8 +12,9 @@ import { LastTimeTracker }                      from '@/components/last-time/Las
 import { QuickMediaLog }                        from '@/components/media/QuickMediaLog';
 import { getLastTimeEntries }                   from '@/lib/dal/lasttime';
 import { getInProgressMediaEntries }            from '@/lib/dal/media';
-import { QuickAdd, TaskList }                             from '@/components/tasks/TaskList';
+import { TaskList }                             from '@/components/tasks/TaskList';
 import { UpcomingAppointments }                 from '@/components/appointments/UpcomingAppointments';
+import { QuickAdd } from '@/components/tasks/TaskForm';
 
 export default async function HubPage() {
   const today    = localTodayISO();

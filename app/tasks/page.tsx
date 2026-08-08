@@ -1,8 +1,9 @@
 import { createClient }   from '@/lib/supabase/server';
-import { getActiveTasks, getCompletedTasks, getTasksByDateContext } from '@/lib/dal/tasks';
+import { getTasksByDateContext } from '@/lib/dal/tasks';
 import { getTaskStatuses, getTaskPriorities, getAssignablePeople } from '@/lib/dal/reference';
-import { QuickAdd, TaskList } from '@/components/tasks/TaskList';
+import { TaskList } from '@/components/tasks/TaskList';
 import { localTodayISO } from '@/lib/utils/dates';
+import { QuickAdd } from '@/components/tasks/TaskForm';
 
 export default async function TasksPage() {
   const supabase = await createClient();
@@ -18,7 +19,7 @@ export default async function TasksPage() {
       <div className="page-header">
         <h1 className="page-header__title">✅ Tasks</h1>
       </div>
-      <QuickAdd 
+      <QuickAdd
         statuses={statuses} 
         priorities={priorities}
         people={people}

@@ -1,8 +1,7 @@
 'use client';
 
-import { InputField, SaveStatus, SaveState,
-  Button, ConfirmButton, Markdown, Card, CardBody,
-  CardTitle, CardHeader }                              from '@/components/ui';
+import { SaveState, Button, ConfirmButton, 
+  Markdown, Card, CardBody, CardTitle, CardHeader }    from '@/components/ui';
 import { useState, useCallback }                       from 'react';
 import { useRouter }                                   from 'next/navigation';
 import { createClient }                                from '@/lib/supabase/client';
@@ -11,8 +10,8 @@ import { updateTask, updateTaskStatus,
 import type { TaskDetail, TaskStatusRow,
               TaskPriorityRow }                         from '@/types/dal';
 import type { PersonRow, TagRow, TaskRow }              from '@/types/schema';
-import { formatLongDate, formatMediumDate, formatTime,
-         localISODateFromDateString, toLocalInput }     from '@/lib/utils/dates';
+import { formatLongDate, formatMediumDate,
+         formatTime, toLocalInput }                     from '@/lib/utils/dates';
 import { TaskForm, type TaskFormValues }                from './TaskForm';
 
 interface Props {
