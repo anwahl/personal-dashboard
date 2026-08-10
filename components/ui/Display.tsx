@@ -86,14 +86,25 @@ export function FieldGrid({
   );
 }
 
+type AlignmentType = 'top' | 'bottom' | 'middle';
+
+
 export function FieldActions({
   children,
+  alignment = 'top'
 }: Readonly<{
   children: ReactNode;
+  alignment?: AlignmentType;
 }>) {
   return (
-    <div className="field__actions">
-      {children}
-    </div>
+    <>
+      <div className={`field__actions${alignment && (' field__actions--' + alignment)}`}>
+        <hr className='hr-md' />
+        <div className='field__actions--body'>
+          {children}
+        </div>
+        <hr className='hr-md' />
+      </div>
+    </>
   );
 }

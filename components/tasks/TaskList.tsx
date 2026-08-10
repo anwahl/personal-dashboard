@@ -10,26 +10,18 @@
  * QuickAdd row on each tab. "Full Add" opens FullAddForm which uses
  * the shared <TaskForm> component.
  */
-import { createTask, updateTaskStatus, TaskContextData,
+import { updateTaskStatus, TaskContextData,
          spawnNextRecurrence, getTaskById, 
-         TasksTabId}             from '@/lib/dal/tasks';
+         TasksTabId}                                    from '@/lib/dal/tasks';
 import { useState, useCallback }                        from 'react';
 import { useRouter }                                    from 'next/navigation';
 import { createClient }                                 from '@/lib/supabase/client';
 import { Card, CardHeader, CardTitle, CardBody,
-         TabBar, Button, InputField,
-         CardSection, CardSectionLabel, 
-         Chip}                from '@/components/ui';
-import type { TaskDetail, TaskStatusRow,
-              TaskPriorityRow }                         from '@/types/dal';
+         TabBar, Button, Chip }                         from '@/components/ui';
+import type { TaskDetail, TaskStatusRow }               from '@/types/dal';
 import type { PersonRow, TaskRow }                      from '@/types/schema';
-import { addDays, formatShortDate, formatTime,
-         localISODateFromDateString,
-         localTodayISO }                                from '@/lib/utils/dates';
+import { formatShortDate, formatTime, localTodayISO }   from '@/lib/utils/dates';
 import Link                                             from 'next/link';
-import { FieldActions, FieldGrid }                      from '../ui/Display';
-import { TaskForm, emptyTaskFormValues,
-         type TaskFormValues }                          from './TaskForm';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -99,8 +91,7 @@ export function TaskItem({
                 {task.status.status_name}
               </Chip>
               {task.due_date && (
-                <span style={{ color: overdue ? 'var(--danger)' : 'var(--text-faint)' }}>
-                  {/* FIXME Inline styling */}
+                <span className={overdue ? 'task-item__due--overdue' : 'task-item__due' }>
                   {overdue ? '⚠ ' : ''}
                   {formatShortDate(task.due_date)}
                   {task.due_time ? ' ' + formatTime(task.due_time) : ''}
@@ -125,8 +116,6 @@ export function TaskItem({
 }
 
 // ── TaskList ──────────────────────────────────────────────────────────────────
-
-
 
 interface Props {
   contextDate: string;

@@ -4,6 +4,9 @@ export { Chip, ChipGroup } from "./Chip";
 export {
   Card,
   SubCard,
+  SubCardBody,
+  ExpandPanel,
+  ExpandCard,
   CardHeader,
   CardTitle,
   CardBody,

@@ -1,9 +1,6 @@
 "use client";
 
 /**
- * TaskForm — shared form used by both FullAddForm (TaskList) and the
- * edit mode of TaskDetailClient.
- *
  * Owns its own form state internally; calls onSave(values) on submit.
  * The parent is responsible for the async save operation and for
  * passing back `saving` / `saveState` while the operation is in flight.
@@ -18,6 +15,7 @@ import {
   CardSection,
   CardSectionLabel,
   CardTitle,
+  ExpandCard,
   InputField,
   SaveStatus,
   Toggle,
@@ -521,91 +519,78 @@ export function QuickAdd({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Add Task</CardTitle>
-        <span
-          className="list-item__chevron"
-          onClick={() => setExpanded((e) => !e)}
+    <ExpandCard title='Add Task'>
+      <InputField label="Title" id="qa-title">
+        <input
+          id="qa-title"
+          type="text"
+          value={newTitle}
+          onChange={(e) => setNewTitle(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && quickAdd()}
+          placeholder="Quick add task…"
+        />
+      </InputField>
+      <FieldGrid>
+        <InputField label="Date" id="qa-date">
+          <input
+            id="qa-date"
+            type="date"
+            value={newDue}
+            onChange={(e) => setNewDue(e.target.value)}
+          />
+        </InputField>
+        <InputField label="Time" id="qa-time">
+          <input
+            id="qa-time"
+            type="time"
+            value={newTime}
+            onChange={(e) => setNewTime(e.target.value)}
+          />
+        </InputField>
+      </FieldGrid>
+      <FieldActions>
+        <Button
+          size="sm"
+          variant="action"
+          onClick={() => setNewDue(addDays(contextDate, 1))}
         >
-          {expanded ? "▲" : "▼"}
-        </span>
-      </CardHeader>
-      {expanded ? (
-        <CardBody>
-          <InputField label="Title" id="qa-title">
-            <input
-              id="qa-title"
-              type="text"
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && quickAdd()}
-              placeholder="Quick add task…"
-            />
-          </InputField>
-          <FieldGrid>
-            <InputField label="Date" id="qa-date">
-              <input
-                id="qa-date"
-                type="date"
-                value={newDue}
-                onChange={(e) => setNewDue(e.target.value)}
-              />
-            </InputField>
-            <InputField label="Time" id="qa-time">
-              <input
-                id="qa-time"
-                type="time"
-                value={newTime}
-                onChange={(e) => setNewTime(e.target.value)}
-              />
-            </InputField>
-          </FieldGrid>
-          <FieldActions>
-            <Button
-              size="sm"
-              variant="action"
-              onClick={() => setNewDue(addDays(contextDate, 1))}
-            >
-              Tomorrow
-            </Button>
-            <Button
-              size="sm"
-              variant="action"
-              onClick={() => setNewDue(addDays(contextDate, 7))}
-            >
-              Next week
-            </Button>
-          </FieldActions>
-          <InputField label="For" id="qa-person">
-            <select
-              id="qa-person"
-              value={newPerson}
-              onChange={(e) => setNewPerson(e.target.value)}
-              style={{ width: 110 }}
-            >
-              <option value="">Anyone</option>
-              {people.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.person_name}
-                </option>
-              ))}
-            </select>
-          </InputField>
-          <Button
-            variant="accent"
-            onClick={quickAdd}
-            disabled={adding || !newTitle.trim()}
-          >
-            {adding ? "…" : "+ Quick"}
-          </Button>
-          <Button variant="ghost" onClick={() => setShowFull(true)}>
-            Full Add
-          </Button>
-        </CardBody>
-      ) : (
-        <span className="no-content" />
-      )}
-    </Card>
+          Tomorrow
+        </Button>
+        <Button
+          size="sm"
+          variant="action"
+          onClick={() => setNewDue(addDays(contextDate, 7))}
+        >
+          Next week
+        </Button>
+      </FieldActions>
+      <InputField label="For" id="qa-person">
+        <select
+          id="qa-person"
+          value={newPerson}
+          onChange={(e) => setNewPerson(e.target.value)}
+          style={{ width: 110 }}
+        >
+          <option value="">Anyone</option>
+          {people.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.person_name}
+            </option>
+          ))}
+        </select>
+      </InputField>
+      <FieldActions alignment="bottom">
+        <Button
+          variant="action-alt"
+          onClick={quickAdd}
+          disabled={adding || !newTitle.trim()}
+        >
+          {adding ? "…" : "+ Quick"}
+        </Button>
+        <Button variant="action-alt" onClick={() => setShowFull(true)}>
+          Full Add
+        </Button>
+      </FieldActions>
+    </ExpandCard>
   );
 }

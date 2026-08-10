@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes, AnchorHTMLAttributes, ReactNode } from 'react';
 import Link from 'next/link';
 
-type Variant = 'default' | 'accent' | 'ghost' | 'action' | 'danger';
+type Variant = 'default' | 'accent' | 'ghost' | 'action' | 'action-alt' | 'danger';
 type Size    = 'default' | 'sm' | 'icon' | 'check';
 
 interface BaseProps {

@@ -1,24 +1,31 @@
 'use client';
 
-import { InputField, SaveStatus, SaveState, ConfirmButton, Markdown, Button } from '@/components/ui';
-import { useState, useCallback }             from 'react';
-import { useRouter }                         from 'next/navigation';
-import { createClient }                      from '@/lib/supabase/client';
 import {
-  updateAppointment, deleteAppointment, createAppointment,
-  deletePrescriptionChange,
-} from '@/lib/dal/appointments';
-import { applyPrescriptionChanges }  from '@/lib/dal/prescriptions';
-import type { FieldChangeEntry }     from '@/lib/dal/prescriptions';
-import { createTask }                from '@/lib/dal/tasks';
-import type { AppointmentDetail, PrescriptionDetail } from '@/types/dal';
+  InputField, SaveState, ConfirmButton,
+  Markdown,Button, Card, CardHeader,
+  CardTitle, CardBody }                       from '@/components/ui';
+import { useState, useCallback }              from 'react';
+import { useRouter }                          from 'next/navigation';
+import { createClient }                       from '@/lib/supabase/client';
+import {
+  updateAppointment, deleteAppointment,
+  createAppointment,deletePrescriptionChange
+}                                             from '@/lib/dal/appointments';
+import { applyPrescriptionChanges }           from '@/lib/dal/prescriptions';
+import type { FieldChangeEntry }              from '@/lib/dal/prescriptions';
+import { createTask }                         from '@/lib/dal/tasks';
+import type {
+  AppointmentDetail, PrescriptionDetail }     from '@/types/dal';
 import type {
   AppointmentTypeRow, PersonRow, ProviderRow,
-  PrescriptionChangeRow, TaskStatusRow, TaskPriorityRow,
-  MedicationTimingTypeRow,
-} from '@/types/schema';
-import { daysUntil, formatMediumDate, formatTime, localTodayISO } from '@/lib/utils/dates';
-import { RX_FIELDS, RxFieldKey } from '@/lib/constants/prescriptions';
+  PrescriptionChangeRow, TaskStatusRow,
+  TaskPriorityRow, MedicationTimingTypeRow }  from '@/types/schema';
+import {
+  daysUntil, formatMediumDate,
+  formatTime, localTodayISO }                 from '@/lib/utils/dates';
+import { RX_FIELDS, RxFieldKey }              from '@/lib/constants/prescriptions';
+import { AppointmentForm, apptToFormValues }  from './AppointmentForm';
+import type { AppointmentFormValues }         from './AppointmentForm';
 
 function getRxDisplayValue(
   rx:      PrescriptionDetail,
@@ -341,34 +348,25 @@ export function AppointmentDetailClient({
   const [taskCreated,  setTaskCreated]  = useState(false);
   const [creatingTask, setCreatingTask] = useState(false);
 
-  const [date,      setDate]      = useState(appt.appointment_date);
-  const [time,      setTime]      = useState(appt.appointment_time ?? '');
-  const [typeId,    setTypeId]    = useState(appt.appointment_type_id ? String(appt.appointment_type_id) : '');
-  const [personId,  setPersonId]  = useState(String(appt.person_id));
-  const [provId,    setProvId]    = useState(appt.provider_id ? String(appt.provider_id) : '');
-  const [location,  setLocation]  = useState(appt.location ?? '');
-  const [questions, setQuestions] = useState(appt.questions ?? '');
-  const [notes,     setNotes]     = useState(appt.notes ?? '');
-
-  const save = useCallback(async () => {
+  const handleSave = useCallback(async (values: AppointmentFormValues) => {
     setSaveState('saving');
     try {
       await updateAppointment(supabase, appt.id, {
-        appointment_date:    date,
-        appointment_time:    time || null,
-        appointment_type_id: typeId  ? Number.parseInt(typeId)  : null,
-        person_id:           Number.parseInt(personId),
-        provider_id:         provId  ? Number.parseInt(provId)  : null,
-        location:  location  || null,
-        questions: questions || null,
-        notes:     notes     || null,
+        appointment_date:    values.appointment_date,
+        appointment_time:    values.appointment_time    || null,
+        appointment_type_id: values.appointment_type_id ? Number.parseInt(values.appointment_type_id) : null,
+        person_id:           Number.parseInt(values.person_id),
+        provider_id:         values.provider_id         ? Number.parseInt(values.provider_id)         : null,
+        location:  values.location  || null,
+        questions: values.questions || null,
+        notes:     values.notes     || null,
       });
       setSaveState('ok');
       setTimeout(() => setSaveState('idle'), 2500);
       setMode('view');
       router.refresh();
     } catch { setSaveState('error'); }
-  }, [supabase, appt.id, date, time, typeId, personId, provId, location, questions, notes, router]);
+  }, [supabase, appt.id, router]);
 
   const remove = useCallback(async () => {
     await deleteAppointment(supabase, appt.id);
@@ -401,153 +399,124 @@ export function AppointmentDetailClient({
     const isPast = appt.appointment_date < localTodayISO();
 
     return (
-      <div>
-        <div className="detail-page__header">
-          <div>
-            <h2 className="detail-page__title">
-              {appt.appointment_type?.type_name ?? 'Appointment'}
-            </h2>
-            {appt.provider && (
-              <p className="detail-page__subtitle">
-                {appt.provider.provider_name ?? appt.provider.practice_name ?? ''}
-              </p>
-            )}
-          </div>
-          <div className="detail-page__actions">
-            <Button variant="ghost" size="sm" onClick={() => setMode('edit')}>✏️ Edit</Button>
-            <ConfirmButton onConfirm={remove}>✕ Delete</ConfirmButton>
-          </div>
-        </div>
-
-        <div className={`appt-detail-countdown${isPast ? ' appt-detail-countdown--past' : ''}`}>
-          {daysUntil(appt.appointment_date)}
-        </div>
-
-        <dl className="detail-page__fields">
-          <div className="detail-page__field">
-            <dt>Date</dt>
-            <dd>
-              {formatMediumDate(appt.appointment_date)}
-              {formatTime(appt.appointment_time) ? ` at ${formatTime(appt.appointment_time)}` : ''}
-            </dd>
-          </div>
-          <div className="detail-page__field">
-            <dt>For</dt>
-            <dd>{appt.person.person_name}</dd>
-          </div>
-          {appt.location && (
-            <div className="detail-page__field">
-              <dt>Location</dt>
-              <dd>{appt.location}</dd>
-            </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>{appt.appointment_type?.type_name ?? 'Appointment'}</CardTitle>
+          {appt.provider && (
+            <>
+            {appt.provider.provider_name ?? appt.provider.practice_name ?? ''}
+            </>
           )}
-          {parentAppt && (
+        </CardHeader>
+        <CardBody>
+          <div className="detail-page__header">
+            <div>
+              <h2 className="detail-page__title">
+                {appt.appointment_type?.type_name ?? 'Appointment'}
+              </h2>
+              {appt.provider && (
+                <p className="detail-page__subtitle">
+                  {appt.provider.provider_name ?? appt.provider.practice_name ?? ''}
+                </p>
+              )}
+            </div>
+            <div className="detail-page__actions">
+              <Button variant="ghost" size="sm" onClick={() => setMode('edit')}>✏️ Edit</Button>
+              <ConfirmButton onConfirm={remove}>✕ Delete</ConfirmButton>
+            </div>
+          </div>
+
+          <div className={`appt-detail-countdown${isPast ? ' appt-detail-countdown--past' : ''}`}>
+            {daysUntil(appt.appointment_date)}
+          </div>
+
+          <dl className="detail-page__fields">
             <div className="detail-page__field">
-              <dt>Follow-up of</dt>
+              <dt>Date</dt>
               <dd>
-                <a href={`/appointments/${parentAppt.id}`} className="text-link">
-                  {apptLabel(parentAppt)}
-                </a>
+                {formatMediumDate(appt.appointment_date)}
+                {formatTime(appt.appointment_time) ? ` at ${formatTime(appt.appointment_time)}` : ''}
               </dd>
             </div>
+            <div className="detail-page__field">
+              <dt>For</dt>
+              <dd>{appt.person.person_name}</dd>
+            </div>
+            {appt.location && (
+              <div className="detail-page__field">
+                <dt>Location</dt>
+                <dd>{appt.location}</dd>
+              </div>
+            )}
+            {parentAppt && (
+              <div className="detail-page__field">
+                <dt>Follow-up of</dt>
+                <dd>
+                  <a href={`/appointments/${parentAppt.id}`} className="text-link">
+                    {apptLabel(parentAppt)}
+                  </a>
+                </dd>
+              </div>
+            )}
+          </dl>
+
+          {appt.questions && (
+            <div className="detail-page__body">
+              <p className="detail-page__body-label">Questions</p>
+              <div className="detail-page__body-markdown">
+                  <Markdown>{appt.questions}</Markdown>
+              </div>
+            </div>
           )}
-        </dl>
-
-        {questions && (
-          <div className="detail-page__body">
-            <p className="detail-page__body-label">Questions</p>
-            <div className="detail-page__body-markdown">
-                <Markdown>{questions}</Markdown>
+          {appt.notes && (
+            <div className="detail-page__body">
+              <p className="detail-page__body-label">Notes</p>
+              <div className="detail-page__body-markdown">
+                  <Markdown>{appt.notes}</Markdown>
+              </div>
             </div>
-          </div>
-        )}
-        {notes && (
-          <div className="detail-page__body">
-            <p className="detail-page__body-label">Notes</p>
-            <div className="detail-page__body-markdown">
-                <Markdown>{notes}</Markdown>
-            </div>
-          </div>
-        )}
+          )}
 
-        <div className="appt-quick-actions">
-          {showFollowUp ? (
-            <FollowUpForm
-              appt={appt}
-              onCreated={id => router.push(`/appointments/${id}`)}
-              onCancel={() => setShowFollowUp(false)}
-            />
-          ) : (
-            <Button variant="ghost" size="sm" onClick={() => setShowFollowUp(true)}>
-              📅 Schedule Follow-up
+          <div className="field__actions">
+            {showFollowUp ? (
+              <FollowUpForm
+                appt={appt}
+                onCreated={id => router.push(`/appointments/${id}`)}
+                onCancel={() => setShowFollowUp(false)}
+              />
+            ) : (
+              <Button variant="action" size="sm" onClick={() => setShowFollowUp(true)}>
+                📅 Schedule Follow-up
+              </Button>
+            )}
+            <Button variant="action" size="sm" onClick={createTaskForAppt} disabled={creatingTask}>
+              {taskCreated ? '✓ Task created' : creatingTask ? '…' : '✅ Create Task'}
             </Button>
-          )}
-          <Button variant="ghost" size="sm" onClick={createTaskForAppt} disabled={creatingTask}>
-            {taskCreated ? '✓ Task created' : creatingTask ? '…' : '✅ Create Task'}
-          </Button>
-        </div>
+          </div>
 
-        <MedChangesSection
-          appointmentId={appt.id}
-          medicationTimings={medicationTimings}
-          activePrescriptions={activePrescriptions}
-          initialHistory={prescriptionChanges}
-        />
-      </div>
+          <MedChangesSection
+            appointmentId={appt.id}
+            medicationTimings={medicationTimings}
+            activePrescriptions={activePrescriptions}
+            initialHistory={prescriptionChanges}
+          />
+        </CardBody>
+      </Card>
     );
   }
 
   // ── Edit mode ───────────────────────────────────────────────────────────────
 
   return (
-    <div>
-      <div className="field-grid">
-        <InputField label="Type" id="ad-type">
-          <select id="ad-type" value={typeId} onChange={e => setTypeId(e.target.value)}>
-            <option value="">No type</option>
-            {appointmentTypes.map(t => <option key={t.id} value={t.id}>{t.type_name}</option>)}
-          </select>
-        </InputField>
-        <InputField label="Person" id="ad-person">
-          <select id="ad-person" value={personId} onChange={e => setPersonId(e.target.value)}>
-            {people.map(p => <option key={p.id} value={p.id}>{p.person_name}</option>)}
-          </select>
-        </InputField>
-      </div>
-      <InputField label="Provider" id="ad-prov">
-        <select id="ad-prov" value={provId} onChange={e => setProvId(e.target.value)}>
-          <option value="">No provider</option>
-          {providers.map(p => (
-            <option key={p.id} value={p.id}>
-              {p.provider_name ?? p.practice_name ?? `Provider ${p.id}`}
-            </option>
-          ))}
-        </select>
-      </InputField>
-      <div className="field-grid">
-        <InputField label="Date" id="ad-date">
-          <input id="ad-date" type="date" value={date} onChange={e => setDate(e.target.value)} />
-        </InputField>
-        <InputField label="Time" id="ad-time">
-          <input id="ad-time" type="time" value={time} onChange={e => setTime(e.target.value)} />
-        </InputField>
-      </div>
-      <InputField label="Location" id="ad-loc">
-        <input id="ad-loc" type="text" value={location} onChange={e => setLocation(e.target.value)} />
-      </InputField>
-      <InputField label="Questions" id="ad-q">
-        <textarea id="ad-q" value={questions} onChange={e => setQuestions(e.target.value)} className="textarea--short" />
-      </InputField>
-      <InputField label="Notes" id="ad-notes">
-        <textarea id="ad-notes" value={notes} onChange={e => setNotes(e.target.value)} className="textarea--short" />
-      </InputField>
-      <div className="page-actions">
-        <Button variant="accent" onClick={save} disabled={saveState === 'saving'}>
-          {saveState === 'saving' ? 'Saving…' : 'Save'}
-        </Button>
-        <Button variant="ghost" onClick={() => setMode('view')}>Cancel</Button>
-        <SaveStatus state={saveState} />
-      </div>
-    </div>
+    <AppointmentForm
+      initialValues={apptToFormValues(appt)}
+      appointmentTypes={appointmentTypes}
+      people={people}
+      providers={providers}
+      saving={saveState === 'saving'}
+      saveState={saveState}
+      onSave={handleSave}
+      onCancel={() => setMode('view')}
+    />
   );
 }
