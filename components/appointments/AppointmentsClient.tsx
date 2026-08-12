@@ -57,26 +57,29 @@ function ApptRow({ appt, onEdit }: Readonly<{ appt: AppointmentDetail; onEdit: (
           </div>
 
           {(appt.questions || appt.notes) && (
-            <ExpandPanel title='Show More'>
-              {appt.questions && (
+            <ExpandPanel title='Show More'
+              hiddenChildren = {
                 <>
-                  <p className="expand-panel__label">Questions to ask</p>
-                  <div className="detail-page__body-markdown">
-                    <Markdown>{appt.questions}</Markdown>
-                  </div>
+                  {appt.questions && (
+                    <>
+                      <p className="expand-panel__label">Questions to ask</p>
+                      <div className="detail-page__body-markdown">
+                        <Markdown>{appt.questions}</Markdown>
+                      </div>
+                    </>
+                    )}
+                    {appt.notes && (
+                    <>
+                      <p className="expand-panel__label">Notes</p>
+                      <div className="detail-page__body-markdown">
+                        <Markdown>{appt.notes}</Markdown>
+                      </div>
+                    </>
+                  )}
                 </>
-              )}
-              {appt.notes && (
-                <>
-                  <p className="expand-panel__label">Notes</p>
-                  <div className="detail-page__body-markdown">
-                    <Markdown>{appt.notes}</Markdown>
-                  </div>
-                </>
-              )}
-            </ExpandPanel>
+              } 
+            />
           )}
-          
           <FieldActions alignment='bottom'>
             <Link href={`/appointments/${appt.id}`} className="btn btn--action btn--sm">
               View Details →

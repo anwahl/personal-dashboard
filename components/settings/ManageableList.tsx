@@ -9,12 +9,10 @@ import {
   deleteSettingsItem,
   batchSetSortOrder,
 } from '@/lib/dal/settings';
-import type { ManageableTable } from '@/lib/dal/settings';
-import { bySortOrder, normalizedReorderUpdates } from '@/lib/utils/sort';
-import { Button }        from '@/components/ui/Button';
-import { ConfirmButton } from '@/components/ui/ConfirmButton';
-import { IconPicker }    from '@/components/ui/IconPicker';
-import type { IconRow } from '@/types/schema';
+import type { ManageableTable }                       from '@/lib/dal/settings';
+import { bySortOrder, normalizedReorderUpdates }      from '@/lib/utils/sort';
+import { Button, ConfirmButton , IconPicker }         from '@/components/ui';
+import type { IconRow }                               from '@/types/schema';
 
 export interface AddField {
   key:          string;

@@ -1,5 +1,4 @@
-export { Button } from "./Button";
-export { ConfirmButton} from "./ConfirmButton";
+export { Button, ConfirmButton } from "./Button";
 export { Chip, ChipGroup } from "./Chip";
 export {
   Card,
@@ -9,6 +8,7 @@ export {
   ExpandCard,
   CardHeader,
   CardTitle,
+  CardActions,
   CardBody,
   CardFooter,
   CardSection,
@@ -18,7 +18,7 @@ export { SliderField } from "./SliderField";
 export { Toggle, TabBar } from "./Controls";
 export { 
   SaveStatus, Field,
-  InputField, FieldActions
+  InputField, FieldActions, Info
 } from "./Display";
 export type { SaveState } from "./Display";
 export { Markdown }      from "./Markdown";

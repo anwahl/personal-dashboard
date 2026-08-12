@@ -54,7 +54,6 @@ export default async function HubPage() {
         <p className="hub-intention">"{intention.value}"</p>
       )}
 
-      {/* ── Main grid ── */}
       <div className="hub-grid">
         <div className="hub-sub-grid">
           <TaskList
@@ -75,17 +74,17 @@ export default async function HubPage() {
         />
       </div>
 
-      {/* ── Secondary row ── */}
       <div className="hub-grid">
         <LastTimeTracker entries={lastTimeEntries} icons={icons} compact />
-        <QuickMediaLog
+      </div>
+
+      <QuickMediaLog
           initialEntries={inProgressMedia}
           mediaTypes={mediaTypes}
           mediaStatuses={mediaStatuses}
           statusTypeLinks={statusTypeLinks}
+          open={true}
         />
-      </div>
-
     </div>
   );
 }

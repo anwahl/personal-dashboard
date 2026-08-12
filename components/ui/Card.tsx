@@ -6,6 +6,15 @@ interface CardProps {
   style?:     React.CSSProperties;
 }
 
+interface ExpandCardProps {
+  shownChildren?:   ReactNode;
+  hiddenChildren:   ReactNode;
+  className?: string;
+  style?:     React.CSSProperties;
+  title?:     string;
+  open?: boolean
+}
+
 export function Card({ children, className, style }: Readonly<CardProps>) {
   return <div className={['card', className].filter(Boolean).join(' ')} style={style}>{children}</div>;
 }
@@ -33,8 +42,8 @@ export function SubCardBody({ children, className, style }: CardProps & { flush?
   return <div className={['card__sub-body', className].filter(Boolean).join(' ')} style={style}>{children}</div>;
 }
 
-export function ExpandPanel({ children, className, style, title }: CardProps & { title?: string }) {
-  const [expanded, setExpanded] = useState(false);
+export function ExpandPanel({ shownChildren, hiddenChildren, className, style, title, open = false }: ExpandCardProps) {
+  const [expanded, setExpanded] = useState(open);
   return <div className={['card__expand-panel', className].filter(Boolean).join(' ')} style={style}>
             <span className='card__expand-panel--header'>
               {title && (
@@ -47,16 +56,15 @@ export function ExpandPanel({ children, className, style, title }: CardProps & {
                   onClick={() => setExpanded(e => !e)}
                 />
             </span>
-            {expanded && (
-              <div className='card__expand-panel--body'>
-                {children}
-              </div>
-            )}
+            <div className='card__expand-panel--body'>
+              {shownChildren}
+              {expanded && (hiddenChildren)}
+            </div>
           </div>;
 }
 
-export function ExpandCard({ children, className, style, title }: CardProps & { title?: string }) {
-  const [expanded, setExpanded] = useState(false);
+export function ExpandCard({ shownChildren, hiddenChildren, className, style, title, open = false }: ExpandCardProps) {
+  const [expanded, setExpanded] = useState(open);
   return <Card className={['card__expand', className].filter(Boolean).join(' ')} style={style}>
           {title && (
             <CardHeader className='card__expand--header'>
@@ -68,11 +76,10 @@ export function ExpandCard({ children, className, style, title }: CardProps & { 
                 />
             </CardHeader>
           )}
-          {expanded && (
             <CardBody>
-              {children}
+              {shownChildren}
+              {expanded && (hiddenChildren)}
             </CardBody>
-          )}
         </Card>
 }
 
@@ -86,10 +93,25 @@ export function CardSection({ children, className, style }: Readonly<CardProps>)
                 style={style}>
                   {children}
           </div>
-          <hr />
         </>
 }
 
 export function CardSectionLabel({ children }: Readonly<{ children: ReactNode }>) {
   return <p className="card__section-label">{children}</p>;
+}
+
+export function CardActions({
+  children,
+}: Readonly<{
+  children: ReactNode;
+}>) {
+  return (
+    <>
+      <div className={`card__actions`}>
+        <div className='card__actions--body'>
+          {children}
+        </div>
+      </div>
+    </>
+  );
 }

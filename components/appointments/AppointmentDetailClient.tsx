@@ -3,7 +3,9 @@
 import {
   InputField, SaveState, ConfirmButton,
   Markdown,Button, Card, CardHeader,
-  CardTitle, CardBody }                       from '@/components/ui';
+  CardTitle, CardBody, 
+  FieldActions,
+  CardActions}                       from '@/components/ui';
 import { useState, useCallback }              from 'react';
 import { useRouter }                          from 'next/navigation';
 import { createClient }                       from '@/lib/supabase/client';
@@ -26,6 +28,7 @@ import {
 import { RX_FIELDS, RxFieldKey }              from '@/lib/constants/prescriptions';
 import { AppointmentForm, apptToFormValues }  from './AppointmentForm';
 import type { AppointmentFormValues }         from './AppointmentForm';
+import { Field, FieldGrid } from '../ui/Display';
 
 function getRxDisplayValue(
   rx:      PrescriptionDetail,
@@ -407,77 +410,55 @@ export function AppointmentDetailClient({
             {appt.provider.provider_name ?? appt.provider.practice_name ?? ''}
             </>
           )}
+          <CardActions>
+            <Button variant="ghost" size="sm" onClick={() => setMode('edit')}>✏️ Edit</Button>
+            <ConfirmButton onConfirm={remove}>✕ Delete</ConfirmButton>
+          </CardActions>
         </CardHeader>
         <CardBody>
-          <div className="detail-page__header">
-            <div>
-              <h2 className="detail-page__title">
-                {appt.appointment_type?.type_name ?? 'Appointment'}
-              </h2>
-              {appt.provider && (
-                <p className="detail-page__subtitle">
-                  {appt.provider.provider_name ?? appt.provider.practice_name ?? ''}
-                </p>
-              )}
-            </div>
-            <div className="detail-page__actions">
-              <Button variant="ghost" size="sm" onClick={() => setMode('edit')}>✏️ Edit</Button>
-              <ConfirmButton onConfirm={remove}>✕ Delete</ConfirmButton>
-            </div>
-          </div>
-
-          <div className={`appt-detail-countdown${isPast ? ' appt-detail-countdown--past' : ''}`}>
-            {daysUntil(appt.appointment_date)}
-          </div>
-
-          <dl className="detail-page__fields">
-            <div className="detail-page__field">
-              <dt>Date</dt>
-              <dd>
-                {formatMediumDate(appt.appointment_date)}
-                {formatTime(appt.appointment_time) ? ` at ${formatTime(appt.appointment_time)}` : ''}
-              </dd>
-            </div>
-            <div className="detail-page__field">
-              <dt>For</dt>
-              <dd>{appt.person.person_name}</dd>
-            </div>
+          <FieldGrid>
+            <Field label='Date'
+              value={
+                <>
+                  {formatMediumDate(appt.appointment_date)}
+                  {formatTime(appt.appointment_time) ? ` at ${formatTime(appt.appointment_time)}` : ''}
+                  <br/>
+                  <span className={`appt-detail-countdown${isPast ? ' appt-detail-countdown--past' : ''}`}>
+                    {daysUntil(appt.appointment_date)}
+                  </span>
+                </>
+              } />
+              <Field label='For' value={appt.person.person_name} />
+          </FieldGrid>
+          <FieldGrid>
             {appt.location && (
-              <div className="detail-page__field">
-                <dt>Location</dt>
-                <dd>{appt.location}</dd>
-              </div>
+              <Field label='Location'
+                value={appt.location} />
             )}
             {parentAppt && (
-              <div className="detail-page__field">
-                <dt>Follow-up of</dt>
-                <dd>
+              <Field label='Follow-up of'
+                value={
                   <a href={`/appointments/${parentAppt.id}`} className="text-link">
                     {apptLabel(parentAppt)}
                   </a>
-                </dd>
-              </div>
+                } />
             )}
-          </dl>
+          </FieldGrid>
 
           {appt.questions && (
-            <div className="detail-page__body">
-              <p className="detail-page__body-label">Questions</p>
-              <div className="detail-page__body-markdown">
-                  <Markdown>{appt.questions}</Markdown>
-              </div>
-            </div>
+            <Field label='Questions'
+              value={
+                <Markdown>{appt.questions}</Markdown>
+              } />
           )}
           {appt.notes && (
-            <div className="detail-page__body">
-              <p className="detail-page__body-label">Notes</p>
-              <div className="detail-page__body-markdown">
-                  <Markdown>{appt.notes}</Markdown>
-              </div>
-            </div>
+            <Field label='Notes'
+              value={
+                <Markdown>{appt.notes}</Markdown>
+              } />
           )}
 
-          <div className="field__actions">
+          <FieldActions>
             {showFollowUp ? (
               <FollowUpForm
                 appt={appt}
@@ -492,7 +473,7 @@ export function AppointmentDetailClient({
             <Button variant="action" size="sm" onClick={createTaskForAppt} disabled={creatingTask}>
               {taskCreated ? '✓ Task created' : creatingTask ? '…' : '✅ Create Task'}
             </Button>
-          </div>
+          </FieldActions>
 
           <MedChangesSection
             appointmentId={appt.id}

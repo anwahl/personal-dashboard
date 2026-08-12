@@ -52,6 +52,20 @@ export function Field({ label, value, empty = '—', children }: Readonly<FieldP
   );
 }
 
+export function Info({ value, empty = '—', children }:
+  Readonly<{
+    value?:     ReactNode;
+    empty?:     string;
+    children?:  ReactNode;
+  }>) {
+  return (
+    <div className={`field__info${!value ? ' field__value--empty' : ''}`}>
+      {value ?? children ?? empty}
+    </div>
+  );
+}
+
+
 /** Input field wrapper with label — for Input mode. */
 export function InputField({
   label,
@@ -86,24 +100,25 @@ export function FieldGrid({
   );
 }
 
-type AlignmentType = 'top' | 'bottom' | 'middle';
-
+type AlignmentType = 'top' | 'bottom' | 'middle' | 'left' | 'right';
 
 export function FieldActions({
   children,
-  alignment = 'top'
+  alignment = 'top',
+  boxed = true
 }: Readonly<{
   children: ReactNode;
   alignment?: AlignmentType;
+  boxed?: boolean;
 }>) {
   return (
     <>
       <div className={`field__actions${alignment && (' field__actions--' + alignment)}`}>
-        <hr className='hr-md' />
+        {boxed && (<hr className='hr-md' />)}
         <div className='field__actions--body'>
           {children}
         </div>
-        <hr className='hr-md' />
+        {boxed && (<hr className='hr-md' />)}
       </div>
     </>
   );

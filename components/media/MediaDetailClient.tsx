@@ -15,38 +15,19 @@ import {
   getMediaNotes, createMediaNote, deleteMediaNote,
   updateMediaEntry, addMediaStatusEntry, deleteMediaEntry,
 } from '@/lib/dal/media';
-import { Button, ConfirmButton, InputField, SliderField, Markdown } from '@/components/ui';
+import { Button, Card, CardActions, CardBody, CardHeader, CardSection, CardSectionLabel, CardTitle, Chip, ChipGroup, ConfirmButton, InputField, Markdown, SubCard, SubCardBody } from '@/components/ui';
 import { localTodayISO, formatShortDate } from '@/lib/utils/dates';
 import type { MediaEntryDetail }  from '@/types/dal';
 import type {
   MediaTypeRow, MediaStatusRow, MediaStatusEntryRow,
   MediaNoteRow, MediaStatusTypeLinkRow,
 } from '@/types/schema';
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-const STATUS_EMOJI: Record<string, string> = {
-  watching: '▶️', reading: '📖', playing: '🎮', finished: '✅',
-  dropped: '⛔', 'want-to': '🔖', paused: '⏸️',
-};
-
-function capitalize(s: string) { return s.charAt(0).toUpperCase() + s.slice(1); }
-
-function validStatusesForType(
-  mediaTypeId: number,
-  allStatuses:  MediaStatusRow[],
-  links:        MediaStatusTypeLinkRow[]
-): MediaStatusRow[] {
-  const linked = new Map<number, Set<number>>();
-  for (const l of links) {
-    if (!linked.has(l.status_id)) linked.set(l.status_id, new Set());
-    linked.get(l.status_id)!.add(l.media_type_id);
-  }
-  return allStatuses.filter(s => {
-    const types = linked.get(s.id);
-    return !types || types.has(mediaTypeId);
-  });
-}
+import {
+  MediaForm, MediaFormValues,
+  entryToMediaFormValues,
+  STATUS_EMOJI, capitalize, validStatusesForType,
+} from './MediaForm';
+import { Field, FieldActions, FieldGrid } from '../ui/Display';
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -56,32 +37,6 @@ interface Props {
   mediaTypes:     MediaTypeRow[];
   mediaStatuses:  MediaStatusRow[];
   statusTypeLinks: MediaStatusTypeLinkRow[];
-}
-
-// ── Form state ────────────────────────────────────────────────────────────────
-
-interface FormState {
-  title:     string;
-  creator:   string;
-  platform:  string;
-  rating:    number | null;
-  notes:     string;
-  review:    string;
-  status_id:   string;
-  status_date: string;
-}
-
-function entryToForm(e: MediaEntryDetail): FormState {
-  return {
-    title:       e.title,
-    creator:     e.creator   ?? '',
-    platform:    e.platform  ?? '',
-    rating:      e.rating,
-    notes:       e.notes     ?? '',
-    review:      e.review    ?? '',
-    status_id:   e.current_status ? String(e.current_status.id) : '',
-    status_date: e.latest_status_date ?? localTodayISO(),
-  };
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -94,7 +49,6 @@ export function MediaDetailClient({
 
   const [entry]     = useState(initial);
   const [mode,      setMode]      = useState<'view' | 'edit'>('view');
-  const [form,      setForm]      = useState<FormState>(() => entryToForm(initial));
   const [saving,    setSaving]    = useState(false);
   const [saveError, setSaveError] = useState('');
 
@@ -127,34 +81,30 @@ export function MediaDetailClient({
 
   // ── Save ────────────────────────────────────────────────────────────────────
 
-  const save = useCallback(async () => {
+  const handleSave = useCallback(async (values: MediaFormValues) => {
     setSaving(true); setSaveError('');
     try {
-      const payload = {
-        title:    form.title.trim(),
-        creator:  form.creator.trim()  || null,
-        platform: form.platform.trim() || null,
-        rating:   form.rating          || null,
-        notes:    form.notes.trim()    || null,
-        review:   form.review.trim()   || null,
-      };
+      await updateMediaEntry(supabase, entry.id, {
+        title:    values.title.trim(),
+        creator:  values.creator.trim()  || null,
+        platform: values.platform.trim() || null,
+        rating:   values.rating          || null,
+        notes:    values.notes.trim()    || null,
+        review:   values.review.trim()   || null,
+      });
 
-      await updateMediaEntry(supabase, entry.id, payload);
-
-      // Log new status if changed
-      const statusChanged = String(entry.current_status?.id ?? '') !== form.status_id;
-      if (form.status_id && statusChanged) {
+      const statusChanged = String(entry.current_status?.id ?? '') !== values.status_id;
+      if (values.status_id && statusChanged) {
         await addMediaStatusEntry(supabase,
-          entry.id, Number.parseInt(form.status_id), form.status_date || localTodayISO(),
-        );
+          entry.id, Number.parseInt(values.status_id), values.status_date || localTodayISO());
       }
 
       router.refresh();
       setMode('view');
-    } catch (e: any) {
-      setSaveError(e.message ?? 'Save failed');
+    } catch (e: unknown) {
+      setSaveError(e instanceof Error ? e.message : 'Save failed');
     } finally { setSaving(false); }
-  }, [supabase, router, entry, form]);
+  }, [supabase, router, entry]);
 
   // ── Delete ──────────────────────────────────────────────────────────────────
 
@@ -165,116 +115,131 @@ export function MediaDetailClient({
 
   // ── View mode ────────────────────────────────────────────────────────────────
 
-  const set = (k: keyof FormState, v: string | number) => setForm(p => ({ ...p, [k]: v }));
   const filteredStatuses = validStatusesForType(entry.media_type_id, mediaStatuses, statusTypeLinks);
 
   if (mode === 'view') {
     return (
       <>
-        {/* Header */}
-        <div className="detail-page__header">
-          <div>
-            <h2 className="detail-page__title">{entry.title}</h2>
-            {entry.creator && <p className="detail-page__subtitle">by {entry.creator}</p>}
-          </div>
-          <div className="detail-page__actions">
-            <Button variant="ghost" size="sm" onClick={() => { setForm(entryToForm(entry)); setMode('edit'); }}>
+      <Card>
+        <CardHeader>
+          <CardTitle>{entry.title}</CardTitle>
+          <CardActions>
+            <Button variant="action" size='sm' onClick={() => setMode('edit')}>
               ✏️ Edit
             </Button>
-            <ConfirmButton onConfirm={handleDelete}>✕ Delete</ConfirmButton>
-          </div>
-        </div>
+            <ConfirmButton variant='danger' onConfirm={handleDelete}>✕ Delete</ConfirmButton>
+          </CardActions>
+        </CardHeader>
+        <CardBody>
+          <CardSection>
+            <CardSectionLabel>Info</CardSectionLabel>
+            {/* Meta badges */}
+            <ChipGroup>
+              <Chip fixed={true}>{capitalize(entry.media_type.type_name)}</Chip>
+              {entry.current_status && (
+                <Chip fixed={true} variant="accent">
+                  {STATUS_EMOJI[entry.current_status.status_name] ?? ''} {entry.current_status.status_name}
+                </Chip>
+              )}
+              {entry.rating != null && <Chip fixed={true} variant="accent">{entry.rating}/10</Chip>}
+              {entry.platform && <Chip fixed={true}>{entry.platform}</Chip>}
+              {entry.latest_status_date && (
+                <Chip fixed={true}>{formatShortDate(entry.latest_status_date)}</Chip>
+              )}
+            </ChipGroup>
+            {/*TODO Description etc from api */}
+          </CardSection>
 
-        {/* Meta badges */}
-        <div className="media-detail-meta">
-          <span className="badge">{capitalize(entry.media_type.type_name)}</span>
-          {entry.current_status && (
-            <span className="badge badge--accent">
-              {STATUS_EMOJI[entry.current_status.status_name] ?? ''} {entry.current_status.status_name}
-            </span>
+          {(entry.notes || entry.review) && (
+            <CardSection>
+              <CardSectionLabel>Thoughts...</CardSectionLabel>
+              {/* Notes */}
+              {entry.notes && (
+                <Field label='Notes'>
+                  <Markdown>{entry.notes}</Markdown>
+                </Field>
+              )}
+
+              {/* Review */}
+              {entry.review && (
+                <Field label='Review'>
+                  <Markdown>{entry.review}</Markdown>
+                </Field>
+              )}
+            </CardSection>
           )}
-          {entry.rating != null && <span className="badge badge--accent">{entry.rating}/10</span>}
-          {entry.platform && <span className="badge">{entry.platform}</span>}
-          {entry.latest_status_date && (
-            <span className="badge">{formatShortDate(entry.latest_status_date)}</span>
-          )}
-        </div>
 
-        {/* Notes */}
-        {entry.notes && (
-          <div className="detail-page__body">
-            <p className="detail-page__body-label">Notes</p>
-            <div className="detail-page__body-markdown">
-                <Markdown>{entry.notes}</Markdown>
-            </div>
-          </div>
-        )}
-
-        {/* Review */}
-        {entry.review && (
-          <div className="detail-page__body">
-            <p className="detail-page__body-label">Review</p>
-            <div className="detail-page__body-markdown">
-                <Markdown>{entry.review}</Markdown>
-            </div>
-          </div>
-        )}
-
-        {/* Status history */}
-        {statusHistory.length > 0 && (
-          <div className="detail-page__body">
-            <p className="detail-page__body-label">Status History</p>
-            <div className="media-status-history">
-              {statusHistory.map(sh => (
-                <div key={sh.id} className="media-status-event">
-                  <span className="media-status-event__date">{formatShortDate(sh.status_date)}</span>
-                  <span className="badge">
-                    {STATUS_EMOJI[sh.status.status_name] ?? ''} {sh.status.status_name}
+          {/* Status history */}
+          {statusHistory.length > 0 && (
+            <CardSection>
+                <CardSectionLabel>Status History</CardSectionLabel>
+                {statusHistory.map(sh => (
+                  <span key={sh.id}>
+                    <FieldGrid>
+                      <Field label='Date' value={formatShortDate(sh.status_date)} />
+                      <Field label='Status' 
+                        value={(STATUS_EMOJI[sh.status.status_name] ?? '') + (sh.status.status_name)} />
+                    </FieldGrid>
                   </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Timed media notes */}
-        <div className="detail-page__body">
-          <p className="detail-page__body-label">Notes</p>
-          {!notesLoaded && <p className="empty-state">Loading…</p>}
-          {notesLoaded && notes.length === 0 && (
-            <p className="empty-state">No notes yet.</p>
+                ))}
+            </CardSection>
           )}
-          {notes.map(n => (
-            <div key={n.id} className="media-note">
-              <div className="media-note__header">
-                <span className="media-note__date-badge">{formatShortDate(n.note_date)}</span>
-                <button type="button" className="media-note__delete"
-                  onClick={() => deleteNote(n.id)} title="Delete note">✕</button>
-              </div>
-              <div className="detail-page__body-markdown">
-                <Markdown>{n.body_md}</Markdown>
-              </div>
-            </div>
-          ))}
-
-          {/* Add note form */}
-          <div className="manage-add-row" style={{ marginTop: 10, alignItems: 'flex-start' }}>
-            <input type="date" value={noteDate} onChange={e => setNoteDate(e.target.value)}
-              style={{ width: 140 }} />
-            <textarea
-              value={newNote}
-              onChange={e => setNewNote(e.target.value)}
-              placeholder="Add a note…"
-              className="textarea--short"
-              style={{ flex: 1 }}
-              onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) addNote(); }}
-            />
-            <Button size="sm" variant="accent" onClick={addNote}
-              disabled={addingNote || !newNote.trim()}>
-              {addingNote ? '…' : 'Add'}
-            </Button>
-          </div>
-        </div>
+          
+          {/* Timed media notes */}
+          <SubCard>
+            <SubCardBody>
+              <CardHeader>
+                <CardTitle>Notes</CardTitle>
+              </CardHeader> 
+              <CardSection>
+                <CardSectionLabel>New Note</CardSectionLabel>
+                <FieldGrid>
+                  <InputField label='Date' id='new-note-date'>
+                    <input id='new-note-date' type="date" value={noteDate}
+                        onChange={e => setNoteDate(e.target.value)} />
+                  </InputField>
+                  <InputField label='Note' id='new-note-text'>
+                    <textarea
+                      id='new-note-text'
+                      value={newNote}
+                      onChange={e => setNewNote(e.target.value)}
+                      placeholder="Add a note…"
+                      className="textarea--short"
+                      onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) addNote(); }}
+                    />
+                  </InputField>
+                </FieldGrid>
+                <FieldActions boxed={false} alignment='right'>
+                  <Button size="sm" variant="action-alt"
+                    onClick={addNote}
+                    disabled={addingNote || !newNote.trim()}>
+                    {addingNote ? '…' : 'Add'}
+                  </Button>
+                </FieldActions>
+              </CardSection>
+              <CardSection>
+                <CardSectionLabel>Previous Notes</CardSectionLabel>
+                {!notesLoaded && <p className="empty-state">Loading…</p>}
+                {notesLoaded && notes.length === 0 && (
+                  <p className="empty-state">No notes yet.</p>
+                )}
+                {notes.map(n => (
+                  <div key={n.id} className="media-note">
+                    <div className="media-note__header">
+                      <span className="media-note__date-badge">{formatShortDate(n.note_date)}</span>
+                      <button type="button" className="media-note__delete"
+                        onClick={() => deleteNote(n.id)} title="Delete note">✕</button>
+                    </div>
+                    <div className="detail-page__body-markdown">
+                      <Markdown>{n.body_md}</Markdown>
+                    </div>
+                  </div>
+                ))}
+              </CardSection>
+            </SubCardBody>
+          </SubCard>
+        </CardBody>
+      </Card>
       </>
     );
   }
@@ -282,66 +247,15 @@ export function MediaDetailClient({
   // ── Edit mode ────────────────────────────────────────────────────────────────
 
   return (
-    <>
-      <div className="detail-page__header">
-        <h2 className="detail-page__title">Edit: {entry.title}</h2>
-      </div>
-
-      <InputField label="Title" id="md-title">
-        <input id="md-title" type="text" value={form.title}
-          onChange={e => set('title', e.target.value)} />
-      </InputField>
-
-      <div className="field-grid">
-        <InputField label="Status" id="md-status">
-          <select id="md-status" value={form.status_id} onChange={e => set('status_id', e.target.value)}>
-            <option value="">No status</option>
-            {filteredStatuses.map(s => (
-              <option key={s.id} value={s.id}>
-                {STATUS_EMOJI[s.status_name] ?? ''} {s.status_name}
-              </option>
-            ))}
-          </select>
-        </InputField>
-        {form.status_id && (
-          <InputField label="Status date" id="md-status-date">
-            <input id="md-status-date" type="date" value={form.status_date}
-              onChange={e => set('status_date', e.target.value)} />
-          </InputField>
-        )}
-      </div>
-
-      <div className="field-grid">
-        <InputField label="Creator / Author / Director" id="md-creator">
-          <input id="md-creator" type="text" value={form.creator}
-            onChange={e => set('creator', e.target.value)} />
-        </InputField>
-        <InputField label="Platform" id="md-platform">
-          <input id="md-platform" type="text" value={form.platform}
-            onChange={e => set('platform', e.target.value)} />
-        </InputField>
-      </div>
-      
-      <SliderField emoji="⭐" label="Rating" value={form.rating} min={0} max={10}
-              onChange={e => set('rating', e)} />
-
-
-      <InputField label="Notes (while consuming)" id="md-notes">
-        <textarea id="md-notes" value={form.notes} onChange={e => set('notes', e.target.value)} />
-      </InputField>
-
-      <InputField label="Review (after finishing)" id="md-review">
-        <textarea id="md-review" value={form.review} onChange={e => set('review', e.target.value)} />
-      </InputField>
-
-      {saveError && <p className="save-status save-status--error">{saveError}</p>}
-
-      <div className="page-actions">
-        <Button variant="accent" onClick={save} disabled={saving || !form.title.trim()}>
-          {saving ? 'Saving…' : 'Save'}
-        </Button>
-        <Button variant="ghost" onClick={() => setMode('view')}>Cancel</Button>
-      </div>
-    </>
+    <MediaForm
+      initialValues={entryToMediaFormValues(entry)}
+      mediaTypes={mediaTypes}
+      mediaStatuses={mediaStatuses}
+      statusTypeLinks={statusTypeLinks}
+      saving={saving}
+      saveError={saveError}
+      onSave={handleSave}
+      onCancel={() => setMode('view')}
+    />
   );
 }

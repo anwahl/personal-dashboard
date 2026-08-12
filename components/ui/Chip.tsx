@@ -1,18 +1,24 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
+type VariantType = 'default' | 'accent';
+
 interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
   active?:    boolean;
   small?:     boolean;
-  fixed?:    boolean;
+  fixed?:     boolean;
+  variant?:   VariantType;
   children:   ReactNode;
   className?: string;
 }
 
-export function Chip({ active = false, small = false, fixed = true, children, className, ...rest }: Readonly<Props>) {
+export function Chip({
+    active = false, small = false, fixed = true,
+    variant = 'default', children, className, ...rest }: Readonly<Props>) {
   const classes = ['chip'];
   if (active) classes.push('chip--active');
   if (small)  classes.push('chip--sm');
   if (fixed)  classes.push('chip--static');
+  if (variant === 'accent')  classes.push('chip--accent');
   if (className) classes.push(className);
 
   return (
