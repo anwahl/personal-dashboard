@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState, type ReactNode, Children, isValidElement } from 'react';
 
 interface CardProps {
   children:   ReactNode;
@@ -17,6 +17,41 @@ interface ExpandCardProps {
 
 export function Card({ children, className, style }: Readonly<CardProps>) {
   return <div className={['card', className].filter(Boolean).join(' ')} style={style}>{children}</div>;
+}
+
+export function CardGridColumn({ children, className }: Readonly<CardProps>) {
+  return <div className={['card__grid--column', className].filter(Boolean).join(' ')}>{children}</div>;
+}
+
+export function CardGrid({ children, columns = 2, className }:
+    Readonly<CardProps & { columns?: number; }>) {
+  if (columns === 0 || !columns) { columns = 1; }
+  const childArray    = Children.toArray(children);
+  
+  if (childArray.every(c => isValidElement(c) && c.type === CardGridColumn)) {
+    return (
+      <div className={['card__grid', className].filter(Boolean).join(' ')}
+        style={{ '--columns': columns } as React.CSSProperties}>
+        {children}
+      </div>
+    );
+  }
+
+  const chunkSize   = Math.ceil(childArray.length / columns);
+  const cols        = Array.from({ length: columns }, (_, i) =>
+    childArray.slice(i * chunkSize, (i + 1) * chunkSize)
+  );
+
+  return (
+    <div className={['card__grid', className].filter(Boolean).join(' ')}
+      style={{ '--columns': columns } as React.CSSProperties}>
+      {cols.map((col, i) => (
+        <CardGridColumn key={i}>
+          {col}
+        </CardGridColumn>
+      ))}
+    </div>
+  );
 }
 
 export function SubCard({ children, className, style }: Readonly<CardProps>) {

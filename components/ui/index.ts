@@ -13,12 +13,15 @@ export {
   CardFooter,
   CardSection,
   CardSectionLabel,
+  CardGrid,
+  CardGridColumn
 } from "./Card";
 export { SliderField } from "./SliderField";
 export { Toggle, TabBar } from "./Controls";
 export { 
-  SaveStatus, Field,
-  InputField, FieldActions, Info
+  SaveStatus, Field, FieldGrid,
+  InputField, FieldActions, Info, Meta,
+  Item, ITEM_TYPES, type ItemType
 } from "./Display";
 export type { SaveState } from "./Display";
 export { Markdown }      from "./Markdown";

@@ -2,7 +2,7 @@ import { createClient }                         from '@/lib/supabase/server';
 import { getAllPrescriptions }                  from '@/lib/dal/prescriptions';
 import { getMedicationTimingTypes, getAssignablePeople, getMedications } from '@/lib/dal/reference';
 import { getProviders }                         from '@/lib/dal/providers';
-import { MedicationsClient }                    from '@/components/medications/MedicationsClient';
+import { PrescriptionsClient }                    from '@/components/medications/PrescriptionsClient';
 
 export default async function MedicationsPage() {
   const supabase = await createClient();
@@ -28,7 +28,7 @@ export default async function MedicationsPage() {
       <div className="page-header">
         <h1 className="page-header__title">💊 Medications</h1>
       </div>
-      <MedicationsClient
+      <PrescriptionsClient
         prescriptionsByPerson={prescriptionsByPerson}
         medications={medications}
         timingTypes={timings}

@@ -4,8 +4,9 @@ import {
   InputField, SaveState, ConfirmButton,
   Markdown,Button, Card, CardHeader,
   CardTitle, CardBody, 
-  FieldActions,
-  CardActions}                       from '@/components/ui';
+  FieldActions, Field, FieldGrid,
+  CardActions,
+  ExpandPanel}                       from '@/components/ui';
 import { useState, useCallback }              from 'react';
 import { useRouter }                          from 'next/navigation';
 import { createClient }                       from '@/lib/supabase/client';
@@ -14,7 +15,6 @@ import {
   createAppointment,deletePrescriptionChange
 }                                             from '@/lib/dal/appointments';
 import { applyPrescriptionChanges }           from '@/lib/dal/prescriptions';
-import type { FieldChangeEntry }              from '@/lib/dal/prescriptions';
 import { createTask }                         from '@/lib/dal/tasks';
 import type {
   AppointmentDetail, PrescriptionDetail }     from '@/types/dal';
@@ -25,27 +25,10 @@ import type {
 import {
   daysUntil, formatMediumDate,
   formatTime, localTodayISO }                 from '@/lib/utils/dates';
-import { RX_FIELDS, RxFieldKey }              from '@/lib/constants/prescriptions';
+import { RxPendingChanges }  from '@/components/medications/RxPendingChanges';
 import { AppointmentForm, apptToFormValues }  from './AppointmentForm';
 import type { AppointmentFormValues }         from './AppointmentForm';
-import { Field, FieldGrid } from '../ui/Display';
 
-function getRxDisplayValue(
-  rx:      PrescriptionDetail,
-  key:     RxFieldKey,
-  timings: MedicationTimingTypeRow[],
-): string {
-  switch (key) {
-    case 'dose':              return rx.dose              ?? '';
-    case 'timing_type_id':    return timings.find(t => t.id === rx.timing_type_id)?.timing_name ?? '';
-    case 'purpose':           return rx.purpose           ?? '';
-    case 'alias':             return rx.alias             ?? '';
-    case 'start_date':        return rx.start_date        ? formatMediumDate(rx.start_date)        : '';
-    case 'discontinued_date': return rx.discontinued_date ? formatMediumDate(rx.discontinued_date) : '';
-    case 'is_active':         return rx.is_active ? 'Active' : 'Discontinued';
-    default:                  return '';
-  }
-}
 
 // ── Appointment label helper ──────────────────────────────────────────────────
 
@@ -60,16 +43,6 @@ function apptLabel(a: AppointmentDetail): string {
   ].filter(Boolean).join(' ');
 }
 
-// ── Pending field change type ─────────────────────────────────────────────────
-
-interface PendingChange {
-  uid:           string;
-  fieldKey:      RxFieldKey;
-  fieldLabel:    string;
-  previousValue: string;
-  newValue:      string;
-  newTimingId:   string;
-}
 
 // ── Medication changes section ────────────────────────────────────────────────
 
@@ -84,61 +57,11 @@ function MedChangesSection({
 }>) {
   const supabase   = createClient();
   const router     = useRouter();
-  const [open,     setOpen]    = useState(false);
-  const [history,  setHistory] = useState(initialHistory);
+  const [open,         setOpen]         = useState(false);
+  const [history,      setHistory]      = useState(initialHistory);
   const [selectedRxId, setSelectedRxId] = useState('');
-  const [pending,  setPending] = useState<PendingChange[]>([]);
-  const [saving,   setSaving]  = useState(false);
 
   const selectedRx = activePrescriptions.find(p => String(p.id) === selectedRxId) ?? null;
-
-  const addFieldChange = (key: RxFieldKey) => {
-    if (!selectedRx) return;
-    const def  = RX_FIELDS.find(f => f.key === key)!;
-    const prev = getRxDisplayValue(selectedRx, key, medicationTimings);
-    setPending(p => [...p, {
-      uid:           `${key}-${Date.now()}`,
-      fieldKey:      key,
-      fieldLabel:    def.label,
-      previousValue: prev,
-      newValue:      key === 'is_active' ? (selectedRx.is_active ? 'Discontinued' : 'Active') : prev,
-      newTimingId:   key === 'timing_type_id' ? String(selectedRx.timing_type_id ?? '') : '',
-    }]);
-  };
-
-  const updatePending = (uid: string, patch: Partial<PendingChange>) =>
-    setPending(p => p.map(c => c.uid === uid ? { ...c, ...patch } : c));
-  const removePending = (uid: string) =>
-    setPending(p => p.filter(c => c.uid !== uid));
-
-  const apply = async () => {
-    if (!selectedRx || pending.length === 0 || saving) return;
-    setSaving(true);
-    try {
-      const entries: FieldChangeEntry[] = pending.map(c => {
-        let rawValue: unknown;
-        switch (c.fieldKey) {
-          case 'timing_type_id': rawValue = c.newTimingId ? Number.parseInt(c.newTimingId) : null; break;
-          case 'is_active':      rawValue = c.newValue === 'Active'; break;
-          default:               rawValue = c.newValue || null;
-        }
-        return {
-          fieldKey:      c.fieldKey,
-          fieldLabel:    c.fieldLabel,
-          previousValue: c.previousValue,
-          newValue:      c.fieldKey === 'timing_type_id'
-            ? (medicationTimings.find(t => String(t.id) === c.newTimingId)?.timing_name ?? c.newTimingId)
-            : c.newValue,
-          rawValue,
-        };
-      });
-      const newRows = await applyPrescriptionChanges(supabase, selectedRx.id, appointmentId, entries);
-      setHistory(h => [...newRows, ...h]);
-      setPending([]);
-      setSelectedRxId('');
-      router.refresh();   // re-runs server component → fresh prescriptions + history
-    } finally { setSaving(false); }
-  };
 
   const removeHistory = async (id: number) => {
     await deletePrescriptionChange(supabase, id);
@@ -150,115 +73,63 @@ function MedChangesSection({
     return rx ? (rx.alias ?? rx.medication.medication_name) : `#${id}`;
   };
 
-  const availableFields = RX_FIELDS.filter(f => !pending.some(c => c.fieldKey === f.key));
-
   return (
-    <div className="appt-section">
-      <Button variant="ghost" className="toggle-btn" onClick={() => setOpen(o => !o)}>
-        💊 Prescription Changes {open ? '▲' : '▼'}
-      </Button>
-
-      {open && (
-        <div className="appt-section__body">
-          {/* History log */}
-          {history.length > 0 && (
-            <div className="appt-section__history">
-              <p className="expand-panel__label">Change Log</p>
-              {history.map(h => (
-                <div key={h.id} className="manage-item">
-                  <span className="manage-item__name">
-                    {rxName(h.prescription_id)} — {h.field_changed}
-                    {(h.previous_value || h.new_value) && (
-                      <span className="manage-item__meta">
-                        {h.previous_value ? ` ${h.previous_value}` : ''}
-                        {h.previous_value && h.new_value ? ' →' : ''}
-                        {h.new_value ? ` ${h.new_value}` : ''}
-                      </span>
-                    )}
-                  </span>
-                  <div className="manage-item__actions">
-                    <ConfirmButton onConfirm={() => removeHistory(h.id)} size="sm">✕</ConfirmButton>
-                  </div>
+      <ExpandPanel title='💊 Prescription Changes'
+        hiddenChildren = {
+        <>
+        {/* History log */}
+        {history.length > 0 && (
+          <div className="appt-section__history">
+            <p className="expand-panel__label">Change Log</p>
+            {history.map(h => (
+              <div key={h.id} className="manage-item">
+                <span className="manage-item__name">
+                  {rxName(h.prescription_id)} — {h.field_changed}
+                  {(h.previous_value || h.new_value) && (
+                    <span className="manage-item__meta">
+                      {h.previous_value ? ` ${h.previous_value}` : ''}
+                      {h.previous_value && h.new_value ? ' →' : ''}
+                      {h.new_value ? ` ${h.new_value}` : ''}
+                    </span>
+                  )}
+                </span>
+                <div className="manage-item__actions">
+                  <ConfirmButton onConfirm={() => removeHistory(h.id)} size="sm">✕</ConfirmButton>
                 </div>
-              ))}
-            </div>
-          )}
-          {history.length === 0 && pending.length === 0 && (
-            <p className="expand-panel__empty">No prescription changes logged for this appointment.</p>
-          )}
-
-          {/* Change form */}
-          <div className="appt-med-change-form">
-            <div className="field-grid">
-              <InputField label="Prescription" id="rx-select">
-                <select id="rx-select" value={selectedRxId}
-                  onChange={e => { setSelectedRxId(e.target.value); setPending([]); }}>
-                  <option value="">Select prescription…</option>
-                  {activePrescriptions.map(p => (
-                    <option key={p.id} value={p.id}>
-                      {p.alias ?? p.medication.medication_name}{p.dose ? ` · ${p.dose}` : ''}
-                    </option>
-                  ))}
-                </select>
-              </InputField>
-
-              {selectedRx && availableFields.length > 0 && (
-                <InputField label="Add field to change" id="rx-field-add">
-                  <select id="rx-field-add" value=""
-                    onChange={e => { if (e.target.value) addFieldChange(e.target.value as RxFieldKey); }}>
-                    <option value="">+ Add field…</option>
-                    {availableFields.map(f => (
-                      <option key={f.key} value={f.key}>{f.label}</option>
-                    ))}
-                  </select>
-                </InputField>
-              )}
-            </div>
-
-            {pending.map(c => (
-              <div key={c.uid} className="rx-field-change-row">
-                <span className="rx-field-change-row__label">{c.fieldLabel}</span>
-                <span className="rx-field-change-row__prev">{c.previousValue || '—'}</span>
-                <span className="rx-field-change-row__arrow">→</span>
-                {c.fieldKey === 'timing_type_id' ? (
-                  <select className="rx-field-change-row__input" value={c.newTimingId}
-                    onChange={e => updatePending(c.uid, { newTimingId: e.target.value })}>
-                    <option value="">No timing</option>
-                    {medicationTimings.map(t => (
-                      <option key={t.id} value={t.id}>{t.timing_name}</option>
-                    ))}
-                  </select>
-                ) : c.fieldKey === 'is_active' ? (
-                  <select className="rx-field-change-row__input" value={c.newValue}
-                    onChange={e => updatePending(c.uid, { newValue: e.target.value })}>
-                    <option value="Active">Active</option>
-                    <option value="Discontinued">Discontinued</option>
-                  </select>
-                ) : (
-                  <input type={c.fieldKey.endsWith('_date') ? 'date' : 'text'}
-                    className="rx-field-change-row__input"
-                    value={c.newValue}
-                    onChange={e => updatePending(c.uid, { newValue: e.target.value })}
-                    placeholder="New value…" />
-                )}
-                <Button size="icon" variant="ghost" onClick={() => removePending(c.uid)}>✕</Button>
               </div>
             ))}
-
-            {pending.length > 0 && (
-              <div className="form-panel__actions" style={{ marginTop: 10 }}>
-                <Button variant="accent" onClick={apply} disabled={saving}>
-                  {saving ? 'Applying…' : `Apply ${pending.length} Change${pending.length > 1 ? 's' : ''}`}
-                </Button>
-                <Button variant="ghost" onClick={() => { setPending([]); setSelectedRxId(''); }}>
-                  Cancel
-                </Button>
-              </div>
-            )}
           </div>
-        </div>
-      )}
-    </div>
+        )}
+        {history.length === 0 && !selectedRxId && (
+          <p className="expand-panel__empty">No prescription changes logged for this appointment.</p>
+        )}
+        <InputField label="Prescription" id="rx-select">
+          <select id="rx-select" value={selectedRxId}
+            onChange={e => setSelectedRxId(e.target.value)}>
+            <option value="">Select prescription…</option>
+            {activePrescriptions.map(p => (
+              <option key={p.id} value={p.id}>
+                {p.alias ?? p.medication.medication_name}{p.dose ? ` · ${p.dose}` : ''}
+              </option>
+            ))}
+          </select>
+        </InputField>
+        {selectedRx && (
+          <RxPendingChanges
+            key={selectedRxId}
+            rx={selectedRx}
+            timings={medicationTimings}
+            onApply={async entries => {
+              const newRows = await applyPrescriptionChanges(supabase, selectedRx.id, appointmentId, entries);
+              setHistory(h => [...newRows, ...h]);
+              setSelectedRxId('');
+              router.refresh();
+            }
+          }
+          />
+        )}
+        </>
+    } />
   );
 }
 
