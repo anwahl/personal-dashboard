@@ -16,6 +16,7 @@ import { BrainDumpQuickAdd }                from '@/components/brain-dump/BrainD
 import { Button, Markdown }                 from '@/components/ui';
 import type { BrainDumpWithEntry }          from '@/lib/dal/daily';
 import { formatMediumDate } from '@/lib/utils/dates';
+import { Header, PageBody } from '@/components/layout';
 
 function BrainDumpCard({ dump, onDelete }: Readonly<{ 
     dump: BrainDumpWithEntry; 
@@ -99,10 +100,8 @@ export default function BrainDumpPage() {
   };
 
   return (
-    <div className="page-content">
-      <div className="page-header">
-        <h1 className="page-header__title">🧠 Brain Dump</h1>
-      </div>
+    <PageBody>
+      <Header title='🧠 Brain Dump'/>
 
       {/* Quick add */}
       <div className="brain-dump-page__quickadd">
@@ -144,6 +143,6 @@ export default function BrainDumpPage() {
           </Button>
         </div>
       )}
-    </div>
+    </PageBody>
   );
 }

@@ -3,6 +3,7 @@ import { createClient }         from '@/lib/supabase/server';
 import { getTaskById }          from '@/lib/dal/tasks';
 import { getTaskStatuses, getTaskPriorities, getPeople, getTags } from '@/lib/dal/reference';
 import { TaskDetailClient }     from '@/components/tasks/TaskDetailClient';
+import { Header, PageBody } from '@/components/layout';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -25,11 +26,8 @@ export default async function TaskDetailPage({ params }: Readonly<Props>) {
   ]);
 
   return (
-    <div className="page-content">
-      <div className="page-header">
-        <a href="/tasks" className="page-back-link">← Tasks</a>
-        <h1 className="page-header__title">Task</h1>
-      </div>
+    <PageBody>
+      <Header title='Task' href='/tasks' linkLabel='← Tasks' />
       <TaskDetailClient
         task={task}
         statuses={statuses}
@@ -37,6 +35,6 @@ export default async function TaskDetailPage({ params }: Readonly<Props>) {
         people={people}
         tags={tags}
       />
-    </div>
+    </PageBody>
   );
 }

@@ -20,6 +20,7 @@ import { getCalendarToken } from '@/lib/dal/calendar';
 import { getWeeklyJournalCategories } from '@/lib/dal/weekly-journal';
 import type { PersonLinks } from '@/types/dal';
 import { SettingsClient } from '@/components/settings/SettingsClient';
+import { Header, PageBody } from '@/components/layout';
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -71,8 +72,8 @@ export default async function SettingsPage() {
   }));
 
   return (
-    <div className="page-content">
-      <h1 className="page-header__title">Settings</h1>
+    <PageBody>
+      <Header title='Settings' />
       <SettingsClient
         icons={icons}
         trackables={trackables}
@@ -99,6 +100,6 @@ export default async function SettingsPage() {
         weeklyJournalCategories={weeklyJournalCategories}
         calendarToken={calendarToken}
       />
-    </div>
+    </PageBody>
   );
 }

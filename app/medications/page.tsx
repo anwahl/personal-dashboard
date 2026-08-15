@@ -3,6 +3,7 @@ import { getAllPrescriptions }                  from '@/lib/dal/prescriptions';
 import { getMedicationTimingTypes, getAssignablePeople, getMedications } from '@/lib/dal/reference';
 import { getProviders }                         from '@/lib/dal/providers';
 import { PrescriptionsClient }                    from '@/components/medications/PrescriptionsClient';
+import { Header, PageBody } from '@/components/layout';
 
 export default async function MedicationsPage() {
   const supabase = await createClient();
@@ -24,10 +25,8 @@ export default async function MedicationsPage() {
   }));
 
   return (
-    <div className="page-content">
-      <div className="page-header">
-        <h1 className="page-header__title">💊 Medications</h1>
-      </div>
+    <PageBody>
+      <Header title='💊 Medications'/>
       <PrescriptionsClient
         prescriptionsByPerson={prescriptionsByPerson}
         medications={medications}
@@ -35,6 +34,6 @@ export default async function MedicationsPage() {
         people={people}
         providers={providers}
       />
-    </div>
+    </PageBody>
   );
 }

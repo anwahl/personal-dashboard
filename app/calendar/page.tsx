@@ -1,15 +1,14 @@
+import { Header, PageBody } from '@/components/layout';
 import { SideCalendar } from '@/components/layout/SideCalendar';
 
 export default async function CalendarPage() {
     return (
-        <div className="page-content">
-            <div className="page-header">
-                <h1 className="page-header__title">Calendar</h1>
-            </div>
+        <PageBody>
+            <Header title='Calendar'/>
 
             <div className='calendar-page--calendar'>
                 <SideCalendar />
             </div>
-        </div>
+        </PageBody>
     );
 }

@@ -3,6 +3,7 @@ import { getAllAppointments }   from '@/lib/dal/appointments';
 import { getAppointmentTypes, getPeople } from '@/lib/dal/reference';
 import { getProviders }        from '@/lib/dal/providers';
 import { AppointmentsClient }  from '@/components/appointments/AppointmentsClient';
+import { Header, PageBody } from '@/components/layout';
 
 export default async function AppointmentsPage() {
   const supabase = await createClient();
@@ -14,10 +15,8 @@ export default async function AppointmentsPage() {
   ]);
 
   return (
-    <div className="page-content">
-      <div className="page-header">
-        <h1 className="page-header__title">🏥 Appointments</h1>
-      </div>
+    <PageBody>
+      <Header title='🏥 Appointments'/>
       <AppointmentsClient
         upcoming={upcoming}
         past={past}
@@ -25,6 +24,6 @@ export default async function AppointmentsPage() {
         people={people}
         providers={providers}
       />
-    </div>
+    </PageBody>
   );
 }

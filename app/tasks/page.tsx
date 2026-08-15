@@ -4,21 +4,20 @@ import { getTaskStatuses, getTaskPriorities, getAssignablePeople } from '@/lib/d
 import { TaskList } from '@/components/tasks/TaskList';
 import { localTodayISO } from '@/lib/utils/dates';
 import { QuickAdd } from '@/components/tasks/TaskForm';
+import { Header, PageBody } from '@/components/layout';
 
 export default async function TasksPage() {
   const supabase = await createClient();
   const [taskData, statuses, priorities, people] = await Promise.all([
     getTasksByDateContext(supabase, localTodayISO()),
-    getTaskStatuses(supabase, true),   // include all for form
+    getTaskStatuses(supabase, true),
     getTaskPriorities(supabase),
     getAssignablePeople(supabase),
   ]);
 
   return (
-    <div className="page-content">
-      <div className="page-header">
-        <h1 className="page-header__title">✅ Tasks</h1>
-      </div>
+    <PageBody>
+      <Header title='✅ Tasks' />
       <QuickAdd
         statuses={statuses} 
         priorities={priorities}
@@ -30,6 +29,6 @@ export default async function TasksPage() {
         statuses={statuses}
         people={people}
       />
-    </div>
+    </PageBody>
   );
 }

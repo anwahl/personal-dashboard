@@ -4,6 +4,7 @@ import { getPersonBySlug, getAllPeople, getPersonPageData } from '@/lib/dal/peop
 import { getPeopleCategories } from '@/lib/dal/reference';
 import { PeoplePageClient }   from '@/components/people/PeoplePageClient';
 import { PeopleNavTabs }       from '@/components/people/PeopleNavTabs';
+import { PageBody } from '@/components/layout';
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -24,7 +25,7 @@ export default async function PersonPage({ params }: Readonly<Props>) {
   const pageData = await getPersonPageData(supabase, person);
 
   return (
-    <div className="page-content">
+    <PageBody>
       <PeopleNavTabs
         people={allPeople}
         categories={peopleCategories}
@@ -33,6 +34,6 @@ export default async function PersonPage({ params }: Readonly<Props>) {
       />
 
       <PeoplePageClient data={pageData} peopleCategories={peopleCategories} />
-    </div>
+    </PageBody>
   );
 }

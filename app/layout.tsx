@@ -102,10 +102,9 @@ export default function RootLayout({
           </main>
         </div>
 
-        {/* Bottom nav — mobile 
-        <BottomNav />*/}
+        {/* Bottom nav — mobile */}
         <MobileNavBar />
-
+        
       </body>
     </html>
   );

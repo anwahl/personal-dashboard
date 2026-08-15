@@ -15,6 +15,7 @@ import { getInProgressMediaEntries }            from '@/lib/dal/media';
 import { TaskList }                             from '@/components/tasks/TaskList';
 import { UpcomingAppointments }                 from '@/components/appointments/UpcomingAppointments';
 import { QuickAdd } from '@/components/tasks/TaskForm';
+import { PageBody } from '@/components/layout';
 
 export default async function HubPage() {
   const today    = localTodayISO();
@@ -39,7 +40,7 @@ export default async function HubPage() {
   ]);
 
   return (
-    <div className="page-content">
+    <PageBody>
 
       {/* ── Top bar ── */}
       <div className="hub-top">
@@ -85,6 +86,6 @@ export default async function HubPage() {
           statusTypeLinks={statusTypeLinks}
           open={true}
         />
-    </div>
+    </PageBody>
   );
 }
