@@ -56,7 +56,7 @@ export function BarChart({ chart, data }: Readonly<Props>) {
     <div className="chart-block">
       <h3 className="chart-block__title">{chart.title}</h3>
       <div className="chart-scroll">
-        <svg width={SVG_W} height={CHART_H} style={{ display: 'block' }}>
+        <svg width={SVG_W} height={CHART_H} className='style-block'>
 
           {/* Y grid + tick labels */}
           {Y_TICKS.map(t => (
@@ -85,7 +85,6 @@ export function BarChart({ chart, data }: Readonly<Props>) {
                       key={link.trackable_id}
                       x={bx} y={toY(v)} width={BAR_W} height={barH(v)}
                       fill={color} fillOpacity={isHov ? 1 : 0.75} rx={1}
-                      className="chart-bar"
                       onMouseEnter={() => setHovered({ date: dp.date, trackableId: link.trackable_id, value: v })}
                       onMouseLeave={() => setHovered(null)}
                     />
@@ -109,7 +108,7 @@ export function BarChart({ chart, data }: Readonly<Props>) {
               <g>
                 <rect x={gx + 6} y={toY(hovered.value) - 28} width={148} height={22}
                   rx={4} fill="var(--surface-high)" stroke="var(--border)" />
-                <text x={gx + 12} y={toY(hovered.value) - 12} className="chart-tooltip-text">
+                <text x={gx + 12} y={toY(hovered.value) - 12}>
                   {hovered.date} · {link?.trackable.name}: {hovered.value}
                 </text>
               </g>

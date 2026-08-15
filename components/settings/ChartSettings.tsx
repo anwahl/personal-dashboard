@@ -397,8 +397,8 @@ export function ChartSettings({ chartDefinitions, trackables, categories, icons 
             <summary className="settings-section__header" style={{ padding: '8px 0' }}>
               <span className="chart-settings-type-group__heading" style={{ margin: 0 }}>
                 {CHART_TYPE_META[type].label}
-                <span className="manage-item__meta" style={{ marginLeft: 8 }}>{group.length}</span>
-                {hasIssues && <span className="badge badge--warn" style={{ marginLeft: 6 }}>issues</span>}
+                <span className="manage-item__meta margin-left-md">{group.length}</span>
+                {hasIssues && <span className="badge badge--warn margin-left-sm">issues</span>}
               </span>
               <span className="settings-section__caret">▸</span>
             </summary>

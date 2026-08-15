@@ -50,7 +50,7 @@ export function HabitHeatmap({ chart, data, fromDate, toDate, icons }: Readonly<
     <div className="chart-block">
       <h3 className="chart-block__title">{chart.title}</h3>
       <div className="chart-scroll">
-        <svg width={svgW} height={svgH} style={{ display: 'block' }}>
+        <svg width={svgW} height={svgH} className='style-block'>
 
           {/* Month labels on top axis */}
           {dates.map((date, i) => {
@@ -58,8 +58,7 @@ export function HabitHeatmap({ chart, data, fromDate, toDate, icons }: Readonly<
             return (
               <text key={date}
                 x={LABEL_W + i * CELL + 2}
-                y={12}
-                className="chart-tick--month">
+                y={12}>
                 {date.slice(0, 7)}
               </text>
             );

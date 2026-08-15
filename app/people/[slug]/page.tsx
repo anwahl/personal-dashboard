@@ -1,6 +1,6 @@
 import { notFound }           from 'next/navigation';
 import { createClient }       from '@/lib/supabase/server';
-import { getPersonBySlug, getAllPeople, getPersonPageData, personSlug } from '@/lib/dal/people';
+import { getPersonBySlug, getAllPeople, getPersonPageData } from '@/lib/dal/people';
 import { getPeopleCategories } from '@/lib/dal/reference';
 import { PeoplePageClient }   from '@/components/people/PeoplePageClient';
 import { PeopleNavTabs }       from '@/components/people/PeopleNavTabs';

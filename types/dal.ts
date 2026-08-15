@@ -54,13 +54,12 @@ import type {
   ChartDefinitionRow,
   ChartTrackableLinkRow,
   IconRow,
-  CalendarTokenRow,
+  
 } from "./schema";
 
 // Re-export raw rows that components may need directly
 export type {
   IconRow,
-  CalendarTokenRow,
   PeopleCategoryRow,
   ChartCategoryRow,
   DailyTrackableRow,
@@ -401,6 +400,7 @@ export {
   type LastTimeMediaRow,
   type LastTimeCustomRow,
   type LastTimeLatestRow,
+  type CalendarTokenRow,
 } from "./schema";
 
 // ── Weekly journal ─────────────────────────────────────────────────────────────

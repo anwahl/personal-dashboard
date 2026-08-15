@@ -6,14 +6,12 @@
  * Renders a single prescription change history entry.
  * Used by PrescriptionDetailClient and AppointmentDetailClient (MedChangesSection).
  */
-
-import Link          from 'next/link';
-import { ConfirmButton, FieldActions, Item,
-  CardGrid, CardGridColumn } from '@/components/ui';
-import type { PrescriptionChangeRow as PrescriptionChangeRowType } from '@/types/schema';
+import { ConfirmButton, FieldActions,
+  Item, CardGrid, CardGridColumn }        from '@/components/ui';
+import type { PrescriptionChangeRow }     from '@/types/schema';
 
 interface Props {
-  h:        PrescriptionChangeRowType;
+  h:        PrescriptionChangeRow;
   onRemove: (id: number) => void;
   /** Optional label shown above the row — used by AppointmentDetailClient
    *  to display the prescription name when multiple prescriptions are listed. */

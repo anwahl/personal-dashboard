@@ -91,7 +91,6 @@ export function TimelineScatterChart({ chart, data }: Readonly<Props>) {
                   cx={x} cy={y} r={isHov ? 6 : 4}
                   fill={color} fillOpacity={0.85}
                   stroke={isHov ? 'var(--bg)' : 'none'} strokeWidth={1.5}
-                  className="chart-dot chart-dot--animated"
                   onMouseEnter={() => setHovered({ date: dp.date, trackableId: id, value: v })}
                 />
               );
@@ -110,7 +109,7 @@ export function TimelineScatterChart({ chart, data }: Readonly<Props>) {
                   stroke="var(--text-faint)" strokeWidth={1} strokeDasharray="3,2" />
                 <rect x={x + 8} y={y - 28} width={150} height={22} rx={4}
                   fill="var(--surface-high)" stroke="var(--border)" />
-                <text x={x + 14} y={y - 12} className="chart-tooltip-text">
+                <text x={x + 14} y={y - 12}>
                   {hovered.date} · {link?.trackable.name}: {hovered.value}
                 </text>
               </g>

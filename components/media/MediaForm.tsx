@@ -18,6 +18,7 @@ import type {
   MediaTypeRow, MediaStatusRow, MediaStatusTypeLinkRow,
 } from '@/types/schema';
 import type { MediaSearchResult } from '@/app/api/media-search/route';
+import { capitalize } from '@/lib/utils/strings';
 
 // ── Shared helpers (exported for use in view/display code) ────────────────────
 
@@ -25,10 +26,6 @@ export const STATUS_EMOJI: Record<string, string> = {
   watching: '▶️', reading: '📖', playing: '🎮', finished: '✅',
   dropped: '⛔', 'want-to': '🔖', paused: '⏸️',
 };
-
-export function capitalize(s: string) {
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
 
 export function validStatusesForType(
   mediaTypeId: number,

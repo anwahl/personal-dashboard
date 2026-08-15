@@ -9,7 +9,7 @@ import {
   updateMediaEntry, createMediaEntry, addMediaStatusEntry, deleteMediaEntry,
 } from '@/lib/dal/media';
 import type { MediaEntryDetail }  from '@/types/dal';
-import { formatMediumDate, formatShortDate, localTodayISO } from '@/lib/utils/dates';
+import { formatShortDate, localTodayISO } from '@/lib/utils/dates';
 import type {
   MediaTypeRow, MediaStatusRow,
   MediaNoteRow, MediaStatusTypeLinkRow,
@@ -17,9 +17,10 @@ import type {
 import {
   MediaForm, MediaFormValues,
   emptyMediaFormValues, entryToMediaFormValues,
-  STATUS_EMOJI, capitalize,
+  STATUS_EMOJI
 } from './MediaForm';
 import { FieldActions, FieldGrid, InputField } from '../ui/Display';
+import { capitalize } from '@/lib/utils/strings';
 
 interface Props {
   entries:         MediaEntryDetail[];

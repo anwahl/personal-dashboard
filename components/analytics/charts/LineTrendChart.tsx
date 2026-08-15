@@ -106,7 +106,6 @@ export function LineTrendChart({ chart, data }: Readonly<Props>) {
                   return (
                     <circle key={pt.date} cx={x} cy={toY(pt.v)} r={3}
                       fill={color} stroke="var(--bg)" strokeWidth={1}
-                      className="chart-dot"
                       onMouseEnter={() => setHoveredDate(pt.date)}
                     />
                   );
@@ -129,7 +128,6 @@ export function LineTrendChart({ chart, data }: Readonly<Props>) {
                   const color = link.trackable.color_hex ?? 'var(--accent)';
                   return (
                     <text key={link.trackable_id} x={hx + 6} y={toY(v) - 4}
-                      className="chart-hover-label"
                       style={{ fill: color }}>
                       {link.trackable.name}: {v}
                     </text>

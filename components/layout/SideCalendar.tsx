@@ -87,7 +87,7 @@ export function SideCalendar() {
           const weekNum  = getSundayWeekNumber(sunday);
           const hasEntry = weeklyDates.has(sunday);
           return (
-            <div key={sunday} className="side-calendar__week-row" style={{ display: 'contents' }}>
+            <div key={sunday} style={{ display: 'contents' }}>
               <Link
                 href={`/journal/weekly/${sunday}`}
                 className={`side-calendar__week-num${hasEntry ? ' side-calendar__week-num--has-entry' : ''}`}

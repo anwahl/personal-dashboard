@@ -12,8 +12,8 @@ import { useRouter }                          from 'next/navigation';
 import { applyPrescriptionChanges, updatePrescription } from '@/lib/dal/prescriptions';
 import { deletePrescriptionChange }           from '@/lib/dal/appointments';
 import { createClient }                       from '@/lib/supabase/client';
-import { Button, Card, CardActions, CardBody, CardGrid, CardGridColumn, CardHeader, CardSection,
-  CardSectionLabel, CardTitle, ConfirmButton, Field, FieldActions, FieldGrid,
+import { Button, Card, CardActions, CardBody, CardHeader, CardSection,
+  CardSectionLabel, CardTitle, Field, FieldGrid,
   Item, SaveState, SaveStatus } from '@/components/ui';
 import type { PrescriptionDetail }            from '@/types/dal';
 import type {

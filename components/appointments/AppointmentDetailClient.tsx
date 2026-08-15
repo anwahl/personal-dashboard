@@ -103,7 +103,7 @@ function MedChangesSection({
           </CardSection>
         )}
         {history.length === 0 && !selectedRxId && (
-          <Item itemType='info' value='No prescription changes logged for this appointment.' />
+          <Item itemType='info' value='No prescription changes logged during this appointment.' />
         )}
         <InputField label="Prescription" id="rx-select">
           <select id="rx-select" value={selectedRxId}

@@ -85,7 +85,7 @@ export function ChainChart({ chart, data, fromDate, toDate, icons }: Readonly<Pr
     <div className="chart-block">
       <h3 className="chart-block__title">{chart.title}</h3>
       <div className="chart-scroll">
-        <svg width={svgW} height={svgH} style={{ display: 'block' }}>
+        <svg width={svgW} height={svgH} className='style-block'>
 
           {/* Date labels */}
           {dates.map((date, i) => {
@@ -119,7 +119,7 @@ export function ChainChart({ chart, data, fromDate, toDate, icons }: Readonly<Pr
                   />
                 </foreignObject>
                 {/* Name label */}
-                <text x={22} y={rowCY + 4} className="chain-row-name">
+                <text x={22} y={rowCY + 4}>
                   {link.trackable.name}
                 </text>
 
@@ -179,7 +179,6 @@ export function ChainChart({ chart, data, fromDate, toDate, icons }: Readonly<Pr
                 <text
                   x={cx(dates.length - 1) + CIRCLE_R + 8}
                   y={rowCY + 4}
-                  className="chain-streak-text"
                   style={{
                     fontWeight: streak > 0 ? 700 : 400,
                     fill: streak >= 7 ? color

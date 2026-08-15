@@ -39,7 +39,7 @@ export default async function HubPage() {
   ]);
 
   return (
-    <div className="page-content hub-page">
+    <div className="page-content">
 
       {/* ── Top bar ── */}
       <div className="hub-top">

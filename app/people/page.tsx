@@ -1,9 +1,10 @@
 import { redirect }     from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { getSelfPerson, personSlug } from '@/lib/dal/people';
+import { getSelfPerson } from '@/lib/dal/people';
+import { toSlug } from '@/lib/utils/strings';
 
 export default async function PeoplePage() {
   const supabase = await createClient();
   const self     = await getSelfPerson(supabase);
-  redirect(`/people/${personSlug(self?.person_name ?? 'annie')}`);
+  redirect(`/people/${toSlug(self?.person_name ?? 'annie')}`);
 }

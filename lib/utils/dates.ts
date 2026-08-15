@@ -23,65 +23,39 @@ export function toLocalInput(dateStr: string): string {
     return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
 };
 
+function dateWithOffset(date: Date) {
+  const offsetMin = date.getTimezoneOffset();
+  const offsetSign = offsetMin <= 0 ? '+' : '-';
+  const absOffsetMin = Math.abs(offsetMin);
+
+  // Format timezone hours and minutes (e.g., 06:00)
+  const hh = String(Math.floor(absOffsetMin / 60)).padStart(2, '0');
+  const mm = String(absOffsetMin % 60).padStart(2, '0');
+  const tzOffset = `${offsetSign}${hh}:${mm}`;
+
+  // Shift date by timezone offset to construct exact local parts
+  const localShifted = new Date(date.getTime() - (offsetMin * 60 * 1000));
+  const pureISO = localShifted.toISOString().slice(0, -1); // Remove trailing 'Z'
+
+  const newDate = new Date(`${pureISO}${tzOffset}`);
+  return newDate;
+}
+
 /**
  * Returns the provided date as ISO date using the browser's LOCAL timezone.
  */
 export function localISODateFromDateString(dateStr: string): string {
-    const date = new Date(dateStr + "T12:00:00");
-    const offsetMin = date.getTimezoneOffset();
-    const offsetSign = offsetMin <= 0 ? '+' : '-';
-    const absOffsetMin = Math.abs(offsetMin);
-    
-    // Format timezone hours and minutes (e.g., 06:00)
-    const hh = String(Math.floor(absOffsetMin / 60)).padStart(2, '0');
-    const mm = String(absOffsetMin % 60).padStart(2, '0');
-    const tzOffset = `${offsetSign}${hh}:${mm}`;
-    
-    // Shift date by timezone offset to construct exact local parts
-    const localShifted = new Date(date.getTime() - (offsetMin * 60 * 1000));
-    const pureISO = localShifted.toISOString().slice(0, -1); // Remove trailing 'Z'
-    
-    const newDate = new Date(`${pureISO}${tzOffset}`);
-    
+    const newDate = dateWithOffset(new Date(dateStr + "T12:00:00"));
     return `${newDate.getFullYear()}-${p(newDate.getMonth()+1)}-${p(newDate.getDate())}`;
 }
 
 export function localISODateTimeFromDateString(dateStr: string): string {
-    const date = new Date(dateStr);
-    const offsetMin = date.getTimezoneOffset();
-    const offsetSign = offsetMin <= 0 ? '+' : '-';
-    const absOffsetMin = Math.abs(offsetMin);
-    
-    // Format timezone hours and minutes (e.g., 06:00)
-    const hh = String(Math.floor(absOffsetMin / 60)).padStart(2, '0');
-    const mm = String(absOffsetMin % 60).padStart(2, '0');
-    const tzOffset = `${offsetSign}${hh}:${mm}`;
-
-    // Shift date by timezone offset to construct exact local parts
-    const localShifted = new Date(date.getTime() - (offsetMin * 60 * 1000));
-    const pureISO = localShifted.toISOString().slice(0, -1); // Remove trailing 'Z'
-
-    const newDate = new Date(`${pureISO}${tzOffset}`);
-    
+    const newDate = dateWithOffset(new Date(dateStr));
     return `${newDate.getFullYear()}-${p(newDate.getMonth()+1)}-${p(newDate.getDate())}T${String(newDate.getHours())}:${String(newDate.getMinutes())}`;
 }
 
 export function localISODate(date: Date): string {
-    const offsetMin = date.getTimezoneOffset();
-    const offsetSign = offsetMin <= 0 ? '+' : '-';
-    const absOffsetMin = Math.abs(offsetMin);
-    
-    // Format timezone hours and minutes (e.g., 06:00)
-    const hh = String(Math.floor(absOffsetMin / 60)).padStart(2, '0');
-    const mm = String(absOffsetMin % 60).padStart(2, '0');
-    const tzOffset = `${offsetSign}${hh}:${mm}`;
-
-    // Shift date by timezone offset to construct exact local parts
-    const localShifted = new Date(date.getTime() - (offsetMin * 60 * 1000));
-    const pureISO = localShifted.toISOString().slice(0, -1); // Remove trailing 'Z'
-
-    const newDate = new Date(`${pureISO}${tzOffset}`);
-    
+    const newDate = dateWithOffset(date);
     return `${newDate.getFullYear()}-${p(newDate.getMonth()+1)}-${p(newDate.getDate())}`;
 }
 

@@ -25,9 +25,10 @@ import type {
 import {
   MediaForm, MediaFormValues,
   entryToMediaFormValues,
-  STATUS_EMOJI, capitalize, validStatusesForType,
+  STATUS_EMOJI
 } from './MediaForm';
 import { Field, FieldActions, FieldGrid } from '../ui/Display';
+import { capitalize } from '@/lib/utils/strings';
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -114,12 +115,8 @@ export function MediaDetailClient({
   }, [supabase, entry.id, router]);
 
   // ── View mode ────────────────────────────────────────────────────────────────
-
-  const filteredStatuses = validStatusesForType(entry.media_type_id, mediaStatuses, statusTypeLinks);
-
   if (mode === 'view') {
     return (
-      <>
       <Card>
         <CardHeader>
           <CardTitle>{entry.title}</CardTitle>
@@ -240,7 +237,6 @@ export function MediaDetailClient({
           </SubCard>
         </CardBody>
       </Card>
-      </>
     );
   }
 
