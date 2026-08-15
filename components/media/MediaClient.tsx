@@ -131,7 +131,7 @@ function MediaItem({ entry }: Readonly<{
               />
               </InputField>
             </FieldGrid>
-            <FieldActions boxed={false} alignment='right'>
+            <FieldActions alignment='right'>
               <Button size="sm" variant="action-alt"
                 onClick={addNote}
                 disabled={addingNote || !newNote.trim()}>
@@ -228,7 +228,7 @@ export function MediaClient({ entries, mediaTypes, mediaStatuses, statusTypeLink
     <>
       <TabBar tabs={typeTabs} active={activeTypeId} onChange={handleTypeChange} />
       <span className='pad'>
-        <FieldActions boxed={false} alignment='right'>
+        <FieldActions alignment='right'>
           <Button variant="accent" size="sm" onClick={openAdd}>+ Add</Button>
         </FieldActions>
       </span>

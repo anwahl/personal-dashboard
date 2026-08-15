@@ -608,6 +608,12 @@ hr.hr-md {
   }
 }
 
+.card__grid--row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: var(--gap, 1rem);
+}
+
 /*.card__grid--column {
 
 }*/

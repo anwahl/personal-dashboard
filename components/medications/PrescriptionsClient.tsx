@@ -69,7 +69,7 @@ Readonly<{
         )}
       </CardGridColumn>
       <CardGridColumn>
-        <FieldActions boxed={false} alignment='right'>
+        <FieldActions alignment='right'>
           <Button size="sm" variant="ghost" onClick={onEdit}>Edit</Button>
           {isActive && <span className="badge badge--success">Active</span>}
         </FieldActions>
@@ -168,7 +168,7 @@ export function PrescriptionsClient({ prescriptionsByPerson, medications, timing
 
   return (
     <>
-      <FieldActions alignment='right' boxed={false}>
+      <FieldActions alignment='right'>
         <Button variant="accent" onClick={() => openNew()}>
           + Add Prescription
         </Button>

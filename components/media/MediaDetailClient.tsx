@@ -209,7 +209,7 @@ export function MediaDetailClient({
                     />
                   </InputField>
                 </FieldGrid>
-                <FieldActions boxed={false} alignment='right'>
+                <FieldActions alignment='right'>
                   <Button size="sm" variant="action-alt"
                     onClick={addNote}
                     disabled={addingNote || !newNote.trim()}>

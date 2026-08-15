@@ -14,7 +14,8 @@ export {
   CardSection,
   CardSectionLabel,
   CardGrid,
-  CardGridColumn
+  CardGridColumn,
+  CardGridRow
 } from "./Card";
 export { SliderField } from "./SliderField";
 export { Toggle, TabBar } from "./Controls";

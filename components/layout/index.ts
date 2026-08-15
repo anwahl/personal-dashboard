@@ -1,0 +1,1 @@
+export { Header, PageBody } from "./Page";

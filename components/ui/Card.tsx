@@ -23,11 +23,15 @@ export function CardGridColumn({ children, className }: Readonly<CardProps>) {
   return <div className={['card__grid--column', className].filter(Boolean).join(' ')}>{children}</div>;
 }
 
-export function CardGrid({ children, columns = 2, className }:
-    Readonly<CardProps & { columns?: number; }>) {
+export function CardGridRow({ children, className }: Readonly<CardProps>) {
+  return <div className={['card__grid--row', className].filter(Boolean).join(' ')}>{children}</div>;
+}
+
+export function CardGrid({ children, columns = 2, rows = false, className }:
+    Readonly<CardProps & { columns?: number; rows?: boolean; }>) {
   if (columns === 0 || !columns) { columns = 1; }
-  const childArray    = Children.toArray(children);
-  
+  const childArray = Children.toArray(children);
+
   if (childArray.every(c => isValidElement(c) && c.type === CardGridColumn)) {
     return (
       <div className={['card__grid', className].filter(Boolean).join(' ')}
@@ -37,17 +41,17 @@ export function CardGrid({ children, columns = 2, className }:
     );
   }
 
-  const chunkSize   = Math.ceil(childArray.length / columns);
-  const cols        = Array.from({ length: columns }, (_, i) =>
+  const chunkSize = rows ? columns : Math.ceil(childArray.length / columns);
+  const chunks    = Array.from({ length: Math.ceil(childArray.length / chunkSize) }, (_, i) =>
     childArray.slice(i * chunkSize, (i + 1) * chunkSize)
   );
 
   return (
     <div className={['card__grid', className].filter(Boolean).join(' ')}
       style={{ '--columns': columns } as React.CSSProperties}>
-      {cols.map((col, i) => (
+      {chunks.map((chunk, i) => (
         <CardGridColumn key={i}>
-          {col}
+          {chunk}
         </CardGridColumn>
       ))}
     </div>

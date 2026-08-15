@@ -231,7 +231,7 @@ export function TaskForm({
         </FieldGrid>
 
         {showDateShortcuts && contextDate && (
-          <FieldActions>
+          <FieldActions boxed>
             <Button
               size="sm"
               variant="action"
@@ -566,7 +566,7 @@ export function QuickAdd({
               />
             </InputField>
           </FieldGrid>
-          <FieldActions>
+          <FieldActions boxed>
             <Button
               size="sm"
               variant="action"

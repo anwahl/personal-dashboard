@@ -24,6 +24,7 @@ import { RX_FIELDS, RxFieldKey, getRxDisplayValue } from '@/lib/constants/prescr
 import { RxPendingChanges }  from './RxPendingChanges';
 import { PrescriptionForm, PrescriptionFormValues, rxToFormValues } from './PrescriptionForm';
 import Link from 'next/link';
+import { PrescriptionChangeDisplayRow } from './PrescriptionChangeDisplayRow';
 
 
 interface Props {
@@ -106,7 +107,6 @@ export function PrescriptionDetailClient({ prescription: rx, initialHistory, tim
         </CardTitle>
         <CardActions>
           <Button variant="ghost" size="sm" onClick={() => setMode('edit')}>✏️ Edit</Button>
-          <Button href="/medications" variant="ghost" size="sm">← Medications</Button>
         </CardActions>
       </CardHeader>
       <CardBody>
@@ -128,36 +128,22 @@ export function PrescriptionDetailClient({ prescription: rx, initialHistory, tim
             <>
               {history.map(h => (
                 <span key={h.id}>
-                    {h.appointment_id && (
-                      <Item itemType='meta'
-                        value = {
-                          <Link href={`/appointments/${h.appointment_id}`} className="link__generic">
-                            Appointment
-                          </Link>
-                        }
-                      />
-                    )}
-                    <Item itemType='title' value={h.field_changed} />
-                    <CardGrid columns={2}>
-                      <CardGridColumn>
-                        <CardGrid columns={3}>
-                          {h.previous_value ? <Item itemType='info' value={h.previous_value} /> : <Item itemType='info' value='N/A' />}
-                          {h.previous_value || h.new_value ? '→' : ''}
-                          {h.new_value ? <Item itemType='info' value={h.new_value} /> : <Item itemType='info' value='N/A' />}
-                        </CardGrid>
-                      </CardGridColumn>
-                      <CardGridColumn>
-                        <FieldActions boxed={false} alignment='right'>
-                          <ConfirmButton onConfirm={() => removeHistory(h.id)} size="sm">✕</ConfirmButton>
-                        </FieldActions>
-                      </CardGridColumn>
-                    </CardGrid>
+                  {h.appointment_id && (
+                    <Item itemType='meta'
+                      value = {
+                        <Link href={`/appointments/${h.appointment_id}`} className="link__generic">
+                          Appointment
+                        </Link>
+                      }
+                    />
+                  )}
+                  <PrescriptionChangeDisplayRow key={h.id} h={h} onRemove={removeHistory} />
                 </span>
               ))}
             </>
           )}
           {history.length === 0 && (
-            <p className="expand-panel__empty">No changes logged yet.</p>
+            <Item itemType='info' value='No changes logged for this prescription.' />
           )}
 
           <RxPendingChanges

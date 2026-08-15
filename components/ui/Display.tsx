@@ -161,7 +161,7 @@ type AlignmentType = 'top' | 'bottom' | 'middle' | 'left' | 'right';
 export function FieldActions({
   children,
   alignment = 'top',
-  boxed = true
+  boxed = false
 }: Readonly<{
   children: ReactNode;
   alignment?: AlignmentType;

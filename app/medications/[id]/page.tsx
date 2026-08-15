@@ -5,6 +5,7 @@ import { getPrescriptionById,
 import { getAssignablePeople, getMedications, getMedicationTimingTypes }      from '@/lib/dal/reference';
 import { PrescriptionDetailClient }      from '@/components/medications/PrescriptionDetailClient';
 import { getProviders } from '@/lib/dal/providers';
+import { Header, PageBody } from '@/components/layout';
 
 interface Props { params: Promise<{ id: string }>; }
 
@@ -28,10 +29,8 @@ export default async function PrescriptionDetailPage({ params }: Readonly<Props>
   const name = rx.alias ?? rx.medication.medication_name;
 
   return (
-    <div className="page-content">
-      <div className="page-header">
-        <h1 className="page-header__title">{name}</h1>
-      </div>
+    <PageBody>
+      <Header href='/medications' linkLabel='← Medications' title={name} />
       <PrescriptionDetailClient
         prescription={rx}
         initialHistory={initialHistory}
@@ -39,6 +38,6 @@ export default async function PrescriptionDetailPage({ params }: Readonly<Props>
         medications={medications}
         people={people}
         providers={providers}      />
-    </div>
+    </PageBody>
   );
 }

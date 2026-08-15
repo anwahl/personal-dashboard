@@ -6,7 +6,13 @@ import {
   CardTitle, CardBody, 
   FieldActions, Field, FieldGrid,
   CardActions,
-  ExpandPanel}                       from '@/components/ui';
+  ExpandPanel,
+  CardSection,
+  CardSectionLabel,
+  Item, 
+  SubCard,
+  SubCardBody,
+  CardGrid}                       from '@/components/ui';
 import { useState, useCallback }              from 'react';
 import { useRouter }                          from 'next/navigation';
 import { createClient }                       from '@/lib/supabase/client';
@@ -28,6 +34,7 @@ import {
 import { RxPendingChanges }  from '@/components/medications/RxPendingChanges';
 import { AppointmentForm, apptToFormValues }  from './AppointmentForm';
 import type { AppointmentFormValues }         from './AppointmentForm';
+import { PrescriptionChangeDisplayRow } from '../medications/PrescriptionChangeDisplayRow';
 
 
 // ── Appointment label helper ──────────────────────────────────────────────────
@@ -57,7 +64,6 @@ function MedChangesSection({
 }>) {
   const supabase   = createClient();
   const router     = useRouter();
-  const [open,         setOpen]         = useState(false);
   const [history,      setHistory]      = useState(initialHistory);
   const [selectedRxId, setSelectedRxId] = useState('');
 
@@ -67,6 +73,11 @@ function MedChangesSection({
     await deletePrescriptionChange(supabase, id);
     setHistory(h => h.filter(r => r.id !== id));
   };
+
+  const grouped = history.reduce<Record<number, typeof history>>((acc, h) => {
+    (acc[h.prescription_id] ??= []).push(h);
+    return acc;
+  }, {});
 
   const rxName = (id: number) => {
     const rx = activePrescriptions.find(p => p.id === id);
@@ -79,29 +90,20 @@ function MedChangesSection({
         <>
         {/* History log */}
         {history.length > 0 && (
-          <div className="appt-section__history">
-            <p className="expand-panel__label">Change Log</p>
-            {history.map(h => (
-              <div key={h.id} className="manage-item">
-                <span className="manage-item__name">
-                  {rxName(h.prescription_id)} — {h.field_changed}
-                  {(h.previous_value || h.new_value) && (
-                    <span className="manage-item__meta">
-                      {h.previous_value ? ` ${h.previous_value}` : ''}
-                      {h.previous_value && h.new_value ? ' →' : ''}
-                      {h.new_value ? ` ${h.new_value}` : ''}
-                    </span>
-                  )}
-                </span>
-                <div className="manage-item__actions">
-                  <ConfirmButton onConfirm={() => removeHistory(h.id)} size="sm">✕</ConfirmButton>
-                </div>
-              </div>
+          <CardSection>
+            <CardSectionLabel>Change Log</CardSectionLabel>
+            {Object.entries(grouped).map(([rxId, rows]) => (
+              <span key={rxId}>
+                <Item itemType='title' itemModifier={['bold','title']} value={rxName(Number(rxId))} />
+                {rows.map(h => (
+                  <PrescriptionChangeDisplayRow key={h.id} h={h} onRemove={removeHistory} />
+                ))}
+              </span>
             ))}
-          </div>
+          </CardSection>
         )}
         {history.length === 0 && !selectedRxId && (
-          <p className="expand-panel__empty">No prescription changes logged for this appointment.</p>
+          <Item itemType='info' value='No prescription changes logged for this appointment.' />
         )}
         <InputField label="Prescription" id="rx-select">
           <select id="rx-select" value={selectedRxId}
@@ -165,28 +167,38 @@ function FollowUpForm({ appt, onCreated, onCancel }: Readonly<{
   };
 
   return (
-    <div className="follow-up-form">
-      <p className="follow-up-form__title">Schedule Follow-up</p>
-      <div className="field-grid">
-        <InputField label="Date" id="fu-date">
-          <input id="fu-date" type="date" value={date} onChange={e => setDate(e.target.value)} autoFocus />
-        </InputField>
-        <InputField label="Time (optional)" id="fu-time">
-          <input id="fu-time" type="time" value={time} onChange={e => setTime(e.target.value)} />
-        </InputField>
-      </div>
-      <p className="follow-up-form__hint">
-        Copies: {appt.appointment_type?.type_name ?? 'same type'} ·{' '}
-        {appt.person?.person_name ?? 'same person'}
-        {appt.provider ? ` · ${appt.provider.provider_name ?? appt.provider.practice_name}` : ''}
-      </p>
-      <div className="form-panel__actions">
-        <Button variant="accent" onClick={create} disabled={saving || !date}>
-          {saving ? 'Creating…' : 'Create Follow-up'}
-        </Button>
-        <Button variant="ghost" onClick={onCancel}>Cancel</Button>
-      </div>
-    </div>
+    <SubCard>
+      <CardHeader>
+        <CardTitle>
+          Schedule Follow-up
+        </CardTitle>
+      </CardHeader>
+      <SubCardBody>
+        <FieldGrid>
+          <InputField label="Date" id="fu-date">
+            <input id="fu-date" type="date" value={date} onChange={e => setDate(e.target.value)} autoFocus />
+          </InputField>
+          <InputField label="Time (optional)" id="fu-time">
+            <input id="fu-time" type="time" value={time} onChange={e => setTime(e.target.value)} />
+          </InputField>
+        </FieldGrid>
+        <Item itemType='info' itemModifier={['italic', 'meta']}
+          value = {
+            <>
+              Copies: {appt.appointment_type?.type_name ?? 'same type'} ·{' '}
+              {appt.person?.person_name ?? 'same person'}
+              {appt.provider ? ` · ${appt.provider.provider_name ?? appt.provider.practice_name}` : ''}
+            </>
+          }
+        />
+        <FieldActions>
+          <Button variant="accent" onClick={create} disabled={saving || !date}>
+            {saving ? 'Creating…' : 'Create Follow-up'}
+          </Button>
+          <Button variant="ghost" onClick={onCancel}>Cancel</Button>
+        </FieldActions>
+      </SubCardBody>
+    </SubCard>
   );
 }
 
@@ -328,8 +340,14 @@ export function AppointmentDetailClient({
                 <Markdown>{appt.notes}</Markdown>
               } />
           )}
+          <MedChangesSection
+            appointmentId={appt.id}
+            medicationTimings={medicationTimings}
+            activePrescriptions={activePrescriptions}
+            initialHistory={prescriptionChanges}
+          />
 
-          <FieldActions>
+          <CardGrid columns={1} rows>
             {showFollowUp ? (
               <FollowUpForm
                 appt={appt}
@@ -337,21 +355,18 @@ export function AppointmentDetailClient({
                 onCancel={() => setShowFollowUp(false)}
               />
             ) : (
-              <Button variant="action" size="sm" onClick={() => setShowFollowUp(true)}>
-                📅 Schedule Follow-up
-              </Button>
+              <FieldActions alignment='right'>
+                <Button variant="action" size="sm" onClick={() => setShowFollowUp(true)}>
+                  📅 Schedule Follow-up
+                </Button>
+              </FieldActions>
             )}
-            <Button variant="action" size="sm" onClick={createTaskForAppt} disabled={creatingTask}>
-              {taskCreated ? '✓ Task created' : creatingTask ? '…' : '✅ Create Task'}
-            </Button>
-          </FieldActions>
-
-          <MedChangesSection
-            appointmentId={appt.id}
-            medicationTimings={medicationTimings}
-            activePrescriptions={activePrescriptions}
-            initialHistory={prescriptionChanges}
-          />
+            <FieldActions alignment='right'>
+              <Button variant="action" size="sm" onClick={createTaskForAppt} disabled={creatingTask}>
+                {taskCreated ? '✓ Task created' : creatingTask ? '…' : '✅ Create Task'}
+              </Button>
+            </FieldActions>
+          </CardGrid>
         </CardBody>
       </Card>
     );

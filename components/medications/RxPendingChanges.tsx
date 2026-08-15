@@ -13,7 +13,7 @@
  */
 
 import { useState, useCallback }     from 'react';
-import { Button, FieldActions, InputField }                     from '@/components/ui';
+import { Button, CardGridRow, FieldActions, InputField, Item }                     from '@/components/ui';
 import {
   RX_FIELDS, RxFieldKey,
   PendingChange, getRxDisplayValue,
@@ -96,44 +96,44 @@ export function RxPendingChanges({ rx, timings, onApply }: Readonly<Props>) {
             </select>
         </InputField>
       )}
-
-      {pending.map(c => (
-        <div key={c.uid} className="rx-field-change-row">
-          <span className="rx-field-change-row__label">{c.fieldLabel}</span>
-          <span className="rx-field-change-row__prev">{c.previousValue || '—'}</span>
-          <span className="rx-field-change-row__arrow">→</span>
-
-          {c.fieldKey === 'timing_type_id' ? (
-            <select className="rx-field-change-row__input" value={c.newTimingId}
-              onChange={e => updatePending(c.uid, { newTimingId: e.target.value })}>
-              <option value="">No timing</option>
-              {timings.map(t => <option key={t.id} value={t.id}>{t.timing_name}</option>)}
-            </select>
-          ) : c.fieldKey === 'is_active' ? (
-            <select className="rx-field-change-row__input" value={c.newValue}
-              onChange={e => updatePending(c.uid, { newValue: e.target.value })}>
-              <option value="Active">Active</option>
-              <option value="Discontinued">Discontinued</option>
-            </select>
-          ) : (
-            <input
-              type={c.fieldKey.endsWith('_date') ? 'date' : 'text'}
-              className="rx-field-change-row__input"
-              value={c.newValue}
-              onChange={e => updatePending(c.uid, { newValue: e.target.value })}
-              placeholder="New value…"
-            />
-          )}
-
-          <Button size="icon" variant="ghost"
-            onClick={() => setPending(p => p.filter(x => x.uid !== c.uid))}>
-            ✕
-          </Button>
-        </div>
-      ))}
+      
+        {pending.map(c => (
+            <CardGridRow key={c.uid} >
+              <Item itemType='title' value={c.fieldLabel} />
+              <Item itemType='info' value={c.previousValue || '—'} />
+              <Item itemType='info' value='→' />
+              {c.fieldKey === 'timing_type_id' ? (
+                <select className="field" value={c.newTimingId}
+                  onChange={e => updatePending(c.uid, { newTimingId: e.target.value })}>
+                  <option value="">No timing</option>
+                  {timings.map(t => <option key={t.id} value={t.id}>{t.timing_name}</option>)}
+                </select>
+              ) : c.fieldKey === 'is_active' ? (
+                <select className="field" value={c.newValue}
+                  onChange={e => updatePending(c.uid, { newValue: e.target.value })}>
+                  <option value="Active">Active</option>
+                  <option value="Discontinued">Discontinued</option>
+                </select>
+              ) : (
+                <input
+                  type={c.fieldKey.endsWith('_date') ? 'date' : 'text'}
+                  className="field"
+                  value={c.newValue}
+                  onChange={e => updatePending(c.uid, { newValue: e.target.value })}
+                  placeholder="New value…"
+                />
+              )}
+              <FieldActions alignment='right'>
+                <Button size="icon" variant="ghost"
+                  onClick={() => setPending(p => p.filter(x => x.uid !== c.uid))}>
+                  ✕
+                </Button>
+              </FieldActions>
+            </CardGridRow>
+        ))}
 
       {pending.length > 0 && (
-        <FieldActions boxed={false} alignment='bottom'>
+        <FieldActions alignment='bottom'>
           <Button variant="accent" size="sm" onClick={apply} disabled={saving}>
             {saving ? 'Applying…' : `Apply ${pending.length} change${pending.length > 1 ? 's' : ''}`}
           </Button>
