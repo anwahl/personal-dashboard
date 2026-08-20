@@ -6,6 +6,7 @@ export {
   SubCardBody,
   ExpandPanel,
   ExpandCard,
+  ExpandPreview,
   CardHeader,
   CardTitle,
   CardActions,

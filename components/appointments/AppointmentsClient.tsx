@@ -96,7 +96,10 @@ function ApptRow({ appt, onEdit }: Readonly<{ appt: AppointmentDetail; onEdit: (
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
-export function AppointmentsClient({ upcoming, past, appointmentTypes, people, providers }: Readonly<Props>) {
+export function AppointmentsClient({ 
+    upcoming, past, appointmentTypes,
+    people, providers }:
+    Readonly<Props>) {
   const supabase = createClient();
   const router   = useRouter();
 

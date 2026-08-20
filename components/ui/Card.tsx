@@ -81,7 +81,7 @@ export function SubCardBody({ children, className, style }: CardProps & { flush?
   return <div className={['card__sub-body', className].filter(Boolean).join(' ')} style={style}>{children}</div>;
 }
 
-export function ExpandPanel({ shownChildren, hiddenChildren, className, style, title, open = false }: ExpandCardProps) {
+export function ExpandPanel({ shownChildren, hiddenChildren, className, style, title, open = false }: Readonly<ExpandCardProps>) {
   const [expanded, setExpanded] = useState(open);
   return <div className={['card__expand-panel', className].filter(Boolean).join(' ')} style={style}>
             <span className='card__expand-panel--header'>
@@ -97,6 +97,35 @@ export function ExpandPanel({ shownChildren, hiddenChildren, className, style, t
             </span>
             <div className='card__expand-panel--body'>
               {shownChildren}
+              {expanded && (hiddenChildren)}
+            </div>
+          </div>;
+}
+
+export function ExpandPreview({ previewChildren, hiddenChildren, className, style, title, open = false }:
+  Readonly<{
+    previewChildren:   ReactNode;
+    hiddenChildren:   ReactNode;
+    className?: string;
+    style?:     React.CSSProperties;
+    title?:     string;
+    open?: boolean}
+  >) {
+  const [expanded, setExpanded] = useState(open);
+  return <div className={['card__expand-panel', className].filter(Boolean).join(' ')} style={style}>
+            <span className='card__expand-panel--header'>
+              {title && (
+                <span className={'card__expand-panel--title'}>
+                  {title}
+                </span>)}
+                <span 
+                  className={`${expanded ? 'card__expand--chevron-expanded'
+                                : 'card__expand--chevron-expand'}`} 
+                  onClick={() => setExpanded(e => !e)}
+                />
+            </span>
+            <div className='card__expand-panel--body'>
+              {!expanded && (previewChildren)}
               {expanded && (hiddenChildren)}
             </div>
           </div>;
