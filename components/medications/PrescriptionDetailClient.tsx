@@ -1,8 +1,6 @@
 'use client';
 
 /**
- * components/medications/PrescriptionDetailClient.tsx
- *
  * Detail page for a single prescription — shows current field values
  * and the full RxChangeHistory log.
  */

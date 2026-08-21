@@ -34,10 +34,13 @@ interface Props {
 export function RxPendingChanges({ rx, onApply }: Readonly<Props>) {
   const { data: timings = [], error: timingsError } = useMedicationTimingTypes();
   const { addToast } = useToast();
-  useEffect(() => { if (timingsError) addToast('Failed to load timing types', 'error'); }, [timingsError, addToast]);
   const [pending,       setPending]       = useState<PendingChange[]>([]);
   const [saving,        setSaving]        = useState(false);
   const [selectedField, setSelectedField] = useState('');
+  useEffect(() => {
+    if (timingsError)
+      addToast('Failed to load timing types', 'error');
+  }, [timingsError, addToast]);
 
   const availableFields = RX_FIELDS.filter(f => !pending.some(c => c.fieldKey === f.key));
 

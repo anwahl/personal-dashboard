@@ -1,8 +1,6 @@
 'use client';
 
 /**
- * lib/hooks/reference.ts
- *
  * SWR hooks for reference / lookup data (dropdown options, type lists, etc.).
  *
  * Design decisions:
@@ -45,7 +43,6 @@ import {
 } from '@/lib/dal/reference';
 import { getProviders } from '@/lib/dal/providers';
 
-// One browser client for all hooks in this module.
 const supabase = createClient();
 
 // ── People ────────────────────────────────────────────────────────────────────

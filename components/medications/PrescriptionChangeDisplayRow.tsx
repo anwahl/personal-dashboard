@@ -1,8 +1,6 @@
 'use client';
 
 /**
- * components/medications/PrescriptionChangeRow.tsx
- *
  * Renders a single prescription change history entry.
  * Used by PrescriptionDetailClient and AppointmentDetailClient (MedChangesSection).
  */
@@ -13,8 +11,6 @@ import type { PrescriptionChangeRow }     from '@/types/schema';
 interface Props {
   h:        PrescriptionChangeRow;
   onRemove: (id: number) => void;
-  /** Optional label shown above the row — used by AppointmentDetailClient
-   *  to display the prescription name when multiple prescriptions are listed. */
   label?:   string;
 }
 

@@ -1,8 +1,6 @@
 'use client';
 
 /**
- * components/layout/ClientConfig.tsx
- *
  * Client-side configuration wrapper placed in the root layout (app/layout.tsx).
  *
  * Provides:
@@ -27,10 +25,10 @@ const SWR_CONFIG = {
   /** Don't refetch when the browser reconnects to the network. */
   revalidateOnReconnect: false,
   /**
-   * 5-minute dedup window.  If two components mount and both call e.g.
-   * usePeople() within the same 5 minutes, only one network request is made.
+   * 2.5-minute dedup window.  If two components mount and both call e.g.
+   * usePeople() within the same 2.5 minutes, only one network request is made.
    */
-  dedupingInterval: 300_000,
+  dedupingInterval: 150_000,
 } as const;
 
 export function ClientConfig({ children }: Readonly<{ children: ReactNode }>) {

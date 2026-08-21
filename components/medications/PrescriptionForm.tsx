@@ -1,8 +1,6 @@
 'use client';
 
 /**
- * components/medications/PrescriptionForm.tsx
- *
  * Shared form used by PrescriptionsClient (add/edit from the list page) and
  * PrescriptionDetailClient (edit mode on the detail page).
  *

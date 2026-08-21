@@ -95,16 +95,11 @@ export default function RootLayout({
         ${maven.variable} ${elite.variable} ${quicksand.variable}`}>
         <ClientConfig>
           <div className="app-shell">
-            {/* Sidebar — desktop & tablet landscape */}
             <SideNav />
-
-            {/* Main content area */}
             <main className="main-area">
               {children}
             </main>
           </div>
-
-          {/* Bottom nav — mobile */}
           <MobileNavBar />
         </ClientConfig>
       </body>

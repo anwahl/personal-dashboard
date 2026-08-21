@@ -6,21 +6,18 @@
  * secondary list. contextDate is the anchor "today" for countdown math.
  */
 
-import { Card, CardHeader, CardTitle, CardBody, CardSection, SubCard, SubCardBody, Field, Chip, Info, CardSectionLabel, ChipGroup } from '@/components/ui';
-import type { AppointmentDetail } from '@/types/dal';
-import { daysUntil, formatMediumDate, formatTime } from '@/lib/utils/dates';
-import Link from 'next/link';
-import { FieldGrid } from '../ui/Display';
+import { Card, CardHeader, CardTitle, CardBody,
+  CardSection, SubCard, SubCardBody, Field, Chip,
+  Info, CardSectionLabel, ChipGroup }                   from '@/components/ui';
+import type { AppointmentDetail }                       from '@/types/dal';
+import { daysUntil, formatMediumDate, formatTime }      from '@/lib/utils/dates';
+import Link                                             from 'next/link';
+import { FieldGrid }                                    from '../ui/Display';
+import { apptLabel }                                    from '@/lib/utils/helpers';
 
 interface Props {
   appointments: AppointmentDetail[];
   contextDate:  string;
-}
-
-function apptLabel(appt: AppointmentDetail): string {
-  const type     = appt.appointment_type?.type_name ?? 'Appointment';
-  const provider = appt.provider?.provider_name ?? appt.provider?.practice_name ?? '';
-  return provider ? `${type} · ${provider}` : type;
 }
 
 export function UpcomingAppointments({ appointments, contextDate }: Readonly<Props>) {

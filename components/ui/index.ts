@@ -28,8 +28,8 @@ export {
 export type { SaveState } from "./Display";
 export { Markdown }                              from "./Markdown";
 export { IconDisplay }                           from "./IconDisplay";
-export { useToast, ToastProvider }               from "./Toast";
-export type { ToastVariant }                     from "./Toast";
+export { useToast, ToastProvider, Notification } from "./Toast";
+export type { NotificationVariantType }          from "./Toast";
 export { IconPicker }    from "./IconPicker";
 export { TagSelector } from "./TagSelector";
 export { Icon }   from "./Icon";

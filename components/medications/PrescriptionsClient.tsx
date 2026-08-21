@@ -7,7 +7,7 @@ import { Button, Card, CardHeader, CardTitle,
   CardBody, CardActions, ExpandPanel, Info, Meta, FieldActions,
   CardGrid, CardGridColumn, Item,
   ITEM_TYPES, CardSection } from '@/components/ui';
-import type { PersonRow, MedicationRow, MedicationTimingTypeRow, ProviderRow } from '@/types/schema';
+import type { PersonRow } from '@/types/schema';
 import { createClient }          from '@/lib/supabase/client';
 import type { PrescriptionDetail } from '@/types/dal';
 import Link from 'next/link';
@@ -25,20 +25,14 @@ interface PrescriptionsByPerson {
 
 interface Props {
   prescriptionsByPerson: PrescriptionsByPerson[];
-  medications:           MedicationRow[];
-  timingTypes:           MedicationTimingTypeRow[];
-  people:                PersonRow[];
-  providers:             ProviderRow[];
 }
 
 function RxItem({
   rx,
-  timings,
   onEdit
 }:
 Readonly<{
   rx: PrescriptionDetail;
-  timings: MedicationTimingTypeRow[];
   onEdit: () => void }
 >) {
   const isActive = !rx.discontinued_date;
@@ -78,14 +72,13 @@ Readonly<{
   );
 }
 
-export function PrescriptionsClient({ prescriptionsByPerson, medications, timingTypes, people, providers }: Readonly<Props>) {
+export function PrescriptionsClient({ prescriptionsByPerson }: Readonly<Props>) {
   const supabase = createClient();
   const router   = useRouter();
   const [showForm,   setShowForm]   = useState(false);
   const [editTarget, setEditTarget] = useState<PrescriptionDetail | null>(null);
   const [form,       setForm]       = useState<PrescriptionFormValues>(emptyPrescriptionFormValues);
   const [saving,     setSaving]     = useState(false);
-
 
   const openNew  = (personId?: number) => {
     setEditTarget(null);
@@ -106,7 +99,6 @@ export function PrescriptionsClient({ prescriptionsByPerson, medications, timing
     try {
       let medId = values.medication_id ? Number.parseInt(values.medication_id) : null;
 
-      // Create new medication row if the user typed a new name
       if (!medId && values.new_medication_name.trim()) {
         const { data: newMed } = await supabase
           .from('medications')
@@ -193,7 +185,6 @@ export function PrescriptionsClient({ prescriptionsByPerson, medications, timing
                   <CardSection key={rx.id}>
                     <RxItem 
                       rx={rx}
-                      timings={timingTypes}
                       onEdit={() => openEdit(rx)} 
                     />
                   </CardSection>
@@ -205,7 +196,6 @@ export function PrescriptionsClient({ prescriptionsByPerson, medications, timing
                       disc.map(rx =>
                         <RxItem key={rx.id}
                           rx={rx}
-                          timings={timingTypes}
                           onEdit={() => openEdit(rx)}
                         />)
                     }

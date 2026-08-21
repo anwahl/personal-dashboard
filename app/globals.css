@@ -257,14 +257,18 @@
   );
 
   --success: var(--color-sage-300);
-  --success-dim: color-mix(in srgb, var(--color-sage-600) 25%, transparent);
+  --success-dim: color-mix(in srgb, var(--color-sage-600) 45%, transparent);
   --success-hover: var(--color-sage-500);
   --success-dim-hover: color-mix(in srgb, var(--color-sage-800) 25%, transparent);
-  --warn: var(--color-yellow-pale-500);
-  --warn-dim: color-mix(in srgb, var(--color-yellow-pale-500) 50%, transparent);
+  --warn: var(--color-yellow-shade-300);
+  --warn-dim: color-mix(in srgb, var(--color-yellow-shade-400) 70%, transparent);
   --danger: var(--color-red-shade-200);
-  --danger-dim: color-mix(in srgb, var(--color-red-shade-200) 15%, transparent);
+  --danger-border: var(--color-red-pale-500);
+  --danger-dim: color-mix(in srgb, var(--color-red-shade-200) 25%, transparent);
   --danger-dim-border: color-mix(in srgb, var(--color-red-shade-100) 45%, transparent);
+
+  --dismiss: var(--color-rose-400);
+  --dismiss-hover: var(--color-rose-300);
 
   --sidebar-w: 220px;
   --radius-sm: 8px;
@@ -1189,7 +1193,7 @@ textarea {
   flex-direction: column;
   gap:            0.5rem;
   pointer-events: none;      /* container is transparent to mouse; toasts are not */
-  max-width:      min(24rem, calc(100vw - 3rem));
+  width:          30%;
 }
 
 .toast {
@@ -1211,38 +1215,60 @@ textarea {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.toast--info {
-  border-color: var(--accent);
-  color:        var(--accent);
+.notification {
+  animation:       toast-in 0.35s ease-in-out;
+  pointer-events:  all;
+  box-shadow: var(--box-shadow-standard);
+  border: 1px solid;
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-family: var(--font-family-body);
+  font-size: .9rem;
+  color: var(--text-alt);
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  gap: 6px;
+  align-items: center;
 }
 
-.toast--success {
-  border-color: var(--success);
-  color:        var(--success);
+.notification__alert {
+  background-color: var(--warn-dim);
+  border-color: var(--warn);
 }
 
-.toast--error {
-  border-color: var(--danger);
-  color:        var(--danger);
+.notification__error {
+  background-color: var(--danger);
+  border-color: var(--danger-border);
+  color: var(--text-title);
+  font-style: italic;
+  font-weight: 700;
+  font-size: 1rem;
 }
 
-.toast__message {
-  flex: 1;
+.notification__success {
+  background-color: var(--success-dim);
+  border-color: var(--success-hover);
+  font-size: 1.1rem;
 }
 
-.toast__dismiss {
-  background:  transparent;
-  border:      none;
-  cursor:      pointer;
-  font-size:   0.75rem;
-  padding:     0.1rem 0.25rem;
-  color:       inherit;
-  opacity:     0.7;
-  flex-shrink: 0;
+.notification__info {
+  background-color: var(--accent);
+  border-color: var(--accent-border);
 }
 
-.toast__dismiss:hover {
-  opacity: 1;
+.notification__dismiss {
+  border: transparent;
+  background: none;
+  padding: 0 10px;
+  color: var(--dismiss);
+  font-weight: 800;
+  cursor: pointer;
+  transition: color 0.35s ease;
+}
+
+.notification__dismiss:hover {
+  color: var(--dismiss-hover);
 }
 
 .item__title {

@@ -12,7 +12,7 @@ import {
   Item, 
   SubCard,
   SubCardBody,
-  CardGrid}                       from '@/components/ui';
+  CardGrid}                                   from '@/components/ui';
 import { useState, useCallback }              from 'react';
 import { useRouter }                          from 'next/navigation';
 import { createClient }                       from '@/lib/supabase/client';
@@ -31,31 +31,16 @@ import type {
 import {
   daysUntil, formatMediumDate,
   formatTime, localTodayISO }                 from '@/lib/utils/dates';
-import { RxPendingChanges }  from '@/components/medications/RxPendingChanges';
+import { RxPendingChanges }                   from '@/components/medications/RxPendingChanges';
 import { AppointmentForm, apptToFormValues }  from './AppointmentForm';
 import type { AppointmentFormValues }         from './AppointmentForm';
-import { PrescriptionChangeDisplayRow } from '../medications/PrescriptionChangeDisplayRow';
-
-
-// ── Appointment label helper ──────────────────────────────────────────────────
-
-function apptLabel(a: AppointmentDetail): string {
-  return [
-    a.appointment_type?.type_name,
-    a.person?.person_name ? `for ${a.person.person_name}` : null,
-    `on ${formatMediumDate(a.appointment_date)}`,
-    a.provider?.provider_name || a.provider?.practice_name
-      ? `with ${a.provider.provider_name ?? a.provider.practice_name}`
-      : null,
-  ].filter(Boolean).join(' ');
-}
-
+import { PrescriptionChangeDisplayRow }       from '../medications/PrescriptionChangeDisplayRow';
+import { apptLabel } from '@/lib/utils/helpers';
 
 // ── Medication changes section ────────────────────────────────────────────────
 
 function MedChangesSection({
-  appointmentId, medicationTimings,
-  activePrescriptions, initialHistory,
+  appointmentId, activePrescriptions, initialHistory,
 }: Readonly<{
   appointmentId:      number;
   medicationTimings:  MedicationTimingTypeRow[];
