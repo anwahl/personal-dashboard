@@ -7,20 +7,18 @@
  * and the full RxChangeHistory log.
  */
 
-import { useState, useCallback }             from 'react';
+import { useState, useCallback, useEffect }   from 'react';
 import { useRouter }                          from 'next/navigation';
 import { applyPrescriptionChanges, updatePrescription } from '@/lib/dal/prescriptions';
 import { deletePrescriptionChange }           from '@/lib/dal/appointments';
 import { createClient }                       from '@/lib/supabase/client';
 import { Button, Card, CardActions, CardBody, CardHeader, CardSection,
   CardSectionLabel, CardTitle, Field, FieldGrid,
-  Item, SaveState, SaveStatus } from '@/components/ui';
+  Item, SaveState, SaveStatus, useToast } from '@/components/ui';
 import type { PrescriptionDetail }            from '@/types/dal';
-import type {
-  PrescriptionChangeRow, MedicationTimingTypeRow,
-  MedicationRow, PersonRow, ProviderRow,
-} from '@/types/schema';
+import type { PrescriptionChangeRow }         from '@/types/schema';
 import { RX_FIELDS, RxFieldKey, getRxDisplayValue } from '@/lib/constants/prescriptions';
+import { useMedicationTimingTypes }           from '@/lib/hooks/reference';
 import { RxPendingChanges }  from './RxPendingChanges';
 import { PrescriptionForm, PrescriptionFormValues, rxToFormValues } from './PrescriptionForm';
 import Link from 'next/link';
@@ -28,16 +26,14 @@ import { PrescriptionChangeDisplayRow } from './PrescriptionChangeDisplayRow';
 
 
 interface Props {
-  prescription:    PrescriptionDetail;
-  initialHistory:  PrescriptionChangeRow[];
-  timings:         MedicationTimingTypeRow[];
-  /** Required for edit mode */
-  medications:     MedicationRow[];
-  people:          PersonRow[];
-  providers:       ProviderRow[];
+  prescription:   PrescriptionDetail;
+  initialHistory: PrescriptionChangeRow[];
 }
 
-export function PrescriptionDetailClient({ prescription: rx, initialHistory, timings, medications, people, providers }: Readonly<Props>) {
+export function PrescriptionDetailClient({ prescription: rx, initialHistory }: Readonly<Props>) {
+  const { data: timings = [], error: timingsError } = useMedicationTimingTypes();
+  const { addToast } = useToast();
+  useEffect(() => { if (timingsError) addToast('Failed to load timing types', 'error'); }, [timingsError, addToast]);
   const supabase = createClient();
   const router   = useRouter();
 
@@ -83,10 +79,6 @@ export function PrescriptionDetailClient({ prescription: rx, initialHistory, tim
         </CardHeader>
         <PrescriptionForm
           initialValues={rxToFormValues(rx)}
-          medications={medications}
-          timingTypes={timings}
-          people={people}
-          providers={providers}
           saving={saveState === 'saving'}
           showPersonField={false}
           onSave={handleSave}
@@ -148,7 +140,6 @@ export function PrescriptionDetailClient({ prescription: rx, initialHistory, tim
 
           <RxPendingChanges
             rx={rx}
-            timings={timings}
             onApply={async entries => {
               const newRows = await applyPrescriptionChanges(supabase, rx.id, null, entries);
               setHistory(h => [...newRows, ...h]);

@@ -120,7 +120,6 @@ function MedChangesSection({
           <RxPendingChanges
             key={selectedRxId}
             rx={selectedRx}
-            timings={medicationTimings}
             onApply={async entries => {
               const newRows = await applyPrescriptionChanges(supabase, selectedRx.id, appointmentId, entries);
               setHistory(h => [...newRows, ...h]);

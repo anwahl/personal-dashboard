@@ -7,16 +7,24 @@
  * PrescriptionDetailClient (edit mode on the detail page).
  *
  * Owns form state + the useNewMed toggle internally.
+ * Fetches its own reference data via SWR hooks — callers no longer need to
+ * fetch or pass medications, timingTypes, people, or providers.
  * Calls onSave(values) on submit — the parent handles the async DB write,
  * including creating a new Medication row if values.new_medication_name is set.
  */
 
-import { useState }  from 'react';
+import { useState, useEffect } from 'react';
 import {
   Button, InputField, CardBody, CardActions,
   CardSection, CardSectionLabel, FieldActions, FieldGrid,
+  useToast,
 } from '@/components/ui';
-import type { MedicationRow, MedicationTimingTypeRow, PersonRow, ProviderRow } from '@/types/schema';
+import {
+  useMedications,
+  useMedicationTimingTypes,
+  usePeople,
+  useProviders,
+} from '@/lib/hooks/reference';
 import type { PrescriptionDetail } from '@/types/dal';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -59,10 +67,6 @@ export function rxToFormValues(rx: PrescriptionDetail): PrescriptionFormValues {
 
 interface Props {
   initialValues:    PrescriptionFormValues;
-  medications:      MedicationRow[];
-  timingTypes:      MedicationTimingTypeRow[];
-  people:           PersonRow[];
-  providers:        ProviderRow[];
   saving:           boolean;
   saveLabel?:       string;
   showPersonField?: boolean;
@@ -71,13 +75,26 @@ interface Props {
 }
 
 export function PrescriptionForm({
-  initialValues, medications, timingTypes, people, providers,
+  initialValues,
   saving, saveLabel = 'Save',
   showPersonField = true,
   onSave, onCancel,
 }: Readonly<Props>) {
   const [form,      setForm]      = useState<PrescriptionFormValues>(initialValues);
   const [useNewMed, setUseNewMed] = useState(false);
+
+  const { data: medications = [], isLoading: medsLoading,     error: medsError }     = useMedications();
+  const { data: timingTypes = [], isLoading: timingsLoading,  error: timingsError }  = useMedicationTimingTypes();
+  const { data: people      = [], isLoading: peopleLoading,   error: peopleError }   = usePeople();
+  const { data: providers   = [], isLoading: providersLoading, error: providersError } = useProviders();
+
+  const { addToast } = useToast();
+
+  // Surface any data-loading failures as toasts.
+  useEffect(() => { if (medsError)      addToast('Failed to load medications', 'error'); }, [medsError,      addToast]);
+  useEffect(() => { if (timingsError)   addToast('Failed to load timing types', 'error'); }, [timingsError,  addToast]);
+  useEffect(() => { if (peopleError)    addToast('Failed to load people', 'error'); }, [peopleError,        addToast]);
+  useEffect(() => { if (providersError) addToast('Failed to load providers', 'error'); }, [providersError,  addToast]);
 
   const set = (k: keyof PrescriptionFormValues, v: string) =>
     setForm(p => ({ ...p, [k]: v }));
@@ -86,13 +103,16 @@ export function PrescriptionForm({
   const hasPerson = !showPersonField || !!form.person_id;
   const canSave   = hasMed && hasPerson;
 
+  const referenceLoading = medsLoading || timingsLoading || (showPersonField && peopleLoading) || providersLoading;
+
   return (
     <CardBody>
       {showPersonField && (
         <InputField label="Person" id="rx-person">
           <select id="rx-person" value={form.person_id}
-            onChange={e => set('person_id', e.target.value)}>
-            <option value="">Select person…</option>
+            onChange={e => set('person_id', e.target.value)}
+            disabled={peopleLoading}>
+            <option value="">{peopleLoading ? 'Loading…' : 'Select person…'}</option>
             {people.map(p => (
               <option key={p.id} value={p.id}>{p.person_name}</option>
             ))}
@@ -123,8 +143,9 @@ export function PrescriptionForm({
         ) : (
           <InputField label="Medication" id="rx-med-id">
             <select id="rx-med-id" value={form.medication_id}
-              onChange={e => set('medication_id', e.target.value)}>
-              <option value="">Select medication…</option>
+              onChange={e => set('medication_id', e.target.value)}
+              disabled={medsLoading}>
+              <option value="">{medsLoading ? 'Loading…' : 'Select medication…'}</option>
               {medications.map(m => (
                 <option key={m.id} value={m.id}>
                   {m.medication_name}{m.generic_name ? ` (${m.generic_name})` : ''}
@@ -148,8 +169,9 @@ export function PrescriptionForm({
           </InputField>
           <InputField label="Timing" id="rx-timing">
             <select id="rx-timing" value={form.timing_type_id}
-              onChange={e => set('timing_type_id', e.target.value)}>
-              <option value="">Select timing…</option>
+              onChange={e => set('timing_type_id', e.target.value)}
+              disabled={timingsLoading}>
+              <option value="">{timingsLoading ? 'Loading…' : 'Select timing…'}</option>
               {timingTypes.map(t => (
                 <option key={t.id} value={t.id}>{t.timing_name}</option>
               ))}
@@ -169,8 +191,9 @@ export function PrescriptionForm({
 
         <InputField label="Prescriber" id="rx-prescriber">
           <select id="rx-prescriber" value={form.prescriber_id}
-            onChange={e => set('prescriber_id', e.target.value)}>
-            <option value="">No prescriber linked</option>
+            onChange={e => set('prescriber_id', e.target.value)}
+            disabled={providersLoading}>
+            <option value="">{providersLoading ? 'Loading…' : 'No prescriber linked'}</option>
             {providers.map(p => (
               <option key={p.id} value={p.id}>
                 {p.provider_name ?? p.practice_name}
@@ -193,7 +216,7 @@ export function PrescriptionForm({
 
       <CardActions>
         <Button variant="accent" onClick={() => onSave(form)}
-          disabled={saving || !canSave}>
+          disabled={saving || !canSave || referenceLoading}>
           {saving ? 'Saving…' : saveLabel}
         </Button>
         <Button variant="ghost" onClick={onCancel}>Cancel</Button>

@@ -153,10 +153,6 @@ export function PrescriptionsClient({ prescriptionsByPerson, medications, timing
         <PrescriptionForm
           key={editTarget?.id ?? 'new'}
           initialValues={form}
-          medications={medications}
-          timingTypes={timingTypes}
-          people={people}
-          providers={providers}
           saving={saving}
           saveLabel={editTarget ? 'Update' : 'Add'}
           onSave={handleSave}

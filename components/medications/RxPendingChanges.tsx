@@ -12,19 +12,18 @@
  * DB write + history update.
  */
 
-import { useState, useCallback }     from 'react';
-import { Button, CardGridRow, FieldActions, InputField, Item }                     from '@/components/ui';
+import { useState, useCallback, useEffect } from 'react';
+import { Button, CardGridRow, FieldActions, InputField, Item, useToast } from '@/components/ui';
 import {
   RX_FIELDS, RxFieldKey,
   PendingChange, getRxDisplayValue,
 }                                     from '@/lib/constants/prescriptions';
 import type { FieldChangeEntry }      from '@/lib/dal/prescriptions';
 import type { PrescriptionDetail }    from '@/types/dal';
-import type { MedicationTimingTypeRow } from '@/types/schema';
+import { useMedicationTimingTypes }   from '@/lib/hooks/reference';
 
 interface Props {
   rx:      PrescriptionDetail;
-  timings: MedicationTimingTypeRow[];
   /**
    * Called with the built entries when the user clicks Apply.
    * The component clears its pending state after this resolves successfully.
@@ -32,7 +31,10 @@ interface Props {
   onApply: (entries: FieldChangeEntry[]) => Promise<void>;
 }
 
-export function RxPendingChanges({ rx, timings, onApply }: Readonly<Props>) {
+export function RxPendingChanges({ rx, onApply }: Readonly<Props>) {
+  const { data: timings = [], error: timingsError } = useMedicationTimingTypes();
+  const { addToast } = useToast();
+  useEffect(() => { if (timingsError) addToast('Failed to load timing types', 'error'); }, [timingsError, addToast]);
   const [pending,       setPending]       = useState<PendingChange[]>([]);
   const [saving,        setSaving]        = useState(false);
   const [selectedField, setSelectedField] = useState('');
