@@ -73,6 +73,7 @@ Readonly<{
 }
 
 export function PrescriptionsClient({ prescriptionsByPerson }: Readonly<Props>) {
+  //TODO Actually, should just pass person in as param, then get prescriptions here.
   const supabase = createClient();
   const router   = useRouter();
   const [showForm,   setShowForm]   = useState(false);
