@@ -92,8 +92,6 @@ export default async function DailyPage({ params }: Readonly<Props>) {
         <TaskList
           contextDate={date}
           initialData={taskData}
-          statuses={statuses}
-          people={reference.people}
         />
         <UpcomingAppointments
           appointments={appointments}
