@@ -22,15 +22,12 @@ export default async function HubPage() {
   const supabase = await createClient();
 
   const [
-    taskData, appointments, intention, statuses, priorities, people,
-    lastTimeEntries, icons, inProgressMedia, mediaTypes, mediaStatuses, statusTypeLinks,
+    taskData, appointments, intention, lastTimeEntries, icons,
+    inProgressMedia, mediaTypes, mediaStatuses, statusTypeLinks,
   ] = await Promise.all([
     getTasksByDateContext(supabase, today),
     getUpcomingAppointments(supabase, today, 8),
     getRecentIntention(supabase, today),
-    getTaskStatuses(supabase, true),
-    getTaskPriorities(supabase),
-    getPeople(supabase),
     getLastTimeEntries(supabase),
     getIconsRef(supabase),
     getInProgressMediaEntries(supabase),
@@ -60,14 +57,8 @@ export default async function HubPage() {
           <TaskList
             contextDate={today}
             initialData={taskData}
-            statuses={statuses}
-            people={people}
           />
-          <QuickAdd
-            statuses={statuses} 
-            priorities={priorities}
-            people={people}
-          />
+          <QuickAdd />
         </div>
         <UpcomingAppointments
           appointments={appointments}

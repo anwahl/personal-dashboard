@@ -22,7 +22,7 @@ interface Props {
 
 export function UpcomingAppointments({ appointments, contextDate }: Readonly<Props>) {
   const [primary, ...rest] = appointments;
-  const countdown = daysUntil(primary.appointment_date, contextDate);
+  const countdown = daysUntil(primary?.appointment_date ?? contextDate, contextDate);
 
   if (appointments.length === 0) {
     return (

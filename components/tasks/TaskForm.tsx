@@ -20,6 +20,7 @@ import {
   InputField,
   SaveStatus,
   Toggle,
+  useToast,
 } from "@/components/ui";
 import type { SaveState } from "@/components/ui";
 import type { TaskStatusRow, TaskPriorityRow } from "@/types/dal";
@@ -34,6 +35,7 @@ import { WEEKDAYS } from "@/lib/constants/dates";
 import { createClient } from "@/lib/supabase/client";
 import { createTask } from "@/lib/dal/tasks";
 import { useRouter } from "next/navigation";
+import { usePeople, useTaskPriorities, useTaskStatuses } from "@/lib/hooks/reference";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -84,16 +86,11 @@ const FREQUENCY_UNIT: Record<string, string> = {
 
 interface TaskFormProps {
   initialValues: TaskFormValues;
-  statuses?: TaskStatusRow[]; // only needed when showStatus is true
-  priorities: TaskPriorityRow[];
-  people: PersonRow[];
-  /** Show the Status dropdown (edit mode). Hidden on add. */
   showStatus?: boolean;
-  /** Show Tomorrow / Next-week date shortcuts (add mode). */
   showDateShortcuts?: boolean;
-  contextDate?: string; // required when showDateShortcuts is true
+  contextDate?: string;
   saving: boolean;
-  saveState?: SaveState; // renders <SaveStatus> when provided
+  saveState?: SaveState;
   saveLabel?: string;
   onSave: (values: TaskFormValues) => void;
   onCancel: () => void;
@@ -101,9 +98,6 @@ interface TaskFormProps {
 
 export function TaskForm({
   initialValues,
-  statuses,
-  priorities,
-  people,
   showStatus = false,
   showDateShortcuts = false,
   contextDate,
@@ -117,6 +111,15 @@ export function TaskForm({
   const set = (k: keyof TaskFormValues, v: string) =>
     setForm((p) => ({ ...p, [k]: v }));
 
+  const { data: statuses = [], isLoading: statusesLoading, error: statusesError } = useTaskStatuses();
+  const { data: priorities = [], isLoading: prioritiesLoading, error: prioritiesError } = useTaskPriorities();
+  const { data: people = [], isLoading: peopleLoading, error: peopleError } = usePeople();
+  const { addToast } = useToast();
+  useEffect(() => { if (statusesError)      addToast('Failed to load task statuses', 'error'); },   [statusesError,       addToast]);
+  useEffect(() => { if (prioritiesError)    addToast('Failed to load task priorities', 'error'); }, [prioritiesError,     addToast]);
+  useEffect(() => { if (peopleError)        addToast('Failed to load people', 'error'); },          [peopleError,         addToast]);
+  const referenceLoading = peopleLoading || prioritiesLoading || (showStatus && statusesLoading);
+  
   const hasReminder = Boolean(form.reminder_at);
   const [addReminder, toggleAddReminder] = useState(hasReminder);
 
@@ -172,6 +175,7 @@ export function TaskForm({
               <select
                 id="tf-status"
                 value={form.status_id}
+                disabled={statusesLoading}
                 onChange={(e) => set("status_id", e.target.value)}
               >
                 {statuses.map((s) => (
@@ -185,6 +189,7 @@ export function TaskForm({
           <InputField label="Priority" id="tf-priority">
             <select
               id="tf-priority"
+              disabled={prioritiesLoading}
               value={form.priority_id}
               onChange={(e) => set("priority_id", e.target.value)}
             >
@@ -198,6 +203,7 @@ export function TaskForm({
           <InputField label="For" id="tf-person">
             <select
               id="tf-person"
+              disabled={peopleLoading}
               value={form.person_id}
               onChange={(e) => set("person_id", e.target.value)}
             >
@@ -370,7 +376,7 @@ export function TaskForm({
         <Button
           variant="accent"
           onClick={() => onSave(form)}
-          disabled={saving || !form.title.trim()}
+          disabled={saving || !form.title.trim() || referenceLoading}
         >
           {saving ? "Saving…" : saveLabel}
         </Button>
@@ -386,14 +392,8 @@ export function TaskForm({
 // ── QuickAdd ──────────────────────────────────────────────────────────────────
 
 export function QuickAdd({
-  statuses,
-  priorities,
-  people,
   contextDate = localTodayISO(),
 }: Readonly<{
-  statuses: TaskStatusRow[];
-  priorities: TaskPriorityRow[];
-  people: PersonRow[];
   contextDate?: string;
 }>) {
   const supabase = createClient();
@@ -405,13 +405,21 @@ export function QuickAdd({
   const [newTime, setNewTime] = useState("");
   const [newPerson, setNewPerson] = useState("");
   const [adding, setAdding] = useState(false);
-  const [expanded, setExpanded] = useState(false);
   const [saving, setSaving] = useState(false);
-
+  
+  const { data: statuses = [], isLoading: statusesLoading, error: statusesError } = useTaskStatuses();
+  const { data: priorities = [], isLoading: prioritiesLoading, error: prioritiesError } = useTaskPriorities();
+  const { data: people = [], isLoading: peopleLoading, error: peopleError } = usePeople();
+  const { addToast } = useToast();
+  useEffect(() => { if (statusesError)      addToast('Failed to load task statuses', 'error'); },   [statusesError,       addToast]);
+  useEffect(() => { if (prioritiesError)    addToast('Failed to load task priorities', 'error'); }, [prioritiesError,     addToast]);
+  useEffect(() => { if (peopleError)        addToast('Failed to load people', 'error'); },          [peopleError,         addToast]);
+  const referenceLoading = peopleLoading || prioritiesLoading || statusesLoading;
+  
   const defaultStatus = statuses.find((s) => !s.is_terminal) ?? statuses[0];
   const defaultPriority = [...priorities].sort(
     (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
-  )[0];
+  )[0]; //TODO the default statuses/priorities can be fetched in a separate function/file thingy.
   const todoStatusId = defaultStatus?.id ?? 0;
   const normalPriorityId = defaultPriority?.id ?? priorities[0]?.id ?? 0;
 
@@ -506,8 +514,6 @@ export function QuickAdd({
             status_id: String(todoStatusId),
             priority_id: String(normalPriorityId),
           })}
-          priorities={priorities}
-          people={people}
           showDateShortcuts
           contextDate={contextDate}
           saving={saving}
@@ -527,7 +533,7 @@ export function QuickAdd({
             <Button
               variant="action-alt"
               onClick={quickAdd}
-              disabled={adding || !newTitle.trim()}
+              disabled={adding || !newTitle.trim() || referenceLoading}
             >
               {adding ? "…" : "+ Quick"}
             </Button>
@@ -585,6 +591,7 @@ export function QuickAdd({
           <InputField label="For" id="qa-person">
             <select
               id="qa-person"
+              disabled={peopleLoading}
               value={newPerson}
               onChange={(e) => setNewPerson(e.target.value)}
               style={{ width: 110 }}

@@ -42,6 +42,8 @@ import {
   getMediaGenres,
 } from '@/lib/dal/reference';
 import { getProviders } from '@/lib/dal/providers';
+import { getPrescriptionById, getPrescriptionChangesByRx } from '../dal/prescriptions';
+import { PrescriptionDetail } from '@/types/dal';
 
 const supabase = createClient();
 
@@ -64,6 +66,13 @@ export const useMedications = () =>
 /** Timing types for medications (once daily, twice daily, etc.). */
 export const useMedicationTimingTypes = () =>
   useSWR('ref/medication-timing-types', () => getMedicationTimingTypes(supabase));
+
+export const getRxById = (id: number) =>
+  useSWR('ref/prescription', () => getPrescriptionById(supabase, id));
+
+export const getRxChangesByRx = (rxId: number) =>
+  useSWR('ref/prescription-changes', () => getPrescriptionChangesByRx(supabase, rxId));
+
 
 // ── Providers ─────────────────────────────────────────────────────────────────
 

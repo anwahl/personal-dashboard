@@ -1,41 +1,37 @@
 'use client';
 
 import { SaveState, Button, ConfirmButton, 
-  Markdown, Card, CardBody, CardTitle, CardHeader }    from '@/components/ui';
-import { useState, useCallback }                       from 'react';
+  Markdown, Card, CardBody, CardTitle, CardHeader, 
+  useToast}    from '@/components/ui';
+import { useState, useCallback, useEffect }            from 'react';
 import { useRouter }                                   from 'next/navigation';
 import { createClient }                                from '@/lib/supabase/client';
 import { updateTask, updateTaskStatus,
-         deleteTask, spawnNextRecurrence }              from '@/lib/dal/tasks';
-import type { TaskDetail, TaskStatusRow,
-              TaskPriorityRow }                         from '@/types/dal';
-import type { PersonRow, TagRow, TaskRow }              from '@/types/schema';
+         deleteTask, spawnNextRecurrence }             from '@/lib/dal/tasks';
+import type { TaskDetail }                             from '@/types/dal';
+import type { TaskRow }                                from '@/types/schema';
 import { formatLongDate, formatMediumDate,
-         formatTime, toLocalInput }                     from '@/lib/utils/dates';
-import { TaskForm, type TaskFormValues }                from './TaskForm';
-
-interface Props {
-  task:       TaskDetail;
-  statuses:   TaskStatusRow[];
-  priorities: TaskPriorityRow[];
-  people:     PersonRow[];
-  tags:       TagRow[];
-}
+         formatTime, toLocalInput }                    from '@/lib/utils/dates';
+import { TaskForm, type TaskFormValues }               from './TaskForm';
+import { useTaskStatuses }                             from '@/lib/hooks/reference';
 
 export function TaskDetailClient({
-  task, statuses, priorities, people,
-}: Readonly<Props>) {
+  task
+}: Readonly<{task: TaskDetail;}>) {
   const supabase = createClient();
   const router   = useRouter();
 
   const [mode,      setMode]      = useState<'view' | 'edit'>('view');
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const [deleting,  setDeleting]  = useState(false);
-
+  const { data: statuses = [], isLoading: statusesLoading, error: statusesError } = useTaskStatuses();
+  const { addToast } = useToast();
+  useEffect(() => { if (statusesError) addToast('Failed to load task statuses', 'error'); }, [statusesError, addToast]);
   const doneStatus = statuses.find(s => s.is_terminal);
 
   // ── Save ──────────────────────────────────────────────────────────────────
   const handleSave = useCallback(async (values: TaskFormValues) => {
+    if (!values.title.trim() || statusesLoading) return;
     setSaveState('saving');
     try {
       const reminderPayload = values.reminder_at
@@ -83,6 +79,7 @@ export function TaskDetailClient({
   const complete = useCallback(async () => {
     if (!doneStatus) return;
     const todoStatus = statuses.find(s => !s.is_terminal);
+    //TODO There can also maybe be a specific util function for this somewhere
     await updateTaskStatus(supabase, task.id, doneStatus.id);
     if (task.recurrence_frequency && task.reminder_at && todoStatus) {
       await spawnNextRecurrence(supabase, task, todoStatus.id);
@@ -120,6 +117,7 @@ export function TaskDetailClient({
             </div>
           </div>
 
+          {/*TODO refactor here */}
           <dl className="detail-page__fields">
             <div className="detail-page__field">
               <dt>Status</dt>
@@ -190,9 +188,6 @@ export function TaskDetailClient({
           recurrence_days:      task.recurrence_days        ?? '',
           recurrence_end_date:  task.recurrence_end_date    ?? '',
         }}
-        statuses={statuses}
-        priorities={priorities}
-        people={people}
         showStatus
         saving={saveState === 'saving'}
         saveState={saveState}

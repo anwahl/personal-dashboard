@@ -13,11 +13,7 @@ export default async function PrescriptionDetailPage({ params }: Readonly<Props>
   if (Number.isNaN(rxId)) notFound();
 
   const supabase = await createClient();
-  const [rx, initialHistory] = await Promise.all([
-    getPrescriptionById(supabase, rxId),
-    getPrescriptionChangesByRx(supabase, rxId),
-  ]);
-
+  const rx = await getPrescriptionById(supabase, rxId);
   if (!rx) notFound();
 
   const name = rx.alias ?? rx.medication.medication_name;
@@ -27,7 +23,6 @@ export default async function PrescriptionDetailPage({ params }: Readonly<Props>
       <Header href='/medications' linkLabel='← Medications' title={name} />
       <PrescriptionDetailClient
         prescription={rx}
-        initialHistory={initialHistory}
       />
     </PageBody>
   );

@@ -13,21 +13,23 @@
 import { updateTaskStatus, TaskContextData,
          spawnNextRecurrence, getTaskById, 
          TasksTabId}                                    from '@/lib/dal/tasks';
-import { useState, useCallback }                        from 'react';
+import { useState, useCallback, useEffect }                        from 'react';
 import { useRouter }                                    from 'next/navigation';
 import { createClient }                                 from '@/lib/supabase/client';
 import { Card, CardHeader, CardTitle, CardBody,
-         TabBar, Button, Chip }                         from '@/components/ui';
-import type { TaskDetail, TaskStatusRow }               from '@/types/dal';
-import type { PersonRow, TaskRow }                      from '@/types/schema';
+         TabBar, Button, Chip, 
+         useToast}                                      from '@/components/ui';
+import type { TaskDetail }                              from '@/types/dal';
+import type { TaskRow }                                 from '@/types/schema';
 import { formatShortDate, formatTime, localTodayISO }   from '@/lib/utils/dates';
 import Link                                             from 'next/link';
+import { useTaskStatuses }                              from '@/lib/hooks/reference';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatLabel(base: string, count: number) {
   return count ? `${base} (${count})` : base;
-}
+} //TODO this can go in the Strings util file or something
 
 function isOverdue(t: TaskDetail, contextDate: string): boolean {
   return !!t.due_date && t.due_date < contextDate && !t.status.is_terminal;
@@ -120,29 +122,31 @@ export function TaskItem({
 interface Props {
   contextDate: string;
   initialData: TaskContextData;
-  statuses:    TaskStatusRow[];
-  people:      PersonRow[];
 }
 
 export function TaskList({
   contextDate,
   initialData,
-  statuses,
 }: Readonly<Props>) {
   const supabase = createClient();
   const router = useRouter();
   const [tab,  setTab]  = useState<TasksTabId>('today');
   const [busy, setBusy] = useState(false);
 
+  const { data: statuses = [], isLoading: statusesLoading, error: statusesError } = useTaskStatuses();
+  const { addToast } = useToast();
+  useEffect(() => {
+    if (statusesError)      addToast('Failed to load task statuses', 'error'); },   [statusesError,       addToast]);
   const defaultStatus = statuses.find(s => !s.is_terminal) ?? statuses[0];
   const doneStatus    = statuses.find(s => s.is_terminal);
   const doneStatusId  = doneStatus?.id ?? 0;
-  const todoStatusId  = defaultStatus.id ?? 0;
+  const todoStatusId  = defaultStatus?.id ?? 0;
   const data = initialData;
 
+  //TODO Update here or in TaskItem?
   const update = useCallback(async (id: number) => {
     const t = await getTaskById(supabase, id) ?? undefined;
-    if (!t) return;
+    if (!t || statusesLoading) return;
     await updateTaskStatus(supabase, id, t.status.is_terminal ? todoStatusId : doneStatusId);
     if (t.recurrence_frequency && t.reminder_at) {
       await spawnNextRecurrence(supabase, t as TaskRow, todoStatusId);

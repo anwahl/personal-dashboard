@@ -16,7 +16,7 @@ import { Button, Card, CardActions, CardBody, CardHeader, CardSection,
 import type { PrescriptionDetail }            from '@/types/dal';
 import type { PrescriptionChangeRow }         from '@/types/schema';
 import { RX_FIELDS, RxFieldKey, getRxDisplayValue } from '@/lib/constants/prescriptions';
-import { useMedicationTimingTypes }           from '@/lib/hooks/reference';
+import { getRxChangesByRx, useMedicationTimingTypes }           from '@/lib/hooks/reference';
 import { RxPendingChanges }  from './RxPendingChanges';
 import { PrescriptionForm, PrescriptionFormValues, rxToFormValues } from './PrescriptionForm';
 import Link from 'next/link';
@@ -25,13 +25,19 @@ import { PrescriptionChangeDisplayRow } from './PrescriptionChangeDisplayRow';
 
 interface Props {
   prescription:   PrescriptionDetail;
-  initialHistory: PrescriptionChangeRow[];
+  //initialHistory: PrescriptionChangeRow[];
 }
 
-export function PrescriptionDetailClient({ prescription: rx, initialHistory }: Readonly<Props>) {
-  const { data: timings = [], error: timingsError } = useMedicationTimingTypes();
+export function PrescriptionDetailClient({ prescription }: Readonly<{prescription:   PrescriptionDetail;}>) {
+  const { data: timings = [], isLoading: timingsLoading, error: timingsError } = useMedicationTimingTypes();
+  const { data: initialHistory = [], isLoading: historyLoading, error: changesError } = getRxChangesByRx(prescription.id);
+  
   const { addToast } = useToast();
   useEffect(() => { if (timingsError) addToast('Failed to load timing types', 'error'); }, [timingsError, addToast]);
+  useEffect(() => { if (changesError) addToast('Failed to load prescription history', 'error'); }, [changesError, addToast]);
+  
+  const isLoading = timingsLoading || historyLoading;
+
   const supabase = createClient();
   const router   = useRouter();
 
@@ -40,9 +46,10 @@ export function PrescriptionDetailClient({ prescription: rx, initialHistory }: R
   const [history,   setHistory]   = useState<PrescriptionChangeRow[]>(initialHistory);
 
   const handleSave = useCallback(async (values: PrescriptionFormValues) => {
+    if(isLoading || !prescription) return;
     setSaveState('saving');
     try {
-      await updatePrescription(supabase, rx.id, {
+      await updatePrescription(supabase, prescription.id, {
         alias:             values.alias             || null,
         dose:              values.dose              || null,
         timing_type_id:    values.timing_type_id   ? Number.parseInt(values.timing_type_id) : null,
@@ -57,12 +64,14 @@ export function PrescriptionDetailClient({ prescription: rx, initialHistory }: R
       setMode('view');
       router.refresh();
     } catch { setSaveState('error'); }
-  }, [supabase, rx.id, router]);
+  }, [supabase, prescription, router]);
 
   const removeHistory = async (id: number) => {
     await deletePrescriptionChange(supabase, id);
     setHistory(h => h.filter(r => r.id !== id));
   };
+
+  if(!prescription) return;
 
   // ── Edit mode ───────────────────────────────────────────────────────────────
 
@@ -76,7 +85,7 @@ export function PrescriptionDetailClient({ prescription: rx, initialHistory }: R
           </CardActions>
         </CardHeader>
         <PrescriptionForm
-          initialValues={rxToFormValues(rx)}
+          initialValues={rxToFormValues(prescription)}
           saving={saveState === 'saving'}
           showPersonField={false}
           onSave={handleSave}
@@ -87,13 +96,12 @@ export function PrescriptionDetailClient({ prescription: rx, initialHistory }: R
   }
 
   // ── View mode ────────────────────────────────────────────────────────────────
-
-  return (
+    return (
     <Card>
       <CardHeader>
         <CardTitle>
-          {rx.alias ?? rx.medication.medication_name}
-          {!rx.is_active && <Item itemType='inactive' value='Discontinued' />}
+          {prescription.alias ?? prescription.medication.medication_name}
+          {!prescription.is_active && <Item itemType='inactive' value='Discontinued' />}
         </CardTitle>
         <CardActions>
           <Button variant="ghost" size="sm" onClick={() => setMode('edit')}>✏️ Edit</Button>
@@ -104,7 +112,7 @@ export function PrescriptionDetailClient({ prescription: rx, initialHistory }: R
           <CardSectionLabel>Details</CardSectionLabel>
           <FieldGrid>
             {RX_FIELDS.filter(f => f.key !== 'is_active').map(f => {
-              const val = getRxDisplayValue(rx, f.key as RxFieldKey, timings);
+              const val = getRxDisplayValue(prescription, f.key as RxFieldKey, timings);
               if (!val) return null;
               return (
                 <Field key={f.key} label={f.label} value={val} />
@@ -137,9 +145,9 @@ export function PrescriptionDetailClient({ prescription: rx, initialHistory }: R
           )}
 
           <RxPendingChanges
-            rx={rx}
+            rx={prescription}
             onApply={async entries => {
-              const newRows = await applyPrescriptionChanges(supabase, rx.id, null, entries);
+              const newRows = await applyPrescriptionChanges(supabase, prescription.id, null, entries);
               setHistory(h => [...newRows, ...h]);
               router.refresh();
             }}
