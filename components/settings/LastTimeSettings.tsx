@@ -12,7 +12,7 @@ import {
   getLastTimeMedia,    createLastTimeMedia,    updateLastTimeMedia,    deleteLastTimeMedia,
   getLastTimeBoolean,  createLastTimeBoolean,                          deleteLastTimeBoolean,
   getLastTimeCustom,   createLastTimeCustom,   updateLastTimeCustom,   deleteLastTimeCustom,
-} from '@/lib/dal/last-time';
+} from '@/lib/dal/lasttime';
 import { createClient }   from '@/lib/supabase/client';
 import { Button, IconDisplay, IconPicker, ConfirmButton } from '@/components/ui';
 import { TrackablePicker } from '@/components/settings/TrackablePicker';

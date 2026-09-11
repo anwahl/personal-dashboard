@@ -395,7 +395,7 @@ function LogFieldItem({ field, onUpdate, onToggle, onDelete }: Readonly<{
             <input className="input--flex" value={eOpts} onChange={e => setEOpts(e.target.value)}
               placeholder="Options (comma-separated)…" style={{ marginTop: 4 }} />
           )}
-          <div className="manage-item__actions" style={{ marginTop: 6 }}>
+          <div className="manage-item__actions margin-top-sm">
             <Button size="sm" variant="accent" onClick={save} disabled={saving || !eLabel.trim()}>✓ Save</Button>
             <Button size="sm" variant="ghost"  onClick={() => setEditing(false)}>✕ Cancel</Button>
           </div>
@@ -476,7 +476,7 @@ function StructureSection({
         <span className="settings-section__title">{title}</span>
         <span className="settings-section__caret">▸</span>
       </summary>
-      <div className="manage-list" style={{ marginTop: 8 }}>{children}</div>
+      <div className="manage-list margin-top-md">{children}</div>
       {!creating && (
         <Button size="sm" variant="ghost" onClick={() => setCreating(true)} style={{ marginTop: 8 }}>
           + Create new
@@ -783,7 +783,7 @@ function PersonNameRow({ person, categories, onSave }: Readonly<{
         <>
           <span className="manage-item__name">
             {person.person_name}
-            {cat && <span className="badge badge--muted" style={{ marginLeft: 6 }}>{cat.category_name}</span>}
+            {cat && <span className="badge badge--muted margin-left-sm">{cat.category_name}</span>}
           </span>
           <div className="manage-item__actions">
             <Button size="icon" variant="ghost" onClick={() => setEditing(true)} title="Rename">✏️</Button>

@@ -1,8 +1,8 @@
-import type { ButtonHTMLAttributes, AnchorHTMLAttributes, ReactNode } from 'react';
+import { type ButtonHTMLAttributes, type AnchorHTMLAttributes, type ReactNode, useState } from 'react';
 import Link from 'next/link';
 
-type Variant = 'default' | 'accent' | 'ghost' | 'danger';
-type Size    = 'default' | 'sm' | 'icon';
+type Variant = 'default' | 'accent' | 'ghost' | 'action' | 'action-alt' | 'action-del' | 'danger';
+type Size    = 'default' | 'sm' | 'icon' | 'check';
 
 interface BaseProps {
   variant?: Variant;
@@ -39,5 +39,64 @@ export function Button(props: Props) {
     <button className={cls} {...(rest as ButtonHTMLAttributes<HTMLButtonElement>)}>
       {children}
     </button>
+  );
+}
+
+
+interface ConfirmProps {
+  onConfirm:     () => void;
+  /** Label shown before the first click. Pass children OR label. */
+  children?:     React.ReactNode;
+  /** Explicit label prop (alternative to children). */
+  label?:        string;
+  /** Text shown after first click. Default: 'Sure?' */
+  confirmLabel?: string;
+  /** Show an explicit Cancel button in confirmed state. Default: true */
+  showCancel?:   boolean;
+  variant?:      Variant;
+  size?:         'default' | 'sm' | 'icon';
+  disabled?:     boolean;
+  className?:    string;
+}
+
+export function ConfirmButton({
+  onConfirm,
+  children,
+  label,
+  confirmLabel = 'Sure?',
+  showCancel   = true,
+  variant      = 'danger',
+  size         = 'sm',
+  disabled     = false,
+  className,
+}: Readonly<ConfirmProps>) {
+  const [confirming, setConfirming] = useState(false);
+
+  const handleClick = () => {
+    if (confirming) {
+      setConfirming(false);
+      onConfirm();
+    } else {
+      setConfirming(true);
+    }
+  };
+
+  return (
+    <>
+      <Button
+        variant={variant}
+        size={size}
+        disabled={disabled}
+        onClick={handleClick}
+        className={className}
+      >
+        {confirming ? confirmLabel : (children ?? label ?? '✕')}
+      </Button>
+      {confirming && showCancel && (
+        <Button variant="ghost" size={size} onClick={() => setConfirming(false)}>
+          Cancel
+        </Button>
+      )}
+    </>
   );
 }

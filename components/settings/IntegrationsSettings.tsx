@@ -64,7 +64,7 @@ export function IntegrationsSettings({ token: initialToken }: Readonly<Props>) {
             <input
               type="text"
               readOnly
-              className="input ical-url-input"
+              className="ical-url-input"
               value={feedUrl}
               onFocus={e => e.target.select()}
             />
@@ -87,7 +87,7 @@ export function IntegrationsSettings({ token: initialToken }: Readonly<Props>) {
             >
               {loading ? 'Regenerating…' : '⟳ Regenerate token'}
             </ConfirmButton>
-            <p className="manage-item__meta" style={{ marginTop: 6 }}>
+            <p className="manage-item__meta margin-top-sm">
               Regenerating invalidates the current URL — you&apos;ll need to re-subscribe in your calendar app.
             </p>
           </div>

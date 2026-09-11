@@ -6,8 +6,9 @@ import {
   Maven_Pro, Quicksand
  } from "next/font/google";
 import './globals.css';
-import { SideNav } from '@/components/layout/SideNav';
+import { SideNav }      from '@/components/layout/SideNav';
 import { MobileNavBar } from '@/components/layout/MobileNav';
+import { ClientConfig } from '@/components/layout/ClientConfig';
 
 export const metadata: Metadata = {
   title: 'Dashboard',
@@ -92,20 +93,15 @@ export default function RootLayout({
         ${odibee.variable} ${alumni.variable} ${dosis.variable}
         ${denk.variable} ${pixel.variable} ${syne.variable} ${smooch.variable}
         ${maven.variable} ${elite.variable} ${quicksand.variable}`}>
-        <div className="app-shell">
-          {/* Sidebar — desktop & tablet landscape */}
-          <SideNav />
-
-          {/* Main content area */}
-          <main className="main-area">
-            {children}
-          </main>
-        </div>
-
-        {/* Bottom nav — mobile 
-        <BottomNav />*/}
-        <MobileNavBar />
-
+        <ClientConfig>
+          <div className="app-shell">
+            <SideNav />
+            <main className="main-area">
+              {children}
+            </main>
+          </div>
+          <MobileNavBar />
+        </ClientConfig>
       </body>
     </html>
   );

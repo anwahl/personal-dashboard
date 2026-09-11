@@ -14,21 +14,20 @@ import { getLastTimeEntries }                   from '@/lib/dal/lasttime';
 import { getInProgressMediaEntries }            from '@/lib/dal/media';
 import { TaskList }                             from '@/components/tasks/TaskList';
 import { UpcomingAppointments }                 from '@/components/appointments/UpcomingAppointments';
+import { QuickAdd } from '@/components/tasks/TaskForm';
+import { PageBody } from '@/components/layout';
 
 export default async function HubPage() {
   const today    = localTodayISO();
   const supabase = await createClient();
 
   const [
-    taskData, appointments, intention, statuses, priorities, people,
-    lastTimeEntries, icons, inProgressMedia, mediaTypes, mediaStatuses, statusTypeLinks,
+    taskData, appointments, intention, lastTimeEntries, icons,
+    inProgressMedia, mediaTypes, mediaStatuses, statusTypeLinks,
   ] = await Promise.all([
     getTasksByDateContext(supabase, today),
     getUpcomingAppointments(supabase, today, 8),
     getRecentIntention(supabase, today),
-    getTaskStatuses(supabase, true),
-    getTaskPriorities(supabase),
-    getPeople(supabase),
     getLastTimeEntries(supabase),
     getIconsRef(supabase),
     getInProgressMediaEntries(supabase),
@@ -38,7 +37,7 @@ export default async function HubPage() {
   ]);
 
   return (
-    <div className="page-content hub-page">
+    <PageBody>
 
       {/* ── Top bar ── */}
       <div className="hub-top">
@@ -53,32 +52,31 @@ export default async function HubPage() {
         <p className="hub-intention">"{intention.value}"</p>
       )}
 
-      {/* ── Main grid ── */}
       <div className="hub-grid">
-        <TaskList
-          contextDate={today}
-          initialData={taskData}
-          statuses={statuses}
-          priorities={priorities}
-          people={people}
-        />
+        <div className="hub-sub-grid">
+          <TaskList
+            contextDate={today}
+            initialData={taskData}
+          />
+          <QuickAdd />
+        </div>
         <UpcomingAppointments
           appointments={appointments}
           contextDate={today}
         />
       </div>
 
-      {/* ── Secondary row ── */}
       <div className="hub-grid">
         <LastTimeTracker entries={lastTimeEntries} icons={icons} compact />
-        <QuickMediaLog
+      </div>
+
+      <QuickMediaLog
           initialEntries={inProgressMedia}
           mediaTypes={mediaTypes}
           mediaStatuses={mediaStatuses}
           statusTypeLinks={statusTypeLinks}
+          open={true}
         />
-      </div>
-
-    </div>
+    </PageBody>
   );
 }

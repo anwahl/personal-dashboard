@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode, Children, isValidElement } from 'react';
 
 interface CardProps {
   children:   ReactNode;
@@ -6,8 +6,60 @@ interface CardProps {
   style?:     React.CSSProperties;
 }
 
+interface ExpandCardProps {
+  shownChildren?:   ReactNode;
+  hiddenChildren:   ReactNode;
+  className?: string;
+  style?:     React.CSSProperties;
+  title?:     string;
+  open?: boolean
+}
+
 export function Card({ children, className, style }: Readonly<CardProps>) {
   return <div className={['card', className].filter(Boolean).join(' ')} style={style}>{children}</div>;
+}
+
+export function CardGridColumn({ children, className }: Readonly<CardProps>) {
+  return <div className={['card__grid--column', className].filter(Boolean).join(' ')}>{children}</div>;
+}
+
+export function CardGridRow({ children, className }: Readonly<CardProps>) {
+  return <div className={['card__grid--row', className].filter(Boolean).join(' ')}>{children}</div>;
+}
+
+export function CardGrid({ children, columns = 2, rows = false, className }:
+    Readonly<CardProps & { columns?: number; rows?: boolean; }>) {
+  if (columns === 0 || !columns) { columns = 1; }
+  const childArray = Children.toArray(children);
+
+  if (childArray.every(c => isValidElement(c) && c.type === CardGridColumn)) {
+    return (
+      <div className={['card__grid', className].filter(Boolean).join(' ')}
+        style={{ '--columns': columns } as React.CSSProperties}>
+        {children}
+      </div>
+    );
+  }
+
+  const chunkSize = rows ? columns : Math.ceil(childArray.length / columns);
+  const chunks    = Array.from({ length: Math.ceil(childArray.length / chunkSize) }, (_, i) =>
+    childArray.slice(i * chunkSize, (i + 1) * chunkSize)
+  );
+
+  return (
+    <div className={['card__grid', className].filter(Boolean).join(' ')}
+      style={{ '--columns': columns } as React.CSSProperties}>
+      {chunks.map((chunk, i) => (
+        <CardGridColumn key={i}>
+          {chunk}
+        </CardGridColumn>
+      ))}
+    </div>
+  );
+}
+
+export function SubCard({ children, className, style }: Readonly<CardProps>) {
+  return <div className={['card__sub', className].filter(Boolean).join(' ')} style={style}>{children}</div>;
 }
 
 export function CardHeader({ children, className, style }: Readonly<CardProps>) {
@@ -25,6 +77,80 @@ export function CardBody({ children, flush, className, style }: CardProps & { fl
   return <div className={classes} style={style}>{children}</div>;
 }
 
+export function SubCardBody({ children, className, style }: CardProps & { flush?: boolean }) {
+  return <div className={['card__sub-body', className].filter(Boolean).join(' ')} style={style}>{children}</div>;
+}
+
+export function ExpandPanel({ shownChildren, hiddenChildren, className, style, title, open = false }: Readonly<ExpandCardProps>) {
+  const [expanded, setExpanded] = useState(open);
+  return <div className={['card__expand-panel', className].filter(Boolean).join(' ')} style={style}>
+            <span className='card__expand-panel--header'>
+              {title && (
+                <span className={'card__expand-panel--title'}>
+                  {title}
+                </span>)}
+                <span 
+                  className={`${expanded ? 'card__expand--chevron-expanded'
+                                : 'card__expand--chevron-expand'}`} 
+                  onClick={() => setExpanded(e => !e)}
+                />
+            </span>
+            <div className='card__expand-panel--body'>
+              {shownChildren}
+              {expanded && (hiddenChildren)}
+            </div>
+          </div>;
+}
+
+export function ExpandPreview({ previewChildren, hiddenChildren, className, style, title, open = false }:
+  Readonly<{
+    previewChildren:   ReactNode;
+    hiddenChildren:   ReactNode;
+    className?: string;
+    style?:     React.CSSProperties;
+    title?:     string;
+    open?: boolean}
+  >) {
+  const [expanded, setExpanded] = useState(open);
+  return <div className={['card__expand-panel', className].filter(Boolean).join(' ')} style={style}>
+            <span className='card__expand-panel--header'>
+              {title && (
+                <span className={'card__expand-panel--title'}>
+                  {title}
+                </span>)}
+                <span 
+                  className={`${expanded ? 'card__expand--chevron-expanded'
+                                : 'card__expand--chevron-expand'}`} 
+                  onClick={() => setExpanded(e => !e)}
+                />
+            </span>
+            <div className='card__expand-panel--body'>
+              {!expanded && (previewChildren)}
+              {expanded && (hiddenChildren)}
+            </div>
+          </div>;
+}
+
+export function ExpandCard({ shownChildren, hiddenChildren, className, style, title, open = false }: ExpandCardProps) {
+  const [expanded, setExpanded] = useState(open);
+  return <Card className={['card__expand', className].filter(Boolean).join(' ')} style={style}>
+          {title && (
+            <CardHeader className='card__expand--header'>
+              <CardTitle>{title}</CardTitle>
+              <span 
+                  className={`${expanded ? 'card__expand--chevron-expanded'
+                                : 'card__expand--chevron-expand'}`} 
+                  onClick={() => setExpanded(e => !e)}
+                />
+            </CardHeader>
+          )}
+            <CardBody>
+              {shownChildren}
+              {expanded && (hiddenChildren)}
+            </CardBody>
+        </Card>
+}
+
 export function CardFooter({ children, className, style }: Readonly<CardProps>) {
   return <div className={['card__footer', className].filter(Boolean).join(' ')} style={style}>{children}</div>;
 }
@@ -35,10 +161,25 @@ export function CardSection({ children, className, style }: Readonly<CardProps>)
                 style={style}>
                   {children}
           </div>
-          <hr />
         </>
 }
 
 export function CardSectionLabel({ children }: Readonly<{ children: ReactNode }>) {
   return <p className="card__section-label">{children}</p>;
+}
+
+export function CardActions({
+  children,
+}: Readonly<{
+  children: ReactNode;
+}>) {
+  return (
+    <>
+      <div className={`card__actions`}>
+        <div className='card__actions--body'>
+          {children}
+        </div>
+      </div>
+    </>
+  );
 }

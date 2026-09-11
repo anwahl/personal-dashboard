@@ -131,7 +131,6 @@ export function ScatterChart({ chart, data }: Readonly<Props>) {
               key={i}
               cx={toSvgX(p.x)} cy={toSvgY(p.y)} r={4}
               fill={yColor} fillOpacity={0.8}
-              className="chart-dot--pointer"
               onMouseEnter={() => setHovered(p)}
               onMouseLeave={() => setHovered(null)}
             />
@@ -145,8 +144,7 @@ export function ScatterChart({ chart, data }: Readonly<Props>) {
                 width={120} height={26} rx={4}
                 fill="var(--surface-high)" stroke="var(--border)"
               />
-              <text x={toSvgX(hovered.x) + 14} y={toSvgY(hovered.y) - 12}
-                className="chart-tooltip-text">
+              <text x={toSvgX(hovered.x) + 14} y={toSvgY(hovered.y) - 12}>
                 {hovered.date} · {xLink.trackable.name}: {hovered.x} / {yLink.trackable.name}: {hovered.y}
               </text>
             </g>

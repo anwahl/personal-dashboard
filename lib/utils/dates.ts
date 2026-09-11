@@ -2,7 +2,6 @@
  * lib/utils/dates.ts
  *
  * Shared date helpers used across the dashboard.
- * Centralises the ~6 independent copies of localTodayISO, addDays, fmtDate, etc.
  */
  
 const p = (n: number) => String(n).padStart(2, '0');
@@ -24,65 +23,39 @@ export function toLocalInput(dateStr: string): string {
     return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
 };
 
+function dateWithOffset(date: Date) {
+  const offsetMin = date.getTimezoneOffset();
+  const offsetSign = offsetMin <= 0 ? '+' : '-';
+  const absOffsetMin = Math.abs(offsetMin);
+
+  // Format timezone hours and minutes (e.g., 06:00)
+  const hh = String(Math.floor(absOffsetMin / 60)).padStart(2, '0');
+  const mm = String(absOffsetMin % 60).padStart(2, '0');
+  const tzOffset = `${offsetSign}${hh}:${mm}`;
+
+  // Shift date by timezone offset to construct exact local parts
+  const localShifted = new Date(date.getTime() - (offsetMin * 60 * 1000));
+  const pureISO = localShifted.toISOString().slice(0, -1); // Remove trailing 'Z'
+
+  const newDate = new Date(`${pureISO}${tzOffset}`);
+  return newDate;
+}
+
 /**
  * Returns the provided date as ISO date using the browser's LOCAL timezone.
  */
 export function localISODateFromDateString(dateStr: string): string {
-    const date = new Date(dateStr + "T12:00:00");
-    const offsetMin = date.getTimezoneOffset();
-    const offsetSign = offsetMin <= 0 ? '+' : '-';
-    const absOffsetMin = Math.abs(offsetMin);
-    
-    // Format timezone hours and minutes (e.g., 06:00)
-    const hh = String(Math.floor(absOffsetMin / 60)).padStart(2, '0');
-    const mm = String(absOffsetMin % 60).padStart(2, '0');
-    const tzOffset = `${offsetSign}${hh}:${mm}`;
-    
-    // Shift date by timezone offset to construct exact local parts
-    const localShifted = new Date(date.getTime() - (offsetMin * 60 * 1000));
-    const pureISO = localShifted.toISOString().slice(0, -1); // Remove trailing 'Z'
-    
-    const newDate = new Date(`${pureISO}${tzOffset}`);
-    
+    const newDate = dateWithOffset(new Date(dateStr + "T12:00:00"));
     return `${newDate.getFullYear()}-${p(newDate.getMonth()+1)}-${p(newDate.getDate())}`;
 }
 
 export function localISODateTimeFromDateString(dateStr: string): string {
-    const date = new Date(dateStr);
-    const offsetMin = date.getTimezoneOffset();
-    const offsetSign = offsetMin <= 0 ? '+' : '-';
-    const absOffsetMin = Math.abs(offsetMin);
-    
-    // Format timezone hours and minutes (e.g., 06:00)
-    const hh = String(Math.floor(absOffsetMin / 60)).padStart(2, '0');
-    const mm = String(absOffsetMin % 60).padStart(2, '0');
-    const tzOffset = `${offsetSign}${hh}:${mm}`;
-
-    // Shift date by timezone offset to construct exact local parts
-    const localShifted = new Date(date.getTime() - (offsetMin * 60 * 1000));
-    const pureISO = localShifted.toISOString().slice(0, -1); // Remove trailing 'Z'
-
-    const newDate = new Date(`${pureISO}${tzOffset}`);
-    
+    const newDate = dateWithOffset(new Date(dateStr));
     return `${newDate.getFullYear()}-${p(newDate.getMonth()+1)}-${p(newDate.getDate())}T${String(newDate.getHours())}:${String(newDate.getMinutes())}`;
 }
 
 export function localISODate(date: Date): string {
-    const offsetMin = date.getTimezoneOffset();
-    const offsetSign = offsetMin <= 0 ? '+' : '-';
-    const absOffsetMin = Math.abs(offsetMin);
-    
-    // Format timezone hours and minutes (e.g., 06:00)
-    const hh = String(Math.floor(absOffsetMin / 60)).padStart(2, '0');
-    const mm = String(absOffsetMin % 60).padStart(2, '0');
-    const tzOffset = `${offsetSign}${hh}:${mm}`;
-
-    // Shift date by timezone offset to construct exact local parts
-    const localShifted = new Date(date.getTime() - (offsetMin * 60 * 1000));
-    const pureISO = localShifted.toISOString().slice(0, -1); // Remove trailing 'Z'
-
-    const newDate = new Date(`${pureISO}${tzOffset}`);
-    
+    const newDate = dateWithOffset(date);
     return `${newDate.getFullYear()}-${p(newDate.getMonth()+1)}-${p(newDate.getDate())}`;
 }
 
@@ -106,26 +79,67 @@ export function addDays(dateStr: string, n: number): string {
  */
 export function formatLongDate(d: string | null): string {
   if (!d) return "—";
-  const [y, m, day] = d.split("-").map(Number);
-  return new Date(y, m - 1, day).toLocaleDateString("en-US", {
+  
+  // Split date and time parts (e.g., "2026-08-08T14:30:00" -> ["2026-08-08", "14:30:00"])
+  const [datePart, timePart] = d.split("T");
+  const [y, m, day] = datePart.split("-").map(Number);
+  
+  const dateObj = new Date(y, m - 1, day);
+  const formattedDate = dateObj.toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
     year: "numeric",
   });
+
+  if (!timePart) return formattedDate;
+
+  // Parse hours and minutes from the time part
+  const [h, min] = timePart.split(":").map(Number);
+  const timeObj = new Date();
+  timeObj.setHours(h, min);
+
+  const formattedTime = timeObj.toLocaleTimeString("en-US", {
+    hour12: true,
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+
+  return `${formattedDate} at ${formattedTime}`;
 }
+
 
 /**
  * "Jan 15, 2026"
  */
 export function formatMediumDate(d: string | null): string {
   if (!d) return "—";
-  const [y, m, day] = d.split("-").map(Number);
-  return new Date(y, m - 1, day).toLocaleDateString("en-US", {
+  
+  // Split date and time parts (e.g., "2026-08-08T14:30:00" -> ["2026-08-08", "14:30:00"])
+  const [datePart, timePart] = d.split("T");
+  const [y, m, day] = datePart.split("-").map(Number);
+  
+  const dateObj = new Date(y, m - 1, day);
+  const formattedDate = dateObj.toLocaleDateString("en-US", {
     month: "long",
     day: "numeric",
     year: "numeric",
   });
+
+  if (!timePart) return formattedDate;
+
+  // Parse hours and minutes from the time part
+  const [h, min] = timePart.split(":").map(Number);
+  const timeObj = new Date();
+  timeObj.setHours(h, min);
+
+  const formattedTime = timeObj.toLocaleTimeString("en-US", {
+    hour12: true,
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+
+  return `${formattedDate} at ${formattedTime}`;
 }
 
 /**
@@ -133,11 +147,31 @@ export function formatMediumDate(d: string | null): string {
  */
 export function formatShortDate(d: string | null): string {
   if (!d) return "—";
-  const [y, m, day] = d.split("-").map(Number);
-  return new Date(y, m - 1, day).toLocaleDateString("en-US", {
+  
+  // Split date and time parts (e.g., "2026-08-08T14:30:00" -> ["2026-08-08", "14:30:00"])
+  const [datePart, timePart] = d.split("T");
+  const [y, m, day] = datePart.split("-").map(Number);
+  
+  const dateObj = new Date(y, m - 1, day);
+  const formattedDate = dateObj.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
   });
+
+  if (!timePart) return formattedDate;
+
+  // Parse hours and minutes from the time part
+  const [h, min] = timePart.split(":").map(Number);
+  const timeObj = new Date();
+  timeObj.setHours(h, min);
+
+  const formattedTime = timeObj.toLocaleTimeString("en-US", {
+    hour12: true,
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+
+  return `${formattedDate} at ${formattedTime}`;
 }
 
 // ── Relative helpers ──────────────────────────────────────────────────────────

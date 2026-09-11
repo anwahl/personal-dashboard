@@ -1,24 +1,50 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import {
-  addWeeklyJournalCategory, updateWeeklyJournalCategory, deleteWeeklyJournalCategory,
-  toggleWeeklyJournalCategory,
-  addWeeklyJournalPrompt, updateWeeklyJournalPrompt, deleteWeeklyJournalPrompt,
-  toggleWeeklyJournalPrompt,
-} from '@/lib/dal/weekly-journal';
-import {
-  addJournalCategory,    updateJournalCategory, deleteJournalCategory,
-  toggleJournalCategory,
-  addJournalPrompt,      updateJournalPrompt,   deleteJournalPrompt,
-  toggleJournalPrompt,
-} from '@/lib/dal/journal';
-import { bySortOrder, normalizedReorderUpdates } from '@/lib/utils/sort';
+import { createClient }      from '@/lib/supabase/client';
 import { batchSetSortOrder } from '@/lib/dal/settings';
-import { createClient }        from '@/lib/supabase/client';
-import { Button }              from '@/components/ui';
-import { CategoryBlock, ChildItem } from '@/components/settings/CategoryBlock';
+import {
+  addJournalCategory,    updateJournalCategory, deleteJournalCategory, toggleJournalCategory,
+  addJournalPrompt,      updateJournalPrompt,   deleteJournalPrompt,   toggleJournalPrompt,
+} from '@/lib/dal/journal';
+import {
+  addWeeklyJournalCategory,    updateWeeklyJournalCategory,
+  deleteWeeklyJournalCategory, toggleWeeklyJournalCategory,
+  addWeeklyJournalPrompt,      updateWeeklyJournalPrompt,
+  deleteWeeklyJournalPrompt,   toggleWeeklyJournalPrompt,
+} from '@/lib/dal/weekly-journal';
+import { HierarchicalList }  from '@/components/settings/HierarchicalList';
 import type { JournalCategoryWithPrompts, WeeklyJournalCategoryWithPrompts } from '@/types/dal';
+
+// ── Normalisation helpers ─────────────────────────────────────────────────────
+
+function normaliseJournal(cats: JournalCategoryWithPrompts[]) {
+  return cats.map(c => ({
+    id: c.id, name: c.category_name, is_active: c.is_active, sort_order: c.sort_order ?? 0,
+    children: c.prompts.map(p => ({
+      id: p.id, name: p.prompt_text, is_active: p.is_active, sort_order: p.sort_order ?? 0,
+    })),
+  }));
+}
+
+function normaliseWeekly(cats: WeeklyJournalCategoryWithPrompts[]) {
+  return cats.map(c => ({
+    id: c.id, name: c.category_name, is_active: c.is_active, sort_order: c.sort_order ?? 0,
+    children: c.prompts.map(p => ({
+      id: p.id, name: p.prompt_text, is_active: p.is_active, sort_order: p.sort_order ?? 0,
+    })),
+  }));
+}
+
+// ── Shared prompt-list config ─────────────────────────────────────────────────
+
+const PROMPT_LIST_CONFIG = {
+  childInputType:   'textarea'   as const,
+  childItalic:      true,
+  childPlaceholder: 'New prompt…',
+  catPlaceholder:   'New category…',
+};
+
+// ── Component ─────────────────────────────────────────────────────────────────
 
 interface Props {
   categories:       JournalCategoryWithPrompts[];
@@ -27,409 +53,46 @@ interface Props {
 
 export function JournalSettings({ categories: initial, weeklyCategories: initialWeekly }: Readonly<Props>) {
   const supabase = createClient();
-  const [cats, setCats] = useState(initial);
-
-  // ── Category operations ─────────────────────────────────────────────────────
-
-  const [newCatName, setNewCatName] = useState('');
-  const [addingCat,  setAddingCat]  = useState(false);
-
-  const addCategory = useCallback(async () => {
-    if (!newCatName.trim()) return;
-    setAddingCat(true);
-    try {
-      const data = await addJournalCategory(supabase, newCatName, cats.length);
-      setCats(prev => [...prev, { ...data, prompts: [] }]);
-      setNewCatName('');
-    } finally { setAddingCat(false); }
-  }, [supabase, newCatName, cats.length]);
-
-  const renameCategory = useCallback(async (catId: number, name: string) => {
-    await updateJournalCategory(supabase, catId, name);
-    setCats(prev => prev.map(c => c.id === catId ? { ...c, category_name: name } : c));
-  }, [supabase]);
-
-  const toggleCategory = useCallback(async (catId: number, active: boolean) => {
-    await toggleJournalCategory(supabase, catId, active);
-    setCats(prev => prev.map(c => c.id === catId ? { ...c, is_active: active } : c));
-  }, [supabase]);
-
-  const deleteCategory = useCallback(async (catId: number) => {
-    await deleteJournalCategory(supabase, catId);
-    setCats(prev => prev.filter(c => c.id !== catId));
-  }, [supabase]);
-
-  const moveCategory = useCallback(async (catId: number, direction: 'up' | 'down') => {
-    const sorted  = [...cats].sort(bySortOrder);
-    const idx     = sorted.findIndex(c => c.id === catId);
-    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
-    if (swapIdx < 0 || swapIdx >= sorted.length) return;
-    const updates = normalizedReorderUpdates(sorted, idx, swapIdx);
-    const updateMap = new Map(updates.map(u => [u.id, u.sort_order]));
-    setCats(prev => prev.map(c => updateMap.has(c.id) ? { ...c, sort_order: updateMap.get(c.id)! } : c));
-    await batchSetSortOrder(supabase, 'journal_categories', updates);
-  }, [supabase, cats]);
-
-  // ── Prompt operations ───────────────────────────────────────────────────────
-
-  const [newPromptByCat, setNewPromptByCat] = useState<Record<number, string>>({});
-  const [addingPrompt,   setAddingPrompt]   = useState<number | null>(null);
-
-  const addPrompt = useCallback(async (catId: number) => {
-    const text = newPromptByCat[catId]?.trim();
-    if (!text) return;
-    setAddingPrompt(catId);
-    try {
-      const data = await addJournalPrompt(supabase, catId, text);
-      setCats(prev => prev.map(c =>
-        c.id === catId ? { ...c, prompts: [...c.prompts, data] } : c
-      ));
-      setNewPromptByCat(prev => ({ ...prev, [catId]: '' }));
-    } finally { setAddingPrompt(null); }
-  }, [supabase, newPromptByCat]);
-
-  const renamePrompt = useCallback(async (catId: number, promptId: number, text: string) => {
-    await updateJournalPrompt(supabase, promptId, text);
-    setCats(prev => prev.map(c =>
-      c.id === catId
-        ? { ...c, prompts: c.prompts.map(p => p.id === promptId ? { ...p, prompt_text: text } : p) }
-        : c
-    ));
-  }, [supabase]);
-
-  const togglePrompt = useCallback(async (catId: number, promptId: number, active: boolean) => {
-    await toggleJournalPrompt(supabase, promptId, active);
-    setCats(prev => prev.map(c =>
-      c.id === catId
-        ? { ...c, prompts: c.prompts.map(p => p.id === promptId ? { ...p, is_active: active } : p) }
-        : c
-    ));
-  }, [supabase]);
-
-  const deletePrompt = useCallback(async (catId: number, promptId: number) => {
-    await deleteJournalPrompt(supabase, promptId);
-    setCats(prev => prev.map(c =>
-      c.id === catId ? { ...c, prompts: c.prompts.filter(p => p.id !== promptId) } : c
-    ));
-  }, [supabase]);
-
-  const movePrompt = useCallback(async (catId: number, promptId: number, direction: 'up' | 'down') => {
-    const cat = cats.find(c => c.id === catId);
-    if (!cat) return;
-    const sorted  = [...cat.prompts].sort(bySortOrder);
-    const idx     = sorted.findIndex(p => p.id === promptId);
-    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
-    if (swapIdx < 0 || swapIdx >= sorted.length) return;
-    const updates = normalizedReorderUpdates(sorted, idx, swapIdx);
-    const updateMap = new Map(updates.map(u => [u.id, u.sort_order]));
-    setCats(prev => prev.map(c =>
-      c.id === catId
-        ? { ...c, prompts: c.prompts.map(p => updateMap.has(p.id) ? { ...p, sort_order: updateMap.get(p.id)! } : p) }
-        : c
-    ));
-    await batchSetSortOrder(supabase, 'journal_prompts', updates);
-  }, [supabase, cats]);
-
-  // ── Render ──────────────────────────────────────────────────────────────────
-
-  const sortedCats   = [...cats].sort(bySortOrder);
-  const activeCats   = sortedCats.filter(c =>  c.is_active);
-  const inactiveCats = sortedCats.filter(c => !c.is_active);
-
-  const renderCategory = (cat: JournalCategoryWithPrompts) => {
-    const activeCatIdx   = activeCats.findIndex(c => c.id === cat.id);
-    const activePrompts  = [...cat.prompts].filter(p =>  p.is_active).sort(bySortOrder);
-    const inactivePrompts = [...cat.prompts].filter(p => !p.is_active).sort(bySortOrder);
-
-    return (
-      <CategoryBlock
-        key={cat.id}
-        name={cat.category_name}
-        is_active={cat.is_active}
-        isFirst={activeCatIdx === 0}
-        isLast={activeCatIdx === activeCats.length - 1}
-        onMoveUp={()    => moveCategory(cat.id, 'up')}
-        onMoveDown={()   => moveCategory(cat.id, 'down')}
-        onRename={name   => renameCategory(cat.id, name)}
-        onToggle={active => toggleCategory(cat.id, active)}
-        onDelete={()     => deleteCategory(cat.id)}
-        addRow={
-          <div className="category-block__add-row">
-            <textarea
-              className="input--flex textarea--short"
-              value={newPromptByCat[cat.id] ?? ''}
-              onChange={e => setNewPromptByCat(prev => ({ ...prev, [cat.id]: e.target.value }))}
-              placeholder="New prompt…"
-            />
-            <Button
-              size="sm" variant="ghost"
-              onClick={() => addPrompt(cat.id)}
-              disabled={addingPrompt === cat.id || !newPromptByCat[cat.id]?.trim()}
-            >
-              {addingPrompt === cat.id ? '…' : '+ Add'}
-            </Button>
-          </div>
-        }
-      >
-        {activePrompts.length === 0 && inactivePrompts.length === 0 && (
-          <p className="empty-state">No prompts yet.</p>
-        )}
-
-        {activePrompts.map((p, idx) => (
-          <ChildItem
-            key={p.id}
-            name={p.prompt_text}
-            is_active={p.is_active}
-            italic
-            isFirst={idx === 0}
-            isLast={idx === activePrompts.length - 1}
-            onMoveUp={()    => movePrompt(cat.id, p.id, 'up')}
-            onMoveDown={()   => movePrompt(cat.id, p.id, 'down')}
-            onRename={text   => renamePrompt(cat.id, p.id, text)}
-            onToggle={active => togglePrompt(cat.id, p.id, active)}
-            onDelete={()     => deletePrompt(cat.id, p.id)}
-          />
-        ))}
-
-        {inactivePrompts.length > 0 && (
-          <details className="category-block__details">
-            <summary className="category-block__summary">
-              {inactivePrompts.length} inactive
-            </summary>
-            {inactivePrompts.map(p => (
-              <ChildItem
-                key={p.id}
-                name={p.prompt_text}
-                is_active={p.is_active}
-                italic
-                isFirst={false} isLast={false}
-                onMoveUp={() => {}} onMoveDown={() => {}}
-                onRename={text   => renamePrompt(cat.id, p.id, text)}
-                onToggle={active => togglePrompt(cat.id, p.id, active)}
-                onDelete={()     => deletePrompt(cat.id, p.id)}
-              />
-            ))}
-          </details>
-        )}
-      </CategoryBlock>
-    );
-  };
 
   return (
     <>
-    <div className="settings-section">
-      <div className="settings-section__header">
-        <span className="settings-section__title">Journal Prompts</span>
-      </div>
-      <p className="settings-section__desc">
-        Prompts are randomly selected when creating journal entries.
-      </p>
-
-      {activeCats.map(renderCategory)}
-
-      {inactiveCats.length > 0 && (
-        <details className="manage-inactive">
-          <summary className="manage-inactive__summary">
-            {inactiveCats.length} inactive {inactiveCats.length === 1 ? 'category' : 'categories'}
-          </summary>
-          <div className="manage-inactive__body">
-            {inactiveCats.map(renderCategory)}
-          </div>
-        </details>
-      )}
-
-      <div className="category-block__footer">
-        <input
-          type="text"
-          className="input--flex"
-          value={newCatName}
-          onChange={e => setNewCatName(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && addCategory()}
-          placeholder="New category…"
-        />
-        <Button size="sm" variant="accent" onClick={addCategory} disabled={addingCat || !newCatName.trim()}>
-          {addingCat ? '…' : '+ Category'}
-        </Button>
-      </div>
-    </div>
-    <div className="settings-section-gap" />
-    <WeeklyJournalPromptsSettings categories={initialWeekly} />
-  </>
-  );
-}
-
-// ── Weekly Journal Prompts (same CategoryBlock pattern as daily) ──────────────
-
-function WeeklyJournalPromptsSettings({ categories: initial }: Readonly<{ categories: WeeklyJournalCategoryWithPrompts[] }>) {
-  const supabase = createClient();
-  const [cats, setCats] = useState(initial);
-  const [newCatName, setNewCatName] = useState('');
-  const [addingCat,  setAddingCat]  = useState(false);
-  const [newPromptByCat, setNewPromptByCat] = useState<Record<number, string>>({});
-  const [addingPrompt,   setAddingPrompt]   = useState<number | null>(null);
-
-  const addCategory = useCallback(async () => {
-    if (!newCatName.trim()) return;
-    setAddingCat(true);
-    try {
-      const data = await addWeeklyJournalCategory(supabase, newCatName, cats.length);
-      setCats(prev => [...prev, { ...data, prompts: [] }]);
-      setNewCatName('');
-    } finally { setAddingCat(false); }
-  }, [supabase, newCatName, cats.length]);
-
-  const renameCategory = useCallback(async (catId: number, name: string) => {
-    await updateWeeklyJournalCategory(supabase, catId, name);
-    setCats(prev => prev.map(c => c.id === catId ? { ...c, category_name: name } : c));
-  }, [supabase]);
-
-  const toggleCategory = useCallback(async (catId: number, active: boolean) => {
-    await toggleWeeklyJournalCategory(supabase, catId, active);
-    setCats(prev => prev.map(c => c.id === catId ? { ...c, is_active: active } : c));
-  }, [supabase]);
-
-  const deleteCategory = useCallback(async (catId: number) => {
-    await deleteWeeklyJournalCategory(supabase, catId);
-    setCats(prev => prev.filter(c => c.id !== catId));
-  }, [supabase]);
-
-  const moveCategory = useCallback(async (catId: number, direction: 'up' | 'down') => {
-    const sorted  = [...cats].sort(bySortOrder);
-    const idx     = sorted.findIndex(c => c.id === catId);
-    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
-    if (swapIdx < 0 || swapIdx >= sorted.length) return;
-    const updates = normalizedReorderUpdates(sorted, idx, swapIdx);
-    const updateMap = new Map(updates.map(u => [u.id, u.sort_order]));
-    setCats(prev => prev.map(c => updateMap.has(c.id) ? { ...c, sort_order: updateMap.get(c.id)! } : c));
-    await batchSetSortOrder(supabase, 'weekly_journal_categories', updates);
-  }, [supabase, cats]);
-
-  const addPrompt = useCallback(async (catId: number) => {
-    const text = newPromptByCat[catId]?.trim();
-    if (!text) return;
-    setAddingPrompt(catId);
-    try {
-      const data = await addWeeklyJournalPrompt(supabase, catId, text);
-      setCats(prev => prev.map(c => c.id === catId ? { ...c, prompts: [...c.prompts, data] } : c));
-      setNewPromptByCat(prev => ({ ...prev, [catId]: '' }));
-    } finally { setAddingPrompt(null); }
-  }, [supabase, newPromptByCat]);
-
-  const renamePrompt = useCallback(async (catId: number, promptId: number, text: string) => {
-    await updateWeeklyJournalPrompt(supabase, promptId, text);
-    setCats(prev => prev.map(c =>
-      c.id === catId ? { ...c, prompts: c.prompts.map(p => p.id === promptId ? { ...p, prompt_text: text } : p) } : c));
-  }, [supabase]);
-
-  const togglePrompt = useCallback(async (catId: number, promptId: number, active: boolean) => {
-    await toggleWeeklyJournalPrompt(supabase, promptId, active);
-    setCats(prev => prev.map(c =>
-      c.id === catId ? { ...c, prompts: c.prompts.map(p => p.id === promptId ? { ...p, is_active: active } : p) } : c));
-  }, [supabase]);
-
-  const deletePrompt = useCallback(async (catId: number, promptId: number) => {
-    await deleteWeeklyJournalPrompt(supabase, promptId);
-    setCats(prev => prev.map(c =>
-      c.id === catId ? { ...c, prompts: c.prompts.filter(p => p.id !== promptId) } : c));
-  }, [supabase]);
-
-  const movePrompt = useCallback(async (catId: number, promptId: number, direction: 'up' | 'down') => {
-    const cat = cats.find(c => c.id === catId);
-    if (!cat) return;
-    const sorted  = [...cat.prompts].sort(bySortOrder);
-    const idx     = sorted.findIndex(p => p.id === promptId);
-    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
-    if (swapIdx < 0 || swapIdx >= sorted.length) return;
-    const updates = normalizedReorderUpdates(sorted, idx, swapIdx);
-    const updateMap = new Map(updates.map(u => [u.id, u.sort_order]));
-    setCats(prev => prev.map(c =>
-      c.id === catId
-        ? { ...c, prompts: c.prompts.map(p => updateMap.has(p.id) ? { ...p, sort_order: updateMap.get(p.id)! } : p) }
-        : c));
-    await batchSetSortOrder(supabase, 'weekly_journal_prompts', updates);
-  }, [supabase, cats]);
-
-  const sortedCats   = [...cats].sort(bySortOrder);
-  const activeCats   = sortedCats.filter(c => c.is_active);
-  const inactiveCats = sortedCats.filter(c => !c.is_active);
-
-  const renderCategory = (cat: WeeklyJournalCategoryWithPrompts) => {
-    const activeCatIdx    = activeCats.findIndex(c => c.id === cat.id);
-    const activePrompts   = [...cat.prompts].filter(p => p.is_active).sort(bySortOrder);
-    const inactivePrompts = [...cat.prompts].filter(p => !p.is_active).sort(bySortOrder);
-    return (
-      <CategoryBlock key={cat.id}
-        name={cat.category_name} is_active={cat.is_active}
-        isFirst={activeCatIdx === 0} isLast={activeCatIdx === activeCats.length - 1}
-        onMoveUp={()    => moveCategory(cat.id, 'up')}
-        onMoveDown={()   => moveCategory(cat.id, 'down')}
-        onRename={name   => renameCategory(cat.id, name)}
-        onToggle={active => toggleCategory(cat.id, active)}
-        onDelete={()     => deleteCategory(cat.id)}
-        addRow={
-          <div className="category-block__add-row">
-            <textarea className="input--flex textarea--short" value={newPromptByCat[cat.id] ?? ''}
-              placeholder="New prompt…"
-              onChange={e => setNewPromptByCat(prev => ({ ...prev, [cat.id]: e.target.value }))} />
-            <Button size="sm" variant="ghost" onClick={() => addPrompt(cat.id)}
-              disabled={addingPrompt === cat.id || !newPromptByCat[cat.id]?.trim()}>
-              {addingPrompt === cat.id ? '…' : '+ Add'}
-            </Button>
-          </div>
-        }
-      >
-        {activePrompts.length === 0 && inactivePrompts.length === 0 && <p className="empty-state">No prompts yet.</p>}
-        {activePrompts.map((p, idx) => (
-          <ChildItem key={p.id} name={p.prompt_text} is_active={p.is_active} italic
-            isFirst={idx === 0} isLast={idx === activePrompts.length - 1}
-            onMoveUp={()    => movePrompt(cat.id, p.id, 'up')}
-            onMoveDown={()   => movePrompt(cat.id, p.id, 'down')}
-            onRename={text   => renamePrompt(cat.id, p.id, text)}
-            onToggle={active => togglePrompt(cat.id, p.id, active)}
-            onDelete={()     => deletePrompt(cat.id, p.id)}
-          />
-        ))}
-        {inactivePrompts.length > 0 && (
-          <details className="category-block__details">
-            <summary className="category-block__summary">{inactivePrompts.length} inactive</summary>
-            {inactivePrompts.map(p => (
-              <ChildItem key={p.id} name={p.prompt_text} is_active={p.is_active} italic
-                isFirst={false} isLast={false} onMoveUp={() => {}} onMoveDown={() => {}}
-                onRename={text   => renamePrompt(cat.id, p.id, text)}
-                onToggle={active => togglePrompt(cat.id, p.id, active)}
-                onDelete={()     => deletePrompt(cat.id, p.id)}
-              />
-            ))}
-          </details>
-        )}
-      </CategoryBlock>
-    );
-  };
-
-  return (
-    <div>
-      <div className="settings-section__header">
-        <span className="settings-section__title">Weekly Journal Prompts</span>
-      </div>
-      <p className="settings-section__desc">Prompts for the weekly journal, organized by category.</p>
-      {activeCats.map(renderCategory)}
-      {inactiveCats.length > 0 && (
-        <details className="manage-inactive">
-          <summary className="manage-inactive__summary">
-            {inactiveCats.length} inactive {inactiveCats.length === 1 ? 'category' : 'categories'}
-          </summary>
-          <div className="manage-inactive__body">{inactiveCats.map(renderCategory)}</div>
-        </details>
-      )}
-      <div className="category-block__footer">
-        <input type="text" className="input--flex" value={newCatName}
-          onChange={e => setNewCatName(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && addCategory()}
-          placeholder="New category…" />
-        <Button size="sm" variant="accent" onClick={addCategory} disabled={addingCat || !newCatName.trim()}>
-          {addingCat ? '…' : '+ Category'}
-        </Button>
-      </div>
-    </div>
+      <HierarchicalList
+        title="Journal Prompts"
+        description="Prompts are randomly selected when creating journal entries."
+        initialCategories={normaliseJournal(initial)}
+        {...PROMPT_LIST_CONFIG}
+        dal={{
+          addCategory:       (name, sort)          => addJournalCategory(supabase, name, sort),
+          updateCategory:    (id, name)             => updateJournalCategory(supabase, id, name),
+          deleteCategory:    id                     => deleteJournalCategory(supabase, id),
+          toggleCategory:    (id, active)           => toggleJournalCategory(supabase, id, active),
+          reorderCategories: updates                => batchSetSortOrder(supabase, 'journal_categories', updates),
+          addChild:          (catId, text, _sort)   => addJournalPrompt(supabase, catId, text),
+          updateChild:       (id, text)             => updateJournalPrompt(supabase, id, text),
+          deleteChild:       id                     => deleteJournalPrompt(supabase, id),
+          toggleChild:       (id, active)           => toggleJournalPrompt(supabase, id, active),
+          reorderChildren:   updates                => batchSetSortOrder(supabase, 'journal_prompts', updates),
+        }}
+      />
+      <div className="settings-section-gap" />
+      <HierarchicalList
+        title="Weekly Journal Prompts"
+        description="Prompts for the weekly journal, organised by category."
+        initialCategories={normaliseWeekly(initialWeekly)}
+        {...PROMPT_LIST_CONFIG}
+        dal={{
+          addCategory:       (name, sort)          => addWeeklyJournalCategory(supabase, name, sort),
+          updateCategory:    (id, name)             => updateWeeklyJournalCategory(supabase, id, name),
+          deleteCategory:    id                     => deleteWeeklyJournalCategory(supabase, id),
+          toggleCategory:    (id, active)           => toggleWeeklyJournalCategory(supabase, id, active),
+          reorderCategories: updates                => batchSetSortOrder(supabase, 'weekly_journal_categories', updates),
+          addChild:          (catId, text, _sort)   => addWeeklyJournalPrompt(supabase, catId, text),
+          updateChild:       (id, text)             => updateWeeklyJournalPrompt(supabase, id, text),
+          deleteChild:       id                     => deleteWeeklyJournalPrompt(supabase, id),
+          toggleChild:       (id, active)           => toggleWeeklyJournalPrompt(supabase, id, active),
+          reorderChildren:   updates                => batchSetSortOrder(supabase, 'weekly_journal_prompts', updates),
+        }}
+      />
+    </>
   );
 }

@@ -18,11 +18,12 @@ import {
 
 import { useState, useCallback, useEffect } from 'react';
 import { createClient }              from '@/lib/supabase/client';
-import { Button }                    from '@/components/ui';
+import { Button, Card, CardActions, CardBody, CardHeader, CardSection, CardSectionLabel, CardTitle, Chip, ChipGroup, ExpandCard, InputField, SubCard, SubCardBody }                    from '@/components/ui';
 import type { MediaEntryDetail }     from '@/types/dal';
 import type {
   MediaTypeRow, MediaStatusRow, MediaStatusTypeLinkRow,
 } from '@/types/schema';
+import { Field, FieldGrid } from '../ui/Display';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -74,27 +75,28 @@ function NowPlayingItem({
   };
 
   return (
-    <div className="qml-item">
-      <Link href={`/media/${entry.id}`} className="item-body-link">
-        <div className="qml-item__body">
-          <span className="qml-item__title">{entry.title}</span>
-          <span className="qml-item__meta">
-            {STATUS_EMOJI[entry.current_status?.status_name ?? ''] ?? ''}
-            {entry.current_status?.status_name}
-            {entry.creator && ` · ${entry.creator}`}
-          </span>
-        </div>
-      </Link>
-      <div className="qml-item__actions">
-        {terminalStatuses.map(s => (
-          <Button key={s.id} variant="ghost" size="sm"
-            onClick={() => change(s.id)} disabled={changing}
-            title={s.status_name}>
-            {STATUS_EMOJI[s.status_name] ?? s.status_name}
-          </Button>
-        ))}
-      </div>
-    </div>
+    <SubCard>
+      <CardHeader>
+        <CardTitle>{entry.title}</CardTitle>
+        <CardActions>
+          <Button variant="action" size="sm" href={`/media/${entry.id}`}>View</Button>
+          {terminalStatuses.map(s => (
+            <Button key={s.id} variant="action" size="sm"
+              onClick={() => change(s.id)} disabled={changing}
+              title={s.status_name}>
+              {STATUS_EMOJI[s.status_name] ?? s.status_name}
+            </Button>
+          ))}
+        </CardActions>
+      </CardHeader>
+      <SubCardBody>
+        <Chip>
+          {STATUS_EMOJI[entry.current_status?.status_name ?? ''] ?? ''}
+          {entry.current_status?.status_name}
+          {entry.creator && ` · ${entry.creator}`}
+        </Chip>
+      </SubCardBody>
+    </SubCard>
   );
 }
 
@@ -105,12 +107,13 @@ interface Props {
   mediaTypes:      MediaTypeRow[];
   mediaStatuses:   MediaStatusRow[];
   statusTypeLinks: MediaStatusTypeLinkRow[];
+  open?:           boolean;
 }
 
 // ── QuickMediaLog ─────────────────────────────────────────────────────────────
 
 export function QuickMediaLog({
-  initialEntries, mediaTypes, mediaStatuses, statusTypeLinks,
+  initialEntries, mediaTypes, mediaStatuses, statusTypeLinks, open = false
 }: Readonly<Props>) {
   const supabase = createClient();
   const [entries, setEntries]     = useState<MediaEntryDetail[]>(initialEntries);
@@ -184,55 +187,66 @@ export function QuickMediaLog({
     : mediaStatuses;
 
   return (
-    <div className="quick-media-log">
-      <div className="quick-media-log__header">
-        <span className="quick-media-log__title">
-          🎬 Now Playing
-        </span>
-        <Button variant="ghost" size="sm" onClick={() => setShowAdd(s => !s)}>
-          {showAdd ? '✕' : '+ Add'}
-        </Button>
-      </div>
-
-      {showAdd && (
-        <div className="qml-add-form">
-          <div className="qml-add-form__row">
-            <input type="text" value={title} onChange={e => setTitle(e.target.value)}
-              placeholder="Title…" className="qml-add-form__title"
-              onKeyDown={e => { if (e.key === 'Enter') handleAdd(); }} />
-            <select value={typeId} onChange={e => setTypeId(e.target.value)} className="settings-select">
-              {mediaTypes.map(t => <option key={t.id} value={t.id}>{capitalize(t.type_name)}</option>)}
-            </select>
-            <select value={statusId} onChange={e => setStatusId(e.target.value)} className="settings-select">
-              <option value="">No status</option>
-              {validStatuses.map(s => (
-                <option key={s.id} value={s.id}>
-                  {STATUS_EMOJI[s.status_name] ?? ''} {s.status_name}
-                </option>
-              ))}
-            </select>
-            <Button variant="accent" size="sm" onClick={handleAdd} disabled={!title.trim() || saving}>
-              {saving ? '…' : 'Add'}
+    <ExpandCard open={open} title={`🎬 Now Playing (${inProgress.length})`}
+      hiddenChildren = {
+        <>
+          <CardActions>
+            <Button variant="ghost" size="sm"
+              onClick={() => setShowAdd(s => !s)}>
+              {showAdd ? '✕' : '+ Add'}
             </Button>
-          </div>
-        </div>
-      )}
+          </CardActions>
+          <CardBody>
+            {showAdd && (
+              <SubCard>
+                <CardHeader>
+                  <CardTitle>Add New</CardTitle>
+                </CardHeader>
+                <SubCardBody>
+                  <InputField label='Title' id='new-title'>
+                      <input id='new-title' type="text" value={title} onChange={e => setTitle(e.target.value)}
+                        placeholder="Title…" onKeyDown={e => { if (e.key === 'Enter') handleAdd(); }} />
+                  </InputField>
+                  <InputField label='Type' id='new-type'>
+                      <select id='new-type' value={typeId} onChange={e => setTypeId(e.target.value)}>
+                        <option value=''>Select an Option...</option>)
+                        {mediaTypes.map(t => <option key={t.id} value={t.id}>{capitalize(t.type_name)}</option>)}
+                      </select>
+                  </InputField>
+                  <InputField label='Status' id='new-status'>
+                      <select id='new-status' value={statusId} onChange={e => setStatusId(e.target.value)}>
+                        <option value=''>No status</option>
+                        {validStatuses.map(s => (
+                          <option key={s.id} value={s.id}>
+                            {STATUS_EMOJI[s.status_name] ?? ''} {s.status_name}
+                          </option>
+                        ))}
+                      </select>
+                    </InputField>
+                      <Button variant="accent" size="sm" onClick={handleAdd} disabled={!title.trim() || saving}>
+                        {saving ? '…' : 'Add'}
+                      </Button>
+                </SubCardBody> 
+              </SubCard>
+            )}
 
-      {inProgress.length === 0 && !showAdd && (
-        <p className="empty-state">Nothing in progress.</p>
-      )}
+            {inProgress.length === 0 && !showAdd && (
+              <p className="empty-state">Nothing in progress.</p>
+            )}
 
-      {Object.entries(grouped).map(([typeName, items]) => (
-        <div key={typeName} className="qml-group">
-          <div className="qml-group__label">{capitalize(typeName)}</div>
-          {items.map(e => (
-            <NowPlayingItem key={e.id} entry={e}
-              allStatuses={mediaStatuses} statusTypeLinks={statusTypeLinks}
-              onStatusChange={handleStatusChange}
-            />
-          ))}
-        </div>
-      ))}
-    </div>
+            {Object.entries(grouped).map(([typeName, items]) => (
+              <CardSection key={typeName}>
+                <CardSectionLabel>{capitalize(typeName)} ({items.length})</CardSectionLabel>
+                {items.map(e => (
+                  <NowPlayingItem key={e.id} entry={e}
+                    allStatuses={mediaStatuses} statusTypeLinks={statusTypeLinks}
+                    onStatusChange={handleStatusChange}
+                  />
+                ))}
+              </CardSection>
+            ))}
+          </CardBody>
+        </>
+    } />
   );
 }

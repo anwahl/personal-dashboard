@@ -4,6 +4,7 @@ import { getMediaTypes, getMediaStatuses,
          getMediaStatusTypeLinks } from '@/lib/dal/reference';
 import { MediaClient }             from '@/components/media/MediaClient';
 import { QuickMediaLog }           from '@/components/media/QuickMediaLog';
+import { Header, PageBody } from '@/components/layout';
 
 export default async function MediaPage() {
   const supabase = await createClient();
@@ -16,10 +17,8 @@ export default async function MediaPage() {
   ]);
 
   return (
-    <div className="page-content">
-      <div className="page-header">
-        <h1 className="page-header__title">🎬 Media</h1>
-      </div>
+    <PageBody>
+      <Header title='🎬 Media' />
       <QuickMediaLog
         initialEntries={inProgressEntries}
         mediaTypes={mediaTypes}
@@ -32,6 +31,6 @@ export default async function MediaPage() {
         mediaStatuses={mediaStatuses}
         statusTypeLinks={statusTypeLinks}
       />
-    </div>
+    </PageBody>
   );
 }

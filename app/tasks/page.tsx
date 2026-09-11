@@ -1,30 +1,22 @@
 import { createClient }   from '@/lib/supabase/server';
-import { getActiveTasks, getCompletedTasks } from '@/lib/dal/tasks';
-import { getTaskStatuses, getTaskPriorities, getAssignablePeople } from '@/lib/dal/reference';
-import { TasksClient }    from '@/components/tasks/TasksClient';
+import { getTasksByDateContext } from '@/lib/dal/tasks';
+import { TaskList } from '@/components/tasks/TaskList';
+import { localTodayISO } from '@/lib/utils/dates';
+import { QuickAdd } from '@/components/tasks/TaskForm';
+import { Header, PageBody } from '@/components/layout';
 
 export default async function TasksPage() {
   const supabase = await createClient();
-  const [active, completed, statuses, priorities, people] = await Promise.all([
-    getActiveTasks(supabase),
-    getCompletedTasks(supabase, 30),
-    getTaskStatuses(supabase, true),   // include all for form
-    getTaskPriorities(supabase),
-    getAssignablePeople(supabase),
-  ]);
+  const taskData = await getTasksByDateContext(supabase, localTodayISO());
 
   return (
-    <div className="page-content">
-      <div className="page-header">
-        <h1 className="page-header__title">✅ Tasks</h1>
-      </div>
-      <TasksClient
-        active={active}
-        completed={completed}
-        statuses={statuses}
-        priorities={priorities}
-        people={people}
+    <PageBody>
+      <Header title='✅ Tasks' />
+      <QuickAdd />
+      <TaskList
+        contextDate={localTodayISO()}
+        initialData={taskData}
       />
-    </div>
+    </PageBody>
   );
 }

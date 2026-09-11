@@ -73,3 +73,44 @@ export const MENU_ITEMS: NavItem[] = [
   { href: "/people", emoji: "👤", label: "People" },
   { href: "/analytics", emoji: "📊", label: "Analytics" },
 ];
+
+// Daily Entry Tabs
+
+export const DAILY_TABS = [
+  { id: 'overview',  label: '📋 Overview'  },
+  { id: 'metrics',   label: '📊 Metrics'   },
+  { id: 'symptoms',  label: '🩺 Symptoms'  },
+  { id: 'sleep',     label: '💤 Sleep'     },
+  { id: 'meds',      label: '💊 Meds'      },
+  { id: 'ess',       label: '😴 ESS'       },
+  { id: 'journal',   label: '📓 Journal'  },
+] as const satisfies { id: string; label: string }[];
+
+export type DailyTabId = typeof DAILY_TABS[number]['id'];
+
+// ── Settings Tabs ──────────────────────────────────────────────────────────────────────
+
+export type SettingsTabId =
+  | 'daily'
+  | 'tracking'
+  | 'charts'
+  | 'lasttime'
+  | 'health'
+  | 'journal'
+  | 'providers'
+  | 'people'
+  | 'icons'
+  | 'integrations';
+
+export const SETTINGS_TABS = [
+  { id: 'daily',     label: '📅 Daily'     },
+  { id: 'tracking',  label: '📊 Tracking'  },
+  { id: 'charts',    label: '📈 Charts'    },
+  { id: 'lasttime',  label: '⏱ Last Time'  },
+  { id: 'health',    label: '🩺 Health'    },
+  { id: 'journal',   label: '📔 Journal'   },
+  { id: 'providers', label: '🏥 Providers' },
+  { id: 'people',    label: '👤 People'    },
+  { id: 'icons',         label: '✦ Icons'        },
+  { id: 'integrations',  label: '🔗 Integrations' },
+] as const satisfies { id: SettingsTabId; label: string }[];

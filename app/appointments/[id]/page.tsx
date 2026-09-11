@@ -9,6 +9,7 @@ import {
 import { getProviders }            from '@/lib/dal/providers';
 import { getActivePrescriptions }  from '@/lib/dal/prescriptions';
 import { AppointmentDetailClient } from '@/components/appointments/AppointmentDetailClient';
+import { Header, PageBody } from '@/components/layout';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -42,11 +43,8 @@ export default async function AppointmentDetailPage({ params }: Readonly<Props>)
   ]);
 
   return (
-    <div className="page-content">
-      <div className="page-header">
-        <a href="/appointments" className="page-back-link">← Appointments</a>
-        <h1 className="page-header__title">Appointment</h1>
-      </div>
+    <PageBody>
+      <Header title='Appointment' href='/appointments' linkLabel='← Appointments' />
       <AppointmentDetailClient
         appointment={appt}
         parentAppt={parentAppt}
@@ -59,6 +57,6 @@ export default async function AppointmentDetailPage({ params }: Readonly<Props>)
         activePrescriptions={activePrescriptions}
         prescriptionChanges={prescriptionChanges}
       />
-    </div>
+    </PageBody>
   );
 }

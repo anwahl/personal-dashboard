@@ -10,8 +10,8 @@
 
 import { useState }                  from 'react';
 import { TabBar }                     from '@/components/ui';
-import { personSlug }                 from '@/lib/dal/people';
 import type { PersonRow, PeopleCategoryRow } from '@/types/schema';
+import { toSlug } from '@/lib/utils/strings';
 
 interface Props {
   people:           PersonRow[];
@@ -48,7 +48,7 @@ export function PeopleNavTabs({
       />
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
         {visible.map(p => {
-          const slug   = personSlug(p.person_name);
+          const slug   = toSlug(p.person_name);
           const active = slug === currentSlug;
           return (
             <a

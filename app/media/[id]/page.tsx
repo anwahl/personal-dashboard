@@ -1,9 +1,9 @@
 import { notFound }             from 'next/navigation';
-import Link                     from 'next/link';
 import { createClient }         from '@/lib/supabase/server';
 import { getMediaEntryById, getStatusHistory } from '@/lib/dal/media';
 import { getMediaTypes, getMediaStatuses, getMediaStatusTypeLinks } from '@/lib/dal/reference';
 import { MediaDetailClient }    from '@/components/media/MediaDetailClient';
+import { Header, PageBody } from '@/components/layout';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -27,8 +27,8 @@ export default async function MediaDetailPage({ params }: Readonly<Props>) {
   if (!entry) notFound();
 
   return (
-    <div className="page-content">
-      <Link href="/media" className="page-back-link">← Media</Link>
+    <PageBody>
+      <Header title='Media Detail' href='/media' linkLabel='← Media' />
 
       <MediaDetailClient
         entry={entry}
@@ -37,6 +37,6 @@ export default async function MediaDetailPage({ params }: Readonly<Props>) {
         mediaStatuses={mediaStatuses}
         statusTypeLinks={statusTypeLinks}
       />
-    </div>
+    </PageBody>
   );
 }

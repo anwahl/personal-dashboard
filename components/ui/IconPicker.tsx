@@ -81,7 +81,6 @@ export function IconPicker({
             <input
               autoFocus
               type="text"
-              className="input"
               placeholder="Search by name or tag…"
               value={search}
               onChange={e => setSearch(e.target.value)}

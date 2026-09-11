@@ -9,18 +9,23 @@ import {
   deleteSettingsItem,
   batchSetSortOrder,
 } from '@/lib/dal/settings';
-import type { ManageableTable } from '@/lib/dal/settings';
-import { bySortOrder, normalizedReorderUpdates } from '@/lib/utils/sort';
-import { Button, ConfirmButton, IconPicker }        from '@/components/ui';
-import type { IconRow } from '@/types/schema';
+import type { ManageableTable }                       from '@/lib/dal/settings';
+import { bySortOrder, normalizedReorderUpdates }      from '@/lib/utils/sort';
+import { Button, ConfirmButton , IconPicker }         from '@/components/ui';
+import type { IconRow }                               from '@/types/schema';
 
 export interface AddField {
   key:          string;
   label:        string;
-  type:         'text' | 'number' | 'color' | 'icon';
+  type:         'text' | 'number' | 'color' | 'icon' | 'select';
   placeholder?: string;
   required?:    boolean;
-  width?:       number;   // px, for short fields like emoji
+  width?:       number;     // px, for short fields like color pickers
+  options?:     { value: string; label: string }[];  // for type: 'select'
+  parseAs?:     'string' | 'int' | 'float';  // how to cast select value in payload
+  /** If false, this field is omitted from the edit form (but still appears in the add row).
+   *  Useful when an inline control (e.g. renderRowActions) already handles in-place editing. */
+  showInEdit?:  boolean;
 }
 
 interface Item {
@@ -40,10 +45,22 @@ interface Props {
   addFields:   AddField[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   renderName?: (item: any) => React.ReactNode;
+  /**
+   * Render extra controls inside the view-mode actions row (between sort
+   * buttons and the Edit button). Receives the item and an `updateItem`
+   * helper that patches local state — call it after any inline mutation so
+   * the list stays in sync without a full re-fetch.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  renderRowActions?: (item: any, updateItem: (id: number, updates: Record<string, unknown>) => void) => React.ReactNode;
   extraDefaultFields?: Record<string, string | boolean | number>;
   icons?:      IconRow[];  // required when any addField has type 'icon'
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onItemAdded?: (item: any) => void; // called after a successful add
+  /** Whether to show the delete (✕) confirm button on each row. Default: true. */
+  showDelete?:     boolean;
+  /** Collapse the add row behind a button until the user expands it. Default: false. */
+  collapsibleAdd?: boolean;
 }
 
 /**
@@ -52,15 +69,19 @@ interface Props {
  */
 export function ManageableList({
   title, description, tableName, nameColumn, items: initialItems, addFields, renderName,
+  renderRowActions,
   extraDefaultFields = {},
   icons = [],
   onItemAdded,
+  showDelete     = true,
+  collapsibleAdd = false,
 }: Readonly<Props>) {
   const supabase = createClient();
 
-  const [items,    setItems]    = useState<Item[]>(initialItems as Item[]);
-  const [editId,   setEditId]   = useState<number | null>(null);
-  const [editVals, setEditVals] = useState<Record<string, string>>({});
+  const [items,       setItems]      = useState<Item[]>(initialItems as Item[]);
+  const [editId,      setEditId]     = useState<number | null>(null);
+  const [editVals,    setEditVals]   = useState<Record<string, string>>({});
+  const [addExpanded, setAddExpanded] = useState(!collapsibleAdd);
   const [newVals,  setNewVals]  = useState<Record<string, string>>(
     Object.fromEntries(addFields.map(f => [f.key, '']))
   );
@@ -99,6 +120,11 @@ export function ManageableList({
           payload[f.key] = iconNewVals[f.key] ?? null;
         } else if (f.type === 'number') {
           payload[f.key] = newVals[f.key] ? Number.parseFloat(newVals[f.key]) : null;
+        } else if (f.type === 'select') {
+          const raw = newVals[f.key];
+          payload[f.key] = raw
+            ? (f.parseAs === 'int' ? Number.parseInt(raw) : f.parseAs === 'float' ? Number.parseFloat(raw) : raw)
+            : null;
         } else {
           payload[f.key] = newVals[f.key]?.trim() || null;
         }
@@ -112,7 +138,7 @@ export function ManageableList({
       setIconNewVals(Object.fromEntries(iconFields.map(f => [f.key, null])));
       onItemAdded?.(data);
     } finally { setSaving(false); }
-  }, [supabase, tableName, addFields, newVals, active.length, hasSortOrder, extraDefaultFields]);
+  }, [supabase, tableName, addFields, newVals, iconNewVals, active.length, hasSortOrder, extraDefaultFields]);
 
   // ── Delete ─────────────────────────────────────────────────────────────────
 
@@ -142,7 +168,7 @@ export function ManageableList({
     setEditId(item.id);
     const vals: Record<string, string> = {};
     const iconVals: Record<string, number | null> = {};
-    for (const f of addFields) {
+    for (const f of addFields.filter(f => f.showInEdit !== false)) {
       if (f.type === 'icon') {
         iconVals[f.key] = (item[f.key] as number | null) ?? null;
       } else {
@@ -156,7 +182,7 @@ export function ManageableList({
   const saveEdit = useCallback(async () => {
     if (!editId) return;
     const payload: Record<string, unknown> = {};
-    for (const f of addFields) {
+    for (const f of addFields.filter(f => f.showInEdit !== false)) {
       if (f.type === 'icon') {
         payload[f.key] = iconEditVals[f.key] ?? null;
       } else if (f.type === 'number') {
@@ -168,7 +194,13 @@ export function ManageableList({
     const data = await updateSettingsItem<Item>(supabase, tableName, editId, payload);
     setItems(prev => prev.map(i => i.id === editId ? { ...i, ...data } : i));
     setEditId(null);
-  }, [supabase, tableName, editId, editVals, addFields]);
+  }, [supabase, tableName, editId, editVals, iconEditVals, addFields]);
+
+  // Exposed to renderRowActions so callers can patch local state after an
+  // inline mutation (e.g. a category-change dropdown) without a full re-fetch.
+  const updateItemState = useCallback((id: number, updates: Record<string, unknown>) => {
+    setItems(prev => prev.map(i => i.id === id ? { ...i, ...updates } : i));
+  }, []);
 
   const handleEditChange  = useCallback((key: string, value: string) => setEditVals(prev => ({ ...prev, [key]: value })), []);
   const handleEditKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -189,7 +221,7 @@ export function ManageableList({
       <div key={item.id} className={`manage-item${item.is_active ? '' : ' manage-item--inactive'}`}>
         {isEditing ? (
           <>
-            {addFields.map(f => f.type === 'icon' ? (
+            {addFields.filter(f => f.showInEdit !== false).map(f => f.type === 'icon' ? (
               <IconPicker
                 key={f.key}
                 icons={icons}
@@ -197,6 +229,18 @@ export function ManageableList({
                 onChange={id => setIconEditVals(prev => ({ ...prev, [f.key]: id }))}
                 size="sm"
               />
+            ) : f.type === 'select' ? (
+              <select
+                key={f.key}
+                value={editVals[f.key] ?? ''}
+                onChange={e => handleEditChange(f.key, e.target.value)}
+                style={{ flex: f.width ? 'none' : 1, width: f.width ?? undefined }}
+              >
+                <option value="">{f.placeholder ?? `No ${f.label.toLowerCase()}`}</option>
+                {f.options?.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
             ) : (
               // Dynamic px width from caller config — legitimate inline style exception
               <input
@@ -217,9 +261,9 @@ export function ManageableList({
           </>
         ) : (
           <>
-            <span className="manage-item__name">
+            <div className="manage-item__name">
               {renderName ? renderName(item) : String(item[nameColumn] ?? '')}
-            </span>
+            </div>
             <div className="manage-item__actions">
               {item.is_active && hasSortOrder && (
                 <>
@@ -231,6 +275,7 @@ export function ManageableList({
                     onClick={() => moveItem(item, 'down')}>↓</Button>
                 </>
               )}
+              {renderRowActions?.(item, updateItemState)}
               <Button size="icon" variant="ghost" onClick={() => startEdit(item)} title="Edit">✏️</Button>
               <Button
                 size="sm"
@@ -239,7 +284,7 @@ export function ManageableList({
               >
                 {item.is_active ? 'Deactivate' : 'Activate'}
               </Button>
-              <ConfirmButton onConfirm={() => remove(item.id)} size="sm">✕</ConfirmButton>
+              {showDelete && <ConfirmButton onConfirm={() => remove(item.id)} size="sm">✕</ConfirmButton>}
             </div>
           </>
         )}
@@ -273,6 +318,11 @@ export function ManageableList({
         </details>
       )}
 
+      {!addExpanded ? (
+        <div className="manage-add-row">
+          <Button variant="ghost" size="sm" onClick={() => setAddExpanded(true)}>+ Add</Button>
+        </div>
+      ) : (
       <div className="manage-add-row">
         {addFields.map(f => f.type === 'icon' ? (
           <IconPicker
@@ -282,6 +332,18 @@ export function ManageableList({
             onChange={id => setIconNewVals(prev => ({ ...prev, [f.key]: id }))}
             size="sm"
           />
+        ) : f.type === 'select' ? (
+          <select
+            key={f.key}
+            value={newVals[f.key] ?? ''}
+            onChange={e => handleNewChange(f.key, e.target.value)}
+            style={{ flex: f.width ? 'none' : 1, width: f.width ?? undefined }}
+          >
+            <option value="">{f.placeholder ?? `No ${f.label.toLowerCase()}`}</option>
+            {f.options?.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
         ) : (
           <input
             key={f.key}
@@ -302,7 +364,11 @@ export function ManageableList({
         >
           {saving ? '…' : '+ Add'}
         </Button>
+        {collapsibleAdd && (
+          <Button size="sm" variant="ghost" onClick={() => setAddExpanded(false)}>Cancel</Button>
+        )}
       </div>
+      )}
     </div>
   );
 }

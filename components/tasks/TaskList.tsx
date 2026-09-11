@@ -6,248 +6,188 @@
  * Used on the Hub (contextDate = today) and the Daily Entry page
  * (contextDate = that entry's date). All tabs are relative to contextDate.
  *
- * Tabs: Today (incl. overdue) | Tomorrow | Upcoming | No Date
- * Each tab has a quickadd row. Upcoming tab shows an inline date picker.
+ * Tabs: Today (incl. overdue) | Tomorrow | Upcoming | No Date | Done
+ * QuickAdd row on each tab. "Full Add" opens FullAddForm which uses
+ * the shared <TaskForm> component.
  */
-
-import { createTask, updateTaskStatus, TaskContextData } from '@/lib/dal/tasks';
-import { useState, useCallback } from 'react';
-import { createClient }          from '@/lib/supabase/client';
-import { Card, CardHeader, CardTitle, CardBody, TabBar, Button } from '@/components/ui';
-import type { TaskDetail, TaskStatusRow, TaskPriorityRow } from '@/types/dal';
-import type { PersonRow }       from '@/types/schema';
-import { addDays } from '@/lib/utils/dates';
+import { updateTaskStatus, TaskContextData,
+         spawnNextRecurrence, getTaskById, 
+         TasksTabId}                                    from '@/lib/dal/tasks';
+import { useState, useCallback, useEffect }                        from 'react';
+import { useRouter }                                    from 'next/navigation';
+import { createClient }                                 from '@/lib/supabase/client';
+import { Card, CardHeader, CardTitle, CardBody,
+         TabBar, Button, Chip, 
+         useToast}                                      from '@/components/ui';
+import type { TaskDetail }                              from '@/types/dal';
+import type { TaskRow }                                 from '@/types/schema';
+import { formatShortDate, formatTime, localTodayISO }   from '@/lib/utils/dates';
+import Link                                             from 'next/link';
+import { useTaskStatuses }                              from '@/lib/hooks/reference';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function fmtShortDate(d: string): string {
-  const [y, m, day] = d.split('-').map(Number);
-  return new Date(y, m - 1, day).toLocaleDateString('en-US', {
-    month: 'short', day: 'numeric',
-  });
-}
-
-function priorityDotClass(name: string): string {
-  const n = name.toLowerCase();
-  if (n.includes('high') || n.includes('urgent') || n.includes('critical')) return 'task-item__dot--high';
-  if (n.includes('low'))  return 'task-item__dot--low';
-  return 'task-item__dot--medium';
-}
-
 function formatLabel(base: string, count: number) {
   return count ? `${base} (${count})` : base;
+} //TODO this can go in the Strings util file or something
+
+function isOverdue(t: TaskDetail, contextDate: string): boolean {
+  return !!t.due_date && t.due_date < contextDate && !t.status.is_terminal;
 }
+
+function isReminderOverdue(t: TaskDetail): boolean {
+  if (!t.reminder_at || t.status.is_terminal) return false;
+  if (t.snoozed_until && new Date(t.snoozed_until) > new Date()) return false;
+  return new Date(t.reminder_at) < new Date();
+}
+
+function isReminderSoon(t: TaskDetail): boolean {
+  if (!t.reminder_at || t.status.is_terminal || isReminderOverdue(t)) return false;
+  return new Date(t.reminder_at) <= new Date(Date.now() + 24 * 60 * 60_000);
+}
+
+const PRIORITY_COLOR: Record<string, string> = {
+  low:    'priority-dot--low',
+  normal: 'priority-dot--normal',
+  high:   'priority-dot--high',
+};
 
 // ── TaskItem ──────────────────────────────────────────────────────────────────
 
-function TaskItem({
-  task, contextDate, showDueDate, onComplete,
+export function TaskItem({
+  task,
+  contextDate = localTodayISO(),
+  onUpdate,
+  busy
 }: Readonly<{
-  task:        TaskDetail;
-  contextDate: string;
-  showDueDate?: boolean;
-  onComplete:  (id: number) => Promise<void>;
+  task:         TaskDetail;
+  contextDate?: string;
+  onUpdate:     (id: number) => void;
+  busy:         boolean;
 }>) {
-  const [busy, setBusy] = useState(false);
-
-  const handleComplete = async () => {
-    setBusy(true);
-    try { await onComplete(task.id); }
-    finally { setBusy(false); }
-  };
-
-  const isOverdue = task.due_date && task.due_date < contextDate;
+  const done     = task.status.is_terminal;
+  const overdue  = isOverdue(task, contextDate ?? localTodayISO());
 
   return (
-    <div className="task-item">
-      <button
-        type="button"
-        className={`task-item__check${busy ? ' task-item__check--busy' : ''}`}
-        onClick={handleComplete}
-        disabled={busy}
-        aria-label="Complete task"
-      >
-        {busy ? '…' : '○'}
-      </button>
-
-      <a href={`/tasks/${task.id}`} className="item-body-link">
-        <span className="task-item__title">{task.title}</span>
-        <div className="task-item__meta">
-          {showDueDate && task.due_date && (
-            <span className={`task-item__due${isOverdue ? ' task-item__due--overdue' : ''}`}>
-              {isOverdue ? `Overdue · ` : ''}{fmtShortDate(task.due_date)}
-            </span>
-          )}
-          {task.reminder_at && !task.status.is_terminal && (
-            <span className={`task-reminder-badge${new Date(task.reminder_at) < new Date() ? ' task-reminder-badge--overdue' : ''}`}>
-              🔔{task.recurrence_frequency ? ' ↻' : ''}
-            </span>
-          )}
-          {task.person && (
-            <span className="task-item__person">{task.person.person_name}</span>
-          )}
-        </div>
-      </a>
-
-      <span className={`task-item__dot ${priorityDotClass(task.priority.priority_name)}`}
-        title={task.priority.priority_name} />
-    </div>
-  );
-}
-
-// ── QuickAdd row ──────────────────────────────────────────────────────────────
-
-function QuickAdd({
-  placeholder,
-  defaultDueDate,
-  showDatePicker,
-  onAdd,
-}: Readonly<{
-  placeholder:    string;
-  defaultDueDate: string | null;
-  showDatePicker?: boolean;
-  onAdd: (title: string, dueDate: string | null) => Promise<void>;
-}>) {
-  const [title,   setTitle]   = useState('');
-  const [date,    setDate]    = useState(defaultDueDate ?? '');
-  const [saving,  setSaving]  = useState(false);
-
-  const submit = async () => {
-    const t = title.trim();
-    if (!t || saving) return;
-    setSaving(true);
-    try {
-      await onAdd(t, showDatePicker ? (date || null) : defaultDueDate);
-      setTitle('');
-    } finally { setSaving(false); }
-  };
-
-  return (
-    <div className="task-quickadd">
-      <div className="task-quickadd__row">
-        <input
-          type="text"
-          className="task-quickadd__input"
-          value={title}
-          placeholder={placeholder}
-          onChange={e => setTitle(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') submit(); }}
-        />
-        <Button variant="accent" size="sm" onClick={submit} disabled={!title.trim() || saving}>
-          +
+    <Card>
+      <CardBody className={`list-item${done ? ' list-item--muted' : ''}${isReminderOverdue(task) ? ' list-item--reminder-overdue' : ''}`}>
+        <div className={`priority-dot ${PRIORITY_COLOR[task.priority.priority_name] ?? 'priority-dot--normal'}`} />
+        <Button
+          className={`task-item__check ${done ? 'task-item__is-checked' : 'task-item__is-unchecked'}${busy ? ' task-item__check--busy' : ''}`}
+          onClick={() => onUpdate(task.id)}
+          disabled={busy}
+          size='check'
+          aria-label={done ? 'Mark Not Done' : 'Mark Done'}
+          title={done ? 'Mark Not Done' : 'Mark Done'}
+        >
+          {busy ? '…' : ''}
         </Button>
-      </div>
-      {showDatePicker && (
-        <input
-          type="date"
-          className="task-quickadd__date"
-          value={date}
-          onChange={e => setDate(e.target.value)}
-        />
-      )}
-    </div>
+
+        <Link href={`/tasks/${task.id}`} className="item-body-link">
+          <div className="list-item__body">
+            <div className={`list-item__title${done ? ' list-item__title--strike' : ''}`}>
+              {task.title}
+            </div>
+            <div className="list-item__meta">
+              <Chip small={true} className={`${overdue ? ' chip--due' : ''}`}>
+                {task.status.status_name}
+              </Chip>
+              {task.due_date && (
+                <span className={overdue ? 'task-item__due--overdue' : 'task-item__due' }>
+                  {overdue ? '⚠ ' : ''}
+                  {formatShortDate(task.due_date)}
+                  {task.due_time ? ' ' + formatTime(task.due_time) : ''}
+                </span>
+              )}
+              {task.reminder_at && (
+                <span className={`task-reminder-badge${
+                  isReminderOverdue(task) ? ' task-reminder-badge--overdue'
+                  : isReminderSoon(task)  ? ' task-reminder-badge--soon' : ''
+                }`}>
+                  🔔 {formatShortDate(task.reminder_at.slice(0, 10))}
+                  {task.recurrence_frequency && ' ↻'}
+                </span>
+              )}
+              {task.person && <span>{task.person.person_name}</span>}
+            </div>
+          </div>
+        </Link>
+      </CardBody>
+    </Card>
   );
 }
 
 // ── TaskList ──────────────────────────────────────────────────────────────────
 
-type TabId = 'today' | 'tomorrow' | 'upcoming' | 'unscheduled';
-
 interface Props {
-  contextDate:  string;
-  initialData:  TaskContextData;
-  statuses:     TaskStatusRow[];
-  priorities:   TaskPriorityRow[];
-  people:       PersonRow[];
+  contextDate: string;
+  initialData: TaskContextData;
 }
 
-export function TaskList({ contextDate, initialData, statuses, priorities }: Readonly<Props>) {
+export function TaskList({
+  contextDate,
+  initialData,
+}: Readonly<Props>) {
   const supabase = createClient();
-  const [data, setData] = useState<TaskContextData>(initialData);
-  const [tab,  setTab]  = useState<TabId>('today');
+  const router = useRouter();
+  const [tab,  setTab]  = useState<TasksTabId>('today');
+  const [busy, setBusy] = useState(false);
 
-  // First non-terminal status = default for new tasks
-  const defaultStatus   = statuses.find(s => !s.is_terminal) ?? statuses[0];
-  // Lowest-sort-order priority = default
-  const defaultPriority = [...priorities].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0];
-  // Terminal status for completing
-  const doneStatus = statuses.find(s => s.is_terminal);
+  const { data: statuses = [], isLoading: statusesLoading, error: statusesError } = useTaskStatuses();
+  const { addToast } = useToast();
+  useEffect(() => {
+    if (statusesError)      addToast('Failed to load task statuses', 'error'); },   [statusesError,       addToast]);
+  const defaultStatus = statuses.find(s => !s.is_terminal) ?? statuses[0];
+  const doneStatus    = statuses.find(s => s.is_terminal);
+  const doneStatusId  = doneStatus?.id ?? 0;
+  const todoStatusId  = defaultStatus?.id ?? 0;
+  const data = initialData;
 
-  const TABS: { id: TabId; label: string }[] = [
-    { id: 'today',       label: formatLabel('Today', data.today.length) },
-    { id: 'tomorrow',    label: formatLabel('Tomorrow', data.tomorrow.length) },
-    { id: 'upcoming',    label: formatLabel('Upcoming', data.upcoming.length) },
-    { id: 'unscheduled', label: formatLabel('No Date', data.unscheduled.length) },
+  //TODO Update here or in TaskItem?
+  const update = useCallback(async (id: number) => {
+    const t = await getTaskById(supabase, id) ?? undefined;
+    if (!t || statusesLoading) return;
+    await updateTaskStatus(supabase, id, t.status.is_terminal ? todoStatusId : doneStatusId);
+    if (t.recurrence_frequency && t.reminder_at) {
+      await spawnNextRecurrence(supabase, t as TaskRow, todoStatusId);
+    }
+    return t;
+  }, [supabase, doneStatusId, todoStatusId]);
+
+  const handleUpdate = useCallback(async (id: number) => {
+    setBusy(true);
+    try {
+      await update(id);
+    } finally {
+      setBusy(false);
+      router.refresh();
+    }
+  }, [update, router]);
+
+  const TABS: { id: TasksTabId; label: string }[] = [
+    { id: 'today',       label: formatLabel('Today',     data.today.length)       },
+    { id: 'tomorrow',    label: formatLabel('Tomorrow',  data.tomorrow.length)    },
+    { id: 'upcoming',    label: formatLabel('Upcoming',  data.upcoming.length)    },
+    { id: 'unscheduled', label: formatLabel('No Date',   data.unscheduled.length) },
+    { id: 'done',        label: formatLabel('Done',      data.done.length)        },
   ];
 
-
   const bucket = data[tab];
-
-  const handleAdd = useCallback(async (title: string, dueDate: string | null) => {
-    if (!defaultStatus || !defaultPriority) return;
-
-    const row = await createTask(supabase, {
-      title,
-      status_id:    defaultStatus.id,
-      priority_id:  defaultPriority.id,
-      due_date:     dueDate,
-      person_id:    null,
-      body_md:      null,
-      completed_at: null,
-    });
-
-    const newTask: TaskDetail = {
-      ...row,
-      status:   defaultStatus,
-      priority: defaultPriority,
-      person:   null,
-      tag_ids:  [],
-    };
-
-    setData(prev => {
-      const key = dueDate === null          ? 'unscheduled'
-                : dueDate === contextDate   ? 'today'
-                : dueDate === addDays(contextDate, 1) ? 'tomorrow'
-                : dueDate >  addDays(contextDate, 1)  ? 'upcoming'
-                : 'today';  // past due → surfaces in today
-      return { ...prev, [key]: [newTask, ...prev[key]] };
-    });
-  }, [supabase, defaultStatus, defaultPriority, contextDate]);
-
-  const handleComplete = useCallback(async (taskId: number) => {
-    if (!doneStatus) return;
-    await updateTaskStatus(supabase, taskId, doneStatus.id);
-    setData(prev => ({
-      today:       prev.today.filter(t => t.id !== taskId),
-      tomorrow:    prev.tomorrow.filter(t => t.id !== taskId),
-      upcoming:    prev.upcoming.filter(t => t.id !== taskId),
-      unscheduled: prev.unscheduled.filter(t => t.id !== taskId),
-    }));
-  }, [supabase, doneStatus]);
-
-  const quickAddConfig: Record<TabId, { placeholder: string; dueDate: string | null; picker?: boolean }> = {
-    today:       { placeholder: 'Add task for today…',    dueDate: contextDate },
-    tomorrow:    { placeholder: 'Add task for tomorrow…', dueDate: addDays(contextDate, 1) },
-    upcoming:    { placeholder: 'Add upcoming task…',     dueDate: null, picker: true },
-    unscheduled: { placeholder: 'Add task…',              dueDate: null },
-  };
-
-  const qa = quickAddConfig[tab];
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>✅ Tasks</CardTitle>
+        <CardTitle>Tasks</CardTitle>
       </CardHeader>
       <CardBody>
-        <TabBar tabs={TABS} active={tab} onChange={id => setTab(id as TabId)} />
-
+        <TabBar tabs={TABS} active={tab} onChange={id => setTab(id as TasksTabId)} />
         <div className="task-list">
           {bucket.length === 0 ? (
             <p className="empty-state">
-              {tab === 'today' ? 'Nothing due today.' :
-               tab === 'tomorrow' ? 'Nothing due tomorrow.' :
-               tab === 'upcoming' ? 'No upcoming tasks.' :
+              {tab === 'today'       ? 'Nothing due today.'      :
+               tab === 'tomorrow'   ? 'Nothing due tomorrow.'   :
+               tab === 'upcoming'   ? 'No upcoming tasks.'      :
+               tab === 'done'       ? 'No completed tasks.'     :
                'No unscheduled tasks.'}
             </p>
           ) : (
@@ -256,20 +196,15 @@ export function TaskList({ contextDate, initialData, statuses, priorities }: Rea
                 key={task.id}
                 task={task}
                 contextDate={contextDate}
-                showDueDate={tab === 'upcoming' || (tab === 'today' && task.due_date !== contextDate)}
-                onComplete={handleComplete}
+                onUpdate={handleUpdate}
+                busy={busy}
               />
             ))
           )}
         </div>
-
-        <QuickAdd
-          placeholder={qa.placeholder}
-          defaultDueDate={qa.dueDate}
-          showDatePicker={qa.picker}
-          onAdd={handleAdd}
-        />
       </CardBody>
     </Card>
   );
 }
+
+

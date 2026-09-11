@@ -4,6 +4,7 @@ import { getCombinedTrackingData } from '@/lib/dal/analytics';
 import { AnalyticsClient }         from '@/components/analytics/AnalyticsClient';
 import type { TrackType }          from '@/types/schema';
 import { localTodayISO, localISODate } from "@/lib/utils/dates";
+import { Header, PageBody } from '@/components/layout';
 
 export default async function AnalyticsPage() {
   // Initial server render at 90 days — each chart can change its own range client-side
@@ -41,10 +42,8 @@ export default async function AnalyticsPage() {
   );
 
   return (
-    <div className="page-content">
-      <div className="page-header">
-        <h1 className="page-header__title">📈 Analytics</h1>
-      </div>
+    <PageBody>
+      <Header title='📈 Analytics'/>
       <AnalyticsClient
         charts={charts}
         data={data}
@@ -52,6 +51,6 @@ export default async function AnalyticsPage() {
         toDate={toDate}
         icons={icons}
       />
-    </div>
+    </PageBody>
   );
 }

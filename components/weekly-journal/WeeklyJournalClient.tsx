@@ -158,9 +158,9 @@ export function WeeklyJournalClient({
           <div key={catName} className="journal-category-section">
             <p className="card__section-label">{catName}</p>
             {catCards.map(card => (
-              <div key={card.key} className="journal-prompt-card journal-prompt-card--view">
+              <div key={card.key} className="journal-prompt-card">
                 <p className="journal-prompt-card__prompt">{card.promptText}</p>
-                <p className="journal-prompt-card__response">{card.responseText}</p>
+                <p>{card.responseText}</p>
               </div>
             ))}
           </div>

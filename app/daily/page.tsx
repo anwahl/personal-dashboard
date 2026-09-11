@@ -1,7 +1,9 @@
+import { PageBody } from "@/components/layout"
+
 export default function Page() {
   return (
-    <div className="page-content">
+    <PageBody>
       <p className="empty-state">Coming soon.</p>
-    </div>
+    </PageBody>
   );
 }

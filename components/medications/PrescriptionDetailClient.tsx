@@ -1,223 +1,159 @@
 'use client';
 
 /**
- * components/medications/PrescriptionDetailClient.tsx
- *
  * Detail page for a single prescription — shows current field values
  * and the full RxChangeHistory log.
  */
 
-import { useState, useCallback }             from 'react';
+import { useState, useCallback, useEffect }   from 'react';
 import { useRouter }                          from 'next/navigation';
-import { applyPrescriptionChanges, getPrescriptionChangesByRx } from '@/lib/dal/prescriptions';
-import type { FieldChangeEntry }              from '@/lib/dal/prescriptions';
+import { applyPrescriptionChanges, updatePrescription } from '@/lib/dal/prescriptions';
 import { deletePrescriptionChange }           from '@/lib/dal/appointments';
 import { createClient }                       from '@/lib/supabase/client';
-import { Button, ConfirmButton }              from '@/components/ui';
-import { formatMediumDate }                   from '@/lib/utils/dates';
+import { Button, Card, CardActions, CardBody, CardHeader, CardSection,
+  CardSectionLabel, CardTitle, Field, FieldGrid,
+  Item, SaveState, SaveStatus, useToast } from '@/components/ui';
 import type { PrescriptionDetail }            from '@/types/dal';
-import type { PrescriptionChangeRow, MedicationTimingTypeRow } from '@/types/schema';
+import type { PrescriptionChangeRow }         from '@/types/schema';
+import { RX_FIELDS, RxFieldKey, getRxDisplayValue } from '@/lib/constants/prescriptions';
+import { getRxChangesByRx, useMedicationTimingTypes }           from '@/lib/hooks/reference';
+import { RxPendingChanges }  from './RxPendingChanges';
+import { PrescriptionForm, PrescriptionFormValues, rxToFormValues } from './PrescriptionForm';
+import Link from 'next/link';
+import { PrescriptionChangeDisplayRow } from './PrescriptionChangeDisplayRow';
 
-// ── Field definitions (source of truth: these are the prescription columns) ──
-// Kept here in the prescription detail context — matches appointment changes logic
-export const RX_FIELDS = [
-  { key: 'dose',              label: 'Dose',              type: 'text'   },
-  { key: 'timing_type_id',    label: 'Timing',            type: 'timing' },
-  { key: 'purpose',           label: 'Purpose',           type: 'text'   },
-  { key: 'alias',             label: 'Alias / Nickname',  type: 'text'   },
-  { key: 'start_date',        label: 'Start Date',        type: 'date'   },
-  { key: 'discontinued_date', label: 'Discontinued Date', type: 'date'   },
-  { key: 'is_active',         label: 'Status',            type: 'status' },
-] as const;
-
-type RxFieldKey = typeof RX_FIELDS[number]['key'];
-
-interface PendingChange {
-  uid:           string;
-  fieldKey:      RxFieldKey;
-  fieldLabel:    string;
-  previousValue: string;
-  newValue:      string;
-  newTimingId:   string;
-}
-
-function getRxDisplayValue(rx: PrescriptionDetail, key: RxFieldKey, timings: MedicationTimingTypeRow[]): string {
-  switch (key) {
-    case 'dose':              return rx.dose              ?? '';
-    case 'timing_type_id':    return timings.find(t => t.id === rx.timing_type_id)?.timing_name ?? '';
-    case 'purpose':           return rx.purpose           ?? '';
-    case 'alias':             return rx.alias             ?? '';
-    case 'start_date':        return rx.start_date        ? formatMediumDate(rx.start_date)        : '';
-    case 'discontinued_date': return rx.discontinued_date ? formatMediumDate(rx.discontinued_date) : '';
-    case 'is_active':         return rx.is_active ? 'Active' : 'Discontinued';
-    default:                  return '';
-  }
-}
 
 interface Props {
-  prescription: PrescriptionDetail;
-  initialHistory: PrescriptionChangeRow[];
-  timings: MedicationTimingTypeRow[];
+  prescription:   PrescriptionDetail;
+  //initialHistory: PrescriptionChangeRow[];
 }
 
-export function PrescriptionDetailClient({ prescription: rx, initialHistory, timings }: Readonly<Props>) {
+export function PrescriptionDetailClient({ prescription }: Readonly<{prescription:   PrescriptionDetail;}>) {
+  const { data: timings = [], isLoading: timingsLoading, error: timingsError } = useMedicationTimingTypes();
+  const { data: initialHistory = [], isLoading: historyLoading, error: changesError } = getRxChangesByRx(prescription.id);
+  
+  const { addToast } = useToast();
+  useEffect(() => { if (timingsError) addToast('Failed to load timing types', 'error'); }, [timingsError, addToast]);
+  useEffect(() => { if (changesError) addToast('Failed to load prescription history', 'error'); }, [changesError, addToast]);
+  
+  const isLoading = timingsLoading || historyLoading;
+
   const supabase = createClient();
   const router   = useRouter();
 
-  const [history,       setHistory]       = useState<PrescriptionChangeRow[]>(initialHistory);
-  const [pending,       setPending]       = useState<PendingChange[]>([]);
-  const [saving,        setSaving]        = useState(false);
-  const [selectedField, setSelectedField] = useState('');
+  const [mode,      setMode]      = useState<'view' | 'edit'>('view');
+  const [saveState, setSaveState] = useState<SaveState>('idle');
+  const [history,   setHistory]   = useState<PrescriptionChangeRow[]>(initialHistory);
 
-  const addField = (key: RxFieldKey) => {
-    const def  = RX_FIELDS.find(f => f.key === key)!;
-    const prev = getRxDisplayValue(rx, key, timings);
-    setPending(p => [...p, {
-      uid:           `${key}-${Date.now()}`,
-      fieldKey:      key,
-      fieldLabel:    def.label,
-      previousValue: prev,
-      newValue:      key === 'is_active' ? (rx.is_active ? 'Discontinued' : 'Active') : prev,
-      newTimingId:   key === 'timing_type_id' ? String(rx.timing_type_id ?? '') : '',
-    }]);
-    setSelectedField('');
-  };
-
-  const updatePending = (uid: string, patch: Partial<PendingChange>) =>
-    setPending(p => p.map(c => c.uid === uid ? { ...c, ...patch } : c));
-
-  const apply = useCallback(async () => {
-    if (pending.length === 0 || saving) return;
-    setSaving(true);
+  const handleSave = useCallback(async (values: PrescriptionFormValues) => {
+    if(isLoading || !prescription) return;
+    setSaveState('saving');
     try {
-      const entries: FieldChangeEntry[] = pending.map(c => {
-        let rawValue: unknown;
-        if (c.fieldKey === 'timing_type_id') rawValue = c.newTimingId ? Number.parseInt(c.newTimingId) : null;
-        else if (c.fieldKey === 'is_active') rawValue = c.newValue === 'Active';
-        else rawValue = c.newValue || null;
-        return {
-          fieldKey: c.fieldKey, fieldLabel: c.fieldLabel,
-          previousValue: c.previousValue,
-          newValue: c.fieldKey === 'timing_type_id'
-            ? (timings.find(t => String(t.id) === c.newTimingId)?.timing_name ?? c.newTimingId)
-            : c.newValue,
-          rawValue,
-        };
+      await updatePrescription(supabase, prescription.id, {
+        alias:             values.alias             || null,
+        dose:              values.dose              || null,
+        timing_type_id:    values.timing_type_id   ? Number.parseInt(values.timing_type_id) : null,
+        purpose:           values.purpose           || null,
+        prescriber_id:     values.prescriber_id    ? Number.parseInt(values.prescriber_id)  : null,
+        start_date:        values.start_date        || null,
+        discontinued_date: values.discontinued_date || null,
+        is_active:         !values.discontinued_date,
       });
-      const newRows = await applyPrescriptionChanges(supabase, rx.id, null, entries);
-      setHistory(h => [...newRows, ...h]);
-      setPending([]);
+      setSaveState('ok');
+      setTimeout(() => setSaveState('idle'), 2500);
+      setMode('view');
       router.refresh();
-    } finally { setSaving(false); }
-  }, [supabase, rx.id, pending, saving, timings, router]);
+    } catch { setSaveState('error'); }
+  }, [supabase, prescription, router]);
 
   const removeHistory = async (id: number) => {
     await deletePrescriptionChange(supabase, id);
     setHistory(h => h.filter(r => r.id !== id));
   };
 
-  const availableFields = RX_FIELDS.filter(f => !pending.some(c => c.fieldKey === f.key));
+  if(!prescription) return;
 
-  return (
-    <div>
-      {/* ── Current values ─────────────────────────────────────────────── */}
-      <div className="detail-page__header">
-        <h2 className="detail-page__title">
-          {rx.alias ?? rx.medication.medication_name}
-          {!rx.is_active && <span className="badge badge--muted" style={{ marginLeft: 8 }}>Discontinued</span>}
-        </h2>
-        <Button href="/medications" variant="ghost" size="sm">← Medications</Button>
-      </div>
+  // ── Edit mode ───────────────────────────────────────────────────────────────
 
-      <dl className="detail-page__fields">
-        {RX_FIELDS.filter(f => f.key !== 'is_active').map(f => {
-          const val = getRxDisplayValue(rx, f.key as RxFieldKey, timings);
-          if (!val) return null;
-          return (
-            <div key={f.key} className="detail-page__field">
-              <dt>{f.label}</dt>
-              <dd>{val}</dd>
-            </div>
-          );
-        })}
-      </dl>
+  if (mode === 'edit') {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Edit Prescription</CardTitle>
+          <CardActions>
+            <SaveStatus state={saveState} />
+          </CardActions>
+        </CardHeader>
+        <PrescriptionForm
+          initialValues={rxToFormValues(prescription)}
+          saving={saveState === 'saving'}
+          showPersonField={false}
+          onSave={handleSave}
+          onCancel={() => setMode('view')}
+        />
+      </Card>
+    );
+  }
 
-      {/* ── Change history ─────────────────────────────────────────────── */}
-      <div className="settings-section" style={{ marginTop: 24 }}>
-        <div className="settings-section__header">
-          <span className="settings-section__title">Change History</span>
-        </div>
-
-        {history.length > 0 && (
-          <div className="appt-section__history">
-            {history.map(h => (
-              <div key={h.id} className="manage-item">
-                <span className="manage-item__name">
-                  {h.field_changed}
-                  {(h.previous_value || h.new_value) && (
-                    <span className="manage-item__meta">
-                      {h.previous_value ? ` ${h.previous_value}` : ''}
-                      {h.previous_value && h.new_value ? ' →' : ''}
-                      {h.new_value ? ` ${h.new_value}` : ''}
-                    </span>
-                  )}
+  // ── View mode ────────────────────────────────────────────────────────────────
+    return (
+    <Card>
+      <CardHeader>
+        <CardTitle>
+          {prescription.alias ?? prescription.medication.medication_name}
+          {!prescription.is_active && <Item itemType='inactive' value='Discontinued' />}
+        </CardTitle>
+        <CardActions>
+          <Button variant="ghost" size="sm" onClick={() => setMode('edit')}>✏️ Edit</Button>
+        </CardActions>
+      </CardHeader>
+      <CardBody>
+        <CardSection>
+          <CardSectionLabel>Details</CardSectionLabel>
+          <FieldGrid>
+            {RX_FIELDS.filter(f => f.key !== 'is_active').map(f => {
+              const val = getRxDisplayValue(prescription, f.key as RxFieldKey, timings);
+              if (!val) return null;
+              return (
+                <Field key={f.key} label={f.label} value={val} />
+              );
+            })}
+          </FieldGrid>
+        </CardSection>
+        <CardSection>
+          <CardSectionLabel>Change History</CardSectionLabel>
+          {history.length > 0 && (
+            <>
+              {history.map(h => (
+                <span key={h.id}>
                   {h.appointment_id && (
-                    <span className="manage-item__meta">
-                      {' · '}<a href={`/appointments/${h.appointment_id}`} className="text-link">appt</a>
-                    </span>
+                    <Item itemType='meta'
+                      value = {
+                        <Link href={`/appointments/${h.appointment_id}`} className="link__generic">
+                          Appointment
+                        </Link>
+                      }
+                    />
                   )}
+                  <PrescriptionChangeDisplayRow key={h.id} h={h} onRemove={removeHistory} />
                 </span>
-                <div className="manage-item__actions">
-                  <ConfirmButton onConfirm={() => removeHistory(h.id)} size="sm">✕</ConfirmButton>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-        {history.length === 0 && pending.length === 0 && (
-          <p className="expand-panel__empty">No changes logged yet.</p>
-        )}
+              ))}
+            </>
+          )}
+          {history.length === 0 && (
+            <Item itemType='info' value='No changes logged for this prescription.' />
+          )}
 
-        {/* Log a new change */}
-        {availableFields.length > 0 && (
-          <select className="settings-select" value={selectedField}
-            onChange={e => { if (e.target.value) addField(e.target.value as RxFieldKey); setSelectedField(e.target.value); }}>
-            <option value="">+ Log a field change…</option>
-            {availableFields.map(f => <option key={f.key} value={f.key}>{f.label}</option>)}
-          </select>
-        )}
-
-        {pending.map(c => (
-          <div key={c.uid} className="rx-field-change-row">
-            <span className="rx-field-change-row__label">{c.fieldLabel}</span>
-            <span className="rx-field-change-row__prev">{c.previousValue || '—'}</span>
-            <span className="rx-field-change-row__arrow">→</span>
-            {c.fieldKey === 'timing_type_id' ? (
-              <select className="settings-select" value={c.newTimingId}
-                onChange={e => updatePending(c.uid, { newTimingId: e.target.value })}>
-                <option value="">Select timing…</option>
-                {timings.map(t => <option key={t.id} value={t.id}>{t.timing_name}</option>)}
-              </select>
-            ) : c.fieldKey === 'is_active' ? (
-              <select className="settings-select" value={c.newValue}
-                onChange={e => updatePending(c.uid, { newValue: e.target.value })}>
-                <option value="Active">Active</option>
-                <option value="Discontinued">Discontinued</option>
-              </select>
-            ) : (
-              <input className="input--flex" value={c.newValue}
-                onChange={e => updatePending(c.uid, { newValue: e.target.value })} />
-            )}
-            <Button size="icon" variant="ghost" onClick={() => setPending(p => p.filter(x => x.uid !== c.uid))}>✕</Button>
-          </div>
-        ))}
-
-        {pending.length > 0 && (
-          <Button variant="accent" size="sm" onClick={apply} disabled={saving}>
-            {saving ? 'Saving…' : `Apply ${pending.length} change${pending.length > 1 ? 's' : ''}`}
-          </Button>
-        )}
-      </div>
-    </div>
+          <RxPendingChanges
+            rx={prescription}
+            onApply={async entries => {
+              const newRows = await applyPrescriptionChanges(supabase, prescription.id, null, entries);
+              setHistory(h => [...newRows, ...h]);
+              router.refresh();
+            }}
+          />
+        </CardSection>
+      </CardBody>
+    </Card>
   );
 }

@@ -190,7 +190,7 @@ function InfoGroupSection({ group, mode, onValueChange }: Readonly<{
             <span className="info-field-label">{f.field_label}</span>
             {mode === 'view' ? (
               <span className={`info-field-value${f.value ? '' : ' info-field-value--empty'}`}>
-                {f.value || '—'}
+                {(f.field_type === 'date' && f.value) ? formatMediumDate(f.value) : (f.value || '—')}
               </span>
             ) : f.field_type === 'textarea' ? (
               <textarea

@@ -8,8 +8,8 @@ import { JournalSettings }         from './JournalSettings';
 import { PeopleStructureSettings } from './PeopleStructureSettings';
 import { TrackableSettings }       from './TrackableSettings';
 import { ChartSettings }           from './ChartSettings';
-import { LastTimeSettings }        from '@/components/last-time/LastTimeSettings';
-import { ProviderSettings }        from '@/components/providers/ProviderSettings';
+import { LastTimeSettings }        from '@/components/settings/LastTimeSettings';
+import { ProviderSettings }        from '@/components/settings/ProviderSettings';
 import { IconSettings }            from './IconSettings';
 import { IntegrationsSettings }   from './IntegrationsSettings';
 import type {
@@ -38,33 +38,9 @@ import type {
   CalendarTokenRow,
   PeopleCategoryRow,
 } from '@/types/schema';
+import { SETTINGS_TABS, SettingsTabId } from '@/lib/constants/nav';
 
-// ── Tabs ──────────────────────────────────────────────────────────────────────
 
-type TabId =
-  | 'daily'
-  | 'tracking'
-  | 'charts'
-  | 'lasttime'
-  | 'health'
-  | 'journal'
-  | 'providers'
-  | 'people'
-  | 'icons'
-  | 'integrations';
-
-const TABS = [
-  { id: 'daily',     label: '📅 Daily'     },
-  { id: 'tracking',  label: '📊 Tracking'  },
-  { id: 'charts',    label: '📈 Charts'    },
-  { id: 'lasttime',  label: '⏱ Last Time'  },
-  { id: 'health',    label: '🩺 Health'    },
-  { id: 'journal',   label: '📔 Journal'   },
-  { id: 'providers', label: '🏥 Providers' },
-  { id: 'people',    label: '👤 People'    },
-  { id: 'icons',         label: '✦ Icons'        },
-  { id: 'integrations',  label: '🔗 Integrations' },
-] as const satisfies { id: TabId; label: string }[];
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -120,14 +96,14 @@ export function SettingsClient({
   mediaTypes, mediaGenres, mediaStatuses,
   people, personLinks, infoGroups, itemLists, logSchemas, checklists,
 }: Readonly<Props>) {
-  const [tab, setTab] = useState<TabId>('daily');
+  const [tab, setTab] = useState<SettingsTabId>('daily');
   // Lifted trackables state — allows ChartSettings dropdown to update when
   // new metrics are added in TrackableSettings without a full page refresh
   const [liveTrackables, setLiveTrackables] = useState<DailyTrackableRow[]>(trackables);
 
   return (
     <div>
-      <TabBar tabs={TABS} active={tab} onChange={setTab} />
+      <TabBar tabs={SETTINGS_TABS} active={tab} onChange={setTab} />
 
       {/* Tab panels — always rendered, CSS-hidden when inactive to preserve local state */}
       <div className="settings-tab-content">

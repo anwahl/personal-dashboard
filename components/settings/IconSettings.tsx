@@ -158,14 +158,12 @@ export function IconSettings({ icons: initialIcons }: Readonly<Props>) {
           <div className="icon-add-form__fields">
             <input
               type="text"
-              className="input"
               placeholder="Icon name (e.g. Bell)"
               value={addName}
               onChange={e => setAddName(e.target.value)}
             />
             <input
               type="text"
-              className="input"
               placeholder="Tags — space-separated (e.g. alert reminder notification)"
               value={addTags}
               onChange={e => setAddTags(e.target.value)}
@@ -181,7 +179,7 @@ export function IconSettings({ icons: initialIcons }: Readonly<Props>) {
           <span style={{ fontSize: '0.72rem', color: 'var(--text-faint)' }}>or paste below</span>
         </div>
         <textarea
-          className="input textarea--tall"
+          className="textarea--tall"
           placeholder="Paste SVG markup here…"
           value={addSvg}
           onChange={e => setAddSvg(e.target.value)}
@@ -226,7 +224,7 @@ function IconSettingsRow({ icon, idx, total, onSave, onDelete, onMove }: Readonl
       <div className="icon-settings-item__fields">
         <input
           type="text"
-          className="input icon-settings-item__name"
+          className="icon-settings-item__name"
           defaultValue={icon.name}
           onBlur={e => {
             const v = e.target.value.trim();
@@ -235,7 +233,7 @@ function IconSettingsRow({ icon, idx, total, onSave, onDelete, onMove }: Readonl
         />
         <input
           type="text"
-          className="input icon-settings-item__tags"
+          className="icon-settings-item__tags"
           defaultValue={icon.tags ?? ''}
           placeholder="tags (space-separated)"
           onBlur={e => {

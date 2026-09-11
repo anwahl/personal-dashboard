@@ -47,7 +47,7 @@ export async function deleteIcon(client: Client, id: number): Promise<void> {
  */
 export async function setIconId(
   client: Client,
-  table: 'daily_trackables' | 'last_time_activities' | 'last_time_media' | 'last_time_boolean' | 'last_time_custom' | 'daily_entries',
+  table: 'daily_trackables' | 'last_time_media' | 'last_time_boolean' | 'last_time_custom' | 'daily_entries',
   id: number,
   icon_id: number | null,
 ): Promise<void> {
