@@ -71,10 +71,10 @@ export function IconPicker({
       </button>
 
       {open && (
-        <div className="icon-picker-overlay" onClick={closeOnBackdrop}>
-          <div className="icon-picker-modal" role="dialog" aria-label="Icon picker">
-            <div className="icon-picker-modal__header">
-              <span className="icon-picker-modal__title">Choose icon</span>
+        <div className="modal-overlay" onClick={closeOnBackdrop}>
+          <div className="modal-panel" role="dialog" aria-label="Icon picker">
+            <div className="modal-panel__header">
+              <span className="modal-panel__title">Choose icon</span>
               <Button variant="ghost" size="sm" onClick={() => { setOpen(false); setSearch(''); }}>✕</Button>
             </div>
 

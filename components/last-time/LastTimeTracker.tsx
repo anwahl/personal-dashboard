@@ -16,6 +16,15 @@ import type { LastTimeEntry }      from '@/types/dal';
 import type { IconRow }            from '@/types/schema';
 import { formatDaysAgo, formatMediumDate, localTodayISO } from '@/lib/utils/dates';
 
+function daysAgoFromDate(dateStr: string): number {
+  const today = localTodayISO();
+  const [ty, tm, td] = today.split('-').map(Number);
+  const [dy, dm, dd] = dateStr.split('-').map(Number);
+  return Math.round(
+    (new Date(ty, tm - 1, td).getTime() - new Date(dy, dm - 1, dd).getTime()) / 86_400_000
+  );
+}
+
 interface Props {
   entries:  LastTimeEntry[];
   icons:    IconRow[];
@@ -32,9 +41,11 @@ function daysAgoColor(days: number | null): string {
 
 export function LastTimeTracker({ entries, icons, compact = false }: Readonly<Props>) {
   const supabase = createClient();
-  const [items,   setItems]   = useState<LastTimeEntry[]>(entries);
-  const [sortBy,  setSortBy]  = useState<'order' | 'recent'>('order');
-  const [logging, setLogging] = useState<Set<number>>(new Set());
+  const [items,          setItems]          = useState<LastTimeEntry[]>(entries);
+  const [sortBy,         setSortBy]         = useState<'order' | 'recent'>('order');
+  const [logging,        setLogging]        = useState<Set<number>>(new Set());
+  const [datePickerItem, setDatePickerItem] = useState<LastTimeEntry | null>(null);
+  const [pickedDate,     setPickedDate]     = useState<string>('');
 
   // Re-sync when server refreshes (router.refresh() from LastTimeSettings)
   useEffect(() => { setItems(entries); }, [entries]);
@@ -61,7 +72,27 @@ export function LastTimeTracker({ entries, icons, compact = false }: Readonly<Pr
     }
   }, [supabase, logging]);
 
+  const openDatePicker = useCallback((item: LastTimeEntry) => {
+    setDatePickerItem(item);
+    setPickedDate(item.last_date ?? localTodayISO());
+  }, []);
+
+  const saveCustomDate = useCallback(async () => {
+    if (!datePickerItem?.custom_id || !pickedDate) return;
+    await logCustomLastTime(supabase, datePickerItem.custom_id, pickedDate);
+    setItems(prev => prev.map(i =>
+      i.id === datePickerItem.id && i.category === datePickerItem.category
+        ? { ...i, last_date: pickedDate, days_ago: daysAgoFromDate(pickedDate) } : i
+    ));
+    setDatePickerItem(null);
+  }, [supabase, datePickerItem, pickedDate]);
+
+  const closePickerOnBackdrop = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) setDatePickerItem(null);
+  }, []);
+
   return (
+    <>
     <Card>
       <CardBody>
         {!compact && (
@@ -108,20 +139,52 @@ export function LastTimeTracker({ entries, icons, compact = false }: Readonly<Pr
                 {formatDaysAgo(item.days_ago)}
               </span>
               {item.category === 'custom' && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => logToday(item)}
-                  disabled={logging.has(item.id)}
-                  title="Log today"
-                >
-                  {logging.has(item.id) ? '…' : '✓'}
-                </Button>
+                <>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => logToday(item)}
+                    disabled={logging.has(item.id)}
+                    title="Log today"
+                  >
+                    {logging.has(item.id) ? '…' : '✓'}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => openDatePicker(item)}
+                    title="Log custom date"
+                  >
+                    📅
+                  </Button>
+                </>
               )}
             </div>
           ))}
         </div>
       </CardBody>
     </Card>
+
+    {datePickerItem && (
+      <div className="modal-overlay" onClick={closePickerOnBackdrop}>
+        <div className="modal-panel" style={{ maxWidth: 320 }} role="dialog" aria-label="Log custom date">
+          <div className="modal-panel__header">
+            <span className="modal-panel__title">Log date for &ldquo;{datePickerItem.label}&rdquo;</span>
+            <Button variant="ghost" size="sm" onClick={() => setDatePickerItem(null)}>✕</Button>
+          </div>
+          <input
+            type="date"
+            value={pickedDate}
+            max={localTodayISO()}
+            onChange={e => setPickedDate(e.target.value)}
+          />
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+            <Button variant="ghost" onClick={() => setDatePickerItem(null)}>Cancel</Button>
+            <Button onClick={saveCustomDate} disabled={!pickedDate}>Save</Button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
