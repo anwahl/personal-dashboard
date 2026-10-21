@@ -8,7 +8,7 @@ import { JournalSettings }         from './JournalSettings';
 import { PeopleStructureSettings } from './PeopleStructureSettings';
 import { TrackableSettings }       from './TrackableSettings';
 import { ChartSettings }           from './ChartSettings';
-import { LastTimeSettings }        from '@/components/settings/LastTimeSettings';
+import { LastTimeSettings }        from '@/components/last-time/LastTimeSettings';
 import { ProviderSettings }        from '@/components/settings/ProviderSettings';
 import { IconSettings }            from './IconSettings';
 import { IntegrationsSettings }   from './IntegrationsSettings';

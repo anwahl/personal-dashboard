@@ -77,7 +77,7 @@ export function CardBody({ children, flush, className, style }: CardProps & { fl
   return <div className={classes} style={style}>{children}</div>;
 }
 
-export function SubCardBody({ children, className, style }: CardProps & { flush?: boolean }) {
+export function SubCardBody({ children, className, style }: Readonly<CardProps>) {
   return <div className={['card__sub-body', className].filter(Boolean).join(' ')} style={style}>{children}</div>;
 }
 

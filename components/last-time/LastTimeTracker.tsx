@@ -11,10 +11,20 @@
 import { useState, useCallback, useEffect } from 'react';
 import { createClient }           from '@/lib/supabase/client';
 import { logCustomLastTime }      from '@/lib/dal/lasttime';
-import { Button, Card, CardBody, IconDisplay }    from '@/components/ui';
+import { Button, Card, CardActions, CardBody, CardGrid, CardHeader,
+         CardSection, CardTitle, FieldActions, IconDisplay, Item}    from '@/components/ui';
 import type { LastTimeEntry }      from '@/types/dal';
 import type { IconRow }            from '@/types/schema';
 import { formatDaysAgo, formatMediumDate, localTodayISO } from '@/lib/utils/dates';
+
+function daysAgoFromDate(dateStr: string): number {
+  const today = localTodayISO();
+  const [ty, tm, td] = today.split('-').map(Number);
+  const [dy, dm, dd] = dateStr.split('-').map(Number);
+  return Math.round(
+    (new Date(ty, tm - 1, td).getTime() - new Date(dy, dm - 1, dd).getTime()) / 86_400_000
+  );
+}
 
 interface Props {
   entries:  LastTimeEntry[];
@@ -22,19 +32,21 @@ interface Props {
   compact?: boolean;
 }
 
-function daysAgoColor(days: number | null): string {
-  if (days === null) return 'var(--text-faint)';
-  if (days <= 3)     return 'var(--success)';
-  if (days <= 14)    return 'var(--text-muted)';
-  if (days <= 60)    return 'var(--warn)';
-  return 'var(--danger)';
+function daysAgoColorClass(days: number | null): string {
+  if (days === null) return 'color--muted';
+  if (days <= 3)     return 'color--success';
+  if (days <= 14)    return 'color--mid';
+  if (days <= 60)    return 'color--danger';
+  return 'color--danger';
 }
 
 export function LastTimeTracker({ entries, icons, compact = false }: Readonly<Props>) {
   const supabase = createClient();
-  const [items,   setItems]   = useState<LastTimeEntry[]>(entries);
-  const [sortBy,  setSortBy]  = useState<'order' | 'recent'>('order');
-  const [logging, setLogging] = useState<Set<number>>(new Set());
+  const [items,          setItems]          = useState<LastTimeEntry[]>(entries);
+  const [sortBy,         setSortBy]         = useState<'order' | 'recent'>('order');
+  const [logging,        setLogging]        = useState<Set<number>>(new Set());
+  const [datePickerItem, setDatePickerItem] = useState<LastTimeEntry | null>(null);
+  const [pickedDate,     setPickedDate]     = useState<string>('');
 
   // Re-sync when server refreshes (router.refresh() from LastTimeSettings)
   useEffect(() => { setItems(entries); }, [entries]);
@@ -61,67 +73,114 @@ export function LastTimeTracker({ entries, icons, compact = false }: Readonly<Pr
     }
   }, [supabase, logging]);
 
+  const openDatePicker = useCallback((item: LastTimeEntry) => {
+    setDatePickerItem(item);
+    setPickedDate(item.last_date ?? localTodayISO());
+  }, []);
+
+  const saveCustomDate = useCallback(async () => {
+    if (!datePickerItem?.custom_id || !pickedDate) return;
+    await logCustomLastTime(supabase, datePickerItem.custom_id, pickedDate);
+    setItems(prev => prev.map(i =>
+      i.id === datePickerItem.id && i.category === datePickerItem.category
+        ? { ...i, last_date: pickedDate, days_ago: daysAgoFromDate(pickedDate) } : i
+    ));
+    setDatePickerItem(null);
+  }, [supabase, datePickerItem, pickedDate]);
+
+  const closePickerOnBackdrop = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) setDatePickerItem(null);
+  }, []);
+
   return (
+    <>
     <Card>
       <CardBody>
-        {!compact && (
-          <div className="last-time-tracker__controls">
-            <button
-              type="button"
-              className={`last-time-sort-btn${sortBy === 'order' ? ' last-time-sort-btn--active' : ''}`}
-              onClick={() => setSortBy('order')}
-            >
-              Custom order
-            </button>
-            <button
-              type="button"
-              className={`last-time-sort-btn${sortBy === 'recent' ? ' last-time-sort-btn--active' : ''}`}
-              onClick={() => setSortBy('recent')}
-            >
-              Most recent first
-            </button>
-          </div>
-        )}
+        <CardHeader>
+          <CardTitle>
+            Last Time...
+          </CardTitle>
+          <CardActions>
+            <Button variant='action-alt' size='sm'
+              className={`${sortBy === 'recent' ? ' btn--inactive' : ''}`}
+              onClick={() => setSortBy('order')}>
+                Custom Order
+            </Button>
+            
+            <Button variant='action-alt' size='sm'
+              className={`${sortBy === 'order' ? ' btn--inactive' : ''}`}
+              onClick={() => setSortBy('recent')}>
+                Most recent first
+            </Button>
+          </CardActions>
+        </CardHeader>
+        <CardSection>
+          {sorted.length === 0 && (
+            <p className="empty-state">No items configured. Add them in Settings → Last Time.</p>
+          )}
 
-        {sorted.length === 0 && (
-          <p className="empty-state">No items configured. Add them in Settings → Last Time.</p>
-        )}
-
-        <div className="last-time-list">
-          {sorted.map(item => (
-            <div key={`${item.category}-${item.id}`} className="last-time-item">
-              <IconDisplay
-              icon={icons.find(i => i.id === item.icon_id) ?? null}
-                size="sm"
-                className="last-time-item__emoji"
-              />
-              <div className="last-time-item__body">
-                <span className="last-time-item__label">{item.label}</span>
-                {!compact && item.last_date && (
-                  <span className="last-time-item__date">{formatMediumDate(item.last_date)}</span>
+          <div className="last-time-list">
+            
+             
+            {sorted.map(item => (
+              <span className='border__btm pad pad__btm margin-tb-md' key={`${item.category}-${item.id}`}  >
+                <CardGrid columns={4} className=''>
+                  <IconDisplay
+                    icon={icons.find(i => i.id === item.icon_id) ?? null}
+                    size="sm"
+                    className="last-time-item__emoji"
+                  />
+                  <Item itemType='title' value={item.label} />
+                  <Item itemType='info' value={formatMediumDate(item.last_date)} />
+                  <Item itemType='meta' itemModifier={'bold'} value={formatDaysAgo(item.days_ago)} className={`${daysAgoColorClass(item.days_ago)}`} />
+                </CardGrid>
+              
+                {item.category === 'custom' && (
+                  <FieldActions alignment='right' className=''>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => openDatePicker(item)}
+                      title="Log custom date">
+                      📅
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => logToday(item)}
+                      disabled={logging.has(item.id)}
+                      title="Log today">
+                      {logging.has(item.id) ? '…' : '✓'}
+                    </Button>
+                  </FieldActions>
                 )}
-              </div>
-              <span
-                className="last-time-item__ago"
-                style={{ color: daysAgoColor(item.days_ago) }}
-              >
-                {formatDaysAgo(item.days_ago)}
               </span>
-              {item.category === 'custom' && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => logToday(item)}
-                  disabled={logging.has(item.id)}
-                  title="Log today"
-                >
-                  {logging.has(item.id) ? '…' : '✓'}
-                </Button>
-              )}
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </CardSection>
       </CardBody>
     </Card>
+
+    {datePickerItem && (
+      <div className="modal-overlay" onClick={closePickerOnBackdrop}>
+        <div className="modal-panel" style={{ maxWidth: 320 }} role="dialog" aria-label="Log custom date">
+          <div className="modal-panel__header">
+            <span className="modal-panel__title">Log date for &ldquo;{datePickerItem.label}&rdquo;</span>
+            <Button variant="ghost" size="sm" onClick={() => setDatePickerItem(null)}>✕</Button>
+          </div>
+          <input
+            type="date"
+            value={pickedDate}
+            max={localTodayISO()}
+            onChange={e => setPickedDate(e.target.value)}
+          />
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+            <Button variant="ghost" onClick={() => setDatePickerItem(null)}>Cancel</Button>
+            <Button onClick={saveCustomDate} disabled={!pickedDate}>Save</Button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }

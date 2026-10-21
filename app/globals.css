@@ -419,9 +419,13 @@ hr.hr-md {
 }
 
 .pad {
-  padding: 5px 18px;
+  padding: 5px 10px;
   display: block;
   max-width: 100%;
+}
+
+.pad__btm {
+  padding-bottom: 16px;
 }
 
 .link__generic {
@@ -433,6 +437,10 @@ hr.hr-md {
 
 .link__generic:hover {
   filter: brightness(1.25);
+}
+
+.border__btm {
+  border-bottom: 1px solid var(--border) !important;
 }
 
 .border__bottom {
@@ -454,6 +462,22 @@ hr.hr-md {
 
 .border__bottom:last-child::after {
   border-bottom: unset;
+}
+
+.color--muted {
+  color: var(--text-alt-muted) !important;
+}
+
+.color--success {
+  color: var(--success) !important;
+}
+
+.color--mid {
+  color: var(--warn) !important;
+}
+
+.color--danger {
+  color: var(--danger) !important;
 }
 
 /* ── Card ────────────────────────────────────────────────────────────────────*/
@@ -645,6 +669,15 @@ hr.hr-md {
   margin-top: 8px;
 }
 
+.margin-bottom-md {
+  margin-bottom: 8px;
+}
+
+.margin-tb-md {
+  margin-top: 16px;
+  margin-bottom: 16px;
+}
+
 .margin-left-md {
   margin-left: 8px;
 }
@@ -752,6 +785,10 @@ hr.hr-md {
   border-color: var(--alt-border-hover);
   background: var(--alt-hover);
   color: var(--text-alt-faint);
+}
+
+.btn--inactive {
+  opacity: 0.5;
 }
 
 .btn--check {
@@ -4933,7 +4970,7 @@ a.appt-secondary:last-child {
 }
 
 /* ── Icon picker overlay & modal ──────────────────────────────────────────────*/
-.icon-picker-overlay {
+.modal-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.65);
@@ -4943,7 +4980,7 @@ a.appt-secondary:last-child {
   justify-content: center;
   padding: 20px;
 }
-.icon-picker-modal {
+.modal-panel {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -4956,12 +4993,12 @@ a.appt-secondary:last-child {
   gap: 12px;
   box-shadow: var(--box-shadow-standard);
 }
-.icon-picker-modal__header {
+.modal-panel__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
-.icon-picker-modal__title {
+.modal-panel__title {
   font-weight: 700;
   font-size: 0.88rem;
   color: var(--text);

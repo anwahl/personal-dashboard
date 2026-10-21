@@ -161,15 +161,17 @@ type AlignmentType = 'top' | 'bottom' | 'middle' | 'left' | 'right';
 export function FieldActions({
   children,
   alignment = 'top',
-  boxed = false
+  boxed = false,
+  className
 }: Readonly<{
-  children: ReactNode;
-  alignment?: AlignmentType;
-  boxed?: boolean;
+  children:       ReactNode;
+  alignment?:     AlignmentType;
+  boxed?:         boolean;
+  className?:     string;
 }>) {
   return (
     <>
-      <div className={`field__actions${alignment && (' field__actions--' + alignment)}`}>
+      <div className={`field__actions${alignment && (' field__actions--' + alignment)}${className && (' ' + className)}`}>
         {boxed && (<hr className='hr-md' />)}
         <div className='field__actions--body'>
           {children}
