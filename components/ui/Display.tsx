@@ -158,26 +158,43 @@ export function FieldGrid({
 
 type AlignmentType = 'top' | 'bottom' | 'middle' | 'left' | 'right';
 
+/**
+ * FieldActions — a row of action buttons.
+ *
+ * alignment="right" lays children out right-to-left (row-reverse), so list
+ * the primary action FIRST and it lands at the right edge.
+ *
+ * docked: a page-level save bar. On phones it docks full-width directly above
+ * the mobile tab bar (and hides while a field has focus, so it doesn't float
+ * over the iOS keyboard); on desktop it stays inline where it's placed.
+ */
 export function FieldActions({
   children,
   alignment = 'top',
   boxed = false,
+  docked = false,
   className
 }: Readonly<{
   children:       ReactNode;
   alignment?:     AlignmentType;
   boxed?:         boolean;
+  docked?:        boolean;
   className?:     string;
 }>) {
+  const classes = [
+    'field__actions',
+    `field__actions--${alignment}`,
+    docked && 'field__actions--docked',
+    className,
+  ].filter(Boolean).join(' ');
+
   return (
-    <>
-      <div className={`field__actions${alignment && (' field__actions--' + alignment)}${className && (' ' + className)}`}>
-        {boxed && (<hr className='hr-md' />)}
-        <div className='field__actions--body'>
-          {children}
-        </div>
-        {boxed && (<hr className='hr-md' />)}
+    <div className={classes}>
+      {boxed && (<hr className='hr-md' />)}
+      <div className='field__actions--body'>
+        {children}
       </div>
-    </>
+      {boxed && (<hr className='hr-md' />)}
+    </div>
   );
 }

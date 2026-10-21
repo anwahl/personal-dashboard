@@ -7,7 +7,7 @@
  * Passes state + setters down to DailyCard (merged card with 6 tabs).
  */
 
-import { SaveStatus, SaveState, Button } from '@/components/ui';
+import { SaveStatus, SaveState, Button, FieldActions } from '@/components/ui';
 import { saveJournalResponses, JournalResponseDetail } from '@/lib/dal/journal';
 import { useState, useCallback } from 'react';
 import { useRouter }              from 'next/navigation';
@@ -399,14 +399,7 @@ export function DailyPageClient({
         journalSaveState={journalSaveState}
       />
 
-      <div className="page-actions">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setMode(m => m === 'view' ? 'input' : 'view')}
-        >
-          {mode === 'view' ? '✏️ Edit' : '👁 View'}
-        </Button>
+      <FieldActions docked alignment="right">
         {mode === 'input' && (
           <Button
             variant="accent"
@@ -416,8 +409,15 @@ export function DailyPageClient({
             {saveState === 'saving' ? 'Saving…' : 'Save'}
           </Button>
         )}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setMode(m => m === 'view' ? 'input' : 'view')}
+        >
+          {mode === 'view' ? '✏️ Edit' : '👁 View'}
+        </Button>
         <SaveStatus state={saveState} />
-      </div>
+      </FieldActions>
     </>
   );
 }

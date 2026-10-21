@@ -16,7 +16,7 @@ import {
   saveWeeklyResponses,
 } from '@/lib/dal/weekly-journal';
 import { addDays, getSundayOfWeek }  from '@/lib/utils/dates';
-import { Button, SaveStatus }        from '@/components/ui';
+import { Button, FieldActions, SaveStatus } from '@/components/ui';
 import type { SaveState }            from '@/components/ui';
 import type { WeeklyEntryRow }       from '@/types/schema';
 import type {
@@ -151,9 +151,9 @@ export function WeeklyJournalClient({
     return (
       <div>
         <WeekNav weekStart={weekStart} weekNum={weekNum} weekRange={weekRange} />
-        <div className="page-actions">
+        <FieldActions docked alignment="right">
           <Button variant="ghost" onClick={() => setMode('edit')}>✏️ Edit</Button>
-        </div>
+        </FieldActions>
         {Object.values(byCategory).map(({ catName, cards: catCards }) => (
           <div key={catName} className="journal-category-section">
             <p className="card__section-label">{catName}</p>
@@ -203,7 +203,7 @@ export function WeeklyJournalClient({
         </div>
       ))}
 
-      <div className="page-actions">
+      <FieldActions docked alignment="right">
         <Button variant="accent" onClick={save} disabled={saveState === 'saving' || !hasContent}>
           {saveState === 'saving' ? 'Saving…' : 'Save Entry'}
         </Button>
@@ -211,7 +211,7 @@ export function WeeklyJournalClient({
           <Button variant="ghost" onClick={() => setMode('view')}>Cancel</Button>
         )}
         <SaveStatus state={saveState} />
-      </div>
+      </FieldActions>
     </div>
   );
 }

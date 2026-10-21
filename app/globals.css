@@ -278,6 +278,9 @@
   --radius-ex-lger: 35px;
 
   --tap: 44px;
+  /* Mobile chrome heights (excluding the safe-area inset) */
+  --tabbar-h: 64px;
+  --actionbar-h: 68px;
   --tap-min: 35px;
 
   --font-sans: system-ui, -apple-system, sans-serif;
@@ -297,6 +300,13 @@
 
 .hidden {
   display: none !important;
+}
+
+/* Keyboard-only hints (e.g. "⌘↵ to save") on devices without a keyboard */
+@media (pointer: coarse) {
+  .hide-on-touch {
+    display: none !important;
+  }
 }
 
 html {
@@ -1540,149 +1550,9 @@ textarea {
   line-height: 1;
 }
 
-.mobile-nav {
-  display: none;
-  width: fit-content;
-  border-radius: var(--radius-ex-lger);
-  background-color: var(--nav-bg);
-  gap: 15px;
-  margin: 0 auto;
-  padding: 5px 8px;
-  border: 1px solid var(--nav-border);
-  position: fixed;
-  bottom: calc(15px + env(safe-area-inset-bottom));
-  left: 0;
-  right: 0;
-  box-shadow: var(--box-shadow-standard);
-}
-
-.mobile-nav--item {
-  padding: 3px 1px;
-  border-radius: var(--radius-ex-lger);
-}
-
-.mobile-nav--item:not(.mobile-nav--item_selected),
-.mobile-nav--item:not(.mobile-nav--item_selected) button {
-  transition: background 0.35s ease;
-}
-
-.mobile-nav--menu-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  z-index: 100;
-}
-
-.mobile-nav--menu-modal {
-  position: fixed;
-  bottom: calc(105px + env(safe-area-inset-bottom));
-  left: 0;
-  right: 0;
-  margin: 0 auto;
-  width: 30%;
-  min-width: fit-content;
-  z-index: 101;
-  display: flex;
-  align-items: flex-end;
-}
-
-.mobile-nav--menu-content {
-  display: grid;
-  grid-template-columns: minmax(0, max-content);
-  justify-content: center;
-  position: relative;
-  width: 100%;
-  border: 1px solid var(--nav-border);
-  background-color: var(--nav-bg);
-  border-radius: var(--radius-ex-lg);
-  gap: 7px;
-  padding: 20px;
-  z-index: 102;
-  min-width: fit-content;
-  box-shadow: var(--box-shadow-standard);
-}
-
-.mobile-nav--menu-link {
-  text-decoration: none;
-  color: var(--text-nav);
-  font-weight: bold;
-  font-size: 1.2em;
-  transition: color 0.35s ease;
-  line-height: 1.5;
-  font-family: var(--font-family-item);
-}
-
-.mobile-nav--menu-title {
-  color: var(--text-title);
-  font-weight: bold;
-  font-size: 1.5em;
-  transition: color 0.35s ease;
-  line-height: 1.5;
-  font-family: var(--font-family-header);
-}
-
-.mobile-nav--menu-link-icon {
-  padding-right: 7px;
-}
-
-@media (hover: hover) {
-  .mobile-nav--menu-link:hover {
-    color: var(--text-surface-hover);
-  }
-}
-
-@media (hover: hover) {
-  .mobile-nav--item:not(.mobile-nav--item_selected):hover {
-    background: var(--nav-item-hover);
-    border-color: var(--nav-item-hover);
-    transition: background 0.35s ease;
-  }
-}
-
-.mobile-nav--item_selected {
-  cursor: pointer;
-  border-radius: var(--radius-ex-lger);
-  border: 1px solid var(--nav-sl-border);
-  background-color: var(--nav-selected);
-}
-
-@media (hover: hover) {
-  .mobile-nav--item_selected:hover {
-    background: var(--nav-selected-hover);
-    border-color: var(--nav-selected-hover);
-  }
-}
-
-.mobile-nav--item_selected_text {
-  font-size: 1.1rem;
-  font-family: var(--font-family-item);
-  color: var(--text-nav);
-}
-
-.mobile-nav--btn {
-  border: none;
-  background: none;
-  width: 100%;
-  height: 100%;
-}
-
-.mobile-nav--item-link {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 4px;
-  text-decoration: none;
-  color: var(--text-faint);
-  font-weight: bold;
-  font-family: var(--font-family-item);
-}
-
 @media (max-width: 767px) {
   .side-nav {
     display: none;
-  }
-  .mobile-nav {
-    display: flex;
   }
 }
 
@@ -2029,40 +1899,6 @@ textarea {
   margin: -12px 0 20px;
   padding-left: 2px;
 }
-
-/* ── Page action bar (sticky save) ──────────────────────────────────────────*/
-.page-actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
-  padding: 16px 0 0;
-  margin-top: 8px;
-  border-top: 1px solid var(--surface-border);
-}
-
-/* On mobile, stick above the bottom nav */
-@media (max-width: 767px) {
-  .page-actions {
-    position: fixed;
-    max-width: 55%;
-    min-width: fit-content;
-    border-radius: var(--radius-lg);
-    margin: 0 auto;
-    bottom: calc(85px + env(safe-area-inset-bottom));
-    left: 0;
-    right: 0;
-    background: var(--surface);
-    border: 1px solid var(--surface-border);
-    padding: 10px 16px;
-    box-shadow: var(--box-shadow-standard);
-  }
-  /* Add space at bottom of page so content isn't hidden behind the action bar */
-  .page-content {
-    padding-bottom: 180px;
-  }
-}
-
 /* ── Date navigation ─────────────────────────────────────────────────────────*/
 .date-nav {
   display: flex;
@@ -5688,7 +5524,6 @@ input[type="datetime-local"] {
 .chip:active:not(:disabled):not(.chip--static),
 .habit-btn:active,
 .tab:active,
-.mobile-nav--item:active,
 .icon-picker-cell:active,
 .weekday-chip:active {
   transform: scale(0.96);
@@ -5704,7 +5539,6 @@ input[type="datetime-local"] {
   .chip:active:not(:disabled):not(.chip--static),
   .habit-btn:active,
   .tab:active,
-  .mobile-nav--item:active,
   .icon-picker-cell:active,
   .weekday-chip:active {
     transform: none;
@@ -5723,3 +5557,216 @@ input[type="datetime-local"] {
 .daily-extras > * {
   min-width: 0;
 }
+
+/* ── Mobile tab bar (components/layout/MobileTabBar.tsx) ─────────────────────*/
+.mobile-tabbar {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .mobile-tabbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    align-items: center;
+    justify-items: center;
+    height: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
+    padding: 4px 8px env(safe-area-inset-bottom);
+    background: var(--nav-bg);
+    border-top: 1px solid var(--nav-border);
+  }
+
+  /* Room for the tab bar (and a docked action bar, when the page has one) */
+  .page-content {
+    padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 32px);
+  }
+  .page-content:has(.field__actions--docked) {
+    padding-bottom: calc(var(--tabbar-h) + var(--actionbar-h) + env(safe-area-inset-bottom) + 32px);
+  }
+}
+
+/* The ＋ (Button variant="accent" size="icon") */
+.mobile-tabbar__add {
+  width: 52px;
+  height: 52px;
+  border-radius: 18px;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--color-deep-950);
+  box-shadow: var(--box-shadow-soft);
+}
+
+/* ── Button variants: nav, tile, tile-row ────────────────────────────────────*/
+/* Tab-bar item: icon above label. Active via aria-current="page" or data-active. */
+.btn--nav {
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  padding: 4px 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+.btn--nav[aria-current="page"],
+.btn--nav[data-active="true"] {
+  color: var(--color-terracotta-300);
+  font-weight: 700;
+}
+.btn--nav .btn__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 30px;
+  border-radius: 15px;
+}
+.btn--nav[aria-current="page"] .btn__icon,
+.btn--nav[data-active="true"] .btn__icon {
+  background: var(--accent-dim);
+}
+@media (hover: hover) {
+  .btn--nav:hover:not(:disabled) {
+    border: none;
+    color: var(--text);
+  }
+}
+
+/* Menu tile: icon above label */
+.btn--tile,
+.btn--tile-row {
+  border-radius: 16px;
+  background: var(--bg);
+  border-color: var(--surface-border);
+  color: var(--text);
+  white-space: normal;
+}
+.btn--tile {
+  flex-direction: column;
+  gap: 8px;
+  min-height: 84px;
+  padding: 8px 4px;
+  font-size: 0.95rem;
+  text-align: center;
+}
+/* Menu row: icon beside label (a trailing icon, e.g. a chevron, sits at the end) */
+.btn--tile-row {
+  justify-content: flex-start;
+  gap: 12px;
+  min-height: 56px;
+  padding: 0 14px;
+  border-radius: 14px;
+  font-size: 1rem;
+}
+.btn--tile-row > svg:last-child:not(:first-child) {
+  margin-left: auto;
+}
+.btn--tile > svg,
+.btn--tile-row > svg:first-child {
+  flex-shrink: 0;
+  color: var(--color-terracotta-300);
+}
+
+/* Stacked grid rows keep the same spacing as the grid's own gap */
+.card__grid--row + .card__grid--row {
+  margin-top: var(--gap, 1rem);
+}
+
+/* ── Docked page actions (FieldActions docked) ───────────────────────────────*/
+.field__actions--docked .field__actions--body {
+  align-items: center;
+  flex-wrap: wrap;
+}
+.field__actions--docked .save-status {
+  margin: 0;
+}
+
+/* Phone: docked full width, directly above the tab bar */
+@media (max-width: 767px) {
+  .field__actions--docked {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
+    z-index: 99;
+    min-height: var(--actionbar-h);
+    margin: 0;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    background: var(--surface);
+    border-top: 1px solid var(--surface-border);
+  }
+  .field__actions--docked .field__actions--body {
+    gap: 8px;
+  }
+  .field__actions--docked > hr {
+    display: none;
+  }
+
+  /* Toasts sit above the docked bars instead of covering them */
+  .toast-container {
+    bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 12px);
+    right: 16px;
+  }
+  body:has(.field__actions--docked) .toast-container {
+    bottom: calc(var(--tabbar-h) + var(--actionbar-h) + env(safe-area-inset-bottom) + 12px);
+  }
+}
+
+/* Touch phones: hide the docked bars while typing, so they don't float
+   above the iOS keyboard. They return when the field loses focus. */
+@media (max-width: 767px) and (pointer: coarse) {
+  body:has(:is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="button"], [type="submit"]), textarea, select, [contenteditable="true"]):focus) .mobile-tabbar,
+  body:has(:is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="button"], [type="submit"]), textarea, select, [contenteditable="true"]):focus) .field__actions--docked {
+    display: none;
+  }
+  body:has(:is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="button"], [type="submit"]), textarea, select, [contenteditable="true"]):focus) .page-content {
+    padding-bottom: 32px;
+  }
+}
+
+/* ── Bottom-sheet dialog (Dialog placement="bottom") ─────────────────────────*/
+.modal-overlay--sheet {
+  align-items: flex-end;
+  padding: 0;
+}
+.modal-panel--sheet {
+  max-width: none;
+  max-height: 85vh;   /* fallback */
+  max-height: 85dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  gap: 16px;
+  padding: 8px 20px calc(24px + env(safe-area-inset-bottom));
+  border: none;
+  border-top: 1px solid var(--surface-high-border);
+  border-radius: 24px 24px 0 0;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.45);
+}
+.modal-panel__grabber {
+  align-self: center;
+  margin-bottom: 4px;
+  flex-shrink: 0;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--color-dark-purple-600);
+}
+.modal-panel--sheet .modal-panel__title {
+  font-family: var(--font-family-sub-header);
+  font-size: 1.3rem;
+  font-weight: 400;
+  color: var(--text-title);
+}
+
+@keyframes modal-sheet-in  { from { transform: translateY(100%); } to { transform: none; } }
+/* --sheet-drag-offset: where a swipe-to-dismiss let go (set by useSwipeToDismiss) */
+@keyframes modal-sheet-out { from { transform: translateY(var(--sheet-drag-offset, 0px)); } to { transform: translateY(100%); } }
+.modal-panel--sheet[data-state="open"]   { animation: modal-sheet-in  260ms cubic-bezier(0.32, 0.72, 0, 1); }
+.modal-panel--sheet[data-state="closed"] { animation: modal-sheet-out 180ms ease-in; }

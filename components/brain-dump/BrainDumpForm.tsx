@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { createClient }             from '@/lib/supabase/client';
 import { createStandaloneBrainDump, upsertBrainDump } from '@/lib/dal/daily';
 import { Button, Card, CardActions, CardBody, CardHeader, CardTitle, InputField, Item }                   from '@/components/ui';
@@ -12,6 +12,8 @@ interface Props {
   onSaved?:   (bodyMd: string, date: string) => void;
   placeholder?: string;
   compact?:   boolean;
+  /** Render just the fields + actions, without the card around them. */
+  bare?:      boolean;
 }
 
 export function BrainDumpForm({
@@ -20,8 +22,10 @@ export function BrainDumpForm({
   onSaved,
   placeholder = 'Brain dump…',
   compact = false,
+  bare = false,
 }: Readonly<Props>) {
   const supabase = createClient();
+  const id       = useId();
   const [body,   setBody]   = useState('');
   const [date,   setDate]   = useState(dumpDate ?? localTodayISO());
   const [saving, setSaving] = useState(false);
@@ -44,41 +48,49 @@ export function BrainDumpForm({
     } finally { setSaving(false); }
   };
 
+  const fields = (
+    <>
+      <InputField label='' id={`${id}-date`}>
+        <input
+          id={`${id}-date`}
+          type="date"
+          value={date}
+          onChange={e => setDate(e.target.value)}
+        />
+      </InputField>
+      <InputField label='' id={`${id}-value`}>
+        <textarea
+          id={`${id}-value`}
+          value={body}
+          placeholder={placeholder}
+          onChange={e => setBody(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit(); }}
+          rows={compact ? 3 : 5}
+        />
+      </InputField>
+      <CardActions>
+        <Item value='⌘↵ to save' itemType='info' className='hide-on-touch' />
+        <Button
+          variant="accent"
+          size="sm"
+          onClick={submit}
+          disabled={!body.trim() || saving}
+        >
+          {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save'}
+        </Button>
+      </CardActions>
+    </>
+  );
+
+  if (bare) return fields;
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>New Brain Dump</CardTitle>
       </CardHeader>
       <CardBody>
-        <InputField label='' id='bd-date'>
-          <input
-            id='bd-date'
-            type="date"
-            value={date}
-            onChange={e => setDate(e.target.value)}
-          />
-        </InputField>
-        <InputField label='' id='bd-value'>
-          <textarea
-            id='bd-value'
-            value={body}
-            placeholder={placeholder}
-            onChange={e => setBody(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit(); }}
-            rows={compact ? 3 : 5}
-          />
-        </InputField>
-        <CardActions>
-          <Item value='⌘↵ to save' itemType='info' />
-          <Button
-            variant="accent"
-            size="sm"
-            onClick={submit}
-            disabled={!body.trim() || saving}
-          >
-            {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save'}
-          </Button>
-        </CardActions>
+        {fields}
       </CardBody>
     </Card>
   );

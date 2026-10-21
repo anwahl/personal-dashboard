@@ -9,7 +9,7 @@
  */
 
 import { useState }            from 'react';
-import { Button, Card, CardBody, CardHeader, CardSection, CardSectionLabel, CardTitle, InputField, SaveStatus } from '@/components/ui';
+import { Button, Card, CardBody, CardHeader, CardSection, CardSectionLabel, CardTitle, FieldActions, InputField, SaveStatus } from '@/components/ui';
 import type { SaveState }      from '@/components/ui';
 import type { AppointmentDetail } from '@/types/dal';
 import type { AppointmentTypeRow, PersonRow, ProviderRow } from '@/types/schema';
@@ -143,7 +143,7 @@ export function AppointmentForm({
                 </InputField>
             </CardSection>
 
-            <div className="page-actions">
+            <FieldActions docked alignment="right">
                 <Button
                         variant="accent"
                         onClick={() => onSave(form)}
@@ -155,7 +155,7 @@ export function AppointmentForm({
                     <Button variant="danger" onClick={onDelete} disabled={saving}>Delete</Button>
                 )}
                 {saveState && <SaveStatus state={saveState} />}
-            </div>
+            </FieldActions>
         </CardBody>
     </Card>
   );

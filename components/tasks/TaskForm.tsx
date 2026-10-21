@@ -6,7 +6,7 @@
  * passing back `saving` / `saveState` while the operation is in flight.
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useId, type ReactNode } from "react";
 import {
   Button,
   Card,
@@ -35,7 +35,7 @@ import { WEEKDAYS } from "@/lib/constants/dates";
 import { createClient } from "@/lib/supabase/client";
 import { createTask } from "@/lib/dal/tasks";
 import { useRouter } from "next/navigation";
-import { usePeople, useTaskPriorities, useTaskStatuses } from "@/lib/hooks/reference";
+import { usePeople, useTaskDefaults, useTaskPriorities, useTaskStatuses } from "@/lib/hooks/reference";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -372,7 +372,7 @@ export function TaskForm({
         )}
       </CardSection>
 
-      <div className="page-actions">
+      <FieldActions docked alignment="right">
         <Button
           variant="accent"
           onClick={() => onSave(form)}
@@ -384,46 +384,52 @@ export function TaskForm({
           Cancel
         </Button>
         {saveState && <SaveStatus state={saveState} />}
-      </div>
+      </FieldActions>
     </CardBody>
   );
 }
 
-// ── QuickAdd ──────────────────────────────────────────────────────────────────
+// ── QuickAddTaskForm ─────────────────────────────────────────────────────────
 
-export function QuickAdd({
+/**
+ * The quick-add task fields + "+ Quick" button, without a card around them.
+ * Used inside QuickAdd (Tasks page / Hub) and the mobile Quick add sheet.
+ *
+ *   minimal      — title, date and the date shortcuts only (no time, no person)
+ *   extraActions — rendered beside "+ Quick" (QuickAdd passes "Full Add")
+ *   onAdded      — called after a task is created (and the page refreshed)
+ */
+export function QuickAddTaskForm({
   contextDate = localTodayISO(),
+  minimal = false,
+  extraActions,
+  onAdded,
 }: Readonly<{
-  contextDate?: string;
+  contextDate?:  string;
+  minimal?:      boolean;
+  extraActions?: ReactNode;
+  onAdded?:      () => void;
 }>) {
   const supabase = createClient();
   const router = useRouter();
+  const id = useId();
 
-  const [showFull, setShowFull] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newDue, setNewDue] = useState("");
   const [newTime, setNewTime] = useState("");
   const [newPerson, setNewPerson] = useState("");
   const [adding, setAdding] = useState(false);
-  const [saving, setSaving] = useState(false);
-  
-  const { data: statuses = [], isLoading: statusesLoading, error: statusesError } = useTaskStatuses();
-  const { data: priorities = [], isLoading: prioritiesLoading, error: prioritiesError } = useTaskPriorities();
+
+  const {
+    statusId: todoStatusId, priorityId: normalPriorityId,
+    isLoading: defaultsLoading, error: defaultsError,
+  } = useTaskDefaults();
   const { data: people = [], isLoading: peopleLoading, error: peopleError } = usePeople();
   const { addToast } = useToast();
-  useEffect(() => { if (statusesError)      addToast('Failed to load task statuses', 'error'); },   [statusesError,       addToast]);
-  useEffect(() => { if (prioritiesError)    addToast('Failed to load task priorities', 'error'); }, [prioritiesError,     addToast]);
-  useEffect(() => { if (peopleError)        addToast('Failed to load people', 'error'); },          [peopleError,         addToast]);
-  const referenceLoading = peopleLoading || prioritiesLoading || statusesLoading;
-  
-  const defaultStatus = statuses.find((s) => !s.is_terminal) ?? statuses[0];
-  const defaultPriority = [...priorities].sort(
-    (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
-  )[0]; //TODO the default statuses/priorities can be fetched in a separate function/file thingy.
-  const todoStatusId = defaultStatus?.id ?? 0;
-  const normalPriorityId = defaultPriority?.id ?? priorities[0]?.id ?? 0;
+  useEffect(() => { if (defaultsError) addToast('Failed to load task statuses/priorities', 'error'); }, [defaultsError, addToast]);
+  useEffect(() => { if (peopleError)   addToast('Failed to load people', 'error'); },                    [peopleError,   addToast]);
+  const referenceLoading = peopleLoading || defaultsLoading;
 
-  // ── Quick (title + date only) ────────────────────────────────────────────
   const quickAdd = useCallback(async () => {
     if (!newTitle.trim()) return;
     setAdding(true);
@@ -442,6 +448,9 @@ export function QuickAdd({
       setNewDue("");
       setNewTime("");
       router.refresh();
+      onAdded?.();
+    } catch {
+      addToast("Couldn’t add the task", "error");
     } finally {
       setAdding(false);
     }
@@ -454,7 +463,114 @@ export function QuickAdd({
     todoStatusId,
     normalPriorityId,
     router,
+    onAdded,
+    addToast,
   ]);
+
+  return (
+    <>
+      <CardActions>
+        <Button
+          variant="action-alt"
+          onClick={quickAdd}
+          disabled={adding || !newTitle.trim() || referenceLoading}
+        >
+          {adding ? "…" : "+ Quick"}
+        </Button>
+        {extraActions}
+      </CardActions>
+      <InputField label="Title" id={`${id}-title`}>
+        <input
+          id={`${id}-title`}
+          type="text"
+          value={newTitle}
+          onChange={(e) => setNewTitle(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && quickAdd()}
+          placeholder="Quick add task…"
+        />
+      </InputField>
+      {minimal ? (
+        <InputField label="Date" id={`${id}-date`}>
+          <input
+            id={`${id}-date`}
+            type="date"
+            value={newDue}
+            onChange={(e) => setNewDue(e.target.value)}
+          />
+        </InputField>
+      ) : (
+        <FieldGrid>
+          <InputField label="Date" id={`${id}-date`}>
+            <input
+              id={`${id}-date`}
+              type="date"
+              value={newDue}
+              onChange={(e) => setNewDue(e.target.value)}
+            />
+          </InputField>
+          <InputField label="Time" id={`${id}-time`}>
+            <input
+              id={`${id}-time`}
+              type="time"
+              value={newTime}
+              onChange={(e) => setNewTime(e.target.value)}
+            />
+          </InputField>
+        </FieldGrid>
+      )}
+      <FieldActions boxed>
+        <Button
+          size="sm"
+          variant="action"
+          onClick={() => setNewDue(addDays(contextDate, 1))}
+        >
+          Tomorrow
+        </Button>
+        <Button
+          size="sm"
+          variant="action"
+          onClick={() => setNewDue(addDays(contextDate, 7))}
+        >
+          Next week
+        </Button>
+      </FieldActions>
+      {!minimal && (
+        <InputField label="For" id={`${id}-person`}>
+          <select
+            id={`${id}-person`}
+            disabled={peopleLoading}
+            value={newPerson}
+            onChange={(e) => setNewPerson(e.target.value)}
+            style={{ width: 110 }}
+          >
+            <option value="">Anyone</option>
+            {people.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.person_name}
+              </option>
+            ))}
+          </select>
+        </InputField>
+      )}
+    </>
+  );
+}
+
+// ── QuickAdd ──────────────────────────────────────────────────────────────────
+
+/** Collapsible "Add Task" card: QuickAddTaskForm, plus a toggle to the full TaskForm. */
+export function QuickAdd({
+  contextDate = localTodayISO(),
+}: Readonly<{
+  contextDate?: string;
+}>) {
+  const supabase = createClient();
+  const router = useRouter();
+
+  const [showFull, setShowFull] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const { statusId: todoStatusId, priorityId: normalPriorityId } = useTaskDefaults();
 
   // ── Full add (via TaskForm) ──────────────────────────────────────────────
   const fullAdd = useCallback(
@@ -526,85 +642,16 @@ export function QuickAdd({
   }
 
   return (
-    <ExpandCard title='Add Task' 
-      hiddenChildren = {
-        <>
-          <CardActions>
-            <Button
-              variant="action-alt"
-              onClick={quickAdd}
-              disabled={adding || !newTitle.trim() || referenceLoading}
-            >
-              {adding ? "…" : "+ Quick"}
-            </Button>
-            <Button 
-              variant="action-alt" 
-              onClick={() => setShowFull(true)}
-            >
+    <ExpandCard title='Add Task'
+      hiddenChildren={
+        <QuickAddTaskForm
+          contextDate={contextDate}
+          extraActions={
+            <Button variant="action-alt" onClick={() => setShowFull(true)}>
               Full Add
             </Button>
-          </CardActions>
-          <InputField label="Title" id="qa-title">
-            <input
-              id="qa-title"
-              type="text"
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && quickAdd()}
-              placeholder="Quick add task…"
-            />
-          </InputField>
-          <FieldGrid>
-            <InputField label="Date" id="qa-date">
-              <input
-                id="qa-date"
-                type="date"
-                value={newDue}
-                onChange={(e) => setNewDue(e.target.value)}
-              />
-            </InputField>
-            <InputField label="Time" id="qa-time">
-              <input
-                id="qa-time"
-                type="time"
-                value={newTime}
-                onChange={(e) => setNewTime(e.target.value)}
-              />
-            </InputField>
-          </FieldGrid>
-          <FieldActions boxed>
-            <Button
-              size="sm"
-              variant="action"
-              onClick={() => setNewDue(addDays(contextDate, 1))}
-            >
-              Tomorrow
-            </Button>
-            <Button
-              size="sm"
-              variant="action"
-              onClick={() => setNewDue(addDays(contextDate, 7))}
-            >
-              Next week
-            </Button>
-          </FieldActions>
-          <InputField label="For" id="qa-person">
-            <select
-              id="qa-person"
-              disabled={peopleLoading}
-              value={newPerson}
-              onChange={(e) => setNewPerson(e.target.value)}
-              style={{ width: 110 }}
-            >
-              <option value="">Anyone</option>
-              {people.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.person_name}
-                </option>
-              ))}
-            </select>
-          </InputField>
-        </>
+          }
+        />
       } />
   );
 }

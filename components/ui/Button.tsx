@@ -1,7 +1,14 @@
 import { type ButtonHTMLAttributes, type AnchorHTMLAttributes, type ReactNode, useState } from 'react';
 import Link from 'next/link';
 
-type Variant = 'default' | 'accent' | 'ghost' | 'action' | 'action-alt' | 'action-del' | 'danger';
+type Variant =
+  | 'default' | 'accent' | 'ghost' | 'action' | 'action-alt' | 'action-del' | 'danger'
+  /** Square-ish tile, icon above label (menu grids). */
+  | 'tile'
+  /** Full-width row, icon beside label (menu lists). */
+  | 'tile-row'
+  /** Bottom tab-bar item, icon above label. Active via aria-current="page" or data-active. */
+  | 'nav';
 type Size    = 'default' | 'sm' | 'icon' | 'check';
 
 interface BaseProps {

@@ -96,6 +96,29 @@ export const useTaskStatuses = () =>
 export const useTaskPriorities = () =>
   useSWR('ref/task-priorities', () => getTaskPriorities(supabase));
 
+/**
+ * Default status + priority for a newly created task: the first non-terminal
+ * status and the lowest-sort_order priority. Ids are 0 until both lists load;
+ * check `isLoading` before inserting.
+ */
+export function useTaskDefaults() {
+  const statuses   = useTaskStatuses();
+  const priorities = useTaskPriorities();
+
+  const statusRows   = statuses.data ?? [];
+  const priorityRows = priorities.data ?? [];
+
+  const status   = statusRows.find(s => !s.is_terminal) ?? statusRows[0];
+  const priority = [...priorityRows].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0];
+
+  return {
+    statusId:   status?.id ?? 0,
+    priorityId: priority?.id ?? 0,
+    isLoading:  statuses.isLoading || priorities.isLoading,
+    error:      statuses.error ?? priorities.error,
+  };
+}
+
 // ── Trackables ────────────────────────────────────────────────────────────────
 
 /** Active daily trackables (boolean + numeric habits/metrics). */

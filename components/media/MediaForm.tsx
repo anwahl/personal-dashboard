@@ -11,7 +11,7 @@
  */
 
 import { useState, useCallback, useRef } from 'react';
-import { Button, Card, CardBody, CardHeader, CardTitle, InputField, SliderField } from '@/components/ui';
+import { Button, Card, CardBody, CardHeader, CardTitle, FieldActions, InputField, SliderField } from '@/components/ui';
 import { localTodayISO } from '@/lib/utils/dates';
 import type { MediaEntryDetail } from '@/types/dal';
 import type {
@@ -283,7 +283,7 @@ export function MediaForm({
 
             {saveError && <p className="save-status save-status--error">{saveError}</p>}
 
-            <div className="page-actions">
+            <FieldActions docked alignment="right">
                 <Button
                 variant="accent"
                 onClick={() => onSave(form)}
@@ -295,7 +295,7 @@ export function MediaForm({
                 {onDelete && (
                 <Button variant="danger" onClick={onDelete} disabled={saving}>Delete</Button>
                 )}
-            </div>
+            </FieldActions>
         </CardBody>
     </Card>
   );

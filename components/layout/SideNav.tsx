@@ -4,10 +4,11 @@ import Link              from 'next/link';
 import { usePathname }   from 'next/navigation';
 import { SideCalendar }  from './SideCalendar';
 import { NAV_ITEMS, isNavActive } from '@/lib/constants/nav';
-import { localTodayISO }          from '@/lib/utils/dates';
+import { useTodayHref }           from '@/lib/hooks/useLocalToday';
 
 export function SideNav() {
-  const path = usePathname();
+  const path      = usePathname();
+  const todayHref = useTodayHref();
 
   return (
     <nav className="side-nav" aria-label="Main navigation">
@@ -18,7 +19,7 @@ export function SideNav() {
       </div>
       <ul className="side-nav__list">
         {NAV_ITEMS.map(({ href, emoji, label }) => {
-          const dest   = href === '/daily' ? `/daily/${localTodayISO()}` : href;
+          const dest   = href === '/daily' ? todayHref : href;
           const active = isNavActive(href, path);
 
           return (

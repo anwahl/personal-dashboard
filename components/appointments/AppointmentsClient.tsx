@@ -170,9 +170,9 @@ export function AppointmentsClient({
           />
         </div>
       ) : (
-        <div className="page-actions">
+        <FieldActions docked alignment="right">
           <Button variant="accent" onClick={openNew}>+ New Appointment</Button>
-        </div>
+        </FieldActions>
       )}
 
       <Card>

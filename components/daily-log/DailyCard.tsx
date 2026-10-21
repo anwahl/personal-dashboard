@@ -9,7 +9,8 @@
  * Replaces DailyLogCard + HealthLogCard.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { createClient }    from '@/lib/supabase/client';
 import { togglePrescriptionEntry } from '@/lib/dal/daily';
 import { setEssResponse }          from '@/lib/dal/ess';
@@ -22,7 +23,7 @@ import type {
 } from '@/types/dal';
 import type {  JournalState, DailyOverviewState, SymptomFormState, SleepFormState, MetricState, } from './DailyPageClient';
 import type { EssQuestionTypeRow, EssAnswerTypeRow, IconRow } from '@/types/schema';
-import { DAILY_TABS, DailyTabId } from '@/lib/constants/nav';
+import { DAILY_TABS, DailyTabId, toDailyTabId } from '@/lib/constants/nav';
 
 type Mode = 'view' | 'input';
 
@@ -987,7 +988,22 @@ export function DailyCard({
   priorSleep, ess, prescriptions, reference,
   journalState, setJournalState, journalCategories, onSaveJournal, journalSaveState,
 }: Readonly<Props>) {
-  const [tab, setTab] = useState<DailyTabId>('overview');
+  // The open tab follows ?tab= (e.g. /daily/2026-10-21?tab=symptoms from
+  // Quick add) and is written back to the URL without a server round trip.
+  const tabParam = useSearchParams().get('tab');
+  const [tab, setTab] = useState<DailyTabId>(() => toDailyTabId(tabParam) ?? 'overview');
+
+  useEffect(() => {
+    const fromUrl = toDailyTabId(tabParam);
+    if (fromUrl) setTab(fromUrl);
+  }, [tabParam]);
+
+  const selectTab = useCallback((id: DailyTabId) => {
+    setTab(id);
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', id);
+    window.history.replaceState(null, '', url);
+  }, []);
 
   return (
     <Card>
@@ -995,7 +1011,7 @@ export function DailyCard({
         <CardTitle>📋 Daily Entry</CardTitle>
       </CardHeader>
       <CardBody>
-        <TabBar tabs={DAILY_TABS} active={tab} onChange={setTab} />
+        <TabBar tabs={DAILY_TABS} active={tab} onChange={selectTab} />
 
         {tab === 'overview' && (
           <OverviewTab

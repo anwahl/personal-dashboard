@@ -2,11 +2,13 @@
  * lib/constants/nav.ts
  *
  * Single source of truth for the main navigation items.
- * Used by both SideNav and BottomNav.
+ * Used by SideNav (desktop) and MobileTabBar + its More sheet (mobile).
  */
 
-
-
+/**
+ * The original colourful nav icons. Not referenced since the mobile tab bar
+ * moved to line icons; kept so they can be swapped back in.
+ */
 export interface IconItem {
   label: string;
   svg_data: string;
@@ -48,33 +50,55 @@ export function isNavActive(href: string, pathname: string): boolean {
   return pathname.startsWith(href);
 }
 
-export interface MobileItem {
-  href: string;
+/**
+ * Mobile navigation (components/layout/MobileTabBar.tsx).
+ *
+ * The tab bar itself is Home / Today / Quick add / Calendar / More. Everything
+ * else lives in the More sheet, grouped by section. `icon` is a key the sheet
+ * maps to an icon component, so this file stays plain data.
+ */
+export type MoreIconKey =
+  | 'tasks' | 'appointments' | 'medications' | 'analytics'
+  | 'brain-dump' | 'media' | 'last-time' | 'people' | 'weekly-journal';
+
+export interface MoreItem {
+  href:  string;
   label: string;
-  svg_data: string;
-  is_menu: boolean;
+  icon:  MoreIconKey;
 }
 
-export const MOBILE_ITEMS: MobileItem[] = [
-  { href: "/", label: "Home", svg_data: ICON_DATA.find(item => item.label === 'home')?.svg_data || '', is_menu: false },
-  { href: "/daily", label: "Today", svg_data: ICON_DATA.find(item => item.label === 'calendar')?.svg_data || '', is_menu: false },
-  { href: "", label: "Menu", svg_data: ICON_DATA.find(item => item.label === 'menu')?.svg_data || '', is_menu: true },
-  { href: "/settings", label: "Settings", svg_data: ICON_DATA.find(item => item.label === 'cog')?.svg_data || '', is_menu: false },
+export interface MoreSection {
+  title: string;
+  items: MoreItem[];
+}
+
+export const MORE_SECTIONS: MoreSection[] = [
+  {
+    title: 'Health',
+    items: [
+      { href: '/appointments', label: 'Appointments', icon: 'appointments' },
+      { href: '/medications',  label: 'Medications',  icon: 'medications'  },
+      { href: '/analytics',    label: 'Analytics',    icon: 'analytics'    },
+    ],
+  },
+  {
+    title: 'Life',
+    items: [
+      { href: '/tasks',          label: 'Tasks',          icon: 'tasks'          },
+      { href: '/brain-dump',     label: 'Brain Dump',     icon: 'brain-dump'     },
+      { href: '/media',          label: 'Media',          icon: 'media'          },
+      { href: '/last-time',      label: 'Last Time',      icon: 'last-time'      },
+      { href: '/people',         label: 'People',         icon: 'people'         },
+      { href: '/journal/weekly', label: 'Weekly Journal', icon: 'weekly-journal' },
+    ],
+  },
 ];
 
-export const MENU_ITEMS: NavItem[] = [
-  { href: "/calendar", emoji: "📆", label: "Calendar" },
-  { href: "/tasks", emoji: "✅", label: "Tasks" },
-  { href: "/appointments", emoji: "🏥", label: "Appointments" },
-  { href: "/brain-dump", emoji: "🧠", label: "Brain Dump" },
-  { href: "/medications", emoji: "💊", label: "Medications" },
-  { href: "/media", emoji: "🎬", label: "Media" },
-  { href: "/last-time", emoji: "⏱️", label: "Last Time" },
-  { href: "/people", emoji: "👤", label: "People" },
-  { href: "/analytics", emoji: "📊", label: "Analytics" },
-];
-
-// Daily Entry Tabs
+/** True when the current path belongs to a page reached through the More sheet. */
+export function isMoreActive(pathname: string): boolean {
+  return pathname.startsWith('/settings')
+    || MORE_SECTIONS.some(section => section.items.some(item => pathname.startsWith(item.href)));
+}
 
 export const DAILY_TABS = [
   { id: 'overview',  label: '📋 Overview'  },
@@ -87,6 +111,11 @@ export const DAILY_TABS = [
 ] as const satisfies { id: string; label: string }[];
 
 export type DailyTabId = typeof DAILY_TABS[number]['id'];
+
+/** Narrows a string (e.g. a ?tab= query value) to a daily tab id, or null. */
+export function toDailyTabId(value: string | null | undefined): DailyTabId | null {
+  return DAILY_TABS.find(t => t.id === value)?.id ?? null;
+}
 
 // ── Settings Tabs ──────────────────────────────────────────────────────────────────────
 
