@@ -299,11 +299,22 @@
   display: none !important;
 }
 
+html {
+  background: var(--bg);
+  /* Native controls (date/time pickers, scrollbars, Safari's overscroll
+     area) render in their dark variants to match the theme. */
+  color-scheme: dark;
+  /* No grey flash on tap; :active styles below give press feedback. */
+  -webkit-tap-highlight-color: transparent;
+}
+
 html,
 body {
   margin: 0;
   padding: 0;
-  height: 100%;
+  /* min-height (not height): a fixed 100% height made body's box end at one
+     screen height, so its background stopped part-way down long pages. */
+  min-height: 100%;
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-family-body);
@@ -311,6 +322,19 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Removes the double-tap-to-zoom delay on interactive elements. */
+a,
+button,
+input,
+select,
+textarea,
+label,
+summary,
+[role="button"] {
+  touch-action: manipulation;
 }
 
 ::-webkit-scrollbar {
@@ -324,8 +348,10 @@ body {
   background: var(--border);
   border-radius: 3px;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: var(--border-focus);
+@media (hover: hover) {
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--border-focus);
+  }
 }
 
 :focus-visible {
@@ -373,17 +399,17 @@ body {
 .col-grid {
   display: grid;
   gap: 16px;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 @media (min-width: 640px) {
   .col-grid--2 {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 }
 @media (min-width: 900px) {
   .col-grid--3 {
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
   }
 }
 
@@ -435,8 +461,10 @@ hr.hr-md {
   transition: all 0.25s ease;
 }
 
-.link__generic:hover {
-  filter: brightness(1.25);
+@media (hover: hover) {
+  .link__generic:hover {
+    filter: brightness(1.25);
+  }
 }
 
 .border__btm {
@@ -637,13 +665,13 @@ hr.hr-md {
 
 .card__grid {
   display: grid;
-  grid-template-columns: repeat(var(--columns, 2), 1fr);
+  grid-template-columns: repeat(var(--columns, 2), minmax(0, 1fr));
   gap: var(--gap, 1rem);
 }
 
 @media (max-width: 500px) {
   .card__grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -712,9 +740,11 @@ hr.hr-md {
   white-space: nowrap;
 }
 
-.btn:hover:not(:disabled) {
-  border-color: var(--border-focus);
-  color: var(--text);
+@media (hover: hover) {
+  .btn:hover:not(:disabled) {
+    border-color: var(--border-focus);
+    color: var(--text);
+  }
 }
 
 .btn:disabled {
@@ -728,8 +758,10 @@ hr.hr-md {
   color: var(--text);
 }
 
-.btn--accent:hover:not(:disabled) {
-  background: var(--accent-hover);
+@media (hover: hover) {
+  .btn--accent:hover:not(:disabled) {
+    background: var(--accent-hover);
+  }
 }
 
 .btn--ghost {
@@ -738,10 +770,12 @@ hr.hr-md {
   color: var(--text-muted);
 }
 
-.btn--ghost:hover:not(:disabled) {
-  background: var(--surface-high);
-  color: var(--text);
-  border-color: var(--border);
+@media (hover: hover) {
+  .btn--ghost:hover:not(:disabled) {
+    background: var(--surface-high);
+    color: var(--text);
+    border-color: var(--border);
+  }
 }
 
 .btn--danger {
@@ -769,10 +803,12 @@ hr.hr-md {
   line-height: 0.85rem !important;
 }
 
-.btn--action:hover:not(:disabled) {
-  border-color: var(--surface-high-border);
-  background: var(--surface-higher-hover);
-  color: var(--text-alt-muted-hover);
+@media (hover: hover) {
+  .btn--action:hover:not(:disabled) {
+    border-color: var(--surface-high-border);
+    background: var(--surface-higher-hover);
+    color: var(--text-alt-muted-hover);
+  }
 }
 
 .btn--action-alt {
@@ -781,10 +817,12 @@ hr.hr-md {
   color: var(--text-alt);
 }
 
-.btn--action-alt:hover:not(:disabled) {
-  border-color: var(--alt-border-hover);
-  background: var(--alt-hover);
-  color: var(--text-alt-faint);
+@media (hover: hover) {
+  .btn--action-alt:hover:not(:disabled) {
+    border-color: var(--alt-border-hover);
+    background: var(--alt-hover);
+    color: var(--text-alt-faint);
+  }
 }
 
 .btn--inactive {
@@ -845,9 +883,11 @@ hr.hr-md {
   grid-column-start: -1;
 }
 
-.chip:hover:not(:disabled):not(.chip--static) {
-  border-color: var(--border-focus);
-  color: var(--text);
+@media (hover: hover) {
+  .chip:hover:not(:disabled):not(.chip--static) {
+    border-color: var(--border-focus);
+    color: var(--text);
+  }
 }
 
 .chip--active {
@@ -906,7 +946,7 @@ hr.hr-md {
 /* ── Tab bar ─────────────────────────────────────────────────────────────────*/
 .tab-bar {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(75, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(75px, 1fr));
   border-bottom: 1px solid var(--border);
   border-bottom-left-radius: 5px;
   border-bottom-right-radius: 5px;
@@ -941,8 +981,10 @@ hr.hr-md {
   border-bottom-color: var(--accent);
 }
 
-.tab:hover:not(.tab--active) {
-  color: var(--text-nav-hover);
+@media (hover: hover) {
+  .tab:hover:not(.tab--active) {
+    color: var(--text-nav-hover);
+  }
 }
 
 /* ── Toggle ──────────────────────────────────────────────────────────────────*/
@@ -1012,7 +1054,7 @@ hr.hr-md {
 
 .slider-field__header {
   display: grid;
-  grid-template-columns: 1.8rem 1fr auto;
+  grid-template-columns: 1.8rem minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
   margin-bottom: 6px;
@@ -1190,6 +1232,17 @@ select:focus {
   margin-bottom: 5px;
 }
 
+/* iOS Safari gives date/time inputs a wide built-in minimum width (pushing
+   them out of narrow grid columns) and centres their value. */
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"] {
+  min-width: 0;
+}
+input::-webkit-date-and-time-value {
+  text-align: left;
+}
+
 input::placeholder,
 textarea::placeholder {
   color: var(--text-faint);
@@ -1304,8 +1357,10 @@ textarea {
   transition: color 0.35s ease;
 }
 
-.notification__dismiss:hover {
-  color: var(--dismiss-hover);
+@media (hover: hover) {
+  .notification__dismiss:hover {
+    color: var(--dismiss-hover);
+  }
 }
 
 .item__title {
@@ -1461,9 +1516,11 @@ textarea {
   min-height: var(--tap-min);
 }
 
-.side-nav__link:hover {
-  color: var(--text-nav-hover);
-  background: var(--accent-hover);
+@media (hover: hover) {
+  .side-nav__link:hover {
+    color: var(--text-nav-hover);
+    background: var(--accent-hover);
+  }
 }
 
 .side-nav__link--active {
@@ -1472,8 +1529,10 @@ textarea {
   font-weight: 600;
 }
 
-.side-nav__link--active:hover {
-  background: var(--accent-active-hover);
+@media (hover: hover) {
+  .side-nav__link--active:hover {
+    background: var(--accent-active-hover);
+  }
 }
 
 .side-nav__link-icon {
@@ -1491,7 +1550,7 @@ textarea {
   padding: 5px 8px;
   border: 1px solid var(--nav-border);
   position: fixed;
-  bottom: 15;
+  bottom: calc(15px + env(safe-area-inset-bottom));
   left: 0;
   right: 0;
   box-shadow: var(--box-shadow-standard);
@@ -1516,7 +1575,7 @@ textarea {
 
 .mobile-nav--menu-modal {
   position: fixed;
-  bottom: 105;
+  bottom: calc(105px + env(safe-area-inset-bottom));
   left: 0;
   right: 0;
   margin: 0 auto;
@@ -1566,14 +1625,18 @@ textarea {
   padding-right: 7px;
 }
 
-.mobile-nav--menu-link:hover {
-  color: var(--text-surface-hover);
+@media (hover: hover) {
+  .mobile-nav--menu-link:hover {
+    color: var(--text-surface-hover);
+  }
 }
 
-.mobile-nav--item:not(.mobile-nav--item_selected):hover {
-  background: var(--nav-item-hover);
-  border-color: var(--nav-item-hover);
-  transition: background 0.35s ease;
+@media (hover: hover) {
+  .mobile-nav--item:not(.mobile-nav--item_selected):hover {
+    background: var(--nav-item-hover);
+    border-color: var(--nav-item-hover);
+    transition: background 0.35s ease;
+  }
 }
 
 .mobile-nav--item_selected {
@@ -1583,9 +1646,11 @@ textarea {
   background-color: var(--nav-selected);
 }
 
-.mobile-nav--item_selected:hover {
-  background: var(--nav-selected-hover);
-  border-color: var(--nav-selected-hover);
+@media (hover: hover) {
+  .mobile-nav--item_selected:hover {
+    background: var(--nav-selected-hover);
+    border-color: var(--nav-selected-hover);
+  }
 }
 
 .mobile-nav--item_selected_text {
@@ -1648,8 +1713,10 @@ textarea {
   touch-action: manipulation;
 }
 
-.habit-btn:hover {
-  border-color: var(--border-focus);
+@media (hover: hover) {
+  .habit-btn:hover {
+    border-color: var(--border-focus);
+  }
 }
 
 .habit-btn--done {
@@ -1657,9 +1724,11 @@ textarea {
   background: var(--success-dim);
 }
 
-.habit-btn--done:hover {
-  border-color: var(--success-hover);
-  background: var(--success-dim-hover);
+@media (hover: hover) {
+  .habit-btn--done:hover {
+    border-color: var(--success-hover);
+    background: var(--success-dim-hover);
+  }
 }
 
 .habit-btn__emoji {
@@ -1702,7 +1771,7 @@ textarea {
 /* ── Toggle grid (2-col) ─────────────────────────────────────────────────────*/
 .toggle-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 0 16px;
 }
 
@@ -1724,13 +1793,13 @@ textarea {
 /* ── Field grid (2-col) for time/number pairs ────────────────────────────────*/
 .field-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 10px;
   margin-bottom: 12px;
 }
 
 .field-grid--3 {
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
 }
 
 /* ── View mode summary items ─────────────────────────────────────────────────*/
@@ -1826,7 +1895,7 @@ textarea {
 }
 .ess-answer-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 5px;
 }
 
@@ -2011,8 +2080,10 @@ textarea {
   align-items: center;
   gap: 5px;
 }
-.date-nav__link:hover {
-  color: var(--text);
+@media (hover: hover) {
+  .date-nav__link:hover {
+    color: var(--text);
+  }
 }
 
 /* ── List items ──────────────────────────────────────────────────────────────*/
@@ -2023,8 +2094,10 @@ textarea {
   transition: border-color 0.15s;
   -webkit-tap-highlight-color: transparent;
 }
-.list-item:hover {
-  border-color: var(--border-focus);
+@media (hover: hover) {
+  .list-item:hover {
+    border-color: var(--border-focus);
+  }
 }
 .list-item--muted {
   opacity: 0.55;
@@ -2166,8 +2239,10 @@ textarea {
   line-height: 1;
   transition: color 0.12s;
 }
-.side-calendar__nav-btn:hover {
-  color: var(--text);
+@media (hover: hover) {
+  .side-calendar__nav-btn:hover {
+    color: var(--text);
+  }
 }
 .side-calendar__day-label {
   font-size: 0.6rem;
@@ -2190,8 +2265,10 @@ textarea {
   padding-bottom: 8px;
 }
 
-.side-calendar__day:hover {
-  background: var(--surface-high);
+@media (hover: hover) {
+  .side-calendar__day:hover {
+    background: var(--surface-high);
+  }
 }
 
 .side-calendar__day--today {
@@ -2230,8 +2307,7 @@ textarea {
 }
 
 .calendar-page--calendar {
-  width: 75%;
-  min-width: 400px;
+  width: 100%;
   max-width: 550px;
   margin: 0 auto;
 }
@@ -2304,8 +2380,10 @@ textarea {
 .search-result:last-child {
   border-bottom: none;
 }
-.search-result:hover {
-  background: var(--accent-dim);
+@media (hover: hover) {
+  .search-result:hover {
+    background: var(--accent-dim);
+  }
 }
 .search-result__title {
   font-size: 0.88rem;
@@ -2400,8 +2478,10 @@ textarea {
   color: var(--accent);
   text-decoration: none;
 }
-.prose a:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .prose a:hover {
+    text-decoration: underline;
+  }
 }
 .prose hr {
   border: none;
@@ -2422,8 +2502,10 @@ textarea {
   padding: 10px 12px;
   margin-bottom: 8px;
 }
-.media-note:hover {
-  border-color: var(--border-focus);
+@media (hover: hover) {
+  .media-note:hover {
+    border-color: var(--border-focus);
+  }
 }
 .media-note__header {
   display: flex;
@@ -2456,13 +2538,16 @@ textarea {
   line-height: 1;
   transition: color 0.12s;
 }
-.media-note__delete:hover {
-  color: var(--danger);
+@media (hover: hover) {
+  .media-note__delete:hover {
+    color: var(--danger);
+  }
 }
 
 /* ── Settings ────────────────────────────────────────────────────────────────*/
 .manage-item {
   display: flex;
+  flex-wrap: wrap;  /* actions drop to a second line instead of overflowing */
   align-items: center;
   gap: 8px;
   padding: 7px 0;
@@ -2474,7 +2559,11 @@ textarea {
   opacity: 0.45;
 }
 .manage-item__name {
-  flex: 1;
+  /* Names keep a usable width; when the actions don't fit beside one,
+     they drop to their own line instead of squeezing the name. */
+  flex: 1 1 9rem;
+  min-width: 0;
+  overflow-wrap: break-word;
   font-size: 0.88rem;
   color: var(--text);
 }
@@ -2488,10 +2577,34 @@ textarea {
   font-size: 0.75rem;
   color: var(--text-faint);
 }
+/* Space secondary bits (practice name, type badge) away from the name */
+.manage-item__name > .manage-item__meta,
+.manage-item__name > .badge {
+  margin-left: 0.5em;
+}
 .manage-item__actions {
   display: flex;
+  justify-content: flex-end;
+  align-items: center;
   gap: 4px;
   flex-shrink: 0;
+  margin-left: auto;
+}
+/* Narrow screens: the actions drop below the name and wrap within the row
+   rather than overflowing it. (Interim until rows get a ⋯ menu.) */
+@media (max-width: 767px) {
+  .manage-item__actions {
+    flex-wrap: wrap;
+    flex-shrink: 1;
+    min-width: 0;
+  }
+}
+/* Inline selects (e.g. a trackable's category) size to their content
+   instead of the global width: 100%. */
+.manage-item__actions select {
+  width: auto;
+  flex: 0 1 10rem;
+  min-width: 0;
 }
 
 .settings-tab-content {
@@ -2700,9 +2813,11 @@ textarea {
     color 0.15s;
 }
 
-.chart-range-btn:hover:not(:disabled) {
-  border-color: var(--text-muted);
-  color: var(--text-muted);
+@media (hover: hover) {
+  .chart-range-btn:hover:not(:disabled) {
+    border-color: var(--text-muted);
+    color: var(--text-muted);
+  }
 }
 
 .chart-range-btn--active {
@@ -2835,8 +2950,10 @@ textarea {
   cursor: pointer;
 }
 
-.tag-selector__option:hover {
-  background: var(--surface);
+@media (hover: hover) {
+  .tag-selector__option:hover {
+    background: var(--surface);
+  }
 }
 
 .tag-selector__option--add {
@@ -3104,8 +3221,10 @@ input[type="color"] {
   transition: opacity 0.15s;
 }
 
-.hub-today-btn:hover {
-  opacity: 0.85;
+@media (hover: hover) {
+  .hub-today-btn:hover {
+    opacity: 0.85;
+  }
 }
 
 .hub-intention {
@@ -3119,14 +3238,14 @@ input[type="color"] {
 
 .hub-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   align-items: stretch;
   justify-items: stretch;
 }
 
 .hub-sub-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   margin: 16px;
 }
 
@@ -3144,14 +3263,14 @@ input[type="color"] {
 
 @media (max-width: 700px) {
   .hub-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
 /* On daily entry page — same 2-col layout below the card */
 .daily-extras {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 16px;
   align-items: start;
   margin-top: 16px;
@@ -3159,7 +3278,7 @@ input[type="color"] {
 
 @media (max-width: 700px) {
   .daily-extras {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -3199,14 +3318,18 @@ input[type="color"] {
   background: var(--not-done);
 }
 
-.task-item__check.task-item__is-checked:hover {
-  border: 2px solid var(--done-border-hover);
-  background: var(--done-hover);
+@media (hover: hover) {
+  .task-item__check.task-item__is-checked:hover {
+    border: 2px solid var(--done-border-hover);
+    background: var(--done-hover);
+  }
 }
 
-.task-item__check.task-item__is-unchecked:hover {
-  border: 2px solid var(--not-done-border-hover);
-  background: var(--not-done-hover);
+@media (hover: hover) {
+  .task-item__check.task-item__is-unchecked:hover {
+    border: 2px solid var(--not-done-border-hover);
+    background: var(--not-done-hover);
+  }
 }
 
 .task-item__check--busy {
@@ -3498,8 +3621,10 @@ input[type="color"] {
   text-decoration: none;
 }
 
-.brain-dump-card__entry-link:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .brain-dump-card__entry-link:hover {
+    text-decoration: underline;
+  }
 }
 
 .brain-dump-card__actions {
@@ -3529,9 +3654,11 @@ input[type="color"] {
   display: block;
 }
 
-.item-body-link:hover .task-item__title,
+@media (hover: hover) {
+  .item-body-link:hover .task-item__title,
 .item-body-link:hover .qml-item__title {
-  color: var(--accent);
+    color: var(--accent);
+  }
 }
 
 /* ── Appointment cards as links ──────────────────────────────────────────────*/
@@ -3547,8 +3674,10 @@ a.appt-primary {
   transition: border-color 0.15s;
 }
 
-a.appt-primary:hover {
-  border-color: var(--accent);
+@media (hover: hover) {
+  a.appt-primary:hover {
+    border-color: var(--accent);
+  }
 }
 
 .appt-primary__inner {
@@ -3573,8 +3702,10 @@ a.appt-secondary {
   color: inherit;
 }
 
-a.appt-secondary:hover .appt-secondary__label {
-  color: var(--accent);
+@media (hover: hover) {
+  a.appt-secondary:hover .appt-secondary__label {
+    color: var(--accent);
+  }
 }
 
 a.appt-secondary:last-child {
@@ -3591,8 +3722,10 @@ a.appt-secondary:last-child {
   margin-bottom: 6px;
 }
 
-.page-back-link:hover {
-  color: var(--accent);
+@media (hover: hover) {
+  .page-back-link:hover {
+    color: var(--accent);
+  }
 }
 
 .detail-page__header {
@@ -3794,8 +3927,10 @@ a.appt-secondary:last-child {
   cursor: pointer;
 }
 
-.last-time-section__toggle:hover {
-  background: var(--surface-high);
+@media (hover: hover) {
+  .last-time-section__toggle:hover {
+    background: var(--surface-high);
+  }
 }
 
 .last-time-section__body {
@@ -4055,7 +4190,7 @@ a.appt-secondary:last-child {
 
 .info-field-row {
   display: grid;
-  grid-template-columns: 140px 1fr;
+  grid-template-columns: 140px minmax(0, 1fr);
   gap: 8px;
   align-items: start;
 }
@@ -4277,8 +4412,10 @@ a.appt-secondary:last-child {
   flex-shrink: 0;
 }
 
-.icon-btn:hover {
-  color: var(--danger);
+@media (hover: hover) {
+  .icon-btn:hover {
+    color: var(--danger);
+  }
 }
 
 /* ── Trackable emoji prefix ──────────────────────────────────────────────────*/
@@ -4480,8 +4617,10 @@ a.appt-secondary:last-child {
 }
 
 /* ── QuickMediaLog linked body ───────────────────────────────────────────────*/
-.item-body-link:hover .qml-item__title {
-  color: var(--accent);
+@media (hover: hover) {
+  .item-body-link:hover .qml-item__title {
+    color: var(--accent);
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -4673,8 +4812,10 @@ a.appt-secondary:last-child {
   font-size: var(--font-size-xs);
   padding: 4px 0;
 }
-.toggle-btn:hover {
-  color: var(--text);
+@media (hover: hover) {
+  .toggle-btn:hover {
+    color: var(--text);
+  }
 }
 .toggle-btn-section {
   margin-top: 20px;
@@ -4777,9 +4918,11 @@ a.appt-secondary:last-child {
   padding: 4px 10px;
   line-height: 1;
 }
-.week-nav__btn:hover {
-  color: var(--text);
-  background: var(--surface-high);
+@media (hover: hover) {
+  .week-nav__btn:hover {
+    color: var(--text);
+    background: var(--surface-high);
+  }
 }
 .week-nav__label {
   flex: 1;
@@ -4793,7 +4936,7 @@ a.appt-secondary:last-child {
 /* ── Side calendar: week number column ───────────────────────────────────────*/
 .side-calendar__grid--with-weeks {
   display: grid;
-  grid-template-columns: 16px repeat(7, 1fr);
+  grid-template-columns: 16px repeat(7, minmax(0, 1fr));
   gap: 1px;
 }
 .side-calendar__week-label {
@@ -4813,9 +4956,11 @@ a.appt-secondary:last-child {
   cursor: pointer;
   line-height: 1;
 }
-.side-calendar__week-num:hover {
-  background: var(--surface-high);
-  color: var(--accent);
+@media (hover: hover) {
+  .side-calendar__week-num:hover {
+    background: var(--surface-high);
+    color: var(--accent);
+  }
 }
 .side-calendar__week-num--has-entry {
   color: var(--accent);
@@ -4857,8 +5002,10 @@ a.appt-secondary:last-child {
   color: var(--accent);
   text-decoration: none;
 }
-.text-link:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .text-link:hover {
+    text-decoration: underline;
+  }
 }
 
 /* ── Follow-up form ──────────────────────────────────────────────────────────*/
@@ -4883,7 +5030,7 @@ a.appt-secondary:last-child {
 /* ── Prescription field change row ───────────────────────────────────────────*/
 .rx-field-change-row {
   display: grid;
-  grid-template-columns: 140px 1fr auto 1fr auto;
+  grid-template-columns: 140px minmax(0, 1fr) auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
   padding: 6px 0;
@@ -4965,8 +5112,10 @@ a.appt-secondary:last-child {
   transition: border-color 0.12s;
   padding: 0;
 }
-.icon-picker-btn:hover {
-  border-color: var(--border-focus);
+@media (hover: hover) {
+  .icon-picker-btn:hover {
+    border-color: var(--border-focus);
+  }
 }
 
 /* ── Dialog (components/ui/Dialog.tsx) ────────────────────────────────────────
@@ -5082,9 +5231,11 @@ a.appt-secondary:last-child {
     border-color 0.1s,
     background 0.1s;
 }
-.icon-picker-cell:hover {
-  border-color: var(--border-focus);
-  background: var(--surface-high);
+@media (hover: hover) {
+  .icon-picker-cell:hover {
+    border-color: var(--border-focus);
+    background: var(--surface-high);
+  }
 }
 .icon-picker-cell--active {
   border-color: var(--accent);
@@ -5245,8 +5396,10 @@ a.appt-secondary:last-child {
   white-space: nowrap;
   overflow: hidden;
 }
-.trackable-picker__trigger:hover {
-  border-color: var(--border-focus);
+@media (hover: hover) {
+  .trackable-picker__trigger:hover {
+    border-color: var(--border-focus);
+  }
 }
 .trackable-picker__trigger--open {
   border-color: var(--accent);
@@ -5287,8 +5440,10 @@ a.appt-secondary:last-child {
   width: 100%;
   text-align: left;
 }
-.trackable-picker__option:hover {
-  background: var(--surface-high);
+@media (hover: hover) {
+  .trackable-picker__option:hover {
+    background: var(--surface-high);
+  }
 }
 .trackable-picker__option--selected {
   background: var(--accent-dim);
@@ -5350,8 +5505,10 @@ a.appt-secondary:last-child {
   padding: 0;
   margin-bottom: 8px;
 }
-.reminder-section__toggle:hover {
-  color: var(--text);
+@media (hover: hover) {
+  .reminder-section__toggle:hover {
+    color: var(--text);
+  }
 }
 .reminder-section__fields {
   display: flex;
@@ -5396,9 +5553,11 @@ a.appt-secondary:last-child {
     background 0.1s,
     color 0.1s;
 }
-.weekday-chip:hover {
-  border-color: var(--border-focus);
-  color: var(--text);
+@media (hover: hover) {
+  .weekday-chip:hover {
+    border-color: var(--border-focus);
+    color: var(--text);
+  }
 }
 .weekday-chip--active {
   border-color: var(--accent);
@@ -5474,4 +5633,93 @@ input[type="datetime-local"] {
 }
 .settings-section--collapsible[open] > summary {
   margin-bottom: 8px;
+}
+
+/* ── Touch devices ───────────────────────────────────────────────────────────
+   (pointer: coarse) = finger input: phones and tablets, but not a narrow
+   desktop window. Layout breakpoints stay width-based; sizing for fingers
+   keys off the input device. */
+@media (pointer: coarse) {
+  /* iOS Safari zooms the page when a field under 16px gains focus. */
+  input:not([type]),
+  input[type="text"],
+  input[type="search"],
+  input[type="email"],
+  input[type="url"],
+  input[type="tel"],
+  input[type="password"],
+  input[type="number"],
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"],
+  textarea,
+  select,
+  .field__input {
+    font-size: 16px;
+  }
+
+  /* Minimum touch targets (Apple HIG: 44pt) */
+  .btn--sm,
+  .btn--icon {
+    min-height: var(--tap);
+  }
+  .chip,
+  .chip--sm {
+    min-height: 40px;
+  }
+  .icon-picker-btn {
+    width: var(--tap);
+    height: var(--tap);
+  }
+  /* The task checkbox stays 20px visually; its tappable area grows. */
+  .btn--check {
+    position: relative;
+  }
+  .btn--check::after {
+    content: '';
+    position: absolute;
+    inset: -12px;
+  }
+}
+
+/* ── Press feedback ──────────────────────────────────────────────────────────
+   Touch devices never show :hover, so give taps an immediate response. */
+.btn:active:not(:disabled),
+.chip:active:not(:disabled):not(.chip--static),
+.habit-btn:active,
+.tab:active,
+.mobile-nav--item:active,
+.icon-picker-cell:active,
+.weekday-chip:active {
+  transform: scale(0.96);
+}
+.list-item:active,
+.search-result:active,
+.trackable-picker__option:active,
+.tag-selector__option:active {
+  filter: brightness(1.15);
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn:active:not(:disabled),
+  .chip:active:not(:disabled):not(.chip--static),
+  .habit-btn:active,
+  .tab:active,
+  .mobile-nav--item:active,
+  .icon-picker-cell:active,
+  .weekday-chip:active {
+    transform: none;
+  }
+}
+
+/* ── Grid children ───────────────────────────────────────────────────────────
+   .field's 200px minimum is for wrapping flex rows. Inside a grid the column
+   decides the width, so let items shrink to it (otherwise two 200px fields
+   overflow a phone-width card). Must come after the .field rule. */
+.field-grid > *,
+.card__grid > *,
+.card__grid--row > *,
+.col-grid > *,
+.hub-grid > *,
+.daily-extras > * {
+  min-width: 0;
 }
