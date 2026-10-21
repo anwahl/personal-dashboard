@@ -435,6 +435,10 @@ hr.hr-md {
   filter: brightness(1.25);
 }
 
+.border__btm {
+  border-bottom: 1px solid var(--border) !important;
+}
+
 .border__bottom {
   position: relative;
 }
@@ -454,6 +458,22 @@ hr.hr-md {
 
 .border__bottom:last-child::after {
   border-bottom: unset;
+}
+
+.color--muted {
+  color: var(--text-alt-muted) !important;
+}
+
+.color--success {
+  color: var(--success) !important;
+}
+
+.color--mid {
+  color: var(--warn) !important;
+}
+
+.color--danger {
+  color: var(--danger) !important;
 }
 
 /* ── Card ────────────────────────────────────────────────────────────────────*/
@@ -645,6 +665,15 @@ hr.hr-md {
   margin-top: 8px;
 }
 
+.margin-bottom-md {
+  margin-bottom: 8px;
+}
+
+.margin-tb-md {
+  margin-top: 16px;
+  margin-bottom: 16px;
+}
+
 .margin-left-md {
   margin-left: 8px;
 }
@@ -752,6 +781,10 @@ hr.hr-md {
   border-color: var(--alt-border-hover);
   background: var(--alt-hover);
   color: var(--text-alt-faint);
+}
+
+.btn--inactive {
+  opacity: 0.5;
 }
 
 .btn--check {

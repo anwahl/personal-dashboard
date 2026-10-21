@@ -2,7 +2,7 @@ import { createClient }       from '@/lib/supabase/server';
 import { getLastTimeEntries } from '@/lib/dal/lasttime';
 import { getTrackables, getMediaTypes, getMediaStatuses, getMediaGenres, getIconsRef } from '@/lib/dal/reference';
 import { LastTimeTracker }    from '@/components/last-time/LastTimeTracker';
-import { LastTimeSettings }   from '@/components/settings/LastTimeSettings';
+import { LastTimeSettings }   from '@/components/last-time/LastTimeSettings';
 import { Header, PageBody } from '@/components/layout';
 
 export default async function LastTimePage() {
