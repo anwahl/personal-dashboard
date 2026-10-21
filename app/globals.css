@@ -4969,7 +4969,9 @@ a.appt-secondary:last-child {
   border-color: var(--border-focus);
 }
 
-/* ── Icon picker overlay & modal ──────────────────────────────────────────────*/
+/* ── Dialog (components/ui/Dialog.tsx) ────────────────────────────────────────
+   Rendered in a portal at the end of <body>, so these rules must not depend
+   on ancestor selectors. */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -4979,6 +4981,8 @@ a.appt-secondary:last-child {
   align-items: center;
   justify-content: center;
   padding: 20px;
+  padding-bottom: max(20px, env(safe-area-inset-bottom));
+  overscroll-behavior: contain;
 }
 .modal-panel {
   background: var(--surface);
@@ -4987,22 +4991,74 @@ a.appt-secondary:last-child {
   padding: 18px;
   width: 100%;
   max-width: 480px;
-  max-height: 80vh;
+  max-height: 80vh;   /* fallback */
+  max-height: 80dvh;  /* tracks the visible viewport on iOS Safari */
   display: flex;
   flex-direction: column;
   gap: 12px;
   box-shadow: var(--box-shadow-standard);
 }
+.modal-panel:focus {
+  outline: none;  /* focused programmatically on open; never a user target */
+}
+.modal-panel--sm {
+  max-width: 320px;
+}
 .modal-panel__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
 }
 .modal-panel__title {
+  margin: 0;
   font-weight: 700;
   font-size: 0.88rem;
   color: var(--text);
 }
+.modal-panel__description {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+.modal-panel__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;  /* lets a scrolling child (e.g. .icon-picker-grid) shrink */
+}
+.modal-panel__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@keyframes modal-fade-in  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes modal-fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes modal-pop-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes modal-pop-out {
+  from { opacity: 1; transform: none; }
+  to   { opacity: 0; transform: translateY(8px) scale(0.98); }
+}
+/* Radix sets data-state on Overlay and Content and waits for the
+   closing animation to finish before unmounting. */
+.modal-overlay[data-state="open"]   { animation: modal-fade-in  160ms ease-out; }
+.modal-overlay[data-state="closed"] { animation: modal-fade-out 120ms ease-in; }
+.modal-panel[data-state="open"]     { animation: modal-pop-in   180ms ease-out; }
+.modal-panel[data-state="closed"]   { animation: modal-pop-out  120ms ease-in; }
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-overlay,
+  .modal-panel {
+    animation: none !important;
+  }
+}
+
+/* ── Icon picker ──────────────────────────────────────────────────────────────*/
 .icon-picker-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));

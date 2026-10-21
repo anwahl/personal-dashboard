@@ -12,7 +12,8 @@ import { useState, useCallback, useEffect } from 'react';
 import { createClient }           from '@/lib/supabase/client';
 import { logCustomLastTime }      from '@/lib/dal/lasttime';
 import { Button, Card, CardActions, CardBody, CardGrid, CardHeader,
-         CardSection, CardTitle, FieldActions, IconDisplay, Item}    from '@/components/ui';
+         CardSection, CardTitle, Dialog, FieldActions, IconDisplay, Item }
+                                   from '@/components/ui';
 import type { LastTimeEntry }      from '@/types/dal';
 import type { IconRow }            from '@/types/schema';
 import { formatDaysAgo, formatMediumDate, localTodayISO } from '@/lib/utils/dates';
@@ -45,7 +46,10 @@ export function LastTimeTracker({ entries, icons, compact = false }: Readonly<Pr
   const [items,          setItems]          = useState<LastTimeEntry[]>(entries);
   const [sortBy,         setSortBy]         = useState<'order' | 'recent'>('order');
   const [logging,        setLogging]        = useState<Set<number>>(new Set());
+  // The item is kept after closing so the title doesn't blank out while
+  // the dialog's exit animation plays; `datePickerOpen` controls visibility.
   const [datePickerItem, setDatePickerItem] = useState<LastTimeEntry | null>(null);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [pickedDate,     setPickedDate]     = useState<string>('');
 
   // Re-sync when server refreshes (router.refresh() from LastTimeSettings)
@@ -76,6 +80,7 @@ export function LastTimeTracker({ entries, icons, compact = false }: Readonly<Pr
   const openDatePicker = useCallback((item: LastTimeEntry) => {
     setDatePickerItem(item);
     setPickedDate(item.last_date ?? localTodayISO());
+    setDatePickerOpen(true);
   }, []);
 
   const saveCustomDate = useCallback(async () => {
@@ -85,12 +90,8 @@ export function LastTimeTracker({ entries, icons, compact = false }: Readonly<Pr
       i.id === datePickerItem.id && i.category === datePickerItem.category
         ? { ...i, last_date: pickedDate, days_ago: daysAgoFromDate(pickedDate) } : i
     ));
-    setDatePickerItem(null);
+    setDatePickerOpen(false);
   }, [supabase, datePickerItem, pickedDate]);
-
-  const closePickerOnBackdrop = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) setDatePickerItem(null);
-  }, []);
 
   return (
     <>
@@ -161,26 +162,25 @@ export function LastTimeTracker({ entries, icons, compact = false }: Readonly<Pr
       </CardBody>
     </Card>
 
-    {datePickerItem && (
-      <div className="modal-overlay" onClick={closePickerOnBackdrop}>
-        <div className="modal-panel" style={{ maxWidth: 320 }} role="dialog" aria-label="Log custom date">
-          <div className="modal-panel__header">
-            <span className="modal-panel__title">Log date for &ldquo;{datePickerItem.label}&rdquo;</span>
-            <Button variant="ghost" size="sm" onClick={() => setDatePickerItem(null)}>✕</Button>
-          </div>
-          <input
-            type="date"
-            value={pickedDate}
-            max={localTodayISO()}
-            onChange={e => setPickedDate(e.target.value)}
-          />
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-            <Button variant="ghost" onClick={() => setDatePickerItem(null)}>Cancel</Button>
-            <Button onClick={saveCustomDate} disabled={!pickedDate}>Save</Button>
-          </div>
-        </div>
-      </div>
-    )}
+    <Dialog
+      open={datePickerOpen}
+      onOpenChange={setDatePickerOpen}
+      title={<>Log date for &ldquo;{datePickerItem?.label}&rdquo;</>}
+      size="sm"
+      footer={
+        <>
+          <Button variant="ghost" onClick={() => setDatePickerOpen(false)}>Cancel</Button>
+          <Button onClick={saveCustomDate} disabled={!pickedDate}>Save</Button>
+        </>
+      }
+    >
+      <input
+        type="date"
+        value={pickedDate}
+        max={localTodayISO()}
+        onChange={e => setPickedDate(e.target.value)}
+      />
+    </Dialog>
     </>
   );
 }

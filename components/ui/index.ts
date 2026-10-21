@@ -31,5 +31,7 @@ export { IconDisplay }                           from "./IconDisplay";
 export { useToast, ToastProvider, Notification } from "./Toast";
 export type { NotificationVariantType }          from "./Toast";
 export { IconPicker }    from "./IconPicker";
+export { Dialog }        from "./Dialog";
+export type { DialogSize } from "./Dialog";
 export { TagSelector } from "./TagSelector";
 export { Icon }   from "./Icon";
