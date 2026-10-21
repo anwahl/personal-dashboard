@@ -419,9 +419,13 @@ hr.hr-md {
 }
 
 .pad {
-  padding: 5px 18px;
+  padding: 5px 10px;
   display: block;
   max-width: 100%;
+}
+
+.pad__btm {
+  padding-bottom: 16px;
 }
 
 .link__generic {

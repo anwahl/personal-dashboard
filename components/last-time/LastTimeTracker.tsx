@@ -8,10 +8,11 @@
  * Sort options: sort_order (default) or days_ago ascending.
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { createClient }           from '@/lib/supabase/client';
 import { logCustomLastTime }      from '@/lib/dal/lasttime';
-import { Button, Card, CardActions, CardBody, CardGrid, CardGridColumn, CardGridRow, CardHeader, CardSection, CardTitle, Field, FieldActions, FieldGrid, IconDisplay, Item, SubCard, SubCardBody }    from '@/components/ui';
+import { Button, Card, CardActions, CardBody, CardGrid, CardHeader,
+         CardSection, CardTitle, FieldActions, IconDisplay, Item}    from '@/components/ui';
 import type { LastTimeEntry }      from '@/types/dal';
 import type { IconRow }            from '@/types/schema';
 import { formatDaysAgo, formatMediumDate, localTodayISO } from '@/lib/utils/dates';
@@ -122,7 +123,7 @@ export function LastTimeTracker({ entries, icons, compact = false }: Readonly<Pr
             
              
             {sorted.map(item => (
-              <span className='border__bottom pad margin-tb-md ' key={`${item.category}-${item.id}`} >
+              <span className='border__btm pad pad__btm margin-tb-md' key={`${item.category}-${item.id}`}  >
                 <CardGrid columns={4} className=''>
                   <IconDisplay
                     icon={icons.find(i => i.id === item.icon_id) ?? null}
@@ -138,14 +139,14 @@ export function LastTimeTracker({ entries, icons, compact = false }: Readonly<Pr
                   <FieldActions alignment='right' className=''>
                     <Button
                       variant="ghost"
-                      size="check"
+                      size="icon"
                       onClick={() => openDatePicker(item)}
                       title="Log custom date">
                       📅
                     </Button>
                     <Button
                       variant="ghost"
-                      size="check"
+                      size="icon"
                       onClick={() => logToday(item)}
                       disabled={logging.has(item.id)}
                       title="Log today">
