@@ -15,7 +15,7 @@ import { createClient }    from '@/lib/supabase/client';
 import { togglePrescriptionEntry } from '@/lib/dal/daily';
 import { setEssResponse }          from '@/lib/dal/ess';
 import { formatTime } from '@/lib/utils/dates';
-import { Card, CardHeader, CardTitle, CardBody, CardSection, CardSectionLabel, TabBar, Toggle, SliderField, Chip, ChipGroup, InputField, SaveState, TextField, NumberField, TimeField, TextAreaField, IconDisplay, IconPicker, Markdown, TagSelector, EmptyState, ChipSelect } from '@/components/ui';
+import { Card, CardHeader, CardTitle, CardBody, CardSection, CardSectionLabel, TabBar, Toggle, SliderField, Chip, ChipGroup, InputField, SaveState, TextField, NumberField, TimeField, TextAreaField, IconDisplay, IconPicker, Markdown, TagSelector, EmptyState, ChipSelect, FieldGrid } from '@/components/ui';
 import { JournalTab }       from './JournalTab';
 import type {
   JournalCategoryWithPrompts,
@@ -117,7 +117,7 @@ function OverviewTab({
       <CardSection>
         <TextAreaField label="Summary" value={state.summary} placeholder="How did today go? What did you do?"
           onChange={v => set('summary', v)} size="tall" />
-        <div className="field-grid">
+        <FieldGrid>
           <TextField label="Word of the day" value={state.word} placeholder="One word…"
             onChange={v => set('word', v)} />
           <InputField label="Daily icon" id="daily-icon">
@@ -128,7 +128,7 @@ function OverviewTab({
               size="sm"
             />
           </InputField>
-        </div>
+        </FieldGrid>
       </CardSection>
         
 
@@ -704,18 +704,18 @@ function SleepTab({
 
       <CardSection>
         <CardSectionLabel>Times</CardSectionLabel>
-        <div className="field-grid">
+        <FieldGrid>
           <TimeField label="Bedtime" value={sleepState.bedtime} onChange={v => set('bedtime', v)} />
           <TimeField label="Wake time" value={sleepState.wakeTime} onChange={v => set('wakeTime', v)} />
-        </div>
-        <div className="field-grid field-grid--3">
+        </FieldGrid>
+        <FieldGrid columns={3}>
           <NumberField label="Hours" min={0} max={24} step={0.25} value={sleepState.hoursSlept}
             placeholder="7.5" onChange={v => set('hoursSlept', v)} />
           <NumberField label="Latency (min)" min={0} value={sleepState.latencyMin} placeholder="20"
             onChange={v => set('latencyMin', v)} />
           <NumberField label="OSA events/hr" min={0} step={0.1} value={sleepState.osaCount} placeholder="0.0"
             onChange={v => set('osaCount', v)} />
-        </div>
+        </FieldGrid>
         <SliderField emoji="😵" label="Morning inertia" value={sleepState.inertiaSeverity}
           min={0} max={10} onChange={v => set('inertiaSeverity', v)} />
       </CardSection>
@@ -726,10 +726,10 @@ function SleepTab({
           min={0} max={10} onChange={v => set('wakeCount', v)} />
         {sleepState.wakeCount > 0 && (
           <div className="conditional-block">
-            <div className="field-grid">
+            <FieldGrid>
               <NumberField label="Duration (min)" min={0} value={sleepState.wakeMins}
                 onChange={v => set('wakeMins', v)} />
-            </div>
+            </FieldGrid>
             <TextField label="Detail" value={sleepState.wakeDetail} placeholder="What woke you?"
               onChange={v => set('wakeDetail', v)} />
           </div>
@@ -740,10 +740,10 @@ function SleepTab({
         <Toggle label="Napped" checked={sleepState.hadNap} onChange={() => set('hadNap', !sleepState.hadNap)} />
         {sleepState.hadNap && (
           <div className="conditional-block">
-            <div className="field-grid">
+            <FieldGrid>
               <NumberField label="Duration (min)" min={0} value={sleepState.napDuration}
                 onChange={v => set('napDuration', v)} />
-            </div>
+            </FieldGrid>
             <Toggle label="Refreshing" checked={sleepState.napRefresh}
               onChange={() => set('napRefresh', !sleepState.napRefresh)} />
           </div>
@@ -777,7 +777,7 @@ function SleepTab({
           };
           return (
             <div key={cat.id} className="daily-card__timing-group">
-              <p className="card__section-label">{cat.category_name}</p>
+              <CardSectionLabel>{cat.category_name}</CardSectionLabel>
               {/* Pick one: tapping the picked chip unpicks it. */}
               <ChipSelect
                 label={cat.category_name}
@@ -790,7 +790,7 @@ function SleepTab({
             </div>
           );
         })}
-        <p className="card__section-label card__section-label--spaced">Pre-bed consumption</p>
+        <CardSectionLabel spaced>Pre-bed consumption</CardSectionLabel>
         <ChipSelect
           label="Pre-bed consumption"
           options={reference.consumptionTypes

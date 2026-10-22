@@ -16,7 +16,7 @@ import {
   saveWeeklyResponses,
 } from '@/lib/dal/weekly-journal';
 import { addDays, getSundayOfWeek }  from '@/lib/utils/dates';
-import { Button, FieldActions, SaveStatus, EmptyState, TextAreaField, ModeToggle } from '@/components/ui';
+import { Button, FieldActions, SaveStatus, EmptyState, TextAreaField, ModeToggle, CardSectionLabel } from '@/components/ui';
 import type { SaveState }            from '@/components/ui';
 import type { WeeklyEntryRow }       from '@/types/schema';
 import type {
@@ -156,7 +156,7 @@ export function WeeklyJournalClient({
         </FieldActions>
         {Object.values(byCategory).map(({ catName, cards: catCards }) => (
           <div key={catName} className="journal-category-section">
-            <p className="card__section-label">{catName}</p>
+            <CardSectionLabel>{catName}</CardSectionLabel>
             {catCards.map(card => (
               <div key={card.key} className="journal-prompt-card">
                 <p className="journal-prompt-card__prompt">{card.promptText}</p>
@@ -187,7 +187,7 @@ export function WeeklyJournalClient({
 
       {Object.values(cardsByCategory).map(({ catName, cards: catCards }) => (
         <div key={catName} className="journal-category-section">
-          <p className="card__section-label">{catName}</p>
+          <CardSectionLabel>{catName}</CardSectionLabel>
           {catCards.map(card => (
             <div key={card.key} className="journal-prompt-card">
               <p className="journal-prompt-card__prompt">{card.promptText}</p>

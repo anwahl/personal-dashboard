@@ -558,6 +558,31 @@ hr.hr-md {
   margin: 15px 12px;
 }
 
+/* Expand headers are buttons (ExpandToggle): drop the native button look. */
+.card__expand-panel--header,
+.card__expand-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.card__expand-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+.card__expand-panel--header:focus-visible,
+.card__expand-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
 .card__expand-panel--header {
   width: 100%;
   line-height: 0.9rem;
@@ -2192,18 +2217,6 @@ textarea {
 }
 
 /* ── Section divider ─────────────────────────────────────────────────────────*/
-.section-divider {
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-faint);
-  padding: 12px 0 6px;
-  border-bottom: 1px solid var(--border);
-  border-bottom-left-radius: 5px;
-  border-bottom-right-radius: 5px;
-  margin-bottom: 10px;
-}
 
 /* ── Sidebar calendar ────────────────────────────────────────────────────────*/
 .side-calendar {
@@ -3853,31 +3866,9 @@ a.appt-secondary:last-child {
   padding: 6px 10px;
 }
 
-/* ══════════════════════════════════════════════════════════════════════════════
-   NEW CLASSES — Styling sweep 2026-07-21
-   Replaces all static inline styles throughout components.
-   ══════════════════════════════════════════════════════════════════════════════ */
-
 /* ── Form panel (create-form box used in Settings) ───────────────────────────*/
-.form-panel {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 12px;
-  margin-bottom: 10px;
-}
 
 /* ── Form rows ───────────────────────────────────────────────────────────────*/
-.form-row {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.form-row--actions {
-  margin-top: 4px;
-}
 
 /* ── Info field grid (PeoplePageClient — label : value rows) ─────────────────*/
 .info-field-grid {
@@ -4310,20 +4301,8 @@ a.appt-secondary:last-child {
 }
 
 /* ── QuickMediaLog linked body ───────────────────────────────────────────────*/
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   CLEANUP PASS — 2026-07-26
-   Converts previously-inline styles to reusable CSS classes.
-   ═══════════════════════════════════════════════════════════════════════════ */
-
 /* ── Form panel (card variant) — large inset form for add/edit ───────────── */
-.form-panel--card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 16px 20px;
-  margin-bottom: 16px;
-}
+
 .form-panel__title {
   font-weight: 700;
   margin: 0 0 14px;
@@ -4495,25 +4474,8 @@ a.appt-secondary:last-child {
 }
 
 /* ── Toggle button — plain/ghost for show-past, collapse toggles ─────────── */
-.toggle-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--text-faint);
-  font-size: var(--font-size-xs);
-  padding: 4px 0;
-}
-@media (hover: hover) {
-  .toggle-btn:hover {
-    color: var(--text);
-  }
-}
-.toggle-btn-section {
-  margin-top: 20px;
-} /* outer wrapper for toggle + content */
-.toggle-btn-section__body {
-  margin-top: 8px;
-} /* content revealed after toggle */
+
+ /* content revealed after toggle */
 
 /* ── Input width utilities ───────────────────────────────────────────────── */
 /* Used in add-rows where inputs must fit alongside sibling elements */
@@ -4823,6 +4785,80 @@ a.appt-secondary:last-child {
   gap: 8px;
 }
 
+.modal-panel--lg {
+  max-width: 640px;
+}
+
+/* Form layout (FormDialog): header stays put, the form scrolls under it. */
+.modal-panel--form {
+  max-height: 88vh;
+  max-height: 88dvh;
+  padding: 0;
+  gap: 0;
+}
+.modal-panel--form .modal-panel__header {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.modal-panel--form .modal-panel__title {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-family: var(--font-family-sub-header);
+  font-size: 1.15rem;
+  font-weight: 400;
+  color: var(--text-title);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.modal-panel--form .modal-panel__body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px 18px 20px;
+}
+/* Full screen on phones. */
+.modal-overlay--full {
+  padding: 0;
+  align-items: stretch;
+}
+.modal-panel--full {
+  max-width: none;
+  height: 100vh;
+  height: 100dvh;
+  max-height: none;
+  border: none;
+  border-radius: 0;
+  padding-top: env(safe-area-inset-top);
+}
+.modal-panel--full .modal-panel__body {
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+}
+
+.form-dialog__form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.form-dialog__error {
+  margin: 0 0 8px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--danger-dim-border);
+  background: var(--danger-dim);
+  color: var(--text);
+  font-size: 0.85rem;
+}
+.form-dialog__extra {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
 @keyframes modal-fade-in  { from { opacity: 0; } to { opacity: 1; } }
 @keyframes modal-fade-out { from { opacity: 1; } to { opacity: 0; } }
 @keyframes modal-pop-in {
@@ -4839,6 +4875,9 @@ a.appt-secondary:last-child {
 .modal-overlay[data-state="closed"] { animation: modal-fade-out 120ms ease-in; }
 .modal-panel[data-state="open"]     { animation: modal-pop-in   180ms ease-out; }
 .modal-panel[data-state="closed"]   { animation: modal-pop-out  120ms ease-in; }
+/* Full-screen form dialogs (phones) slide up like a sheet. */
+.modal-panel--full[data-state="open"]   { animation: modal-sheet-in  260ms cubic-bezier(0.32, 0.72, 0, 1); }
+.modal-panel--full[data-state="closed"] { animation: modal-sheet-out 180ms ease-in; }
 
 @media (prefers-reduced-motion: reduce) {
   .modal-overlay,
@@ -5128,35 +5167,6 @@ a.appt-secondary:last-child {
 }
 
 /* ── Reminder form section ───────────────────────────────────────────────────*/
-.reminder-section {
-  border-top: 1px solid var(--border);
-  margin-top: 10px;
-  padding-top: 10px;
-}
-
-.reminder-section__fields {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.reminder-section__row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-.reminder-section__label {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  min-width: 64px;
-}
-.reminder-section__interval {
-  width: 52px;
-}
-.reminder-section__unit {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}
 
 /* ── Weekday chip toggles ────────────────────────────────────────────────────*/
 

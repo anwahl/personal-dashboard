@@ -20,6 +20,10 @@
  *                        Swipe down to dismiss (useSwipeToDismiss).
  *                        Used by the mobile More / Quick add menus.
  *
+ * Layout 'form' (see FormDialog): full screen on phones, a wider centred
+ * panel elsewhere; the body scrolls under a fixed header, and clicking
+ * outside doesn't close it (so a stray tap can't throw away edits).
+ *
  * Usage:
  *   <Dialog open={open} onOpenChange={setOpen} title="Choose icon">
  *     ...content...
@@ -32,7 +36,7 @@ import { Button }                                  from './Button';
 import { useSwipeToDismiss }                       from '@/lib/hooks/useSwipeToDismiss';
 import { useMediaQuery, PHONE_QUERY }             from '@/lib/hooks/useMediaQuery';
 
-export type DialogSize      = 'sm' | 'md';
+export type DialogSize      = 'sm' | 'md' | 'lg';
 export type DialogPlacement = 'center' | 'bottom' | 'auto';
 
 interface DialogProps {
@@ -41,8 +45,14 @@ interface DialogProps {
   title:         ReactNode;
   /** Optional supporting text, announced by screen readers. */
   description?:  ReactNode;
-  /** 'sm' = 320px max, 'md' = 480px max (default). Ignored for 'bottom'. */
+  /** 'sm' = 320px, 'md' = 480px (default), 'lg' = 640px max. Ignored for 'bottom'. */
   size?:         DialogSize;
+  /** 'form': full screen on phones, scrolling body, no close on outside click. */
+  layout?:       'default' | 'form';
+  /** Shown before the title (e.g. a Cancel button). */
+  headerStart?:  ReactNode;
+  /** Shown after the title, replacing the ✕ close button (e.g. Save). */
+  headerEnd?:    ReactNode;
   /** 'center' (default), 'bottom' for a bottom sheet, or 'auto': a bottom
    *  sheet on phones and centered on wider screens. */
   placement?:    DialogPlacement;
@@ -69,6 +79,9 @@ export function Dialog({
   description,
   size = 'md',
   placement = 'center',
+  layout = 'default',
+  headerStart,
+  headerEnd,
   footer,
   desktopFocusRef,
   children,
@@ -82,15 +95,21 @@ export function Dialog({
     setPanelEl(el);
   }, []);
   const isPhone    = useMediaQuery(PHONE_QUERY);
-  const isSheet    = placement === 'bottom' || (placement === 'auto' && isPhone);
+  const isForm     = layout === 'form';
+  const isFull     = isForm && isPhone;
+  const isSheet    = !isForm && (placement === 'bottom' || (placement === 'auto' && isPhone));
   const panelClass = [
     'modal-panel',
     isSheet ? 'modal-panel--sheet' : null,
-    !isSheet && size !== 'md' ? `modal-panel--${size}` : null,
+    isForm  ? 'modal-panel--form'  : null,
+    isFull  ? 'modal-panel--full'  : null,
+    !isSheet && !isFull && size !== 'md' ? `modal-panel--${size}` : null,
   ].filter(Boolean).join(' ');
-  const overlayClass = ['modal-overlay', isSheet ? 'modal-overlay--sheet' : null]
-    .filter(Boolean)
-    .join(' ');
+  const overlayClass = [
+    'modal-overlay',
+    isSheet ? 'modal-overlay--sheet' : null,
+    isFull  ? 'modal-overlay--full'  : null,
+  ].filter(Boolean).join(' ');
 
   const dismiss = useCallback(() => onOpenChange(false), [onOpenChange]);
   useSwipeToDismiss(panelEl, {
@@ -111,6 +130,7 @@ export function Dialog({
             ref={attachPanel}
             className={panelClass}
             {...describedBy}
+            onInteractOutside={isForm ? e => e.preventDefault() : undefined}
             onOpenAutoFocus={e => {
               e.preventDefault();
               const target = hasFinePointer() ? desktopFocusRef?.current : null;
@@ -119,17 +139,20 @@ export function Dialog({
           >
             {isSheet && <div className="modal-panel__grabber" aria-hidden="true" />}
             <div className="modal-panel__header">
+              {headerStart}
               <DialogPrimitive.Title className="modal-panel__title">
                 {title}
               </DialogPrimitive.Title>
-              <Button
-                variant="ghost"
-                size="sm"
-                aria-label="Close"
-                onClick={() => onOpenChange(false)}
-              >
-                ✕
-              </Button>
+              {headerEnd ?? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  aria-label="Close"
+                  onClick={() => onOpenChange(false)}
+                >
+                  ✕
+                </Button>
+              )}
             </div>
 
             {description && (

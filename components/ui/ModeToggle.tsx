@@ -6,8 +6,9 @@
  *
  *   <ModeToggle editing={mode === 'edit'} onChange={e => setMode(e ? 'edit' : 'view')} />
  *
- * On pages where edit mode swaps in a form with its own Cancel, the button
- * is only shown in view mode, so it always reads "✏️ Edit".
+ * Pages whose records edit in a dialog (tasks, appointments, prescriptions,
+ * media) pass editing={false} and open the dialog in onChange, so the
+ * button always reads "✏️ Edit".
  */
 
 import { Button } from './Button';

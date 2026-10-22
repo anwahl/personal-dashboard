@@ -1,7 +1,7 @@
 'use client';
 
 import {
-  SaveState, ConfirmButton, SelectField, DateField, TimeField,
+  ConfirmButton, SelectField, DateField, TimeField,
   Markdown,Button, Card, CardHeader,
   CardTitle, CardBody, 
   FieldActions, Field, FieldGrid,
@@ -18,7 +18,7 @@ import { useState, useCallback }              from 'react';
 import { useRouter }                          from 'next/navigation';
 import { createClient }                       from '@/lib/supabase/client';
 import {
-  updateAppointment, deleteAppointment,
+  deleteAppointment,
   createAppointment,deletePrescriptionChange
 }                                             from '@/lib/dal/appointments';
 import { applyPrescriptionChanges }           from '@/lib/dal/prescriptions';
@@ -33,8 +33,7 @@ import {
   daysUntil, formatMediumDate,
   formatTime, localTodayISO }                 from '@/lib/utils/dates';
 import { RxPendingChanges }                   from '@/components/medications/RxPendingChanges';
-import { AppointmentForm, apptToFormValues }  from './AppointmentForm';
-import type { AppointmentFormValues }         from './AppointmentForm';
+import { AppointmentDialog }                  from './AppointmentForm';
 import { PrescriptionChangeDisplayRow }       from '../medications/PrescriptionChangeDisplayRow';
 import { apptLabel } from '@/lib/utils/helpers';
 
@@ -204,31 +203,10 @@ export function AppointmentDetailClient({
   const supabase = createClient();
   const router   = useRouter();
 
-  const [mode,         setMode]         = useState<'view' | 'edit'>('view');
-  const [saveState,    setSaveState]    = useState<SaveState>('idle');
+  const [editOpen,     setEditOpen]     = useState(false);
   const [showFollowUp, setShowFollowUp] = useState(false);
   const [taskCreated,  setTaskCreated]  = useState(false);
   const [creatingTask, setCreatingTask] = useState(false);
-
-  const handleSave = useCallback(async (values: AppointmentFormValues) => {
-    setSaveState('saving');
-    try {
-      await updateAppointment(supabase, appt.id, {
-        appointment_date:    values.appointment_date,
-        appointment_time:    values.appointment_time    || null,
-        appointment_type_id: values.appointment_type_id ? Number.parseInt(values.appointment_type_id) : null,
-        person_id:           Number.parseInt(values.person_id),
-        provider_id:         values.provider_id         ? Number.parseInt(values.provider_id)         : null,
-        location:  values.location  || null,
-        questions: values.questions || null,
-        notes:     values.notes     || null,
-      });
-      setSaveState('ok');
-      setTimeout(() => setSaveState('idle'), 2500);
-      setMode('view');
-      router.refresh();
-    } catch { setSaveState('error'); }
-  }, [supabase, appt.id, router]);
 
   const remove = useCallback(async () => {
     await deleteAppointment(supabase, appt.id);
@@ -255,12 +233,12 @@ export function AppointmentDetailClient({
     } finally { setCreatingTask(false); }
   }, [supabase, appt, taskStatuses, taskPriorities]);
 
-  // ── View mode ───────────────────────────────────────────────────────────────
+  // ── View (editing happens in AppointmentDialog) ─────────────────────────────
 
-  if (mode === 'view') {
-    const isPast = appt.appointment_date < localTodayISO();
+  const isPast = appt.appointment_date < localTodayISO();
 
-    return (
+  return (
+    <>
       <Card>
         <CardHeader>
           <CardTitle>{appt.appointment_type?.type_name ?? 'Appointment'}</CardTitle>
@@ -270,7 +248,7 @@ export function AppointmentDetailClient({
             </>
           )}
           <CardActions>
-            <ModeToggle editing={false} onChange={() => setMode('edit')} />
+            <ModeToggle editing={false} onChange={() => setEditOpen(true)} />
             <ConfirmButton onConfirm={remove}>✕ Delete</ConfirmButton>
           </CardActions>
         </CardHeader>
@@ -345,21 +323,15 @@ export function AppointmentDetailClient({
           </CardGrid>
         </CardBody>
       </Card>
-    );
-  }
 
-  // ── Edit mode ───────────────────────────────────────────────────────────────
-
-  return (
-    <AppointmentForm
-      initialValues={apptToFormValues(appt)}
-      appointmentTypes={appointmentTypes}
-      people={people}
-      providers={providers}
-      saving={saveState === 'saving'}
-      saveState={saveState}
-      onSave={handleSave}
-      onCancel={() => setMode('view')}
-    />
+      <AppointmentDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        appointment={appt}
+        appointmentTypes={appointmentTypes}
+        people={people}
+        providers={providers}
+      />
+    </>
   );
 }

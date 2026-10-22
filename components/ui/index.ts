@@ -54,3 +54,4 @@ export { SegmentedControl } from "./SegmentedControl";
 export type { SegmentOption } from "./SegmentedControl";
 export { ModeToggle } from "./ModeToggle";
 export { ListItem } from "./ListItem";
+export { FormDialog } from "./FormDialog";

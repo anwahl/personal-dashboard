@@ -1,22 +1,23 @@
 'use client';
 
 /**
- * Shared form used by PrescriptionsClient (add/edit from the list page) and
- * PrescriptionDetailClient (edit mode on the detail page).
+ * PrescriptionDialog — add or edit a prescription (FormDialog). Used by the
+ * Medications list (+ Add, Edit) and the prescription page (Edit).
  *
- * Owns form state + the useNewMed toggle internally.
- * Fetches its own reference data via SWR hooks — callers no longer need to
- * fetch or pass medications, timingTypes, people, or providers.
- * Calls onSave(values) on submit — the parent handles the async DB write,
- * including creating a new Medication row if values.new_medication_name is set.
+ * Fetches its own reference data (medications, timings, people, providers)
+ * via SWR hooks, and does its own save.
  */
 
 import { useState, useEffect } from 'react';
+import { useRouter }           from 'next/navigation';
 import {
-  Button, CardBody, CardActions, TextField, DateField, SelectField,
+  TextField, DateField, SelectField, FormDialog,
   CardSection, CardSectionLabel, FieldActions, FieldGrid,
   useToast, SegmentedControl
 } from '@/components/ui';
+import { createClient }        from '@/lib/supabase/client';
+import { createPrescription, updatePrescription } from '@/lib/dal/prescriptions';
+import { createMedication }    from '@/lib/dal/medications';
 import {
   useMedications,
   useMedicationTimingTypes,
@@ -61,25 +62,41 @@ export function rxToFormValues(rx: PrescriptionDetail): PrescriptionFormValues {
   };
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
+// ── PrescriptionDialog ────────────────────────────────────────────────────────
 
-interface Props {
-  initialValues:    PrescriptionFormValues;
-  saving:           boolean;
-  saveLabel?:       string;
-  showPersonField?: boolean;
-  onSave:           (values: PrescriptionFormValues) => void;
-  onCancel:         () => void;
-}
+/**
+ * Add or edit a prescription in a FormDialog. With `prescription` it edits
+ * it (the person can't change); without, it adds one, optionally for
+ * `personId`. A medication typed under "New medication" is created first.
+ * Saves itself and refreshes the page. Prescriptions are discontinued
+ * (Discontinued date), never deleted.
+ */
+export function PrescriptionDialog({
+  open, onOpenChange, prescription, personId,
+}: Readonly<{
+  open:          boolean;
+  onOpenChange:  (open: boolean) => void;
+  /** The prescription to edit; omit to add a new one. */
+  prescription?: PrescriptionDetail | null;
+  /** Person a new prescription is for (e.g. "+ Add" on their card). */
+  personId?:     number;
+}>) {
+  const supabase = createClient();
+  const router   = useRouter();
+  const showPersonField = !prescription;
+  const initialValues = prescription
+    ? rxToFormValues(prescription)
+    : { ...emptyPrescriptionFormValues, person_id: personId ? String(personId) : '' };
 
-export function PrescriptionForm({
-  initialValues,
-  saving, saveLabel = 'Save',
-  showPersonField = true,
-  onSave, onCancel,
-}: Readonly<Props>) {
   const [form,      setForm]      = useState<PrescriptionFormValues>(initialValues);
   const [useNewMed, setUseNewMed] = useState(false);
+  // Each open starts from the prescription (or blank) again.
+  useEffect(() => {
+    if (!open) return;
+    setForm(initialValues);
+    setUseNewMed(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const { data: medications = [], isLoading: medsLoading,     error: medsError }     = useMedications();
   const { data: timingTypes = [], isLoading: timingsLoading,  error: timingsError }  = useMedicationTimingTypes();
@@ -99,12 +116,37 @@ export function PrescriptionForm({
 
   const hasMed    = useNewMed ? !!form.new_medication_name.trim() : !!form.medication_id;
   const hasPerson = !showPersonField || !!form.person_id;
-  const canSave   = hasMed && hasPerson;
-
   const referenceLoading = medsLoading || timingsLoading || (showPersonField && peopleLoading) || providersLoading;
 
+  const save = async () => {
+    const medicationId = useNewMed
+      ? (await createMedication(supabase, form.new_medication_name)).id
+      : Number.parseInt(form.medication_id);
+    const payload = {
+      medication_id:     medicationId,
+      alias:             form.alias             || null,
+      dose:              form.dose              || null,
+      timing_type_id:    form.timing_type_id   ? Number.parseInt(form.timing_type_id) : null,
+      purpose:           form.purpose           || null,
+      prescriber_id:     form.prescriber_id    ? Number.parseInt(form.prescriber_id)  : null,
+      start_date:        form.start_date        || null,
+      discontinued_date: form.discontinued_date || null,
+      is_active:         !form.discontinued_date,
+    };
+    if (prescription) await updatePrescription(supabase, prescription.id, payload);
+    else              await createPrescription(supabase, { ...payload, person_id: Number.parseInt(form.person_id) });
+    router.refresh();
+  };
+
   return (
-    <CardBody>
+    <FormDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={prescription ? 'Edit prescription' : 'Add prescription'}
+      saveLabel={prescription ? 'Save' : 'Add'}
+      canSave={hasMed && hasPerson && !referenceLoading}
+      onSave={save}
+    >
       {showPersonField && (
         <SelectField label="Person" value={form.person_id} onChange={v => set('person_id', v)}
           disabled={peopleLoading} placeholder={peopleLoading ? 'Loading…' : 'Select person…'}
@@ -162,14 +204,6 @@ export function PrescriptionForm({
             onChange={v => set('discontinued_date', v)} />
         </FieldGrid>
       </CardSection>
-
-      <CardActions>
-        <Button variant="accent" onClick={() => onSave(form)}
-          busy={saving} disabled={!canSave || referenceLoading}>
-          {saveLabel}
-        </Button>
-        <Button variant="ghost" onClick={onCancel}>Cancel</Button>
-      </CardActions>
-    </CardBody>
+    </FormDialog>
   );
 }

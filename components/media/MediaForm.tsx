@@ -3,15 +3,17 @@
 /**
  * components/media/MediaForm.tsx
  *
- * Shared form used by MediaClient (add/edit from the list page) and
- * MediaDetailClient (edit mode on the detail page).
+ * MediaDialog — add (Media list) or edit (media page) an entry.
  *
  * Also exports shared helpers (STATUS_EMOJI, capitalize, validStatusesForType)
  * used by both clients in their view/display logic.
  */
 
-import { useState, useCallback, useRef } from 'react';
-import { Button, Card, CardBody, CardHeader, CardTitle, FieldActions, SliderField, TextField, DateField, TextAreaField, SelectField } from '@/components/ui';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button, FormDialog, SliderField, TextField, DateField, TextAreaField, SelectField, FieldGrid } from '@/components/ui';
+import { createClient } from '@/lib/supabase/client';
+import { createMediaEntry, updateMediaEntry, addMediaStatusEntry } from '@/lib/dal/media';
 import { localTodayISO } from '@/lib/utils/dates';
 import type { MediaEntryDetail } from '@/types/dal';
 import type {
@@ -129,35 +131,45 @@ function SearchPanel({ mediaTypeSlug, onSelect }: Readonly<{
   );
 }
 
-// ── MediaForm ─────────────────────────────────────────────────────────────────
+// ── MediaDialog ───────────────────────────────────────────────────────────────
 
-interface Props {
-  initialValues:    MediaFormValues;
-  mediaTypes:       MediaTypeRow[];
-  mediaStatuses:    MediaStatusRow[];
-  statusTypeLinks:  MediaStatusTypeLinkRow[];
-  /** Show the media type selector (list page add/edit). Default: false. */
-  showTypeSelector?: boolean;
-  /** Enable the "Search database" panel (list page only). Default: false. */
-  enableSearch?:    boolean;
-  saving:           boolean;
-  /** Display a save error message (detail page). */
-  saveError?:       string;
-  saveLabel?:       string;
-  onSave:           (values: MediaFormValues) => void;
-  onCancel:         () => void;
-  onDelete?:        () => void;
-}
+/**
+ * Add or edit a media entry in a FormDialog. With `entry` it edits it (the
+ * type stays as is); without, it adds one: type selector, starting on
+ * `defaultTypeId`, and a search that fills in title/creator/platform.
+ * A changed status is logged with its date. Saves itself and refreshes.
+ */
+export function MediaDialog({
+  open, onOpenChange, entry, defaultTypeId, mediaTypes, mediaStatuses, statusTypeLinks,
+}: Readonly<{
+  open:            boolean;
+  onOpenChange:    (open: boolean) => void;
+  /** The entry to edit; omit to add a new one. */
+  entry?:          MediaEntryDetail | null;
+  /** Type a new entry starts on (e.g. the tab you're on). */
+  defaultTypeId?:  string;
+  mediaTypes:      MediaTypeRow[];
+  mediaStatuses:   MediaStatusRow[];
+  statusTypeLinks: MediaStatusTypeLinkRow[];
+}>) {
+  const supabase = createClient();
+  const router   = useRouter();
+  const isNew    = !entry;
+  const showTypeSelector = isNew;
+  const enableSearch     = isNew;
+  const initialValues = entry
+    ? entryToMediaFormValues(entry)
+    : { ...emptyMediaFormValues, status_date: localTodayISO(), media_type_id: defaultTypeId ?? '' };
 
-export function MediaForm({
-  initialValues, mediaTypes, mediaStatuses, statusTypeLinks,
-  showTypeSelector = false,
-  enableSearch     = false,
-  saving, saveError, saveLabel = 'Save',
-  onSave, onCancel, onDelete,
-}: Readonly<Props>) {
   const [form, setForm] = useState<MediaFormValues>(initialValues);
   const [showSearch, setShowSearch] = useState(false);
+  // Each open starts from the entry (or blank) again.
+  useEffect(() => {
+    if (!open) return;
+    setForm(initialValues);
+    setShowSearch(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
   const set = (k: keyof MediaFormValues, v: string | number | null) =>
     setForm(p => ({ ...p, [k]: v }));
 
@@ -177,15 +189,51 @@ export function MediaForm({
     setShowSearch(false);
   };
 
+  // A new status is dated today unless you change it (the entry's current
+  // status keeps its own date).
+  const pickStatus = (id: string) => setForm(p => ({
+    ...p,
+    status_id:   id,
+    status_date: id === initialValues.status_id ? initialValues.status_date : localTodayISO(),
+  }));
+
+  const save = async () => {
+    const fields = {
+      title:    form.title.trim(),
+      creator:  form.creator.trim()  || null,
+      platform: form.platform.trim() || null,
+      rating:   form.rating          || null,
+      notes:    form.notes.trim()    || null,
+      review:   form.review.trim()   || null,
+    };
+    let entryId: number;
+    if (entry) {
+      await updateMediaEntry(supabase, entry.id, fields);
+      entryId = entry.id;
+    } else {
+      const created = await createMediaEntry(supabase, { ...fields, media_type_id: Number.parseInt(form.media_type_id) });
+      entryId = created.id;
+    }
+    const statusChanged = String(entry?.current_status?.id ?? '') !== form.status_id;
+    if (form.status_id && statusChanged) {
+      await addMediaStatusEntry(supabase,
+        entryId, Number.parseInt(form.status_id), form.status_date || localTodayISO());
+    }
+    router.refresh();
+  };
+
   return (
-    <Card>
-        <CardHeader>
-            <CardTitle>{form.title ? 'Edit ' + form.title : 'Add New Media'}</CardTitle>
-        </CardHeader>
-        <CardBody>
-            {/* Type selector — list page only */}
+    <FormDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={entry ? `Edit ${entry.title}` : 'Add media'}
+      saveLabel={entry ? 'Save' : 'Add'}
+      canSave={Boolean(form.title.trim()) && (!showTypeSelector || Boolean(form.media_type_id))}
+      onSave={save}
+    >
+            {/* Type selector — new entries only */}
             {showTypeSelector && (
-                <div className="field-grid">
+                <FieldGrid>
                 <SelectField label="Type" value={form.media_type_id}
                     onChange={v => {
                         set('media_type_id', v);
@@ -194,30 +242,30 @@ export function MediaForm({
                     }}
                     placeholder="Select type…"
                     options={mediaTypes.map(t => ({ value: t.id, label: capitalize(t.type_name) }))} />
-                <SelectField label="Status" value={form.status_id} onChange={v => set('status_id', v)}
+                <SelectField label="Status" value={form.status_id} onChange={pickStatus}
                     placeholder="Select status…"
                     options={filteredStats.map(s => ({ value: s.id, label: `${STATUS_EMOJI[s.status_name] ?? ''} ${s.status_name}`.trim() }))} />
                 {form.status_id && (
                     <DateField label="Status date" value={form.status_date}
                       onChange={v => set('status_date', v)} />
                 )}
-                </div>
+                </FieldGrid>
             )}
 
-            {/* Status selector — detail page (type already known, shown in a simpler grid) */}
+            {/* Status selector — editing (type already known) */}
             {!showTypeSelector && (
-                <div className="field-grid">
-                <SelectField label="Status" value={form.status_id} onChange={v => set('status_id', v)}
+                <FieldGrid>
+                <SelectField label="Status" value={form.status_id} onChange={pickStatus}
                     placeholder="No status"
                     options={filteredStats.map(s => ({ value: s.id, label: `${STATUS_EMOJI[s.status_name] ?? ''} ${s.status_name}`.trim() }))} />
                 {form.status_id && (
                     <DateField label="Status date" value={form.status_date}
                       onChange={v => set('status_date', v)} />
                 )}
-                </div>
+                </FieldGrid>
             )}
 
-            {/* Search panel — list page only */}
+            {/* Search panel — new entries only */}
             {enableSearch && activeType && !showSearch && (
                 <div className="search-trigger-row">
                 <Button size="sm" variant="ghost" onClick={() => setShowSearch(true)}>
@@ -230,37 +278,20 @@ export function MediaForm({
             )}
 
             <TextField label="Title" value={form.title} onChange={v => set('title', v)} placeholder="Title…" />
-            <div className="field-grid">
+            <FieldGrid>
                 <TextField label="Creator / Author / Director" value={form.creator}
                   onChange={v => set('creator', v)} />
                 <TextField label="Platform" value={form.platform} onChange={v => set('platform', v)}
                   placeholder="Netflix, Kindle…" />
-            </div>
-            <div className="field-grid">
+            </FieldGrid>
+            <FieldGrid>
                 <SliderField emoji="⭐" label="Rating" value={form.rating} min={0} max={10}
                 onChange={v => set('rating', v)} />
-            </div>
+            </FieldGrid>
             <TextAreaField label="Notes (while consuming)" value={form.notes} onChange={v => set('notes', v)}
               size="short" />
             <TextAreaField label="Review (after finishing)" value={form.review}
               onChange={v => set('review', v)} size="short" />
-
-            {saveError && <p className="save-status save-status--error">{saveError}</p>}
-
-            <FieldActions docked alignment="right">
-                <Button
-                variant="accent"
-                onClick={() => onSave(form)}
-                busy={saving} disabled={!form.title.trim() || (showTypeSelector && !form.media_type_id)}
-                >
-                {saveLabel}
-                </Button>
-                <Button variant="ghost" onClick={onCancel}>Cancel</Button>
-                {onDelete && (
-                <Button variant="danger" onClick={onDelete} disabled={saving}>Delete</Button>
-                )}
-            </FieldActions>
-        </CardBody>
-    </Card>
+    </FormDialog>
   );
 }

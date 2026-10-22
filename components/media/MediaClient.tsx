@@ -1,24 +1,16 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter }              from 'next/navigation';
 import { createClient }           from '@/lib/supabase/client';
-import { Button, TabBar, Markdown, Card, CardHeader, CardTitle, CardActions, CardBody, CardSection, CardSectionLabel, ExpandPanel, ChipGroup, Chip, Field, ExpandCard, EmptyState, DateField, TextAreaField } from '@/components/ui';
-import {
-  getMediaNotes, createMediaNote, deleteMediaNote,
-  updateMediaEntry, createMediaEntry, addMediaStatusEntry, deleteMediaEntry,
-} from '@/lib/dal/media';
+import { Button, TabBar, Markdown, CardActions, CardSection, CardSectionLabel, ExpandPanel, ChipGroup, Chip, Field, ExpandCard, EmptyState, DateField, TextAreaField } from '@/components/ui';
+import { getMediaNotes, createMediaNote, deleteMediaNote } from '@/lib/dal/media';
 import type { MediaEntryDetail }  from '@/types/dal';
 import { formatShortDate, localTodayISO } from '@/lib/utils/dates';
 import type {
   MediaTypeRow, MediaStatusRow,
   MediaNoteRow, MediaStatusTypeLinkRow,
 } from '@/types/schema';
-import {
-  MediaForm, MediaFormValues,
-  emptyMediaFormValues, entryToMediaFormValues,
-  STATUS_EMOJI
-} from './MediaForm';
+import { MediaDialog, STATUS_EMOJI } from './MediaForm';
 import { FieldActions } from '../ui/Display';
 import { capitalize } from '@/lib/utils/strings';
 
@@ -136,75 +128,15 @@ function MediaItem({ entry }: Readonly<{
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 export function MediaClient({ entries, mediaTypes, mediaStatuses, statusTypeLinks }: Readonly<Props>) {
-  const supabase = createClient();
-  const router   = useRouter();
-
   const [localEntries, setLocalEntries] = useState(entries);
   useEffect(() => { setLocalEntries(entries); }, [entries]);
 
   const typeTabs = mediaTypes.map(t => ({ id: String(t.id), label: capitalize(t.type_name) }));
   const [activeTypeId, setActiveTypeId] = useState<string>(mediaTypes[0] ? String(mediaTypes[0].id) : '');
-  const [editEntry,    setEditEntry]    = useState<MediaEntryDetail | null>(null);
-  const [showAddForm,  setShowAddForm]  = useState(false);
-  const [saving,       setSaving]       = useState(false);
-
-  const openAdd = () => {
-    setEditEntry(null);
-    setShowAddForm(true);
-  };
-
-  const cancel = () => { setShowAddForm(false); setEditEntry(null); };
-
-  const handleSave = useCallback(async (values: MediaFormValues) => {
-    setSaving(true);
-    try {
-      const payload = {
-        media_type_id: Number.parseInt(values.media_type_id),
-        title:         values.title,
-        rating:        values.rating   || null,
-        platform:      values.platform || null,
-        creator:       values.creator  || null,
-        notes:         values.notes    || null,
-        review:        values.review   || null,
-      };
-
-      let entryId: number;
-      if (editEntry) {
-        await updateMediaEntry(supabase, editEntry.id, payload);
-        entryId = editEntry.id;
-      } else {
-        const data = await createMediaEntry(supabase, payload);
-        if (!data) throw new Error('Failed to create entry');
-        entryId = (data as { id: number }).id;
-      }
-
-      const statusChanged = !editEntry || String(editEntry.current_status?.id ?? '') !== values.status_id;
-      if (values.status_id && statusChanged) {
-        await addMediaStatusEntry(supabase,
-          entryId, Number.parseInt(values.status_id), values.status_date || localTodayISO());
-      }
-
-      router.refresh();
-      cancel();
-    } finally { setSaving(false); }
-  }, [supabase, editEntry, router]);
-
-  const handleDelete = useCallback(async () => {
-    if (!editEntry || !confirm('Delete this entry?')) return;
-    setSaving(true);
-    try {
-      await deleteMediaEntry(supabase, editEntry.id);
-      router.refresh();
-      cancel();
-    } finally { setSaving(false); }
-  }, [supabase, editEntry, router]);
+  const [addOpen,      setAddOpen]      = useState(false);
 
   const filtered = localEntries.filter(e => String(e.media_type_id) === activeTypeId);
 
-  const handleTypeChange = (id: string) => {
-    setActiveTypeId(id);
-    setShowAddForm(false);
-  };
 
   const grouped   = mediaStatuses.reduce<Record<string, MediaEntryDetail[]>>((acc, s) => {
     const inStatus = filtered.filter(e => e.current_status?.id === s.id);
@@ -215,32 +147,22 @@ export function MediaClient({ entries, mediaTypes, mediaStatuses, statusTypeLink
 
   return (
     <>
-      <TabBar tabs={typeTabs} active={activeTypeId} onChange={handleTypeChange} />
+      <TabBar tabs={typeTabs} active={activeTypeId} onChange={setActiveTypeId} />
       <span className='pad'>
         <FieldActions alignment='right'>
-          <Button variant="accent" size="sm" onClick={openAdd}>+ Add</Button>
+          <Button variant="accent" size="sm" onClick={() => setAddOpen(true)}>+ Add</Button>
         </FieldActions>
       </span>
-      {showAddForm && (
-          <MediaForm
-            key={editEntry?.id ?? 'new'}
-            initialValues={editEntry
-              ? entryToMediaFormValues(editEntry)
-              : { ...emptyMediaFormValues, media_type_id: activeTypeId }}
-            mediaTypes={mediaTypes}
-            mediaStatuses={mediaStatuses}
-            statusTypeLinks={statusTypeLinks}
-            showTypeSelector
-            enableSearch
-            saving={saving}
-            saveLabel={editEntry ? 'Update' : 'Add'}
-            onSave={handleSave}
-            onCancel={cancel}
-            onDelete={editEntry ? handleDelete : undefined}
-          />
-      )}
+      <MediaDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        defaultTypeId={activeTypeId}
+        mediaTypes={mediaTypes}
+        mediaStatuses={mediaStatuses}
+        statusTypeLinks={statusTypeLinks}
+      />
 
-      {filtered.length === 0 && !showAddForm && <EmptyState>Nothing here yet.</EmptyState>}
+      {filtered.length === 0 && <EmptyState>Nothing here yet.</EmptyState>}
 
       {Object.entries(grouped).map(([statusName, items]) => (
           <ExpandCard key={statusName} title={`${STATUS_EMOJI[statusName] ?? ''} ${capitalize(statusName)} (${items.length})`}

@@ -1,22 +1,23 @@
 "use client";
 
 /**
- * Owns its own form state internally; calls onSave(values) on submit.
- * The parent is responsible for the async save operation and for
- * passing back `saving` / `saveState` while the operation is in flight.
+ * Task forms.
+ *
+ *   TaskDialog        — the full form in a FormDialog; adds or edits a task
+ *                       and saves it (used by the task page and Full Add).
+ *   QuickAddTaskForm  — title + date (+ time, person) quick add, no card.
+ *   QuickAdd          — the collapsible "Add Task" card: quick add plus
+ *                       Full Add (opens TaskDialog).
  */
 
 import { useState, useEffect, useCallback, type ReactNode } from "react";
 import {
   Button,
-  Card,
   CardActions,
-  CardBody,
-  CardHeader,
   CardSection,
   CardSectionLabel,
-  CardTitle,
   ExpandCard,
+  FormDialog,
   TextField,
   NumberField,
   DateField,
@@ -24,21 +25,15 @@ import {
   DateTimeField,
   TextAreaField,
   SelectField,
-  SaveStatus,
   Toggle,
-  useToast, ChipSelect, FieldActions, FieldGrid,
+  useToast, ChipSelect, FieldActions, FieldGrid, InputField,
 } from "@/components/ui";
-import type { SaveState } from "@/components/ui";
-import type { TaskStatusRow, TaskPriorityRow } from "@/types/dal";
-import type { PersonRow, TaskRow } from "@/types/schema";
-import {
-  addDays,
-  localISODateFromDateString,
-  localTodayISO,
-} from "@/lib/utils/dates";
+import type { TaskDetail } from "@/types/dal";
+import type { TaskRow } from "@/types/schema";
+import { addDays, localTodayISO, toLocalInput } from "@/lib/utils/dates";
 import { WEEKDAYS } from "@/lib/constants/dates";
 import { createClient } from "@/lib/supabase/client";
-import { createTask } from "@/lib/dal/tasks";
+import { createTask, updateTask } from "@/lib/dal/tasks";
 import { useRouter } from "next/navigation";
 import { usePeople, useTaskDefaults, useTaskPriorities, useTaskStatuses } from "@/lib/hooks/reference";
 
@@ -87,31 +82,89 @@ const FREQUENCY_UNIT: Record<string, string> = {
   yearly: "year(s)",
 };
 
-// ── TaskForm ──────────────────────────────────────────────────────────────────
+// ── Payload helpers ───────────────────────────────────────────────────────────
 
-interface TaskFormProps {
-  initialValues: TaskFormValues;
-  showStatus?: boolean;
-  showDateShortcuts?: boolean;
-  contextDate?: string;
-  saving: boolean;
-  saveState?: SaveState;
-  saveLabel?: string;
-  onSave: (values: TaskFormValues) => void;
-  onCancel: () => void;
+/** Form values for an existing task. */
+export function taskToFormValues(task: TaskDetail): TaskFormValues {
+  return {
+    title:                task.title,
+    status_id:            String(task.status_id),
+    priority_id:          String(task.priority_id),
+    due_date:             task.due_date  ?? '',
+    due_time:             task.due_time  ?? '',
+    person_id:            task.person_id ? String(task.person_id) : '',
+    body_md:              task.body_md   ?? '',
+    reminder_at:          task.reminder_at ? toLocalInput(task.reminder_at) : '',
+    recurrence_frequency: task.recurrence_frequency ?? '',
+    recurrence_interval:  String(task.recurrence_interval ?? 1),
+    recurrence_days:      task.recurrence_days      ?? '',
+    recurrence_end_date:  task.recurrence_end_date  ?? '',
+  };
 }
 
-export function TaskForm({
-  initialValues,
-  showStatus = false,
+/** The task columns the form edits, ready for createTask / updateTask. */
+function taskPayload(values: TaskFormValues) {
+  const reminder = values.reminder_at
+    ? {
+        // The input gives local wall-clock time ("2026-10-22T09:00");
+        // store it as a real instant so it isn't read as UTC.
+        reminder_at:          new Date(values.reminder_at).toISOString(),
+        recurrence_frequency: (values.recurrence_frequency || null) as TaskRow['recurrence_frequency'],
+        recurrence_interval:  values.recurrence_interval ? Number.parseInt(values.recurrence_interval) : null,
+        recurrence_days:      values.recurrence_days     || null,
+        recurrence_end_date:  values.recurrence_end_date || null,
+      }
+    : {
+        reminder_at:          null,
+        recurrence_frequency: null,
+        recurrence_interval:  null,
+        recurrence_days:      null,
+        recurrence_end_date:  null,
+      };
+  return {
+    title:       values.title.trim(),
+    status_id:   Number.parseInt(values.status_id),
+    priority_id: Number.parseInt(values.priority_id),
+    due_date:    values.due_date || null,
+    due_time:    values.due_time || null,
+    person_id:   values.person_id ? Number.parseInt(values.person_id) : null,
+    body_md:     values.body_md  || null,
+    ...reminder,
+  };
+}
+
+// ── TaskDialog ────────────────────────────────────────────────────────────────
+
+/**
+ * Add or edit a task in a FormDialog. With `task` it edits that task;
+ * without, it creates one (starting from `defaults`). Saves itself and
+ * refreshes the page.
+ */
+export function TaskDialog({
+  open,
+  onOpenChange,
+  task,
+  defaults,
   showDateShortcuts = false,
   contextDate,
-  saving,
-  saveState,
-  saveLabel = "Save",
-  onSave,
-  onCancel,
-}: Readonly<TaskFormProps>) {
+  onSaved,
+}: Readonly<{
+  open:          boolean;
+  onOpenChange:  (open: boolean) => void;
+  /** The task to edit; omit to add a new one. */
+  task?:         TaskDetail | null;
+  /** Starting values for a new task. */
+  defaults?:     Partial<TaskFormValues>;
+  /** "Tomorrow" / "Next week" buttons under the due date (relative to contextDate). */
+  showDateShortcuts?: boolean;
+  contextDate?:  string;
+  onSaved?:      () => void;
+}>) {
+  const supabase = createClient();
+  const router   = useRouter();
+  const showStatus = Boolean(task);
+  const initialValues = task ? taskToFormValues(task) : emptyTaskFormValues(defaults);
+
   const [form, setForm] = useState<TaskFormValues>(initialValues);
   const set = (k: keyof TaskFormValues, v: string) =>
     setForm((p) => ({ ...p, [k]: v }));
@@ -124,9 +177,17 @@ export function TaskForm({
   useEffect(() => { if (prioritiesError)    addToast('Failed to load task priorities', 'error'); }, [prioritiesError,     addToast]);
   useEffect(() => { if (peopleError)        addToast('Failed to load people', 'error'); },          [peopleError,         addToast]);
   const referenceLoading = peopleLoading || prioritiesLoading || (showStatus && statusesLoading);
-  
+
   const hasReminder = Boolean(form.reminder_at);
   const [addReminder, toggleAddReminder] = useState(hasReminder);
+
+  // Each open starts from the record (or the defaults) again.
+  useEffect(() => {
+    if (!open) return;
+    setForm(initialValues);
+    toggleAddReminder(Boolean(initialValues.reminder_at));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const activeDays = form.recurrence_days
     ? form.recurrence_days.split(",").filter(Boolean)
@@ -159,12 +220,30 @@ export function TaskForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.due_date, addReminder]);
 
+  const save = async () => {
+    const payload = taskPayload(form);
+    if (task) {
+      await updateTask(supabase, task.id, { ...payload, snoozed_until: null, reminder_last_sent: null });
+    } else {
+      await createTask(supabase, { ...payload, completed_at: null });
+    }
+    router.refresh();
+    onSaved?.();
+  };
+
   return (
-    <CardBody>
+    <FormDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={task ? 'Edit task' : 'Add task'}
+      saveLabel={task ? 'Save' : 'Add'}
+      canSave={Boolean(form.title.trim()) && !referenceLoading}
+      onSave={save}
+    >
       <CardSection>
         <CardSectionLabel>Details</CardSectionLabel>
 
-        <TextField label="Title" value={form.title} onChange={(v) => set("title", v)} autoFocus />
+        <TextField label="Title" value={form.title} onChange={(v) => set("title", v)} autoFocus={!task} />
 
         <FieldGrid>
           {showStatus && statuses && (
@@ -229,10 +308,8 @@ export function TaskForm({
         />
 
         {(addReminder || hasReminder) && (
-          <div className="reminder-section__row">
-            <span className="reminder-section__label">Reminder</span>
+          <FieldGrid>
             <DateTimeField
-              hideLabel
               label="Reminder"
               value={form.reminder_at}
               onChange={(v) => {
@@ -240,20 +317,8 @@ export function TaskForm({
                 if (!v) clearReminder();
               }}
             />
-            {hasReminder && (
-              <Button size="sm" variant="ghost" onClick={clearReminder}>
-                ✕ Clear
-              </Button>
-            )}
-          </div>
-        )}
-
-        {addReminder && hasReminder && (
-          <div className="reminder-section__fields">
-            <div className="reminder-section__row">
-              <span className="reminder-section__label">Repeat</span>
+            {addReminder && hasReminder && (
               <SelectField
-                hideLabel
                 label="Repeat"
                 value={form.recurrence_frequency}
                 onChange={(v) => {
@@ -268,77 +333,53 @@ export function TaskForm({
                   { value: "yearly", label: "Yearly" },
                 ]}
               />
-            </div>
-
-            {form.recurrence_frequency && (
-              <>
-                <div className="reminder-section__row">
-                  <span className="reminder-section__label">Every</span>
-                  <NumberField
-                    hideLabel
-                    label="Repeat every"
-                    min="1"
-                    max="99"
-                    className="reminder-section__interval"
-                    value={form.recurrence_interval}
-                    onChange={(v) => set("recurrence_interval", v)}
-                  />
-                  <span className="reminder-section__unit">
-                    {FREQUENCY_UNIT[form.recurrence_frequency]}
-                  </span>
-                </div>
-
-                {form.recurrence_frequency === "weekly" && (
-                  <div className="reminder-section__row">
-                    <span className="reminder-section__label">On</span>
-                    <ChipSelect
-                      label="Repeat on"
-                      options={WEEKDAYS.map(({ code, label }) => ({ value: code, label }))}
-                      selected={activeDays}
-                      onToggle={code => toggleDay(code)}
-                    />
-                  </div>
-                )}
-
-                <div className="reminder-section__row">
-                  <span className="reminder-section__label">Until</span>
-                  <DateField
-                    hideLabel
-                    label="Repeat until"
-                    value={form.recurrence_end_date}
-                    onChange={(v) => set("recurrence_end_date", v)}
-                  />
-                  {form.recurrence_end_date && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => set("recurrence_end_date", "")}
-                      aria-label="Clear end date"
-                    >
-                      ✕
-                    </Button>
-                  )}
-                </div>
-              </>
             )}
-          </div>
+          </FieldGrid>
+        )}
+
+        {addReminder && hasReminder && form.recurrence_frequency && (
+          <>
+            <FieldGrid>
+              <NumberField
+                label={`Every … ${FREQUENCY_UNIT[form.recurrence_frequency]}`}
+                min="1"
+                max="99"
+                value={form.recurrence_interval}
+                onChange={(v) => set("recurrence_interval", v)}
+              />
+              <DateField
+                label="Until (optional)"
+                value={form.recurrence_end_date}
+                onChange={(v) => set("recurrence_end_date", v)}
+              />
+            </FieldGrid>
+            {form.recurrence_frequency === "weekly" && (
+              <InputField label="On">
+                <ChipSelect
+                  label="Repeat on"
+                  options={WEEKDAYS.map(({ code, label }) => ({ value: code, label }))}
+                  selected={activeDays}
+                  onToggle={code => toggleDay(code)}
+                />
+              </InputField>
+            )}
+          </>
+        )}
+
+        {hasReminder && (
+          <FieldActions alignment="right">
+            {form.recurrence_end_date && (
+              <Button size="sm" variant="ghost" onClick={() => set("recurrence_end_date", "")}>
+                ✕ No end date
+              </Button>
+            )}
+            <Button size="sm" variant="ghost" onClick={() => { clearReminder(); toggleAddReminder(false); }}>
+              ✕ Clear reminder
+            </Button>
+          </FieldActions>
         )}
       </CardSection>
-
-      <FieldActions docked alignment="right">
-        <Button
-          variant="accent"
-          onClick={() => onSave(form)}
-          busy={saving} disabled={!form.title.trim() || referenceLoading}
-        >
-          {saveLabel}
-        </Button>
-        <Button variant="ghost" onClick={onCancel}>
-          Cancel
-        </Button>
-        {saveState && <SaveStatus state={saveState} />}
-      </FieldActions>
-    </CardBody>
+    </FormDialog>
   );
 }
 
@@ -484,7 +525,7 @@ export function QuickAddTaskForm({
 
 // ── QuickAdd ──────────────────────────────────────────────────────────────────
 
-/** Collapsible "Add Task" card: QuickAddTaskForm, plus a toggle to the full TaskForm. */
+/** Collapsible "Add Task" card: QuickAddTaskForm, plus "Full Add" for the whole form (in a dialog). */
 export function QuickAdd({
   contextDate = localTodayISO(),
   defaultDue = '',
@@ -493,96 +534,34 @@ export function QuickAdd({
   /** Due date new tasks start with (e.g. the daily page's date). */
   defaultDue?:  string;
 }>) {
-  const supabase = createClient();
-  const router = useRouter();
-
-  const [showFull, setShowFull] = useState(false);
-  const [saving, setSaving] = useState(false);
-
+  const [fullOpen, setFullOpen] = useState(false);
   const { statusId: todoStatusId, priorityId: normalPriorityId } = useTaskDefaults();
 
-  // ── Full add (via TaskForm) ──────────────────────────────────────────────
-  const fullAdd = useCallback(
-    async (values: TaskFormValues) => {
-      setSaving(true);
-      try {
-        const reminderPayload = values.reminder_at
-          ? {
-              reminder_at: localISODateFromDateString(values.reminder_at),
-              recurrence_frequency: (values.recurrence_frequency ||
-                null) as TaskRow["recurrence_frequency"],
-              recurrence_interval: values.recurrence_interval
-                ? Number.parseInt(values.recurrence_interval)
-                : null,
-              recurrence_days: values.recurrence_days || null,
-              recurrence_end_date: values.recurrence_end_date || null,
-            }
-          : {
-              reminder_at: null,
-              recurrence_frequency: null,
-              recurrence_interval: null,
-              recurrence_days: null,
-              recurrence_end_date: null,
-            };
-
-        await createTask(supabase, {
-          title: values.title.trim(),
-          status_id: Number.parseInt(values.status_id),
-          priority_id: Number.parseInt(values.priority_id),
-          due_date: values.due_date || null,
-          due_time: values.due_time || null,
-          person_id: values.person_id
-            ? Number.parseInt(values.person_id)
-            : null,
-          body_md: values.body_md || null,
-          completed_at: null,
-          ...reminderPayload,
-        });
-        setShowFull(false);
-        router.refresh();
-      } finally {
-        setSaving(false);
-      }
-    },
-    [supabase, router],
-  );
-
-  // ── Render ───────────────────────────────────────────────────────────────
-  if (showFull) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Add Task</CardTitle>
-        </CardHeader>
-        <TaskForm
-          initialValues={emptyTaskFormValues({
-            status_id: String(todoStatusId),
-            priority_id: String(normalPriorityId),
-            due_date: defaultDue,
-          })}
-          showDateShortcuts
-          contextDate={contextDate}
-          saving={saving}
-          saveLabel="Add Task"
-          onSave={fullAdd}
-          onCancel={() => setShowFull(false)}
-        />
-      </Card>
-    );
-  }
-
   return (
-    <ExpandCard title='Add Task'
-      hiddenChildren={
-        <QuickAddTaskForm
-          contextDate={contextDate}
-          defaultDue={defaultDue}
-          extraActions={
-            <Button variant="action-alt" onClick={() => setShowFull(true)}>
-              Full Add
-            </Button>
-          }
-        />
-      } />
+    <>
+      <ExpandCard title='Add Task'
+        hiddenChildren={
+          <QuickAddTaskForm
+            contextDate={contextDate}
+            defaultDue={defaultDue}
+            extraActions={
+              <Button variant="action-alt" onClick={() => setFullOpen(true)}>
+                Full Add
+              </Button>
+            }
+          />
+        } />
+      <TaskDialog
+        open={fullOpen}
+        onOpenChange={setFullOpen}
+        defaults={{
+          status_id:   String(todoStatusId),
+          priority_id: String(normalPriorityId),
+          due_date:    defaultDue,
+        }}
+        showDateShortcuts
+        contextDate={contextDate}
+      />
+    </>
   );
 }

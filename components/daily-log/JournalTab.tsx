@@ -17,7 +17,7 @@
  *   - Responses grouped by category, read-only
  */
 
-import { SaveStatus, SaveState, Button, EmptyState, ChipSelect, TextAreaField } from '@/components/ui';
+import { SaveStatus, SaveState, Button, EmptyState, ChipSelect, TextAreaField, CardSectionLabel } from '@/components/ui';
 import type { JournalCategoryWithPrompts } from '@/types/dal';
 import type { JournalCard, JournalState } from './DailyPageClient';
 
@@ -210,7 +210,7 @@ export function JournalTab({ mode, categories, state, setState, onSave, saveStat
       <div>
         {[...grouped.entries()].map(([catName, cards]) => (
           <div key={catName} className="journal-view-category">
-            <p className="card__section-label">{catName}</p>
+            <CardSectionLabel>{catName}</CardSectionLabel>
             {cards.filter(c => c.responseText.trim()).map(card => (
               <div key={card.clientId} className="journal-view-entry">
                 <p className="journal-view-entry__prompt">{card.promptText}</p>

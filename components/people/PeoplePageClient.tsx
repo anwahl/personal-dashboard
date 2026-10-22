@@ -1,6 +1,6 @@
 'use client';
 
-import { TextField, DateField, TextAreaField, SelectField, SaveStatus, SaveState, Card, CardHeader, CardBody, CardSection, CardSectionLabel, Button, EmptyState, Badge, InactiveGroup, ManageItem, RowMenu, ModeToggle } from '@/components/ui';
+import { TextField, DateField, TextAreaField, SelectField, SaveStatus, SaveState, Card, CardHeader, CardBody, CardSection, CardSectionLabel, Button, EmptyState, Badge, InactiveGroup, ManageItem, RowMenu, ModeToggle, SubCard, SubCardBody, FieldActions, ChipGroup } from '@/components/ui';
 import { useState, useCallback } from 'react';
 import { createClient }          from '@/lib/supabase/client';
 import { formatMediumDate, localTodayISO } from '@/lib/utils/dates';
@@ -398,7 +398,8 @@ function LogSection({ log, mode, personId }: Readonly<{
       {/* Add entry form */}
       {mode === 'edit' && (
         showForm ? (
-          <div className="form-panel">
+          <SubCard>
+            <SubCardBody>
             <DateField label="Date" value={formDate} onChange={setFormDate} />
             {log.fields.map(f => {
               const props = { label: f.field_label, value: formValues[f.id] ?? '', onChange: (v: string) => setVal(f.id, v) };
@@ -409,13 +410,14 @@ function LogSection({ log, mode, personId }: Readonly<{
               if (f.field_type === 'textarea') return <TextAreaField key={f.id} {...props} size="short" />;
               return <TextField key={f.id} {...props} />;
             })}
-            <div className="form-row form-row--actions">
+            <FieldActions alignment="right">
+              <Button size="sm" variant="ghost" onClick={() => setShowForm(false)}>Cancel</Button>
               <Button size="sm" variant="accent" onClick={submit} busy={adding}>
                 Add Entry
               </Button>
-              <Button size="sm" variant="ghost" onClick={() => setShowForm(false)}>Cancel</Button>
-            </div>
-          </div>
+            </FieldActions>
+            </SubCardBody>
+          </SubCard>
         ) : (
           <div className="manage-list">
             <Button size="sm" variant="ghost" onClick={() => setShowForm(true)}>+ Add Entry</Button>
@@ -546,14 +548,14 @@ export function PeoplePageClient({ data, peopleCategories }: Readonly<{ data: Pe
           {prescriptions.length > 0 && (
             <CardSection>
               <CardSectionLabel>Active Prescriptions</CardSectionLabel>
-              <div className="chip-group">
+              <ChipGroup>
                 {prescriptions.map(rx => (
                   <Badge key={rx.id}>
                     {rx.alias ?? rx.medication.medication_name}
                     {rx.dose ? ` · ${rx.dose}` : ''}
                   </Badge>
                 ))}
-              </div>
+              </ChipGroup>
             </CardSection>
           )}
 

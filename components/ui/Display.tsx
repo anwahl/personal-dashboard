@@ -146,11 +146,14 @@ export function InputField({
 
 export function FieldGrid({
   children,
+  columns = 2,
 }: Readonly<{
   children: ReactNode;
+  /** 2 (default) or 3 fields per row. */
+  columns?: 2 | 3;
 }>) {
   return (
-    <div className="field-grid">
+    <div className={columns === 3 ? 'field-grid field-grid--3' : 'field-grid'}>
       {children}
     </div>
   );

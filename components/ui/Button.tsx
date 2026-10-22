@@ -56,7 +56,9 @@ export function Button(props: Props) {
   const { disabled, ...buttonRest } = rest as ComponentPropsWithRef<'button'>;
   const cls = buildClassName(variant, size, full, busy, className);
   return (
-    <button className={cls} disabled={disabled || busy} aria-busy={busy || undefined} {...buttonRest}>
+    // type="button" unless asked otherwise, so buttons inside a <form>
+    // (e.g. FormDialog) don't submit it.
+    <button type="button" className={cls} disabled={disabled || busy} aria-busy={busy || undefined} {...buttonRest}>
       {busy && <span className="btn__spinner" aria-hidden="true" />}
       {size === 'icon' && busy ? <span className="btn__label--hidden">{children}</span> : children}
     </button>

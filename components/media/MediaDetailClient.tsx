@@ -4,16 +4,15 @@
  * components/media/MediaDetailClient.tsx
  *
  * Full detail page for a media entry.
- * View mode: title, meta, notes, review, status history, timed media notes.
- * Edit mode: inline form for all editable fields.
+ * Shows the title, meta, notes, review, status history and dated notes;
+ * ✏️ Edit opens MediaDialog.
  */
 
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter }              from 'next/navigation';
 import { createClient }           from '@/lib/supabase/client';
 import {
-  getMediaNotes, createMediaNote, deleteMediaNote,
-  updateMediaEntry, addMediaStatusEntry, deleteMediaEntry,
+  getMediaNotes, createMediaNote, deleteMediaNote, deleteMediaEntry,
 } from '@/lib/dal/media';
 import { Button, Card, CardActions, CardBody, CardHeader, CardSection, CardSectionLabel, CardTitle, Chip, ChipGroup, ConfirmButton, DateField, TextAreaField, Markdown, SubCard, SubCardBody, EmptyState, ModeToggle } from '@/components/ui';
 import { localTodayISO, formatShortDate } from '@/lib/utils/dates';
@@ -22,11 +21,7 @@ import type {
   MediaTypeRow, MediaStatusRow, MediaStatusEntryRow,
   MediaNoteRow, MediaStatusTypeLinkRow,
 } from '@/types/schema';
-import {
-  MediaForm, MediaFormValues,
-  entryToMediaFormValues,
-  STATUS_EMOJI
-} from './MediaForm';
+import { MediaDialog, STATUS_EMOJI } from './MediaForm';
 import { Field, FieldActions, FieldGrid } from '../ui/Display';
 import { capitalize } from '@/lib/utils/strings';
 
@@ -49,9 +44,7 @@ export function MediaDetailClient({
   const router   = useRouter();
 
   const entry = initial;
-  const [mode,      setMode]      = useState<'view' | 'edit'>('view');
-  const [saving,    setSaving]    = useState(false);
-  const [saveError, setSaveError] = useState('');
+  const [editOpen,  setEditOpen]  = useState(false);
 
   // ── Media notes ─────────────────────────────────────────────────────────────
 
@@ -80,33 +73,6 @@ export function MediaDetailClient({
     setNotes(prev => prev.filter(n => n.id !== id));
   }, [supabase]);
 
-  // ── Save ────────────────────────────────────────────────────────────────────
-
-  const handleSave = useCallback(async (values: MediaFormValues) => {
-    setSaving(true); setSaveError('');
-    try {
-      await updateMediaEntry(supabase, entry.id, {
-        title:    values.title.trim(),
-        creator:  values.creator.trim()  || null,
-        platform: values.platform.trim() || null,
-        rating:   values.rating          || null,
-        notes:    values.notes.trim()    || null,
-        review:   values.review.trim()   || null,
-      });
-
-      const statusChanged = String(entry.current_status?.id ?? '') !== values.status_id;
-      if (values.status_id && statusChanged) {
-        await addMediaStatusEntry(supabase,
-          entry.id, Number.parseInt(values.status_id), values.status_date || localTodayISO());
-      }
-
-      router.refresh();
-      setMode('view');
-    } catch (e: unknown) {
-      setSaveError(e instanceof Error ? e.message : 'Save failed');
-    } finally { setSaving(false); }
-  }, [supabase, router, entry]);
-
   // ── Delete ──────────────────────────────────────────────────────────────────
 
   const handleDelete = useCallback(async () => {
@@ -114,14 +80,14 @@ export function MediaDetailClient({
     router.push('/media');
   }, [supabase, entry.id, router]);
 
-  // ── View mode ────────────────────────────────────────────────────────────────
-  if (mode === 'view') {
-    return (
+  // ── View (editing happens in MediaDialog) ────────────────────────────────────
+  return (
+    <>
       <Card>
         <CardHeader>
           <CardTitle>{entry.title}</CardTitle>
           <CardActions>
-            <ModeToggle editing={false} onChange={() => setMode('edit')} />
+            <ModeToggle editing={false} onChange={() => setEditOpen(true)} />
             <ConfirmButton variant='danger' onConfirm={handleDelete}>✕ Delete</ConfirmButton>
           </CardActions>
         </CardHeader>
@@ -224,21 +190,15 @@ export function MediaDetailClient({
           </SubCard>
         </CardBody>
       </Card>
-    );
-  }
 
-  // ── Edit mode ────────────────────────────────────────────────────────────────
-
-  return (
-    <MediaForm
-      initialValues={entryToMediaFormValues(entry)}
-      mediaTypes={mediaTypes}
-      mediaStatuses={mediaStatuses}
-      statusTypeLinks={statusTypeLinks}
-      saving={saving}
-      saveError={saveError}
-      onSave={handleSave}
-      onCancel={() => setMode('view')}
-    />
+      <MediaDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        entry={entry}
+        mediaTypes={mediaTypes}
+        mediaStatuses={mediaStatuses}
+        statusTypeLinks={statusTypeLinks}
+      />
+    </>
   );
 }

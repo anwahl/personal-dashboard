@@ -1,18 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter }             from 'next/navigation';
+import { useState, useEffect } from 'react';
 import Link                      from 'next/link';
-import { createClient }          from '@/lib/supabase/client';
-import { createAppointment, updateAppointment, deleteAppointment } from '@/lib/dal/appointments';
-import { Button, Card, CardBody, CardHeader, CardTitle, Chip, ExpandPanel, FieldActions, Markdown, SubCard, SubCardBody, EmptyState, ListItem } from '@/components/ui';
+import { Button, Card, CardBody, CardHeader, CardTitle, Chip, ExpandPanel, FieldActions, Markdown, SubCard, SubCardBody, EmptyState, ListItem, CardSection, CardSectionLabel } from '@/components/ui';
 import { localTodayISO, daysUntil, formatMediumDate, formatTime } from '@/lib/utils/dates';
 import type { AppointmentDetail }    from '@/types/dal';
 import type { AppointmentTypeRow, PersonRow, ProviderRow } from '@/types/schema';
-import {
-  AppointmentForm, AppointmentFormValues,
-  emptyAppointmentFormValues, apptToFormValues,
-} from './AppointmentForm';
+import { AppointmentDialog } from './AppointmentForm';
 
 interface Props {
   upcoming:         AppointmentDetail[];
@@ -100,110 +94,52 @@ export function AppointmentsClient({
     upcoming, past, appointmentTypes,
     people, providers }:
     Readonly<Props>) {
-  const supabase = createClient();
-  const router   = useRouter();
-
   const [localUpcoming, setLocalUpcoming] = useState(upcoming);
   const [localPast,     setLocalPast]     = useState(past);
   useEffect(() => { setLocalUpcoming(upcoming); }, [upcoming]);
   useEffect(() => { setLocalPast(past); }, [past]);
 
-  const [showForm,   setShowForm]   = useState(false);
-  const [showPast,   setShowPast]   = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<AppointmentDetail | null>(null);
-  const [saving,     setSaving]     = useState(false);
 
-  const openNew  = () => { setEditTarget(null); setShowForm(true); };
-  const openEdit = (a: AppointmentDetail) => { setEditTarget(a); setShowForm(true); };
-  const cancel   = () => { setShowForm(false); setEditTarget(null); };
-
-  const handleSave = useCallback(async (values: AppointmentFormValues) => {
-    setSaving(true);
-    try {
-      const payload = {
-        appointment_date:    values.appointment_date,
-        appointment_time:    values.appointment_time    || null,
-        person_id:           Number.parseInt(values.person_id),
-        provider_id:         values.provider_id         ? Number.parseInt(values.provider_id)         : null,
-        appointment_type_id: values.appointment_type_id ? Number.parseInt(values.appointment_type_id) : null,
-        location:  values.location  || null,
-        questions: values.questions || null,
-        notes:     values.notes     || null,
-        followup_for_id: null,
-      };
-      if (editTarget) await updateAppointment(supabase, editTarget.id, payload);
-      else            await createAppointment(supabase, payload);
-      router.refresh();
-      cancel();
-    } finally {
-      setSaving(false);
-    }
-  }, [supabase, editTarget, router]);
-
-  const handleDelete = useCallback(async () => {
-    if (!editTarget || !confirm('Delete this appointment?')) return;
-    setSaving(true);
-    try {
-      await deleteAppointment(supabase, editTarget.id);
-      router.refresh();
-      cancel();
-    } finally {
-      setSaving(false);
-    }
-  }, [supabase, editTarget, router]);
+  const openNew  = () => { setEditTarget(null); setDialogOpen(true); };
+  const openEdit = (a: AppointmentDetail) => { setEditTarget(a); setDialogOpen(true); };
 
   return (
     <div>
-      {showForm ? (
-        <div className="form-panel--card">
-          <AppointmentForm
-            key={editTarget?.id ?? 'new'}
-            initialValues={editTarget ? apptToFormValues(editTarget) : emptyAppointmentFormValues}
-            appointmentTypes={appointmentTypes}
-            people={people}
-            providers={providers}
-            saving={saving}
-            saveLabel={editTarget ? 'Update' : 'Add Appointment'}
-            onSave={handleSave}
-            onCancel={cancel}
-            onDelete={editTarget ? handleDelete : undefined}
-          />
-        </div>
-      ) : (
-        <FieldActions docked alignment="right">
-          <Button variant="accent" onClick={openNew}>+ New Appointment</Button>
-        </FieldActions>
-      )}
+      <FieldActions docked alignment="right">
+        <Button variant="accent" onClick={openNew}>+ New Appointment</Button>
+      </FieldActions>
+
+      <AppointmentDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        appointment={editTarget}
+        appointmentTypes={appointmentTypes}
+        people={people}
+        providers={providers}
+        onDeleted={() => setEditTarget(null)}
+      />
 
       <Card>
         <CardHeader>
           <CardTitle>Appointments</CardTitle>
         </CardHeader>
         <CardBody>  
-          <div className="section-divider">Upcoming ({localUpcoming.length})</div>
-          {localUpcoming.length === 0
-            ? <EmptyState>No upcoming appointments.</EmptyState>
-            : localUpcoming.map(a => <ApptRow key={a.id} appt={a} onEdit={() => openEdit(a)} />)
-          }
+          <CardSection>
+            <CardSectionLabel>Upcoming ({localUpcoming.length})</CardSectionLabel>
+            {localUpcoming.length === 0
+              ? <EmptyState>No upcoming appointments.</EmptyState>
+              : localUpcoming.map(a => <ApptRow key={a.id} appt={a} onEdit={() => openEdit(a)} />)
+            }
+          </CardSection>
 
-          <div className="toggle-btn-section">
-            <Button
-              variant="ghost"
-              className="toggle-btn"
-              onClick={() => setShowPast(s => !s)}
-            >
-              {showPast ? '▲ Hide' : '▼ Show'} past appointments ({localPast.length})
-            </Button>
-
-            {showPast && (
-              <div className="toggle-btn-section__body">
-                {localPast.length === 0
-                  ? <EmptyState>No past appointments on record.</EmptyState>
-                  : localPast.map(a => <ApptRow key={a.id} appt={a} onEdit={() => openEdit(a)} />)
-                }
-              </div>
-            )}
-          </div>
+          <ExpandPanel
+            title={`Past appointments (${localPast.length})`}
+            hiddenChildren={localPast.length === 0
+              ? <EmptyState>No past appointments on record.</EmptyState>
+              : localPast.map(a => <ApptRow key={a.id} appt={a} onEdit={() => openEdit(a)} />)}
+          />
         </CardBody>
       </Card>
     </div>

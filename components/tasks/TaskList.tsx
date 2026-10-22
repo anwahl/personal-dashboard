@@ -7,8 +7,7 @@
  * (contextDate = that entry's date). All tabs are relative to contextDate.
  *
  * Tabs: Today (incl. overdue) | Tomorrow | Upcoming | No Date | Done
- * QuickAdd row on each tab. "Full Add" opens FullAddForm which uses
- * the shared <TaskForm> component.
+ * QuickAdd row on each tab. "Full Add" opens TaskDialog.
  */
 import { updateTaskStatus, TaskContextData,
          spawnNextRecurrence, getTaskById, 
