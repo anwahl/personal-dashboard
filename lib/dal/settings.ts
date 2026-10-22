@@ -18,6 +18,9 @@ export type ManageableTable =
   | "daily_trackables"
   | "trackable_categories"
   | "people_categories"
+  | "people"
+  | "item_lists"
+  | "checklists"
   | "last_time_media"
   | "last_time_boolean"
   | "last_time_custom";
@@ -34,7 +37,11 @@ export type ReorderableTable =
   | "journal_categories"
   | "journal_prompts"
   | "weekly_journal_categories"
-  | "weekly_journal_prompts";
+  | "weekly_journal_prompts"
+  | "info_groups"
+  | "info_field_types"
+  | "log_schemas"
+  | "log_schema_fields";
 
 // ── Generic active toggle ─────────────────────────────────────────────────────
 
@@ -137,7 +144,8 @@ export type CategorizedTable =
   | "daily_trackables"
   | "symptom_types"
   | "journal_prompts"
-  | "weekly_journal_prompts";
+  | "weekly_journal_prompts"
+  | "people";
 
 /**
  * Moves an item to another category (or to none, where the column allows

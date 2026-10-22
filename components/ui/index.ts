@@ -44,3 +44,5 @@ export type { RowMenuAction, RowMenuSubmenu, RowMenuItem } from "./RowMenu";
 export { SortableList, SortableItem, SortableGroup, DragHandle } from "./SortableList";
 export type { SortMove } from "./SortableList";
 export { InactiveGroup } from "./InactiveGroup";
+export { ChipSelect } from "./ChipSelect";
+export type { ChipOption } from "./ChipSelect";

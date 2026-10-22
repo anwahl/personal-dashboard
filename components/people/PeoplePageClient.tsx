@@ -1,6 +1,6 @@
 'use client';
 
-import { InputField, SaveStatus, SaveState, Card, CardHeader, CardBody, CardSection, CardSectionLabel, Button, ConfirmButton, EmptyState, Badge, InactiveGroup } from '@/components/ui';
+import { InputField, SaveStatus, SaveState, Card, CardHeader, CardBody, CardSection, CardSectionLabel, Button, EmptyState, Badge, InactiveGroup, ManageItem, RowMenu } from '@/components/ui';
 import { useState, useCallback } from 'react';
 import { createClient }          from '@/lib/supabase/client';
 import { formatMediumDate, localTodayISO } from '@/lib/utils/dates';
@@ -9,7 +9,7 @@ import {
   addItemListEntry, deleteItemListEntry,
   addLogEntry, deleteLogEntry,
   createChecklistItem, deleteChecklistItem,
-  addDiagnosis, updateDiagnosis, toggleDiagnosis, deleteDiagnosis,
+  addDiagnosis, updateDiagnosis, toggleDiagnosis,
   updatePersonField,
 }                                from '@/lib/dal/people';
 import type {
@@ -60,6 +60,11 @@ function DiagnosisSection({ diagnoses: initial, mode, personId }: Readonly<{
       setNewName(''); setNewDate(''); setNewNotes('');
     } finally { setAdding(false); }
   }, [supabase, personId, newName, newDate, newNotes, items.length, adding]);
+
+  const setActive = async (id: number, isActive: boolean) => {
+    await toggleDiagnosis(supabase, id, isActive);
+    setItems(prev => prev.map(x => x.id === id ? { ...x, is_active: isActive } : x));
+  };
 
   const active   = items.filter(d =>  d.is_active);
   const inactive = items.filter(d => !d.is_active);
@@ -117,30 +122,33 @@ function DiagnosisSection({ diagnoses: initial, mode, personId }: Readonly<{
             </div>
             </>
           ) : (
-            <div className="manage-item">
-              <span className="manage-item__name">
-                {d.diagnosis_name}
-                {d.diagnosed_date && <span className="manage-item__meta"> · {formatMediumDate(d.diagnosed_date)}</span>}
-                {d.notes && <span className="manage-item__meta"> · {d.notes}</span>}
-              </span>
-              <div className="manage-item__actions">
-                <Button size="icon" variant="ghost" onClick={() => startEdit(d)} title="Edit">✏️</Button>
-                <Button size="sm"   variant="ghost" onClick={async () => { await toggleDiagnosis(supabase, d.id, false); setItems(prev => prev.map(x => x.id === d.id ? { ...x, is_active: false } : x)); }}>Deactivate</Button>
-                <ConfirmButton onConfirm={async () => { await deleteDiagnosis(supabase, d.id); setItems(prev => prev.filter(x => x.id !== d.id)); }} size="sm">✕</ConfirmButton>
-              </div>
-            </div>
+            <ManageItem
+              menu={
+                <RowMenu
+                  label={d.diagnosis_name}
+                  items={[
+                    { label: 'Edit', onSelect: () => startEdit(d) },
+                    { label: 'Deactivate', onSelect: () => setActive(d.id, false) },
+                  ]}
+                />
+              }
+            >
+              {d.diagnosis_name}
+              {d.diagnosed_date && <span className="manage-item__meta">{formatMediumDate(d.diagnosed_date)}</span>}
+              {d.notes && <span className="manage-item__meta manage-item__meta--truncate">{d.notes}</span>}
+            </ManageItem>
           )}
         </div>
       ))}
       <InactiveGroup count={inactive.length}>
         {inactive.map(d => (
-          <div key={d.id} className="manage-item manage-item--inactive">
-            <span className="manage-item__name">{d.diagnosis_name}</span>
-            <div className="manage-item__actions">
-              <Button size="sm" variant="ghost" onClick={async () => { await toggleDiagnosis(supabase, d.id, true); setItems(prev => prev.map(x => x.id === d.id ? { ...x, is_active: true } : x)); }}>Activate</Button>
-              <ConfirmButton onConfirm={async () => { await deleteDiagnosis(supabase, d.id); setItems(prev => prev.filter(x => x.id !== d.id)); }} size="sm">✕</ConfirmButton>
-            </div>
-          </div>
+          <ManageItem
+            key={d.id}
+            inactive
+            menu={<RowMenu label={d.diagnosis_name} items={[{ label: 'Activate', onSelect: () => setActive(d.id, true) }]} />}
+          >
+            {d.diagnosis_name}
+          </ManageItem>
         ))}
       </InactiveGroup>
       <>

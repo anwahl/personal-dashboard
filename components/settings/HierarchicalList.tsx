@@ -16,6 +16,12 @@
  *     ⋯ → Move to ▸.
  *   - With `uncategorized`: a final "Uncategorized" group for items whose
  *     category is optional and unset.
+ *   - With `childDialog`: an extra ⋯ item that opens a dialog for editing
+ *     more than fits in a row (e.g. a chart's metrics).
+ *   - With `categoryMenuItems` / `renderCategoryName`: extra heading actions
+ *     and display (e.g. an "Assignable" toggle and badge).
+ *   - The "categories" don't have to be categories: any parent → items
+ *     structure works (info group → fields); see `categoryNoun`.
  *
  * The caller normalises its data into NormalizedCat[] and provides a `dal`
  * of pre-bound async functions. No Supabase client or table names live here.
@@ -23,7 +29,8 @@
 
 import { useState, useCallback, type ReactNode } from 'react';
 import {
-  Button, DragHandle, ManageItem, RowMenu, SortableGroup, SortableItem, SortableList, EmptyState, SectionCard, InactiveGroup
+  Button, DragHandle, ManageItem, RowMenu, SortableGroup, SortableItem, SortableList, EmptyState, SectionCard, InactiveGroup,
+  Dialog,
 } from '@/components/ui';
 import type { RowMenuAction, RowMenuItem, SortMove } from '@/components/ui';
 import {
@@ -51,6 +58,8 @@ export interface NormalizedCat {
   is_active:  boolean;
   sort_order: number;
   children:   NormalizedChild[];
+  /** Any extra category data (e.g. is_assignable). */
+  [key: string]: unknown;
 }
 
 // ── DAL interface ─────────────────────────────────────────────────────────────
@@ -82,9 +91,15 @@ export interface HierarchicalListDal {
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
+/** Lets a dialog or menu item update a child's or category's shown data. */
+type Patch = (patch: Record<string, unknown>) => void;
+
 interface Props {
   title:             string;
   description?:      string;
+  /** What the parents are called: [singular, plural]. Default
+   *  ['category', 'categories']. Used in "+ Category" and "2 inactive categories". */
+  categoryNoun?:     [string, string];
   initialCategories: NormalizedCat[];
   /** Items with no category. When provided (even empty), an Uncategorized
    *  group is shown after the categories. */
@@ -102,12 +117,26 @@ interface Props {
   childrenSortable?: boolean;
   /** Custom display for an item (default: its name). */
   renderChildName?:  (child: NormalizedChild) => ReactNode;
+  /** An extra ⋯ item that opens a dialog for editing more than fits in a row.
+   *  `render` gets the child and a `patch` to update what the row shows. */
+  childDialog?: {
+    label:  string;
+    title:  (child: NormalizedChild) => ReactNode;
+    render: (child: NormalizedChild, patch: Patch) => ReactNode;
+  };
+  /** Custom display for a category heading (default: its name). */
+  renderCategoryName?: (cat: NormalizedCat) => ReactNode;
+  /** Extra ⋯ items for a category heading. `patch` updates the category's data. */
+  categoryMenuItems?:  (cat: NormalizedCat, patch: Patch) => RowMenuItem[];
   catPlaceholder?:   string;
   icons?:            IconRow[];
   /** Called after a category is added (e.g. so other lists can offer it). */
   onCategoryAdded?:  (cat: { id: number; name: string }) => void;
   /** Called after an item is added. */
   onChildAdded?:     (child: NormalizedChild) => void;
+  /** Called after an item is edited, (de)activated or moved, with its new data
+   *  (e.g. so another list showing it can update). */
+  onChildChange?:    (child: NormalizedChild) => void;
   dal:               HierarchicalListDal;
 }
 
@@ -122,6 +151,7 @@ const catIdOf     = (group: string | undefined): number | null =>
 export function HierarchicalList({
   title,
   description,
+  categoryNoun     = ['category', 'categories'],
   initialCategories,
   uncategorized,
   uncategorizedLabel = 'Uncategorized',
@@ -131,10 +161,14 @@ export function HierarchicalList({
   childPlaceholder = 'Add item…',
   childrenSortable = true,
   renderChildName,
+  childDialog,
+  renderCategoryName,
+  categoryMenuItems,
   catPlaceholder   = 'New category…',
   icons            = [],
   onCategoryAdded,
   onChildAdded,
+  onChildChange,
   dal,
 }: Readonly<Props>) {
   const [cats,        setCats]        = useState<NormalizedCat[]>(initialCategories);
@@ -145,6 +179,10 @@ export function HierarchicalList({
   const [addingGroup, setAddingGroup] = useState<string | null>(null);
   const [editingCat,  setEditingCat]  = useState<{ id: number; name: string } | null>(null);
   const [editChild,   setEditChild]   = useState<{ id: number; values: FieldValues; iconValues: IconValues } | null>(null);
+  // The dialog's child is kept after closing so its content doesn't blank
+  // out during the exit animation; `dialogOpen` controls visibility.
+  const [dialogFor,   setDialogFor]   = useState<{ id: number; group: string } | null>(null);
+  const [dialogOpen,  setDialogOpen]  = useState(false);
 
   const canMove = !!dal.moveChild;
 
@@ -176,6 +214,15 @@ export function HierarchicalList({
     }
   }, [setChildrenOf]);
 
+  /** Updates one child's shown data (no saving — the caller already saved). */
+  const patchChild = useCallback((group: string, childId: number, patch: Record<string, unknown>) =>
+    setChildrenOf(group, children => children.map(ch => ch.id === childId ? { ...ch, ...patch } : ch)),
+  [setChildrenOf]);
+
+  /** Updates one category's shown data (no saving — the caller already saved). */
+  const patchCat = useCallback((catId: number, patch: Record<string, unknown>) =>
+    setCats(prev => prev.map(c => c.id === catId ? { ...c, ...patch } : c)), []);
+
   // ── Category operations ───────────────────────────────────────────────────
 
   const addCategory = useCallback(async () => {
@@ -185,6 +232,7 @@ export function HierarchicalList({
     try {
       const data = await dal.addCategory(name, cats.length);
       setCats(prev => [...prev, {
+        ...data,   // any extra columns the add returned (e.g. is_assignable)
         id: data.id, name, is_active: data.is_active,
         sort_order: data.sort_order ?? prev.length,
         children: [],
@@ -247,16 +295,21 @@ export function HierarchicalList({
     if (!editChild) return;
     const payload = buildPayload(visibleFields(fields, 'edit', editChild.values), editChild.values, editChild.iconValues);
     await dal.updateChild(editChild.id, payload);
-    setChildrenOf(group, children => children.map(ch => ch.id === editChild.id
-      ? { ...ch, ...payload, name: payload[NAME_KEY] != null ? String(payload[NAME_KEY]) : ch.name }
-      : ch));
+    const old = childrenOf(group).find(ch => ch.id === editChild.id);
+    if (old) {
+      const updated = { ...old, ...payload, name: payload[NAME_KEY] != null ? String(payload[NAME_KEY]) : old.name };
+      setChildrenOf(group, children => children.map(ch => ch.id === updated.id ? updated : ch));
+      onChildChange?.(updated);
+    }
     setEditChild(null);
-  }, [dal, editChild, setChildrenOf]);
+  }, [dal, editChild, childrenOf, setChildrenOf, onChildChange]);
 
   const toggleChild = useCallback(async (group: string, childId: number, active: boolean) => {
     await dal.toggleChild(childId, active);
     setChildrenOf(group, children => children.map(ch => ch.id === childId ? { ...ch, is_active: active } : ch));
-  }, [dal, setChildrenOf]);
+    const old = childrenOf(group).find(ch => ch.id === childId);
+    if (old) onChildChange?.({ ...old, is_active: active });
+  }, [dal, childrenOf, setChildrenOf, onChildChange]);
 
   /** Moves a child to another group at `toIndex` among its active children. */
   const moveChildToGroup = useCallback(async (childId: number, fromGroup: string, toGroup: string, toIndex?: number) => {
@@ -276,7 +329,8 @@ export function HierarchicalList({
 
     await dal.moveChild(childId, catIdOf(toGroup));
     await dal.reorderChildren(updates);
-  }, [dal, childrenOf, setChildrenOf, applyOrder]);
+    onChildChange?.({ ...child, category_id: catIdOf(toGroup) });
+  }, [dal, childrenOf, setChildrenOf, applyOrder, onChildChange]);
 
   // ── Drag and drop ─────────────────────────────────────────────────────────
 
@@ -346,7 +400,9 @@ export function HierarchicalList({
           <RowMenu
             label={child.name}
             items={[
+              // Editing actions first, then Deactivate, then Move to.
               { label: 'Edit', onSelect: () => startEditChild(child, fields) },
+              ...(childDialog ? [{ label: childDialog.label, onSelect: () => { setDialogFor({ id: child.id, group }); setDialogOpen(true); } }] : []),
               { label: child.is_active ? 'Deactivate' : 'Activate', onSelect: () => toggleChild(group, child.id, !child.is_active) },
               ...moveToMenu(child, group),
             ]}
@@ -450,13 +506,14 @@ export function HierarchicalList({
             items={[
               { label: 'Rename', onSelect: () => setEditingCat({ id: cat.id, name: cat.name }) },
               { label: cat.is_active ? 'Deactivate' : 'Activate', onSelect: () => toggleCategory(cat.id, !cat.is_active) },
+              ...(categoryMenuItems ? categoryMenuItems(cat, patch => patchCat(cat.id, patch)) : []),
             ]}
           />
         }
         editing={editingCat?.id === cat.id ? (
           <>
             <FieldInputs
-              fields={[{ key: NAME_KEY, label: 'Category name', type: 'text', required: true }]}
+              fields={[{ key: NAME_KEY, label: 'Name', type: 'text', required: true }]}
               mode="edit"
               values={{ [NAME_KEY]: editingCat.name }}
               iconValues={{}}
@@ -471,7 +528,7 @@ export function HierarchicalList({
           </>
         ) : undefined}
       >
-        {cat.name}
+        {renderCategoryName ? renderCategoryName(cat) : cat.name}
       </ManageItem>
     );
   };
@@ -503,7 +560,7 @@ export function HierarchicalList({
 
       <InactiveGroup
         count={inactiveCats.length}
-        label={`${inactiveCats.length} inactive ${inactiveCats.length === 1 ? 'category' : 'categories'}`}
+        label={`${inactiveCats.length} inactive ${inactiveCats.length === 1 ? categoryNoun[0] : categoryNoun[1]}`}
       >
         {inactiveCats.map(cat => (
           <div key={cat.id} className="category-block">
@@ -517,7 +574,7 @@ export function HierarchicalList({
         <input
           type="text"
           className="input--flex"
-          aria-label="New category name"
+          aria-label={`New ${categoryNoun[0]} name`}
           value={newCatName}
           onChange={e => setNewCatName(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && addCategory()}
@@ -528,9 +585,19 @@ export function HierarchicalList({
           onClick={addCategory}
           disabled={addingCat || !newCatName.trim()}
         >
-          {addingCat ? '…' : '+ Category'}
+          {addingCat ? '…' : `+ ${categoryNoun[0][0].toUpperCase()}${categoryNoun[0].slice(1)}`}
         </Button>
       </div>
+
+      {childDialog && dialogFor && (() => {
+        const child = childrenOf(dialogFor.group).find(ch => ch.id === dialogFor.id);
+        if (!child) return null;
+        return (
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen} title={childDialog.title(child)} placement="auto">
+            {childDialog.render(child, patch => patchChild(dialogFor.group, child.id, patch))}
+          </Dialog>
+        );
+      })()}
     </SectionCard>
   );
 }

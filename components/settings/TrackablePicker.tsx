@@ -3,17 +3,19 @@
 /**
  * components/settings/TrackablePicker.tsx
  *
- * Icon-aware custom dropdown for picking a DailyTrackableRow.
- * Replaces a plain <select> so SVG icons can appear next to each option.
+ * Icon-aware dropdown for picking a DailyTrackableRow (Radix Select).
  * Used in ChartSettings and LastTimeSettings.
  *
- * The dropdown uses position:fixed (not position:absolute) so it renders
- * in viewport space and is never clipped by overflow:hidden on a parent.
+ * The list renders in a portal, opens above the button when there isn't
+ * room below (keeping clear of the phone tab bar), can be wider than the
+ * button so names aren't cut off, and supports keyboard and type-to-find.
  */
 
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { IconDisplay }                               from '@/components/ui';
-import type { DailyTrackableRow, IconRow }           from '@/types/schema';
+import { useState } from 'react';
+import { Select } from 'radix-ui';
+import { ChevronDown } from 'lucide-react';
+import { IconDisplay } from '@/components/ui';
+import type { DailyTrackableRow, IconRow } from '@/types/schema';
 
 interface Props {
   trackables:   DailyTrackableRow[];
@@ -24,127 +26,63 @@ interface Props {
   showType?:    boolean;
 }
 
-interface DropdownPos { top: number; left: number; width: number; }
+const EDGE = 8;
+
+/** Space to keep clear at the bottom: the phone tab bar, when it's showing. */
+function bottomPadding(): number {
+  const bar = document.querySelector('.mobile-tabbar');
+  const h = bar ? bar.getBoundingClientRect().height : 0;
+  return EDGE + h;
+}
 
 export function TrackablePicker({
   trackables, icons, value, onChange,
   placeholder = 'Select metric…',
   showType = false,
 }: Readonly<Props>) {
-  const [open,    setOpen]    = useState(false);
-  const [pos,     setPos]     = useState<DropdownPos | null>(null);
-  const triggerRef            = useRef<HTMLButtonElement>(null);
-
-  // Calculate fixed position from the trigger's bounding rect
-  const openDropdown = useCallback(() => {
-    if (triggerRef.current) {
-      const r = triggerRef.current.getBoundingClientRect();
-      setPos({ top: r.bottom + 4, left: r.left, width: r.width });
-    }
-    setOpen(true);
-  }, []);
-
-  // Close on outside click
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      const target = e.target as Node;
-      // Keep open if clicking trigger or dropdown
-      const dropdown = document.getElementById('trackable-picker-dropdown');
-      if (
-        (triggerRef.current && triggerRef.current.contains(target)) ||
-        (dropdown && dropdown.contains(target))
-      ) return;
-      setOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [open]);
-
-  // Recalculate position on scroll/resize so dropdown follows the trigger
-  useEffect(() => {
-    if (!open) return;
-    const update = () => {
-      if (triggerRef.current) {
-        const r = triggerRef.current.getBoundingClientRect();
-        setPos({ top: r.bottom + 4, left: r.left, width: r.width });
-      }
-    };
-    window.addEventListener('scroll', update, true);
-    window.addEventListener('resize', update);
-    return () => {
-      window.removeEventListener('scroll', update, true);
-      window.removeEventListener('resize', update);
-    };
-  }, [open]);
-
-  const selected = value ? (trackables.find(t => String(t.id) === value) ?? null) : null;
-
-  const select = (t: DailyTrackableRow) => {
-    onChange(String(t.id));
-    setOpen(false);
-  };
+  const [bottom, setBottom] = useState(EDGE);
+  const iconOf = (t: DailyTrackableRow) => icons.find(i => i.id === t.icon_id) ?? null;
 
   return (
-    <div className="trackable-picker">
-      <button
-        ref={triggerRef}
-        type="button"
-        className={`trackable-picker__trigger${open ? ' trackable-picker__trigger--open' : ''}`}
-        onClick={() => open ? setOpen(false) : openDropdown()}
-      >
-        {selected ? (
-          <>
-            <IconDisplay
-            icon={icons.find(i => i.id === selected.icon_id) ?? null}
-              size="sm"
-            />
-            <span className="trackable-picker__trigger-label">{selected.name}</span>
-          </>
-        ) : (
-          <span className="trackable-picker__placeholder trackable-picker__trigger-label">
-            {placeholder}
-          </span>
-        )}
-        <span className="trackable-picker__caret">{open ? '▲' : '▼'}</span>
-      </button>
+    <Select.Root
+      value={value}
+      onValueChange={onChange}
+      onOpenChange={open => { if (open) setBottom(bottomPadding()); }}
+    >
+      <Select.Trigger className="trackable-picker__trigger" aria-label={placeholder}>
+        <span className="trackable-picker__trigger-label">
+          <Select.Value placeholder={<span className="trackable-picker__placeholder">{placeholder}</span>} />
+        </span>
+        <Select.Icon className="trackable-picker__caret">
+          <ChevronDown size={16} aria-hidden="true" />
+        </Select.Icon>
+      </Select.Trigger>
 
-      {open && pos && (
-        <div
-          id="trackable-picker-dropdown"
+      <Select.Portal>
+        <Select.Content
           className="trackable-picker__dropdown"
-          style={{
-            position: 'fixed',
-            top:      pos.top,
-            left:     pos.left,
-            width:    pos.width,
-            zIndex:   300,
-          }}
+          position="popper"
+          sideOffset={4}
+          collisionPadding={{ top: EDGE, left: EDGE, right: EDGE, bottom }}
         >
-          {trackables.map(t => (
-            <button
-              key={t.id}
-              type="button"
-              className={`trackable-picker__option${String(t.id) === value ? ' trackable-picker__option--selected' : ''}`}
-              onClick={() => select(t)}
-            >
-              <IconDisplay
-              icon={icons.find(i => i.id === t.icon_id) ?? null}
-                size="sm"
-              />
-              <span className="trackable-picker__option-name">{t.name}</span>
-              {showType && (
-                <span className="trackable-picker__option-type">{t.track_type}</span>
-              )}
-            </button>
-          ))}
-          {trackables.length === 0 && (
-            <p style={{ padding: '8px 10px', color: 'var(--text-faint)', fontSize: '0.82rem', margin: 0 }}>
-              No options available.
-            </p>
-          )}
-        </div>
-      )}
-    </div>
+          <Select.Viewport className="trackable-picker__viewport">
+            {trackables.map(t => (
+              <Select.Item key={t.id} value={String(t.id)} className="trackable-picker__option">
+                <Select.ItemText>
+                  <span className="trackable-picker__option-label">
+                    <IconDisplay icon={iconOf(t)} size="sm" />
+                    {t.name}
+                  </span>
+                </Select.ItemText>
+                {showType && <span className="trackable-picker__option-type">{t.track_type}</span>}
+              </Select.Item>
+            ))}
+            {trackables.length === 0 && (
+              <p className="trackable-picker__empty">No options available.</p>
+            )}
+          </Select.Viewport>
+        </Select.Content>
+      </Select.Portal>
+    </Select.Root>
   );
 }

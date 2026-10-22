@@ -30,9 +30,10 @@ import { useCallback, useRef, useState, type ReactNode, type RefObject } from 'r
 import { Dialog as DialogPrimitive }               from 'radix-ui';
 import { Button }                                  from './Button';
 import { useSwipeToDismiss }                       from '@/lib/hooks/useSwipeToDismiss';
+import { useMediaQuery, PHONE_QUERY }             from '@/lib/hooks/useMediaQuery';
 
 export type DialogSize      = 'sm' | 'md';
-export type DialogPlacement = 'center' | 'bottom';
+export type DialogPlacement = 'center' | 'bottom' | 'auto';
 
 interface DialogProps {
   open:          boolean;
@@ -42,7 +43,8 @@ interface DialogProps {
   description?:  ReactNode;
   /** 'sm' = 320px max, 'md' = 480px max (default). Ignored for 'bottom'. */
   size?:         DialogSize;
-  /** 'center' (default) or 'bottom' for a bottom sheet. */
+  /** 'center' (default), 'bottom' for a bottom sheet, or 'auto': a bottom
+   *  sheet on phones and centered on wider screens. */
   placement?:    DialogPlacement;
   /** Action row rendered at the bottom of the panel (e.g. Cancel / Save). */
   footer?:       ReactNode;
@@ -79,7 +81,8 @@ export function Dialog({
     panelRef.current = el;
     setPanelEl(el);
   }, []);
-  const isSheet    = placement === 'bottom';
+  const isPhone    = useMediaQuery(PHONE_QUERY);
+  const isSheet    = placement === 'bottom' || (placement === 'auto' && isPhone);
   const panelClass = [
     'modal-panel',
     isSheet ? 'modal-panel--sheet' : null,

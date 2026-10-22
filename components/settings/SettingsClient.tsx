@@ -5,7 +5,7 @@ import { TabBar }                  from '@/components/ui';
 import { ManageableList }          from './ManageableList';
 import { SymptomSettings }         from './SymptomSettings';
 import { JournalSettings }         from './JournalSettings';
-import { PeopleStructureSettings } from './PeopleStructureSettings';
+import { PeopleSettings }          from './people/PeopleSettings';
 import { TrackableSettings }       from './TrackableSettings';
 import { ChartSettings }           from './ChartSettings';
 import { LastTimeSettings }        from '@/components/last-time/LastTimeSettings';
@@ -25,6 +25,9 @@ import type {
   ItemListRow,
   LogSchemaRow,
   ChecklistRow,
+  InfoFieldTypeRow,
+  LogSchemaFieldRow,
+  LogSchemaFieldOptionRow,
   PersonRow,
   ProviderRow,
   ProviderTypeRow,
@@ -79,6 +82,9 @@ interface Props {
   itemLists:         ItemListRow[];
   logSchemas:        LogSchemaRow[];
   checklists:        ChecklistRow[];
+  infoFieldTypes:        InfoFieldTypeRow[];
+  logSchemaFields:       LogSchemaFieldRow[];
+  logSchemaFieldOptions: LogSchemaFieldOptionRow[];
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -95,6 +101,7 @@ export function SettingsClient({
   providers, providerTypes,
   mediaTypes, mediaGenres, mediaStatuses,
   people, personLinks, infoGroups, itemLists, logSchemas, checklists,
+  infoFieldTypes, logSchemaFields, logSchemaFieldOptions,
 }: Readonly<Props>) {
   const [tab, setTab] = useState<SettingsTabId>('daily');
   // Lifted trackables state — allows ChartSettings dropdown to update when
@@ -183,14 +190,17 @@ export function SettingsClient({
         </div>
 
         <div className={tab === 'people' ? '' : 'hidden'}>
-          <PeopleStructureSettings
+          <PeopleSettings
             people={people}
             personLinks={personLinks}
+            peopleCategories={peopleCategories}
             infoGroups={infoGroups}
+            infoFieldTypes={infoFieldTypes}
             itemLists={itemLists}
             logSchemas={logSchemas}
+            logSchemaFields={logSchemaFields}
+            logSchemaFieldOptions={logSchemaFieldOptions}
             checklists={checklists}
-            peopleCategories={peopleCategories}
           />
         </div>
 

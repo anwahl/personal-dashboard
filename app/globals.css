@@ -114,7 +114,6 @@
   --color-sage-900: #314527;
   --color-sage-950: #2a3c21;
 
-
   --bg: var(--color-deep-950);
   --surface: var(--color-dark-purple-950);
   --surface-high: var(--color-dark-purple-700);
@@ -2418,9 +2417,6 @@ textarea {
 .manage-item__name--italic {
   font-style: italic;
 }
-.manage-item__edit-input {
-  flex: 1;
-}
 .manage-item__meta {
   font-size: 0.75rem;
   color: var(--text-faint);
@@ -2580,34 +2576,6 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 20px;
-}
-
-.settings-section {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 10px;
-  box-shadow: var(--box-shadow-standard);
-  background: var(--surface);
-  margin: 25px auto;
-}
-
-.settings-section__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-.settings-section__title {
-  font-size: 0.82rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-muted);
-}
-.settings-section__desc {
-  font-size: 0.78rem;
-  color: var(--text-faint);
-  margin-bottom: 10px;
 }
 
 /* ── Health analytics charts ─────────────────────────────────────────────────*/
@@ -2799,31 +2767,6 @@ textarea {
   cursor: default;
 }
 
-/* ── Settings additions ─────────────────────────────────────────────────────*/
-
-.settings-section-heading {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text);
-  margin: 20px 0 6px;
-}
-
-.settings-select {
-  appearance: none;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text);
-  font-size: 0.85rem;
-  padding: 5px 8px;
-  cursor: pointer;
-}
-
-.settings-select:focus {
-  outline: none;
-  border-color: var(--accent);
-}
-
 .manage-add-row {
   display: flex;
   gap: 8px;
@@ -2943,160 +2886,60 @@ textarea {
   font-size: 0.85em;
 }
 
-/* ── ChartSettings rework ────────────────────────────────────────────────────*/
-
-.chart-settings-topbar {
+/* ── Settings: Link to People ────────────────────────────────────────────────*/
+.person-links {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.person-links:last-child {
+  border-bottom: none;
+}
+.person-links__name {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-
-.chart-settings-topbar__left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.chart-settings-new-form {
-  background: var(--surface);
-  border: 1px solid var(--accent);
-  border-radius: var(--radius);
-  padding: 14px 16px;
-  margin-bottom: 16px;
-}
-
-.chart-settings-new-form__fields {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 6px;
-}
-
-.chart-settings-new-form__title-input {
-  flex: 1;
-  min-width: 160px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text);
-  font-size: 0.875rem;
-  padding: 6px 10px;
-}
-
-.chart-settings-new-form__hint {
-  font-size: 0.78rem;
-  color: var(--text-faint);
-  margin: 0 0 10px;
-}
-
-.chart-settings-filter {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.chart-settings-filter__input {
-  flex: 1;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text);
-  font-size: 0.875rem;
-  padding: 6px 10px;
-}
-
-.chart-settings-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 14px 16px;
-  margin-bottom: 12px;
-}
-
-.chart-settings-card--inactive {
-  opacity: 0.6;
-}
-
-.chart-settings-card--warn {
-  border-color: var(--warn);
-}
-
-.chart-settings-card__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 10px;
-}
-
-.chart-settings-card__title-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.chart-settings-card__title {
+  gap: 0.5em;
   font-weight: 600;
-  font-size: 0.9rem;
   color: var(--text);
 }
-
-.chart-settings-card__actions {
+.person-links__group {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
+  column-gap: 10px;
+  margin-top: 4px;
+}
+.person-links__label {
+  flex: 0 0 6.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+}
+.person-links__group .chip-group {
+  padding: 2px 0;
 }
 
-.chart-settings-card__warnings {
+/* ── Chart settings: metrics editor (dialog) ─────────────────────────────────*/
+.chart-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.chart-metrics__requirement {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-faint);
+}
+.chart-metrics__warnings {
   background: color-mix(in srgb, var(--warn) 12%, transparent);
   border-radius: var(--radius-sm);
   padding: 8px 12px;
-  margin-bottom: 10px;
 }
-
-.chart-settings-card__warning {
+.chart-metrics__warning {
   font-size: 0.82rem;
   color: var(--warn);
   margin: 2px 0;
-}
-
-.chart-settings-card__links {
-  margin-bottom: 10px;
-}
-
-.chart-settings-card__link-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 0;
-  border-bottom: 1px solid var(--border);
-  border-bottom-left-radius: 5px;
-  border-bottom-right-radius: 5px;
-}
-
-.chart-settings-card__link-row:last-child {
-  border-bottom: none;
-}
-
-.chart-settings-card__link-name {
-  flex: 1;
-  font-size: 0.875rem;
-  color: var(--text);
-}
-
-.chart-settings-card__add-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-  padding-top: 8px;
-  border-top: 1px solid var(--border);
 }
 
 .badge--muted {
@@ -3108,38 +2951,6 @@ textarea {
 
 .analytics-tabs {
   margin-bottom: 20px;
-}
-
-/* ── ChartSettings type groups ───────────────────────────────────────────────*/
-
-.chart-settings-type-group {
-  margin-bottom: 24px;
-}
-
-.chart-settings-type-group__heading {
-  font-size: 0.78rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--text-faint);
-  margin: 0 0 8px;
-  padding-bottom: 4px;
-  border-bottom: 1px solid var(--border);
-  border-bottom-left-radius: 5px;
-  border-bottom-right-radius: 5px;
-}
-
-.chart-settings-card__category-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
-  font-size: 0.82rem;
-}
-
-.chart-settings-card__category-label {
-  color: var(--text-muted);
-  min-width: 60px;
 }
 
 /* ── Color input ─────────────────────────────────────────────────────────────*/
@@ -4009,78 +3820,6 @@ a.appt-secondary:last-child {
   margin-top: 4px;
 }
 
-/* Divider between repeating form sub-sections (e.g. log columns) */
-.form-sub-section {
-  margin-bottom: 8px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--border);
-  border-bottom-left-radius: 5px;
-  border-bottom-right-radius: 5px;
-}
-
-.form-sub-section:last-child {
-  border-bottom: none;
-  margin-bottom: 0;
-}
-
-/* Small faint label above field list in a create form */
-.form-section-label {
-  font-size: 0.75rem;
-  color: var(--text-faint);
-  margin: 8px 0 6px;
-}
-
-/* ── Per-person block in PeopleStructureSettings ─────────────────────────────*/
-.person-block {
-  margin-bottom: 20px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid var(--border);
-  border-bottom-left-radius: 5px;
-  border-bottom-right-radius: 5px;
-}
-
-.person-block:last-child {
-  border-bottom: none;
-  margin-bottom: 0;
-  padding-bottom: 0;
-}
-
-.person-block__name {
-  margin: 0 0 12px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--text);
-}
-
-/* Sub-section label within person blocks ("Info Groups", "Lists", etc.) */
-.structure-sub-label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-faint);
-  margin: 0 0 6px;
-}
-
-/* ── Link item (structure name + toggle button pair) ─────────────────────────*/
-.link-group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 10px;
-}
-
-.link-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.link-item__name {
-  font-size: 0.82rem;
-  color: var(--text-muted);
-}
-
 /* ── Info field grid (PeoplePageClient — label : value rows) ─────────────────*/
 .info-field-grid {
   display: flex;
@@ -4350,11 +4089,6 @@ a.appt-secondary:last-child {
   border-radius: 2px;
 }
 
-/* ── settings-section-heading — zero top margin variant ─────────────────────*/
-.settings-section-heading--flush {
-  margin-top: 0;
-}
-
 /* ── Card label subtitle (inline, faint, next to section label text) ─────────*/
 .section-label-sub {
   font-weight: 400;
@@ -4595,13 +4329,6 @@ a.appt-secondary:last-child {
 .list-item--expanded {
   border-radius: var(--radius-sm) var(--radius-sm) 0 0 !important;
 }
-
-/* ── Expand panel additions ──────────────────────────────────────────────── */
-.expand-panel__empty {
-  color: var(--text-faint);
-  font-size: var(--font-size-sm);
-  margin: 0;
-}
 .expand-panel__actions {
   margin-top: 10px;
 }
@@ -4739,38 +4466,6 @@ a.appt-secondary:last-child {
   align-items: center;
   flex: 1;
   flex-wrap: wrap;
-}
-
-/* ── Sprint 1 fixes ──────────────────────────────────────────────────────────*/
-/* Narrow select for field-type dropdowns in structure create forms */
-.input--sm-select {
-  width: 110px;
-  flex: none;
-}
-
-/* ── Structure sub-panels (PeopleStructureSettings) ──────────────────────────*/
-/* Indented panel showing sub-items (fields, columns, checklist items) */
-.structure-sub-panel {
-  padding: 8px 0 4px 12px;
-  border-left: 2px solid var(--border);
-  margin: 4px 0 8px;
-}
-.structure-sub-panel__add-row {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  margin-top: 8px;
-  flex-wrap: wrap;
-}
-/* Small badge showing field_type inline with field label */
-.field-type-badge {
-  font-size: var(--font-size-xs);
-  color: var(--text-faint);
-  background: var(--surface-high);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 1px 5px;
-  flex-shrink: 0;
 }
 
 /* ── Weekly journal ──────────────────────────────────────────────────────────*/
@@ -5211,16 +4906,12 @@ a.appt-secondary:last-child {
    TRACKABLE PICKER — custom icon-aware dropdown for metric selection
    ══════════════════════════════════════════════════════════════════════════════ */
 
-.trackable-picker {
-  position: relative;
-  flex: 1;
-  min-width: 0;
-}
 .trackable-picker__trigger {
   display: flex;
   align-items: center;
   gap: 6px;
-  width: 100%;
+  flex: 1 1 10rem;
+  min-width: 0;
   padding: 5px 10px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -5237,7 +4928,7 @@ a.appt-secondary:last-child {
     border-color: var(--border-focus);
   }
 }
-.trackable-picker__trigger--open {
+.trackable-picker__trigger[data-state="open"] {
   border-color: var(--accent);
 }
 .trackable-picker__placeholder {
@@ -5245,52 +4936,81 @@ a.appt-secondary:last-child {
 }
 .trackable-picker__trigger-label {
   flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .trackable-picker__caret {
+  display: inline-flex;
   color: var(--text-faint);
-  font-size: 0.65rem;
   flex-shrink: 0;
 }
+/* Rendered in a portal; Radix flips it above the button when there's no room
+   below and reports the space available. */
 .trackable-picker__dropdown {
-  /* position/top/left/width/z-index applied inline (position:fixed) so the
-     dropdown renders in viewport space, escaping any overflow:hidden parent */
+  z-index: 300;   /* above dialogs (200) */
+  min-width: var(--radix-select-trigger-width);
+  max-width: calc(100vw - 16px);
+  max-height: min(320px, var(--radix-select-content-available-height));
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   box-shadow: var(--box-shadow-standard);
-  max-height: 220px;
-  overflow-y: auto;
+  overflow: hidden;
+}
+.trackable-picker__dropdown[data-state="open"] { animation: modal-fade-in 120ms ease-out; }
+.trackable-picker__viewport {
+  padding: 4px;
 }
 .trackable-picker__option {
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 6px 10px;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 6px;
   cursor: pointer;
   font-size: 0.82rem;
   color: var(--text);
-  border: none;
-  background: none;
-  width: 100%;
-  text-align: left;
+  outline: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
-@media (hover: hover) {
-  .trackable-picker__option:hover {
-    background: var(--surface-high);
-  }
+.trackable-picker__option[data-highlighted] {
+  background: var(--surface-high);
 }
-.trackable-picker__option--selected {
+.trackable-picker__option[data-state="checked"] {
   background: var(--accent-dim);
 }
-.trackable-picker__option-name {
+.trackable-picker__option-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   flex: 1;
+  white-space: nowrap;
 }
 .trackable-picker__option-type {
   font-size: 0.7rem;
   color: var(--text-faint);
   flex-shrink: 0;
+}
+.trackable-picker__empty {
+  padding: 8px 10px;
+  margin: 0;
+  color: var(--text-faint);
+  font-size: 0.82rem;
+}
+@media (pointer: coarse) {
+  .trackable-picker__trigger {
+    min-height: 44px;
+    font-size: 1rem;
+  }
+  .trackable-picker__option {
+    min-height: 44px;
+    font-size: 1rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .trackable-picker__dropdown { animation: none !important; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
@@ -5441,34 +5161,6 @@ input[type="date"],
 input[type="time"],
 input[type="datetime-local"] {
   min-height: 42px;
-}
-
-/* ── Collapsible settings sections ──────────────────────────────────────────*/
-.settings-section--collapsible > summary {
-  cursor: pointer;
-  list-style: none;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--border);
-  border-bottom-left-radius: 5px;
-  border-bottom-right-radius: 5px;
-  margin-bottom: 0;
-}
-.settings-section--collapsible > summary::-webkit-details-marker {
-  display: none;
-}
-.settings-section--collapsible > summary .settings-section__caret {
-  font-size: 0.7rem;
-  color: var(--text-faint);
-  transition: transform 0.15s;
-}
-.settings-section--collapsible[open] > summary .settings-section__caret {
-  transform: rotate(90deg);
-}
-.settings-section--collapsible[open] > summary {
-  margin-bottom: 8px;
 }
 
 /* ── Touch devices ───────────────────────────────────────────────────────────

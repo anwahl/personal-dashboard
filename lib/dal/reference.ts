@@ -41,6 +41,9 @@ import type {
   ItemListRow,
   LogSchemaRow,
   ChecklistRow,
+  InfoFieldTypeRow,
+  LogSchemaFieldRow,
+  LogSchemaFieldOptionRow,
   MedicationRow,
   IconRow,
 } from "@/types/schema";
@@ -434,6 +437,11 @@ export interface SettingsPageData {
   itemLists: ItemListRow[];
   logSchemas: LogSchemaRow[];
   checklists: ChecklistRow[];
+  /** Every info group's fields, active or not. */
+  infoFieldTypes: InfoFieldTypeRow[];
+  /** Every log's columns, active or not, and the options of select columns. */
+  logSchemaFields: LogSchemaFieldRow[];
+  logSchemaFieldOptions: LogSchemaFieldOptionRow[];
   personInfoGroupLinks: Array<{ person_id: number; info_group_id: number }>;
   personItemListLinks: Array<{ person_id: number; list_id: number }>;
   personLogLinks: Array<{ person_id: number; log_id: number }>;
@@ -452,6 +460,9 @@ export async function getSettingsPageData(
     itemListsRes,
     logSchemasRes,
     checklistsRes,
+    infoFieldTypesRes,
+    logFieldsRes,
+    logOptionsRes,
     pigLinks,
     pilLinks,
     plLinks,
@@ -465,6 +476,9 @@ export async function getSettingsPageData(
     client.from("item_lists").select("*").order("sort_order"),
     client.from("log_schemas").select("*").order("sort_order"),
     client.from("checklists").select("*").order("sort_order"),
+    client.from("info_field_types").select("*").order("sort_order"),
+    client.from("log_schema_fields").select("*").order("sort_order"),
+    client.from("log_schema_field_options").select("*").order("sort_order"),
     client.from("person_info_group_links").select("person_id, info_group_id"),
     client.from("person_item_list_links").select("person_id, list_id"),
     client.from("person_log_links").select("person_id, log_id"),
@@ -483,6 +497,9 @@ export async function getSettingsPageData(
   check("itemLists", itemListsRes.error);
   check("logSchemas", logSchemasRes.error);
   check("checklists", checklistsRes.error);
+  check("infoFieldTypes", infoFieldTypesRes.error);
+  check("logSchemaFields", logFieldsRes.error);
+  check("logSchemaFieldOptions", logOptionsRes.error);
   check("pigLinks", pigLinks.error);
   check("pilLinks", pilLinks.error);
   check("plLinks", plLinks.error);
@@ -497,6 +514,9 @@ export async function getSettingsPageData(
     itemLists: (itemListsRes.data ?? []) as ItemListRow[],
     logSchemas: (logSchemasRes.data ?? []) as LogSchemaRow[],
     checklists: (checklistsRes.data ?? []) as ChecklistRow[],
+    infoFieldTypes: (infoFieldTypesRes.data ?? []) as InfoFieldTypeRow[],
+    logSchemaFields: (logFieldsRes.data ?? []) as LogSchemaFieldRow[],
+    logSchemaFieldOptions: (logOptionsRes.data ?? []) as LogSchemaFieldOptionRow[],
     personInfoGroupLinks: (pigLinks.data ?? []) as Array<{
       person_id: number;
       info_group_id: number;

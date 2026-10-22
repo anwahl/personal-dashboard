@@ -42,16 +42,16 @@ export default async function SettingsPage() {
     calendarToken,
   ] = await Promise.all([
     getIconsRef(supabase, true),
-    getSymptomCategoriesWithTypes(supabase),
-    getJournalCategoriesWithPrompts(supabase),
+    getSymptomCategoriesWithTypes(supabase, true),
+    getJournalCategoriesWithPrompts(supabase, true),
     getProviderTypes(supabase),
-    getSleepEventTypes(supabase),
-    getAllPeople(supabase),
+    getSleepEventTypes(supabase, true),
+    getAllPeople(supabase, true),
     getPeopleCategories(supabase, true),
     getTrackables(supabase, true),
     getTrackableCategories(supabase, true),
-    getChartDefinitions(supabase),
-    getChartCategories(supabase),
+    getChartDefinitions(supabase, true),
+    getChartCategories(supabase, true),
     getSettingsPageData(supabase),
     getWeeklyJournalCategories(supabase, true),
     getCalendarToken(supabase),
@@ -97,6 +97,9 @@ export default async function SettingsPage() {
         itemLists={settingsData.itemLists}
         logSchemas={settingsData.logSchemas}
         checklists={settingsData.checklists}
+        infoFieldTypes={settingsData.infoFieldTypes}
+        logSchemaFields={settingsData.logSchemaFields}
+        logSchemaFieldOptions={settingsData.logSchemaFieldOptions}
         weeklyJournalCategories={weeklyJournalCategories}
         calendarToken={calendarToken}
       />
