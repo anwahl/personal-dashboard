@@ -575,7 +575,8 @@ hr.hr-md {
   justify-content: space-between;
   align-items: center;
   gap: 8px;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
 }
 .card__expand-panel--header:focus-visible,
 .card__expand-toggle:focus-visible {
@@ -628,9 +629,16 @@ hr.hr-md {
 
 .card__header {
   display: flex;
+  flex-wrap: wrap;           /* actions drop below the title when there's no room */
   justify-content: space-between;
   align-items: center;
+  row-gap: 8px;
   padding: 16px 20px 0;
+}
+/* The title keeps its width (up to the full row) instead of squeezing onto
+   several lines beside the actions. */
+.card__header > .card__title {
+  min-width: min(max-content, 100%);
 }
 
 .card__title {
@@ -2144,6 +2152,12 @@ textarea {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+/* Rows listed one after another (not each in its own card) get a divider. */
+.list-item + .list-item {
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+  padding-top: 8px;
 }
 .list-item__actions {
   display: flex;
@@ -3695,38 +3709,10 @@ a.appt-secondary:last-child {
 
 /* ── Last Time Tracker ───────────────────────────────────────────────────────*/
 
-.last-time-tracker {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 10px;
-  box-shadow: var(--box-shadow-standard);
-  background: var(--surface);
-}
-
-.last-time-tracker__controls {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
 .last-time-list {
   display: flex;
   flex-direction: column;
   gap: 2px;
-}
-
-.last-time-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 7px 0;
-  border-bottom: 1px solid var(--border);
-  border-bottom-left-radius: 5px;
-  border-bottom-right-radius: 5px;
-}
-
-.last-time-item:last-child {
-  border-bottom: none;
 }
 
 .last-time-item__emoji {
@@ -3734,27 +3720,6 @@ a.appt-secondary:last-child {
   flex-shrink: 0;
   width: 22px;
   text-align: center;
-}
-
-.last-time-item__body {
-  flex: 1;
-  min-width: 0;
-}
-
-.last-time-item__label {
-  font-size: 0.88rem;
-  color: var(--text);
-  display: block;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.last-time-item__date {
-  font-size: 0.72rem;
-  color: var(--text-faint);
-  display: block;
-  margin-top: 1px;
 }
 
 .last-time-item__ago {
@@ -3765,13 +3730,6 @@ a.appt-secondary:last-child {
 }
 
 /* ── Quick Media Log ─────────────────────────────────────────────────────────*/
-
-.quick-media-log {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 12px 16px;
-}
 
 .quick-media-log__header {
   display: flex;

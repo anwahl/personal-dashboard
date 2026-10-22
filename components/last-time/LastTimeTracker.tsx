@@ -9,12 +9,13 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
+import { useRouter }              from 'next/navigation';
 import { createClient }           from '@/lib/supabase/client';
 import { logCustomLastTime }      from '@/lib/dal/lasttime';
-import { Button, Card, CardActions, CardBody, CardGrid, CardHeader,
-         CardSection, CardTitle, Dialog, FieldActions, IconDisplay, Item, EmptyState, DateField, SegmentedControl
-}
-                                   from '@/components/ui';
+import {
+  Button, Card, CardActions, CardBody, CardHeader, CardSection, CardTitle,
+  Dialog, IconDisplay, EmptyState, DateField, ListItem, RowMenu,
+} from '@/components/ui';
 import type { LastTimeEntry }      from '@/types/dal';
 import type { IconRow }            from '@/types/schema';
 import { formatDaysAgo, formatMediumDate, localTodayISO } from '@/lib/utils/dates';
@@ -44,6 +45,7 @@ function daysAgoColorClass(days: number | null): string {
 
 export function LastTimeTracker({ entries, icons, compact = false }: Readonly<Props>) {
   const supabase = createClient();
+  const router   = useRouter();
   const [items,          setItems]          = useState<LastTimeEntry[]>(entries);
   const [sortBy,         setSortBy]         = useState<'order' | 'recent'>('order');
   const [logging,        setLogging]        = useState<Set<number>>(new Set());
@@ -97,49 +99,56 @@ export function LastTimeTracker({ entries, icons, compact = false }: Readonly<Pr
   return (
     <>
     <Card>
-      <CardBody>
         <CardHeader>
           <CardTitle>
             Last Time...
           </CardTitle>
           <CardActions>
-            <SegmentedControl
-              label="Sort"
-              size="sm"
-              options={[{ value: 'order', label: 'Custom order' }, { value: 'recent', label: 'Most recent' }]}
-              value={sortBy}
-              onChange={setSortBy}
+            <RowMenu
+              label="Last Time"
+              items={[
+                { label: 'Custom order',      checked: sortBy === 'order',  onSelect: () => setSortBy('order') },
+                { label: 'Most recent first', checked: sortBy === 'recent', onSelect: () => setSortBy('recent') },
+                'separator',
+                { label: 'Manage items…', onSelect: () => router.push('/settings?tab=lasttime') },
+              ]}
             />
           </CardActions>
         </CardHeader>
+      <CardBody>
         <CardSection>
           {sorted.length === 0 && (
             <EmptyState>No items configured. Add them in Settings → Last Time.</EmptyState>
           )}
 
           <div className="last-time-list">
-            
-             
             {sorted.map(item => (
-              <span className='border__btm pad pad__btm margin-tb-md' key={`${item.category}-${item.id}`}  >
-                <CardGrid columns={4} className=''>
+              <ListItem
+                key={`${item.category}-${item.id}`}
+                leading={
                   <IconDisplay
                     icon={icons.find(i => i.id === item.icon_id) ?? null}
                     size="sm"
                     className="last-time-item__emoji"
                   />
-                  <Item itemType='title' value={item.label} />
-                  <Item itemType='info' value={formatMediumDate(item.last_date)} />
-                  <Item itemType='meta' itemModifier={'bold'} value={formatDaysAgo(item.days_ago)} className={`${daysAgoColorClass(item.days_ago)}`} />
-                </CardGrid>
-              
-                {item.category === 'custom' && (
-                  <FieldActions alignment='right' className=''>
+                }
+                title={item.label}
+                meta={
+                  <>
+                    <span className={`last-time-item__ago ${daysAgoColorClass(item.days_ago)}`}>
+                      {formatDaysAgo(item.days_ago)}
+                    </span>
+                    {item.last_date && <span>{formatMediumDate(item.last_date)}</span>}
+                  </>
+                }
+                trailing={item.category === 'custom' && (
+                  <>
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => openDatePicker(item)}
-                      title="Log custom date">
+                      title="Log custom date"
+                      aria-label={`Log a date for ${item.label}`}>
                       📅
                     </Button>
                     <Button
@@ -147,12 +156,13 @@ export function LastTimeTracker({ entries, icons, compact = false }: Readonly<Pr
                       size="icon"
                       onClick={() => logToday(item)}
                       busy={logging.has(item.id)}
-                      title="Log today">
+                      title="Log today"
+                      aria-label={`Log ${item.label} today`}>
                       ✓
                     </Button>
-                  </FieldActions>
+                  </>
                 )}
-              </span>
+              />
             ))}
           </div>
         </CardSection>

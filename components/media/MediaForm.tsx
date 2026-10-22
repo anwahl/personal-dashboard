@@ -140,7 +140,7 @@ function SearchPanel({ mediaTypeSlug, onSelect }: Readonly<{
  * A changed status is logged with its date. Saves itself and refreshes.
  */
 export function MediaDialog({
-  open, onOpenChange, entry, defaultTypeId, mediaTypes, mediaStatuses, statusTypeLinks,
+  open, onOpenChange, entry, defaultTypeId, startInProgress = false, mediaTypes, mediaStatuses, statusTypeLinks,
 }: Readonly<{
   open:            boolean;
   onOpenChange:    (open: boolean) => void;
@@ -148,6 +148,8 @@ export function MediaDialog({
   entry?:          MediaEntryDetail | null;
   /** Type a new entry starts on (e.g. the tab you're on). */
   defaultTypeId?:  string;
+  /** New entries start on the type's first in-progress status (Now Playing). */
+  startInProgress?: boolean;
   mediaTypes:      MediaTypeRow[];
   mediaStatuses:   MediaStatusRow[];
   statusTypeLinks: MediaStatusTypeLinkRow[];
@@ -157,9 +159,14 @@ export function MediaDialog({
   const isNew    = !entry;
   const showTypeSelector = isNew;
   const enableSearch     = isNew;
+  /** The status a new entry of this type starts on. */
+  const startStatusFor = (typeId: string) => !startInProgress || !typeId ? ''
+    : String(validStatusesForType(Number(typeId), mediaStatuses, statusTypeLinks)
+        .find(st => st.status_type === 'in_progress')?.id ?? '');
+  const startType = defaultTypeId ?? '';
   const initialValues = entry
     ? entryToMediaFormValues(entry)
-    : { ...emptyMediaFormValues, status_date: localTodayISO(), media_type_id: defaultTypeId ?? '' };
+    : { ...emptyMediaFormValues, status_date: localTodayISO(), media_type_id: startType, status_id: startStatusFor(startType) };
 
   const [form, setForm] = useState<MediaFormValues>(initialValues);
   const [showSearch, setShowSearch] = useState(false);
@@ -237,7 +244,7 @@ export function MediaDialog({
                 <SelectField label="Type" value={form.media_type_id}
                     onChange={v => {
                         set('media_type_id', v);
-                        set('status_id', '');
+                        set('status_id', startStatusFor(v));
                         setShowSearch(false);
                     }}
                     placeholder="Select type…"

@@ -9,7 +9,6 @@ import { getEssEntry }                   from '@/lib/dal/ess';
 import { getActivePrescriptions }        from '@/lib/dal/prescriptions';
 import { DailyPageClient }               from '@/components/daily-log/DailyPageClient';
 import { TaskList }                      from '@/components/tasks/TaskList';
-import { QuickAdd }                      from '@/components/tasks/TaskForm';
 import { UpcomingAppointments }          from '@/components/appointments/UpcomingAppointments';
 import { getTasksByDateContext }          from '@/lib/dal/tasks';
 import { getJournalResponsesForEntry }    from '@/lib/dal/journal';
@@ -101,7 +100,6 @@ export default async function DailyPage({ params }: Readonly<Props>) {
             contextDate={date}
             initialData={taskData}
           />
-          <QuickAdd contextDate={date} defaultDue={date} />
         </div>
         <UpcomingAppointments
           appointments={appointments}

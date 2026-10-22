@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Button, Card, CardHeader, CardTitle,
   CardBody, CardActions, ExpandPanel, Info, Meta, FieldActions,
   CardGrid, CardGridColumn, Item,
-  ITEM_TYPES, CardSection, EmptyState
+  ITEM_TYPES, CardSection, EmptyState, AddButton, RowMenu
 } from '@/components/ui';
 import type { PersonRow } from '@/types/schema';
 import type { PrescriptionDetail } from '@/types/dal';
@@ -57,7 +57,7 @@ Readonly<{
       </CardGridColumn>
       <CardGridColumn>
         <FieldActions alignment='right'>
-          <Button size="sm" variant="ghost" onClick={onEdit}>Edit</Button>
+          <RowMenu label={rx.alias ?? rx.medication.medication_name} items={[{ label: 'Edit…', onSelect: onEdit }]} />
         </FieldActions>
       </CardGridColumn>
     </CardGrid>
@@ -83,9 +83,9 @@ export function PrescriptionsClient({ prescriptionsByPerson }: Readonly<Props>) 
 
   return (
     <>
-      <FieldActions alignment='right'>
+      <FieldActions docked alignment='right'>
         <Button variant="accent" onClick={() => openNew()}>
-          + Add Prescription
+          + New Prescription
         </Button>
       </FieldActions>
 
@@ -107,11 +107,7 @@ export function PrescriptionsClient({ prescriptionsByPerson }: Readonly<Props>) 
                 {person.person_name}
               </CardTitle>
               <CardActions>
-                <Button size="sm" 
-                  variant="action" 
-                  onClick={() => openNew(person.id)}>
-                    + Add
-                </Button>
+                <AddButton label={`Add a prescription for ${person.person_name}`} onClick={() => openNew(person.id)} />
               </CardActions>
             </CardHeader>
             <CardBody>

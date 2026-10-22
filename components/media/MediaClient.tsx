@@ -148,11 +148,9 @@ export function MediaClient({ entries, mediaTypes, mediaStatuses, statusTypeLink
   return (
     <>
       <TabBar tabs={typeTabs} active={activeTypeId} onChange={setActiveTypeId} />
-      <span className='pad'>
-        <FieldActions alignment='right'>
-          <Button variant="accent" size="sm" onClick={() => setAddOpen(true)}>+ Add</Button>
-        </FieldActions>
-      </span>
+      <FieldActions docked alignment='right'>
+        <Button variant="accent" onClick={() => setAddOpen(true)}>+ New Media</Button>
+      </FieldActions>
       <MediaDialog
         open={addOpen}
         onOpenChange={setAddOpen}

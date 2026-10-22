@@ -4,19 +4,17 @@
  * Task forms.
  *
  *   TaskDialog        — the full form in a FormDialog; adds or edits a task
- *                       and saves it (used by the task page and Full Add).
- *   QuickAddTaskForm  — title + date (+ time, person) quick add, no card.
- *   QuickAdd          — the collapsible "Add Task" card: quick add plus
- *                       Full Add (opens TaskDialog).
+ *                       and saves it (task page Edit, task list ＋).
+ *   QuickAddTaskForm  — title + date (+ time, person) quick add, no card
+ *                       (the phone ＋ sheet).
  */
 
-import { useState, useEffect, useCallback, type ReactNode } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Button,
   CardActions,
   CardSection,
   CardSectionLabel,
-  ExpandCard,
   FormDialog,
   TextField,
   NumberField,
@@ -387,17 +385,15 @@ export function TaskDialog({
 
 /**
  * The quick-add task fields + "+ Quick" button, without a card around them.
- * Used inside QuickAdd (Tasks page / Hub) and the mobile Quick add sheet.
+ * Used by the mobile Quick add sheet.
  *
  *   minimal      — title, date and the date shortcuts only (no time, no person)
- *   extraActions — rendered beside "+ Quick" (QuickAdd passes "Full Add")
  *   onAdded      — called after a task is created (and the page refreshed)
  */
 export function QuickAddTaskForm({
   contextDate = localTodayISO(),
   defaultDue = '',
   minimal = false,
-  extraActions,
   onAdded,
 }: Readonly<{
   contextDate?:  string;
@@ -405,7 +401,6 @@ export function QuickAddTaskForm({
    *  daily page's date. Default: none. */
   defaultDue?:   string;
   minimal?:      boolean;
-  extraActions?: ReactNode;
   onAdded?:      () => void;
 }>) {
   const supabase = createClient();
@@ -475,7 +470,6 @@ export function QuickAddTaskForm({
         >
           + Quick
         </Button>
-        {extraActions}
       </CardActions>
       <TextField
         label="Title"
@@ -519,49 +513,6 @@ export function QuickAddTaskForm({
           className="input--narrow"
         />
       )}
-    </>
-  );
-}
-
-// ── QuickAdd ──────────────────────────────────────────────────────────────────
-
-/** Collapsible "Add Task" card: QuickAddTaskForm, plus "Full Add" for the whole form (in a dialog). */
-export function QuickAdd({
-  contextDate = localTodayISO(),
-  defaultDue = '',
-}: Readonly<{
-  contextDate?: string;
-  /** Due date new tasks start with (e.g. the daily page's date). */
-  defaultDue?:  string;
-}>) {
-  const [fullOpen, setFullOpen] = useState(false);
-  const { statusId: todoStatusId, priorityId: normalPriorityId } = useTaskDefaults();
-
-  return (
-    <>
-      <ExpandCard title='Add Task'
-        hiddenChildren={
-          <QuickAddTaskForm
-            contextDate={contextDate}
-            defaultDue={defaultDue}
-            extraActions={
-              <Button variant="action-alt" onClick={() => setFullOpen(true)}>
-                Full Add
-              </Button>
-            }
-          />
-        } />
-      <TaskDialog
-        open={fullOpen}
-        onOpenChange={setFullOpen}
-        defaults={{
-          status_id:   String(todoStatusId),
-          priority_id: String(normalPriorityId),
-          due_date:    defaultDue,
-        }}
-        showDateShortcuts
-        contextDate={contextDate}
-      />
     </>
   );
 }

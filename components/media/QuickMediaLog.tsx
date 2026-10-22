@@ -1,106 +1,70 @@
 'use client';
 
-import Link from 'next/link';
-import { localTodayISO } from '@/lib/utils/dates';
-import {
-  addMediaStatusEntry
-} from '@/lib/dal/media';
-
 /**
- * QuickMediaLog
+ * QuickMediaLog — "Now Playing": in-progress media, grouped by type.
  *
- * Two sections:
- *   1. Now Playing — in-progress media grouped by type, quick status update
- *   2. Quick Add  — compact form to add new media with type-aware status filter
+ * Each row links to the entry's page; its ⋯ menu marks it finished or
+ * dropped (the type's completed/abandoned statuses) or opens it in
+ * MediaDialog. The ＋ in the header adds one, starting in progress.
  *
- * Reusable: Hub page (compact mode) and /media page (full mode).
+ * Used on the Hub and the Media page.
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import { createClient }              from '@/lib/supabase/client';
-import { Button, Card, CardActions, CardBody, CardHeader, CardSection, CardSectionLabel, CardTitle, Chip, ChipGroup, ExpandCard, TextField, SelectField, SubCard, SubCardBody, EmptyState }        from '@/components/ui';
-import type { MediaEntryDetail }     from '@/types/dal';
-import type {
-  MediaTypeRow, MediaStatusRow, MediaStatusTypeLinkRow,
-} from '@/types/schema';
-import { Field, FieldGrid } from '../ui/Display';
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-const STATUS_EMOJI: Record<string, string> = {
-  watching: '▶️', reading: '📖', playing: '🎮', finished: '✅',
-  dropped: '⛔', 'want-to': '🔖', paused: '⏸️',
-};
-
-function capitalize(s: string) {
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
-function validStatusesForType(
-  mediaTypeId: number,
-  allStatuses: MediaStatusRow[],
-  links: MediaStatusTypeLinkRow[]
-): MediaStatusRow[] {
-  const linked = new Map<number, Set<number>>();
-  for (const l of links) {
-    if (!linked.has(l.status_id)) linked.set(l.status_id, new Set());
-    linked.get(l.status_id)!.add(l.media_type_id);
-  }
-  return allStatuses.filter(s => {
-    const types = linked.get(s.id);
-    return !types || types.has(mediaTypeId);
-  });
-}
+import { createClient } from '@/lib/supabase/client';
+import { addMediaStatusEntry } from '@/lib/dal/media';
+import { localTodayISO } from '@/lib/utils/dates';
+import { capitalize } from '@/lib/utils/strings';
+import {
+  AddButton, CardBody, CardSection, CardSectionLabel, ExpandCard, EmptyState, ListItem, RowMenu,
+} from '@/components/ui';
+import type { MediaEntryDetail } from '@/types/dal';
+import type { MediaTypeRow, MediaStatusRow, MediaStatusTypeLinkRow } from '@/types/schema';
+import { MediaDialog, STATUS_EMOJI, validStatusesForType } from './MediaForm';
 
 // ── NowPlayingItem ────────────────────────────────────────────────────────────
 
 function NowPlayingItem({
-  entry, allStatuses, statusTypeLinks, onStatusChange,
+  entry, allStatuses, statusTypeLinks, onStatusChange, onEdit,
 }: Readonly<{
-  entry: MediaEntryDetail;
-  allStatuses: MediaStatusRow[];
+  entry:           MediaEntryDetail;
+  allStatuses:     MediaStatusRow[];
   statusTypeLinks: MediaStatusTypeLinkRow[];
-  onStatusChange: (entryId: number, statusId: number) => Promise<void>;
+  onStatusChange:  (entryId: number, statusId: number) => Promise<void>;
+  onEdit:          (entry: MediaEntryDetail) => void;
 }>) {
-  const [changing, setChanging] = useState(false);
-  const validStatuses = validStatusesForType(entry.media_type_id, allStatuses, statusTypeLinks);
-  const terminalStatuses = validStatuses.filter(s =>
-    s.status_type === 'completed' || s.status_type === 'abandoned'
-  );
+  const endStatuses = validStatusesForType(entry.media_type_id, allStatuses, statusTypeLinks)
+    .filter(s => s.status_type === 'completed' || s.status_type === 'abandoned');
 
-  const change = async (statusId: number) => {
-    setChanging(true);
-    try { await onStatusChange(entry.id, statusId); }
-    finally { setChanging(false); }
-  };
-
+  const status = entry.current_status;
   return (
-    <SubCard>
-      <CardHeader>
-        <CardTitle>{entry.title}</CardTitle>
-        <CardActions>
-          <Button variant="action" size="sm" href={`/media/${entry.id}`}>View</Button>
-          {terminalStatuses.map(s => (
-            <Button key={s.id} variant="action" size="sm"
-              onClick={() => change(s.id)} disabled={changing}
-              title={s.status_name}>
-              {STATUS_EMOJI[s.status_name] ?? s.status_name}
-            </Button>
-          ))}
-        </CardActions>
-      </CardHeader>
-      <SubCardBody>
-        <Chip>
-          {STATUS_EMOJI[entry.current_status?.status_name ?? ''] ?? ''}
-          {entry.current_status?.status_name}
-          {entry.creator && ` · ${entry.creator}`}
-        </Chip>
-      </SubCardBody>
-    </SubCard>
+    <ListItem
+      href={`/media/${entry.id}`}
+      title={entry.title}
+      meta={
+        <>
+          {status && <span>{STATUS_EMOJI[status.status_name] ?? ''} {status.status_name}</span>}
+          {entry.creator && <span>{entry.creator}</span>}
+        </>
+      }
+      trailing={
+        <RowMenu
+          label={entry.title}
+          items={[
+            ...endStatuses.map(s => ({
+              label:    `${STATUS_EMOJI[s.status_name] ?? ''} ${capitalize(s.status_name)}`.trim(),
+              onSelect: () => onStatusChange(entry.id, s.id),
+            })),
+            ...(endStatuses.length ? ['separator' as const] : []),
+            { label: 'Edit…', onSelect: () => onEdit(entry) },
+          ]}
+        />
+      }
+    />
   );
 }
 
-// ── Props ─────────────────────────────────────────────────────────────────────
+// ── QuickMediaLog ─────────────────────────────────────────────────────────────
 
 interface Props {
   initialEntries:  MediaEntryDetail[];
@@ -110,32 +74,20 @@ interface Props {
   open?:           boolean;
 }
 
-// ── QuickMediaLog ─────────────────────────────────────────────────────────────
-
 export function QuickMediaLog({
-  initialEntries, mediaTypes, mediaStatuses, statusTypeLinks, open = false
+  initialEntries, mediaTypes, mediaStatuses, statusTypeLinks, open = false,
 }: Readonly<Props>) {
   const supabase = createClient();
-  const [entries, setEntries]     = useState<MediaEntryDetail[]>(initialEntries);
-  const [showAdd, setShowAdd]     = useState(false);
-
-  // Quick add form state
-  const [title,     setTitle]     = useState('');
-  const [typeId,    setTypeId]    = useState(mediaTypes[0] ? String(mediaTypes[0].id) : '');
-  const [statusId,  setStatusId]  = useState('');
-  const [saving,    setSaving]    = useState(false);
-
-  // Auto-select the first in_progress status for the selected type
-  useEffect(() => {
-    if (!typeId) return;
-    const valid = validStatusesForType(Number(typeId), mediaStatuses, statusTypeLinks);
-    const inProgress = valid.find(s => s.status_type === 'in_progress');
-    if (inProgress) setStatusId(String(inProgress.id));
-  }, [typeId, mediaStatuses, statusTypeLinks]);
+  const [entries, setEntries] = useState<MediaEntryDetail[]>(initialEntries);
+  // Pick up entries added elsewhere (e.g. the dialog below) after a refresh.
+  useEffect(() => { setEntries(initialEntries); }, [initialEntries]);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editEntry,  setEditEntry]  = useState<MediaEntryDetail | null>(null);
+  const openAdd  = () => { setEditEntry(null); setDialogOpen(true); };
+  const openEdit = (e: MediaEntryDetail) => { setEditEntry(e); setDialogOpen(true); };
 
   const inProgress = entries.filter(e => e.current_status?.status_type === 'in_progress');
 
-  // Group by media type
   const grouped = mediaTypes.reduce<Record<string, MediaEntryDetail[]>>((acc, t) => {
     const forType = inProgress.filter(e => e.media_type_id === t.id);
     if (forType.length) acc[t.type_name] = forType;
@@ -143,99 +95,46 @@ export function QuickMediaLog({
   }, {});
 
   const handleStatusChange = useCallback(async (entryId: number, newStatusId: number) => {
-    await addMediaStatusEntry(supabase,
-      entryId, newStatusId, localTodayISO()
-    );
-    // Remove from in-progress list (it's now completed or abandoned)
+    await addMediaStatusEntry(supabase, entryId, newStatusId, localTodayISO());
+    // Finished or dropped: it's no longer in progress.
     setEntries(prev => prev.filter(e => e.id !== entryId));
   }, [supabase]);
 
-  const handleAdd = useCallback(async () => {
-    if (!title.trim() || !typeId || saving) return;
-    setSaving(true);
-    try {
-      const { data: entryData, error } = await supabase
-        .from('media_entries')
-        .insert({ title: title.trim(), media_type_id: Number.parseInt(typeId) })
-        .select().single();
-      if (error || !entryData) throw new Error('Failed to create entry');
-
-      if (statusId) {
-        await addMediaStatusEntry(supabase, (entryData as any).id, Number.parseInt(statusId), localTodayISO());
-      }
-
-      // Add to local list as in-progress if applicable
-      const status = mediaStatuses.find(s => s.id === Number.parseInt(statusId));
-      if (status?.status_type === 'in_progress') {
-        const mediaType = mediaTypes.find(t => t.id === Number.parseInt(typeId))!;
-        const newEntry: MediaEntryDetail = {
-          ...(entryData as any),
-          media_type:         mediaType,
-          current_status:     status,
-          latest_status_date: localTodayISO(),
-          genre_ids:          [],
-        };
-        setEntries(prev => [...prev, newEntry]);
-      }
-
-      setTitle(''); setShowAdd(false);
-    } finally { setSaving(false); }
-  }, [supabase, title, typeId, statusId, mediaStatuses, mediaTypes, saving]);
-
-  const validStatuses = typeId
-    ? validStatusesForType(Number(typeId), mediaStatuses, statusTypeLinks)
-    : mediaStatuses;
-
   return (
-    <ExpandCard open={open} title={`🎬 Now Playing (${inProgress.length})`}
-      hiddenChildren = {
-        <>
-          <CardActions>
-            <Button variant="ghost" size="sm"
-              onClick={() => setShowAdd(s => !s)}>
-              {showAdd ? '✕' : '+ Add'}
-            </Button>
-          </CardActions>
-          <CardBody>
-            {showAdd && (
-              <SubCard>
-                <CardHeader>
-                  <CardTitle>Add New</CardTitle>
-                </CardHeader>
-                <SubCardBody>
-                  <TextField label='Title' value={title} onChange={setTitle} placeholder="Title…"
-                    onKeyDown={e => { if (e.key === 'Enter') handleAdd(); }} />
-                  <SelectField label="Type" value={typeId} onChange={setTypeId} placeholder="Select type…"
-                    options={mediaTypes.map(t => ({ value: t.id, label: capitalize(t.type_name) }))} />
-                  <SelectField label="Status" value={statusId} onChange={setStatusId} placeholder="No status"
-                    options={validStatuses.map(s => ({
-                      value: s.id,
-                      label: `${STATUS_EMOJI[s.status_name] ?? ''} ${s.status_name}`.trim(),
-                    }))} />
-                  <Button variant="accent" size="sm" onClick={handleAdd} busy={saving} disabled={!title.trim()}>
-                        Add
-                      </Button>
-                </SubCardBody> 
-              </SubCard>
-            )}
+    <>
+      <ExpandCard open={open} title={`🎬 Now Playing (${inProgress.length})`}
+        actions={<AddButton label="Add media" onClick={openAdd} />}
+        hiddenChildren={
+          <>
+            <CardBody>
+              {inProgress.length === 0 && <EmptyState>Nothing in progress.</EmptyState>}
 
-            {inProgress.length === 0 && !showAdd && (
-              <EmptyState>Nothing in progress.</EmptyState>
-            )}
+              {Object.entries(grouped).map(([typeName, items]) => (
+                <CardSection key={typeName}>
+                  <CardSectionLabel>{capitalize(typeName)} ({items.length})</CardSectionLabel>
+                  {items.map(e => (
+                    <NowPlayingItem key={e.id} entry={e}
+                      allStatuses={mediaStatuses} statusTypeLinks={statusTypeLinks}
+                      onStatusChange={handleStatusChange}
+                      onEdit={openEdit}
+                    />
+                  ))}
+                </CardSection>
+              ))}
+            </CardBody>
+          </>
+        } />
 
-            {Object.entries(grouped).map(([typeName, items]) => (
-              <CardSection key={typeName}>
-                <CardSectionLabel>{capitalize(typeName)} ({items.length})</CardSectionLabel>
-                {items.map(e => (
-                  <NowPlayingItem key={e.id} entry={e}
-                    allStatuses={mediaStatuses} statusTypeLinks={statusTypeLinks}
-                    onStatusChange={handleStatusChange}
-                  />
-                ))}
-              </CardSection>
-            ))}
-          </CardBody>
-        </>
-    } />
+      <MediaDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        entry={editEntry}
+        defaultTypeId={mediaTypes[0] ? String(mediaTypes[0].id) : ''}
+        startInProgress
+        mediaTypes={mediaTypes}
+        mediaStatuses={mediaStatuses}
+        statusTypeLinks={statusTypeLinks}
+      />
+    </>
   );
 }

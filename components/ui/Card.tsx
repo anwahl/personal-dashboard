@@ -14,7 +14,9 @@ interface ExpandCardProps {
   className?: string;
   style?:     React.CSSProperties;
   title?:     string;
-  open?: boolean
+  open?: boolean;
+  /** Buttons beside the title (e.g. AddButton, RowMenu); ExpandCard only. */
+  actions?:   ReactNode;
 }
 
 export function Card({ children, className, style }: Readonly<CardProps>) {
@@ -131,7 +133,7 @@ export function ExpandPreview({ previewChildren, hiddenChildren, className, styl
           </div>;
 }
 
-export function ExpandCard({ shownChildren, hiddenChildren, className, style, title, open = false }: ExpandCardProps) {
+export function ExpandCard({ shownChildren, hiddenChildren, className, style, title, open = false, actions }: ExpandCardProps) {
   const [expanded, setExpanded] = useState(open);
   return <Card className={['card__expand', className].filter(Boolean).join(' ')} style={style}>
           {title && (
@@ -139,6 +141,7 @@ export function ExpandCard({ shownChildren, hiddenChildren, className, style, ti
               <ExpandToggle expanded={expanded} onToggle={() => setExpanded(e => !e)} className='card__expand-toggle'>
                 <CardTitle>{title}</CardTitle>
               </ExpandToggle>
+              {actions && <div className="card__header-actions">{actions}</div>}
             </CardHeader>
           )}
             <CardBody>

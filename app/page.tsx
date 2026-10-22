@@ -14,7 +14,6 @@ import { getLastTimeEntries }                   from '@/lib/dal/lasttime';
 import { getInProgressMediaEntries }            from '@/lib/dal/media';
 import { TaskList }                             from '@/components/tasks/TaskList';
 import { UpcomingAppointments }                 from '@/components/appointments/UpcomingAppointments';
-import { QuickAdd } from '@/components/tasks/TaskForm';
 import { PageBody } from '@/components/layout';
 
 export default async function HubPage() {
@@ -58,7 +57,6 @@ export default async function HubPage() {
             contextDate={today}
             initialData={taskData}
           />
-          <QuickAdd />
         </div>
         <UpcomingAppointments
           appointments={appointments}
