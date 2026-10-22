@@ -157,8 +157,8 @@ function ChartMetricsEditor({
           <SelectField hideLabel label="Role" value={selRole} onChange={v => setSelRole(v as MetricRole)}
             options={meta.validRoles.map(r => ({ value: r, label: ROLE_LABELS[r] }))} />
         )}
-        <Button variant="accent" size="sm" onClick={add} disabled={!selT || saving || full}>
-          {saving ? '…' : '+ Add'}
+        <Button variant="accent" size="sm" onClick={add} busy={saving} disabled={!selT || full}>
+          + Add
         </Button>
         {full && <p className="manage-add-row__hint">This chart already has its {ROLE_LABELS[selRole]} metric.</p>}
       </div>

@@ -76,6 +76,11 @@ export function AppointmentForm({
   const [form, setForm] = useState<AppointmentFormValues>(initialValues);
   const set = (k: keyof AppointmentFormValues, v: string) =>
     setForm(p => ({ ...p, [k]: v }));
+  // Picking a provider fills an empty Location with their practice name.
+  const pickProvider = (id: string) => setForm(p => {
+    const practice = providers.find(pr => String(pr.id) === id)?.practice_name;
+    return { ...p, provider_id: id, location: p.location.trim() || !practice ? p.location : practice };
+  });
 
   return (
     <Card>
@@ -101,7 +106,7 @@ export function AppointmentForm({
             <CardSection>
                 <CardSectionLabel>Secondary Details</CardSectionLabel>
                 <FieldGrid>
-                    <SelectField label="Provider" value={form.provider_id} onChange={v => set('provider_id', v)}
+                    <SelectField label="Provider" value={form.provider_id} onChange={pickProvider}
                         placeholder="No provider linked"
                         options={providers.map(p => ({ value: p.id, label: p.provider_name ?? p.practice_name ?? '' }))} />
                     <TextField label="Location" value={form.location} onChange={v => set('location', v)}
@@ -120,8 +125,8 @@ export function AppointmentForm({
                 <Button
                         variant="accent"
                         onClick={() => onSave(form)}
-                        disabled={saving || !form.appointment_date || !form.person_id} >
-                    {saving ? 'Saving…' : saveLabel}
+                        busy={saving} disabled={!form.appointment_date || !form.person_id} >
+                    {saveLabel}
                 </Button>
                 <Button variant="ghost" onClick={onCancel}>Cancel</Button>
                 {onDelete && (

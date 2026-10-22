@@ -25,6 +25,7 @@ export interface ProviderPayload {
   phone: string | null;
   address?: string | null;
   portal_url?: string | null;
+  sort_order?: number;
 }
 
 export async function createProvider(

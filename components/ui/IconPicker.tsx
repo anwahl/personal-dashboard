@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * Trigger button + searchable modal grid for picking an icon.
  *

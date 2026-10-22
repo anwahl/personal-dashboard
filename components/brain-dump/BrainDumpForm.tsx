@@ -59,9 +59,10 @@ export function BrainDumpForm({
           variant="accent"
           size="sm"
           onClick={submit}
-          disabled={!body.trim() || saving}
+          busy={saving}
+          disabled={!body.trim()}
         >
-          {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save'}
+          {saved ? '✓ Saved' : 'Save'}
         </Button>
       </CardActions>
     </>

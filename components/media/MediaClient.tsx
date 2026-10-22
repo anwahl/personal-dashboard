@@ -19,7 +19,7 @@ import {
   emptyMediaFormValues, entryToMediaFormValues,
   STATUS_EMOJI
 } from './MediaForm';
-import { FieldActions, FieldGrid } from '../ui/Display';
+import { FieldActions } from '../ui/Display';
 import { capitalize } from '@/lib/utils/strings';
 
 interface Props {
@@ -94,12 +94,11 @@ function MediaItem({ entry }: Readonly<{
               )}
             </CardSection>
           )}
-          {!loading && notes.length === 0 && <p className="note-empty">No notes yet.</p>}
-          {!loading && notes.map(n => (
+          {!loading && (
             <CardSection>
               <CardSectionLabel>Previous Notes</CardSectionLabel>
-              {!loading && notes.length === 0 && <p className="note-empty">No notes yet.</p>}
-              {!loading && notes.map(n => (
+              {notes.length === 0 && <p className="note-empty">No notes yet.</p>}
+              {notes.map(n => (
                 <div key={n.id} className="media-note">
                   <div className="media-note__header">
                     <span className="media-note__date-badge">{formatShortDate(n.note_date)}</span>
@@ -112,22 +111,20 @@ function MediaItem({ entry }: Readonly<{
                 </div>
               ))}
             </CardSection>
-          ))}
+          )}
 
           <CardSection>
             <CardSectionLabel>New Note</CardSectionLabel>
-            <FieldGrid>
-              <DateField label='Date' value={noteDate} onChange={setNoteDate} />
-              <TextAreaField label='Note' value={newNote} onChange={setNewNote}
-                placeholder="Add a note…"
-                onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) addNote(); }}
-                size="short" />
-            </FieldGrid>
+            <DateField label='Date' value={noteDate} onChange={setNoteDate} />
+            <TextAreaField label='Note' value={newNote} onChange={setNewNote}
+              placeholder="Add a note…"
+              onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) addNote(); }}
+              size="short" />
             <FieldActions alignment='right'>
               <Button size="sm" variant="action-alt"
                 onClick={addNote}
-                disabled={addingNote || !newNote.trim()}>
-                {addingNote ? '…' : 'Add'}
+                busy={addingNote} disabled={!newNote.trim()}>
+                Add
               </Button>
             </FieldActions>
           </CardSection>

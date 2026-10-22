@@ -141,6 +141,17 @@ interface Props {
 }
 
 const NAME_KEY    = 'name';
+
+/**
+ * Whether an item can be added: every required field is filled, and at least
+ * one field is (so a list whose fields are all optional, like providers'
+ * name/practice, still needs something typed).
+ */
+function canAdd(fields: AddField[], values: Record<string, string>): boolean {
+  const shown = visibleFields(fields, 'add', values).filter(f => f.type !== 'icon');
+  const filled = (f: AddField) => Boolean(values[f.key]?.trim());
+  return shown.filter(f => f.required !== false).every(filled) && shown.some(filled);
+}
 const UNCAT_GROUP = 'uncat';
 const catGroup    = (catId: number) => `cat:${catId}`;
 const catIdOf     = (group: string | undefined): number | null =>
@@ -262,9 +273,8 @@ export function HierarchicalList({
 
   const addChild = useCallback(async (group: string, fields: AddField[]) => {
     const current  = newByGroup[group] ?? emptyValues(fields);
+    if (!canAdd(fields, current.values)) return;
     const shown    = visibleFields(fields, 'add', current.values);
-    const required = shown.filter(f => f.required !== false && f.type !== 'icon');
-    if (required.some(f => !current.values[f.key]?.trim())) return;
 
     setAddingGroup(group);
     try {
@@ -440,7 +450,6 @@ export function HierarchicalList({
     const inactive = children.filter(ch => !ch.is_active).sort(bySortOrder);
     const newVals  = newFor(group, fields);
     const itemType = canMove ? 'item' : `item:${group}`;   // no moveChild → stay in own group
-    const nameField = fields.find(f => f.key === NAME_KEY) ?? fields[0];
 
     return (
       <div className="category-block__body">
@@ -481,9 +490,9 @@ export function HierarchicalList({
           <Button
             size="sm" variant="ghost"
             onClick={() => addChild(group, fields)}
-            disabled={addingGroup === group || !newVals.values[nameField.key]?.trim()}
+            busy={addingGroup === group} disabled={!canAdd(fields, newVals.values)}
           >
-            {addingGroup === group ? '…' : '+ Add'}
+            + Add
           </Button>
         </div>
       </div>
@@ -583,9 +592,9 @@ export function HierarchicalList({
         <Button
           size="sm" variant="accent"
           onClick={addCategory}
-          disabled={addingCat || !newCatName.trim()}
+          busy={addingCat} disabled={!newCatName.trim()}
         >
-          {addingCat ? '…' : `+ ${categoryNoun[0][0].toUpperCase()}${categoryNoun[0].slice(1)}`}
+          {`+ ${categoryNoun[0][0].toUpperCase()}${categoryNoun[0].slice(1)}`}
         </Button>
       </div>
 

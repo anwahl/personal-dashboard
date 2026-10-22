@@ -846,10 +846,6 @@ hr.hr-md {
   }
 }
 
-.btn--inactive {
-  opacity: 0.5;
-}
-
 .btn--check {
   width: 20px;
   height: 20px;
@@ -873,6 +869,142 @@ hr.hr-md {
 
 .btn--full {
   width: 100%;
+}
+
+/* Busy: a spinner sits in the left padding and the label nudges right, so
+   the button keeps its width. Icon buttons swap the icon for the spinner. */
+.btn--busy {
+  position: relative;
+  padding-left: 32px;
+  padding-right: 4px;
+}
+.btn--busy.btn--sm {
+  padding-left: 22px;
+  padding-right: 2px;
+}
+.btn--busy.btn--icon {
+  padding: 8px;
+}
+.btn__spinner {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  width: 14px;
+  height: 14px;
+  margin-top: -7px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: btn-spin 0.7s linear infinite;
+}
+.btn--sm .btn__spinner {
+  left: 6px;
+  width: 11px;
+  height: 11px;
+  margin-top: -5.5px;
+}
+.btn--icon .btn__spinner {
+  left: 50%;
+  margin-left: -7px;
+}
+.btn--busy.btn--check {
+  padding: 0;
+}
+.btn--check .btn__spinner {
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-width: 1.5px;
+}
+.btn__label--hidden {
+  visibility: hidden;
+}
+.btn--busy:disabled {
+  opacity: 0.75;
+  cursor: progress;
+}
+@keyframes btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn__spinner {
+    animation-duration: 2s;
+  }
+}
+
+/* ── Segmented control (pick one of a few) ──────────────────────────────────*/
+.segmented {
+  display: inline-flex;
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  padding: 2px;
+  gap: 2px;
+}
+.segmented--full {
+  display: flex;
+  width: 100%;
+}
+.segmented--full .segmented__item {
+  flex: 1;
+}
+.segmented__item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 1px solid transparent;
+  border-radius: calc(var(--radius-sm) - 2px);
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-family-item);
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
+}
+.segmented--sm .segmented__item {
+  min-height: 28px;
+  padding: 3px 10px;
+  font-size: 0.75rem;
+}
+.segmented__item[data-state="on"] {
+  background: var(--accent-dim);
+  border-color: var(--accent-dim-border);
+  color: var(--text);
+}
+@media (hover: hover) {
+  .segmented__item[data-state="off"]:hover:not(:disabled) {
+    background: var(--surface-high);
+    color: var(--text);
+  }
+}
+.segmented__item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.segmented__item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+@media (pointer: coarse) {
+  .segmented__item {
+    min-height: 40px;
+  }
+  .segmented--sm .segmented__item {
+    min-height: 36px;
+  }
 }
 
 /* ── Chip ────────────────────────────────────────────────────────────────────*/
@@ -1958,6 +2090,16 @@ textarea {
   flex: 1;
   min-width: 0;
 }
+.list-item__body--link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+@media (hover: hover) {
+  .list-item__body--link:hover .list-item__title {
+    color: var(--accent);
+  }
+}
 .list-item__title {
   font-size: 0.9rem;
   font-weight: 600;
@@ -2719,37 +2861,6 @@ textarea {
   justify-content: flex-end;
 }
 
-.chart-range-btn {
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text-faint);
-  font-size: 0.72rem;
-  font-weight: 500;
-  padding: 3px 8px;
-  cursor: pointer;
-  transition:
-    border-color 0.15s,
-    color 0.15s;
-}
-
-@media (hover: hover) {
-  .chart-range-btn:hover:not(:disabled) {
-    border-color: var(--text-muted);
-    color: var(--text-muted);
-  }
-}
-
-.chart-range-btn--active {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.chart-range-btn:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-
 .manage-add-row {
   display: flex;
   gap: 8px;
@@ -3101,11 +3212,6 @@ input[type="color"] {
   }
 }
 
-.task-item__check--busy {
-  opacity: 0.5;
-  cursor: default;
-}
-
 .task-item__body {
   flex: 1;
   min-width: 0;
@@ -3415,21 +3521,6 @@ input[type="color"] {
 
 /* ── Task item body as link ──────────────────────────────────────────────────*/
 
-.item-body-link {
-  flex: 1;
-  min-width: 0;
-  text-decoration: none;
-  color: inherit;
-  display: block;
-}
-
-@media (hover: hover) {
-  .item-body-link:hover .task-item__title,
-.item-body-link:hover .qml-item__title {
-    color: var(--accent);
-  }
-}
-
 /* ── Appointment cards as links ──────────────────────────────────────────────*/
 
 a.appt-primary {
@@ -3603,21 +3694,6 @@ a.appt-secondary:last-child {
   display: flex;
   gap: 8px;
   margin-bottom: 12px;
-}
-
-.last-time-sort-btn {
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text-muted);
-  font-size: 0.78rem;
-  padding: 4px 10px;
-  cursor: pointer;
-}
-
-.last-time-sort-btn--active {
-  border-color: var(--accent);
-  color: var(--accent);
 }
 
 .last-time-list {
@@ -4234,11 +4310,6 @@ a.appt-secondary:last-child {
 }
 
 /* ── QuickMediaLog linked body ───────────────────────────────────────────────*/
-@media (hover: hover) {
-  .item-body-link:hover .qml-item__title {
-    color: var(--accent);
-  }
-}
 
 /* ═══════════════════════════════════════════════════════════════════════════
    CLEANUP PASS — 2026-07-26
@@ -4283,9 +4354,31 @@ a.appt-secondary:last-child {
 .category-block__items {
   min-height: 8px;
 }
+/* A group a row is being dragged into (from another group). */
+.sortable-group--over {
+  border-radius: var(--radius-sm);
+  outline: 2px dashed var(--accent-dim-border);
+  outline-offset: 2px;
+  background: var(--surface-high);
+  transition: background 0.15s;
+}
 .category-block__body {
   padding-left: 12px;
 }
+/* Inputs in settings rows (FieldInputs). Add rows wrap two per row on
+   phones instead of squeezing every field onto one line. */
+.field-input {
+  flex: 1;
+}
+.field-input--add {
+  min-width: 80px;
+}
+@media (max-width: 767px) {
+  .field-input--add {
+    flex-basis: calc(50% - 8px);
+  }
+}
+
 .category-block__add-row {
   display: flex;
   flex-wrap: wrap;

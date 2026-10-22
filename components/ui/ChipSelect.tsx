@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * ChipSelect — a row of toggle chips for picking several options
  * (or one, with `single`).

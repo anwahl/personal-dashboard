@@ -23,6 +23,7 @@ import type { ChartDefinitionDetail, TrackingDataPoint } from '@/types/dal';
 import type { IconRow } from '@/types/schema';
 import type { ChartType, TrackType } from '@/types/schema';
 import { localTodayISO } from '@/lib/utils/dates';
+import { SegmentedControl } from '@/components/ui';
 
 // ── Range presets ─────────────────────────────────────────────────────────────
 
@@ -123,17 +124,14 @@ export function ChartPanel({ chart, initialData, fromDate, toDate, icons }: Read
     <div className="chart-panel">
       {/* Per-chart range controls */}
       <div className="chart-panel__controls">
-        {RANGE_OPTIONS.map(opt => (
-          <button
-            key={opt.value}
-            type="button"
-            className={`chart-range-btn${range === opt.value ? ' chart-range-btn--active' : ''}`}
-            onClick={() => changeRange(opt.value)}
-            disabled={loading}
-          >
-            {opt.label}
-          </button>
-        ))}
+        <SegmentedControl
+          label="Date range"
+          size="sm"
+          options={RANGE_OPTIONS.map(o => ({ value: String(o.value), label: o.label }))}
+          value={String(range)}
+          onChange={v => changeRange(Number(v))}
+          disabled={loading}
+        />
       </div>
 
       {/* Chart (dimmed while loading new range data) */}

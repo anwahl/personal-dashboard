@@ -329,9 +329,9 @@ export function TaskForm({
         <Button
           variant="accent"
           onClick={() => onSave(form)}
-          disabled={saving || !form.title.trim() || referenceLoading}
+          busy={saving} disabled={!form.title.trim() || referenceLoading}
         >
-          {saving ? "Saving…" : saveLabel}
+          {saveLabel}
         </Button>
         <Button variant="ghost" onClick={onCancel}>
           Cancel
@@ -430,9 +430,9 @@ export function QuickAddTaskForm({
         <Button
           variant="action-alt"
           onClick={quickAdd}
-          disabled={adding || !newTitle.trim() || referenceLoading}
+          busy={adding} disabled={!newTitle.trim() || referenceLoading}
         >
-          {adding ? "…" : "+ Quick"}
+          + Quick
         </Button>
         {extraActions}
       </CardActions>

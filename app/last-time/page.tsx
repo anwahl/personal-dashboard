@@ -1,23 +1,16 @@
 import { createClient }       from '@/lib/supabase/server';
 import { getLastTimeEntries } from '@/lib/dal/lasttime';
-import { getTrackables, getMediaTypes, getMediaStatuses, getMediaGenres, getIconsRef } from '@/lib/dal/reference';
+import { getIconsRef }        from '@/lib/dal/reference';
 import { LastTimeTracker }    from '@/components/last-time/LastTimeTracker';
-import { LastTimeSettings }   from '@/components/last-time/LastTimeSettings';
-import { Header, PageBody } from '@/components/layout';
+import { Header, PageBody }   from '@/components/layout';
+import { Button }             from '@/components/ui';
 
 export default async function LastTimePage() {
   const supabase = await createClient();
-  const [entries, icons, allTrackables, mediaTypes, mediaStatuses, mediaGenres] = await Promise.all([
+  const [entries, icons] = await Promise.all([
     getLastTimeEntries(supabase),
     getIconsRef(supabase),
-    getTrackables(supabase),
-    getMediaTypes(supabase),
-    getMediaStatuses(supabase),
-    getMediaGenres(supabase),
   ]);
-
-  // LastTimeSettings only needs boolean trackables
-  const booleanTrackables = allTrackables.filter(t => t.track_type === 'boolean');
 
   return (
     <PageBody>
@@ -25,13 +18,8 @@ export default async function LastTimePage() {
 
       <LastTimeTracker entries={entries} icons={icons} />
 
-      <LastTimeSettings
-        trackables={booleanTrackables}
-        mediaTypes={mediaTypes}
-        mediaGenres={mediaGenres}
-        mediaStatuses={mediaStatuses}
-        icons={icons}
-      />
+      {/* What's tracked here is managed in Settings → Last Time. */}
+      <Button variant="ghost" size="sm" href="/settings?tab=lasttime">⚙️ Manage Last Time items</Button>
     </PageBody>
   );
 }

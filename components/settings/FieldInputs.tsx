@@ -112,7 +112,9 @@ export function FieldInputs({
     <>
       {visibleFields(fields, mode, values).map(f => {
         // Dynamic px width from caller config — legitimate inline style exception
-        const sizing = { flex: f.width ? 'none' : 1, width: f.width ?? undefined, minWidth: mode === 'add' ? 80 : undefined };
+        const sizing = f.width ? { flex: 'none', width: f.width } : undefined;
+        // Add rows wrap two fields per row on phones (see .field-input--add).
+        const inputClass = mode === 'add' ? 'field-input field-input--add' : 'field-input';
 
         switch (f.type) {
           case 'icon':
@@ -165,6 +167,7 @@ export function FieldInputs({
                 onKeyDown={onKeyDown}
                 placeholder={f.placeholder ?? (mode === 'add' ? f.label : undefined)}
                 style={sizing}
+                className={inputClass}
                 autoFocus={f.key === autoFocusKey}
               />
             );

@@ -48,6 +48,8 @@ import { SETTINGS_TABS, SettingsTabId } from '@/lib/constants/nav';
 // ── Props ─────────────────────────────────────────────────────────────────────
 
 interface Props {
+  /** Tab to open first (from ?tab=…). Default: Daily. */
+  initialTab?:       SettingsTabId;
   // Icons
   icons:                IconRow[];
   // People
@@ -90,6 +92,7 @@ interface Props {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function SettingsClient({
+  initialTab = 'daily',
   icons,
   calendarToken,
   peopleCategories,
@@ -103,7 +106,7 @@ export function SettingsClient({
   people, personLinks, infoGroups, itemLists, logSchemas, checklists,
   infoFieldTypes, logSchemaFields, logSchemaFieldOptions,
 }: Readonly<Props>) {
-  const [tab, setTab] = useState<SettingsTabId>('daily');
+  const [tab, setTab] = useState<SettingsTabId>(initialTab);
   // Lifted trackables state — allows ChartSettings dropdown to update when
   // new metrics are added in TrackableSettings without a full page refresh
   const [liveTrackables, setLiveTrackables] = useState<DailyTrackableRow[]>(trackables);

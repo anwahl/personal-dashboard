@@ -12,7 +12,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { createClient }           from '@/lib/supabase/client';
 import { logCustomLastTime }      from '@/lib/dal/lasttime';
 import { Button, Card, CardActions, CardBody, CardGrid, CardHeader,
-         CardSection, CardTitle, Dialog, FieldActions, IconDisplay, Item, EmptyState, DateField
+         CardSection, CardTitle, Dialog, FieldActions, IconDisplay, Item, EmptyState, DateField, SegmentedControl
 }
                                    from '@/components/ui';
 import type { LastTimeEntry }      from '@/types/dal';
@@ -103,17 +103,13 @@ export function LastTimeTracker({ entries, icons, compact = false }: Readonly<Pr
             Last Time...
           </CardTitle>
           <CardActions>
-            <Button variant='action-alt' size='sm'
-              className={`${sortBy === 'recent' ? ' btn--inactive' : ''}`}
-              onClick={() => setSortBy('order')}>
-                Custom Order
-            </Button>
-            
-            <Button variant='action-alt' size='sm'
-              className={`${sortBy === 'order' ? ' btn--inactive' : ''}`}
-              onClick={() => setSortBy('recent')}>
-                Most recent first
-            </Button>
+            <SegmentedControl
+              label="Sort"
+              size="sm"
+              options={[{ value: 'order', label: 'Custom order' }, { value: 'recent', label: 'Most recent' }]}
+              value={sortBy}
+              onChange={setSortBy}
+            />
           </CardActions>
         </CardHeader>
         <CardSection>
@@ -150,9 +146,9 @@ export function LastTimeTracker({ entries, icons, compact = false }: Readonly<Pr
                       variant="ghost"
                       size="icon"
                       onClick={() => logToday(item)}
-                      disabled={logging.has(item.id)}
+                      busy={logging.has(item.id)}
                       title="Log today">
-                      {logging.has(item.id) ? '…' : '✓'}
+                      ✓
                     </Button>
                   </FieldActions>
                 )}

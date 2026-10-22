@@ -226,9 +226,9 @@ export function ManageableList({
             size="sm"
             variant="accent"
             onClick={add}
-            disabled={saving || !newVals[nameField.key]?.trim()}
+            busy={saving} disabled={!newVals[nameField.key]?.trim()}
           >
-            {saving ? '…' : '+ Add'}
+            + Add
           </Button>
           {collapsibleAdd && (
             <Button size="sm" variant="ghost" onClick={() => setAddExpanded(false)}>Cancel</Button>

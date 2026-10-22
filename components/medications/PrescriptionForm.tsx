@@ -15,7 +15,7 @@ import { useState, useEffect } from 'react';
 import {
   Button, CardBody, CardActions, TextField, DateField, SelectField,
   CardSection, CardSectionLabel, FieldActions, FieldGrid,
-  useToast,
+  useToast, SegmentedControl
 } from '@/components/ui';
 import {
   useMedications,
@@ -112,14 +112,12 @@ export function PrescriptionForm({
       )}
 
       <FieldActions alignment="middle">
-        <Button size="sm" variant={!useNewMed ? 'accent' : 'ghost'}
-          onClick={() => setUseNewMed(false)}>
-          Existing
-        </Button>
-        <Button size="sm" variant={useNewMed ? 'accent' : 'ghost'}
-          onClick={() => setUseNewMed(true)}>
-          New medication
-        </Button>
+        <SegmentedControl
+          label="Medication"
+          options={[{ value: 'existing', label: 'Existing' }, { value: 'new', label: 'New medication' }]}
+          value={useNewMed ? 'new' : 'existing'}
+          onChange={v => setUseNewMed(v === 'new')}
+        />
       </FieldActions>
 
       <CardSection>
@@ -167,8 +165,8 @@ export function PrescriptionForm({
 
       <CardActions>
         <Button variant="accent" onClick={() => onSave(form)}
-          disabled={saving || !canSave || referenceLoading}>
-          {saving ? 'Saving…' : saveLabel}
+          busy={saving} disabled={!canSave || referenceLoading}>
+          {saveLabel}
         </Button>
         <Button variant="ghost" onClick={onCancel}>Cancel</Button>
       </CardActions>

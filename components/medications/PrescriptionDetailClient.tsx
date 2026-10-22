@@ -12,7 +12,8 @@ import { deletePrescriptionChange }           from '@/lib/dal/appointments';
 import { createClient }                       from '@/lib/supabase/client';
 import { Button, Card, CardActions, CardBody, CardHeader, CardSection,
   CardSectionLabel, CardTitle, Field, FieldGrid,
-  Item, SaveState, SaveStatus, useToast } from '@/components/ui';
+  Item, SaveState, SaveStatus, useToast, ModeToggle
+} from '@/components/ui';
 import type { PrescriptionDetail }            from '@/types/dal';
 import type { PrescriptionChangeRow }         from '@/types/schema';
 import { RX_FIELDS, RxFieldKey, getRxDisplayValue } from '@/lib/constants/prescriptions';
@@ -104,7 +105,7 @@ export function PrescriptionDetailClient({ prescription }: Readonly<{prescriptio
           {!prescription.is_active && <Item itemType='inactive' value='Discontinued' />}
         </CardTitle>
         <CardActions>
-          <Button variant="ghost" size="sm" onClick={() => setMode('edit')}>✏️ Edit</Button>
+          <ModeToggle editing={false} onChange={() => setMode('edit')} />
         </CardActions>
       </CardHeader>
       <CardBody>

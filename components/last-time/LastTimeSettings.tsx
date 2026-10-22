@@ -342,8 +342,8 @@ export function LastTimeSettings({ trackables, mediaTypes, mediaGenres, mediaSta
             placeholder="Select metric…"
           />
         )}
-        <Button variant="accent" size="sm" onClick={addItem} disabled={!canAdd || saving}>
-          {saving ? '…' : '+ Add'}
+        <Button variant="accent" size="sm" onClick={addItem} busy={saving} disabled={!canAdd}>
+          + Add
         </Button>
         {kind === 'media' && add.name.trim() && !hasFilter && (
           <p className="manage-add-row__hint">Pick at least one of type, genre or status.</p>

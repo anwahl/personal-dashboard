@@ -129,8 +129,8 @@ export function RxPendingChanges({ rx, onApply }: Readonly<Props>) {
 
       {pending.length > 0 && (
         <FieldActions alignment='bottom'>
-          <Button variant="accent" size="sm" onClick={apply} disabled={saving}>
-            {saving ? 'Applying…' : `Apply ${pending.length} change${pending.length > 1 ? 's' : ''}`}
+          <Button variant="accent" size="sm" onClick={apply} busy={saving}>
+            {`Apply ${pending.length} change${pending.length > 1 ? 's' : ''}`}
           </Button>
           <Button variant="ghost" size="sm" onClick={() => setPending([])}>Cancel</Button>
         </FieldActions>

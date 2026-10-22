@@ -12,7 +12,8 @@ import {
   Item, 
   SubCard,
   SubCardBody,
-  CardGrid}                                   from '@/components/ui';
+  CardGrid, ModeToggle
+}                                   from '@/components/ui';
 import { useState, useCallback }              from 'react';
 import { useRouter }                          from 'next/navigation';
 import { createClient }                       from '@/lib/supabase/client';
@@ -269,7 +270,7 @@ export function AppointmentDetailClient({
             </>
           )}
           <CardActions>
-            <Button variant="ghost" size="sm" onClick={() => setMode('edit')}>✏️ Edit</Button>
+            <ModeToggle editing={false} onChange={() => setMode('edit')} />
             <ConfirmButton onConfirm={remove}>✕ Delete</ConfirmButton>
           </CardActions>
         </CardHeader>
@@ -337,8 +338,8 @@ export function AppointmentDetailClient({
               </FieldActions>
             )}
             <FieldActions alignment='right'>
-              <Button variant="action" size="sm" onClick={createTaskForAppt} disabled={creatingTask}>
-                {taskCreated ? '✓ Task created' : creatingTask ? '…' : '✅ Create Task'}
+              <Button variant="action" size="sm" onClick={createTaskForAppt} busy={creatingTask}>
+                {taskCreated ? '✓ Task created' : '✅ Create Task'}
               </Button>
             </FieldActions>
           </CardGrid>

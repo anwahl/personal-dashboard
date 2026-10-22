@@ -1,3 +1,5 @@
+'use client';
+
 import { type ComponentPropsWithRef, type AnchorHTMLAttributes, type ReactNode, useState } from 'react';
 import Link from 'next/link';
 
@@ -15,7 +17,14 @@ interface BaseProps {
   variant?: Variant;
   size?:    Size;
   full?:    boolean;
-  children: ReactNode;
+  /**
+   * Work in progress (saving, adding…): shows a spinner beside the label,
+   * disables the button and sets aria-busy. The button keeps its width.
+   * Icon-size buttons show the spinner in place of the icon.
+   */
+  busy?:    boolean;
+  /** Optional only for check-size buttons, which have no label. */
+  children?: ReactNode;
   className?: string;
 }
 
@@ -25,27 +34,31 @@ type LinkProps   = BaseProps & { href: string } & AnchorHTMLAttributes<HTMLAncho
 
 type Props = ButtonProps | LinkProps;
 
-function buildClassName(variant: Variant, size: Size, full: boolean, extra?: string): string {
+function buildClassName(variant: Variant, size: Size, full: boolean, busy: boolean, extra?: string): string {
   const classes = ['btn'];
   if (variant !== 'default') classes.push(`btn--${variant}`);
   if (size !== 'default')    classes.push(`btn--${size}`);
   if (full)                  classes.push('btn--full');
+  if (busy)                  classes.push('btn--busy');
   if (extra)                 classes.push(extra);
   return classes.join(' ');
 }
 
 export function Button(props: Props) {
-  const { variant = 'default', size = 'default', full = false, children, className, ...rest } = props;
-  const cls = buildClassName(variant, size, full, className);
+  const { variant = 'default', size = 'default', full = false, busy = false, children, className, ...rest } = props;
 
   if ('href' in props && props.href) {
     const { href, ...anchorRest } = rest as LinkProps;
+    const cls = buildClassName(variant, size, full, false, className);
     return <Link href={href} className={cls} {...(anchorRest as object)}>{children}</Link>;
   }
 
+  const { disabled, ...buttonRest } = rest as ComponentPropsWithRef<'button'>;
+  const cls = buildClassName(variant, size, full, busy, className);
   return (
-    <button className={cls} {...(rest as ComponentPropsWithRef<'button'>)}>
-      {children}
+    <button className={cls} disabled={disabled || busy} aria-busy={busy || undefined} {...buttonRest}>
+      {busy && <span className="btn__spinner" aria-hidden="true" />}
+      {size === 'icon' && busy ? <span className="btn__label--hidden">{children}</span> : children}
     </button>
   );
 }

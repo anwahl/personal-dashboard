@@ -21,8 +21,13 @@ import { getWeeklyJournalCategories } from '@/lib/dal/weekly-journal';
 import type { PersonLinks } from '@/types/dal';
 import { SettingsClient } from '@/components/settings/SettingsClient';
 import { Header, PageBody } from '@/components/layout';
+import { SETTINGS_TABS } from '@/lib/constants/nav';
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: Readonly<{ searchParams: Promise<{ tab?: string }> }>) {
+  const { tab } = await searchParams;
+  const initialTab = SETTINGS_TABS.find(t => t.id === tab)?.id;
   const supabase = await createClient();
 
   const [
@@ -44,7 +49,7 @@ export default async function SettingsPage() {
     getIconsRef(supabase, true),
     getSymptomCategoriesWithTypes(supabase, true),
     getJournalCategoriesWithPrompts(supabase, true),
-    getProviderTypes(supabase),
+    getProviderTypes(supabase, true),
     getSleepEventTypes(supabase, true),
     getAllPeople(supabase, true),
     getPeopleCategories(supabase, true),
@@ -75,6 +80,7 @@ export default async function SettingsPage() {
     <PageBody>
       <Header title='Settings' />
       <SettingsClient
+        initialTab={initialTab}
         icons={icons}
         trackables={trackables}
         trackableCategories={trackableCategories}

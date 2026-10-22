@@ -5,7 +5,7 @@ import { useRouter }             from 'next/navigation';
 import Link                      from 'next/link';
 import { createClient }          from '@/lib/supabase/client';
 import { createAppointment, updateAppointment, deleteAppointment } from '@/lib/dal/appointments';
-import { Button, Card, CardBody, CardHeader, CardTitle, Chip, ExpandPanel, FieldActions, Markdown, SubCard, SubCardBody, EmptyState } from '@/components/ui';
+import { Button, Card, CardBody, CardHeader, CardTitle, Chip, ExpandPanel, FieldActions, Markdown, SubCard, SubCardBody, EmptyState, ListItem } from '@/components/ui';
 import { localTodayISO, daysUntil, formatMediumDate, formatTime } from '@/lib/utils/dates';
 import type { AppointmentDetail }    from '@/types/dal';
 import type { AppointmentTypeRow, PersonRow, ProviderRow } from '@/types/schema';
@@ -31,30 +31,30 @@ function ApptRow({ appt, onEdit }: Readonly<{ appt: AppointmentDetail; onEdit: (
     <>
       <SubCard>
         <SubCardBody>
-          <div
-            className={`list-item${isPast ? ' list-item--muted' : ''}`}>
-
-            <div className="list-item__body">
-
+          <ListItem
+            muted={isPast}
+            title={
               <CardTitle>
                 {appt.appointment_type?.type_name ?? 'Appointment'}
                 {appt.provider ? ` · ${appt.provider.provider_name ?? appt.provider.practice_name ?? ''}` : ''}
               </CardTitle>
-
-              <div className="list-item__meta">
+            }
+            meta={
+              <>
                 <span>
                   {formatMediumDate(appt.appointment_date)}
                   {appt.appointment_time ? ` · ${formatTime(appt.appointment_time)}` : ''}
                 </span>
                 {appt.person   && <span>For: {appt.person.person_name}</span>}
                 {appt.location && <span>📍 {appt.location}</span>}
-              </div>
-            </div>
-            
-            <Chip small={true} fixed={true} className={`${!isPast ? ' chip--accent' : ''}`}>
-              {daysUntil(appt.appointment_date)}
-            </Chip>
-          </div>
+              </>
+            }
+            trailing={
+              <Chip small={true} fixed={true} className={`${!isPast ? ' chip--accent' : ''}`}>
+                {daysUntil(appt.appointment_date)}
+              </Chip>
+            }
+          />
 
           {(appt.questions || appt.notes) && (
             <ExpandPanel title='Show More'

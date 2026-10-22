@@ -18,12 +18,11 @@ import { useRouter }                                    from 'next/navigation';
 import { createClient }                                 from '@/lib/supabase/client';
 import { Card, CardHeader, CardTitle, CardBody,
          TabBar, Button, Chip, 
-         useToast, EmptyState
+         useToast, EmptyState, ListItem
 }                                      from '@/components/ui';
 import type { TaskDetail }                              from '@/types/dal';
 import type { TaskRow }                                 from '@/types/schema';
 import { formatShortDate, formatTime, localTodayISO }   from '@/lib/utils/dates';
-import Link                                             from 'next/link';
 import { useTaskStatuses }                              from '@/lib/hooks/reference';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -71,25 +70,27 @@ export function TaskItem({
 
   return (
     <Card>
-      <CardBody className={`list-item${done ? ' list-item--muted' : ''}${isReminderOverdue(task) ? ' list-item--reminder-overdue' : ''}`}>
-        <div className={`priority-dot ${PRIORITY_COLOR[task.priority.priority_name] ?? 'priority-dot--normal'}`} />
-        <Button
-          className={`task-item__check ${done ? 'task-item__is-checked' : 'task-item__is-unchecked'}${busy ? ' task-item__check--busy' : ''}`}
-          onClick={() => onUpdate(task.id)}
-          disabled={busy}
-          size='check'
-          aria-label={done ? 'Mark Not Done' : 'Mark Done'}
-          title={done ? 'Mark Not Done' : 'Mark Done'}
-        >
-          {busy ? '…' : ''}
-        </Button>
-
-        <Link href={`/tasks/${task.id}`} className="item-body-link">
-          <div className="list-item__body">
-            <div className={`list-item__title${done ? ' list-item__title--strike' : ''}`}>
-              {task.title}
-            </div>
-            <div className="list-item__meta">
+      <CardBody className={isReminderOverdue(task) ? 'list-item--reminder-overdue' : undefined}>
+        <ListItem
+          muted={done}
+          strike={done}
+          href={`/tasks/${task.id}`}
+          leading={
+            <>
+              <div className={`priority-dot ${PRIORITY_COLOR[task.priority.priority_name] ?? 'priority-dot--normal'}`} />
+              <Button
+                className={`task-item__check ${done ? 'task-item__is-checked' : 'task-item__is-unchecked'}`}
+                onClick={() => onUpdate(task.id)}
+                busy={busy}
+                size='check'
+                aria-label={done ? 'Mark Not Done' : 'Mark Done'}
+                title={done ? 'Mark Not Done' : 'Mark Done'}
+              />
+            </>
+          }
+          title={task.title}
+          meta={
+            <>
               <Chip small={true} className={`${overdue ? ' chip--due' : ''}`}>
                 {task.status.status_name}
               </Chip>
@@ -110,9 +111,9 @@ export function TaskItem({
                 </span>
               )}
               {task.person && <span>{task.person.person_name}</span>}
-            </div>
-          </div>
-        </Link>
+            </>
+          }
+        />
       </CardBody>
     </Card>
   );

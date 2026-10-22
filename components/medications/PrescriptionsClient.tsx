@@ -6,7 +6,7 @@ import { updatePrescription, createPrescription } from '@/lib/dal/medications';
 import { Button, Card, CardHeader, CardTitle,
   CardBody, CardActions, ExpandPanel, Info, Meta, FieldActions,
   CardGrid, CardGridColumn, Item,
-  ITEM_TYPES, CardSection, EmptyState, Badge
+  ITEM_TYPES, CardSection, EmptyState
 } from '@/components/ui';
 import type { PersonRow } from '@/types/schema';
 import { createClient }          from '@/lib/supabase/client';
@@ -66,7 +66,6 @@ Readonly<{
       <CardGridColumn>
         <FieldActions alignment='right'>
           <Button size="sm" variant="ghost" onClick={onEdit}>Edit</Button>
-          {isActive && <Badge variant="success">Active</Badge>}
         </FieldActions>
       </CardGridColumn>
     </CardGrid>

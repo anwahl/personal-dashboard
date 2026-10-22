@@ -9,6 +9,7 @@ import type {
   DailyEntryRow,
   HabitEntryRow,
   TagEntryRow,
+  TagRow,
   PrescriptionEntryRow,
   BrainDumpRow,
   DailyNumericEntryRow,
@@ -417,23 +418,24 @@ export async function deleteBrainDump(
 
 // ── Tag helpers ───────────────────────────────────────────────────────────────
 
+/** Returns the tag with this value, creating it first if it doesn't exist. */
 export async function findOrCreateTag(
   client: Client,
   tagValue: string,
-): Promise<number> {
+): Promise<TagRow> {
   const trimmed = tagValue.trim();
   const { data: existing } = await client
     .from("tags")
-    .select("id")
+    .select("*")
     .eq("tag_value", trimmed)
     .maybeSingle();
-  if (existing) return existing.id as number;
+  if (existing) return existing as TagRow;
 
   const { data: created, error } = await client
     .from("tags")
     .insert({ tag_value: trimmed })
-    .select("id")
+    .select("*")
     .single();
   if (error) throw new Error(`findOrCreateTag: ${error.message}`);
-  return (created as { id: number }).id;
+  return created as TagRow;
 }

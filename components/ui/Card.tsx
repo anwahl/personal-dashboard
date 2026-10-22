@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, type ReactNode, Children, isValidElement } from 'react';
 
 interface CardProps {

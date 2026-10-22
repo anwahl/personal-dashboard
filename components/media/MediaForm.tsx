@@ -251,9 +251,9 @@ export function MediaForm({
                 <Button
                 variant="accent"
                 onClick={() => onSave(form)}
-                disabled={saving || !form.title.trim() || (showTypeSelector && !form.media_type_id)}
+                busy={saving} disabled={!form.title.trim() || (showTypeSelector && !form.media_type_id)}
                 >
-                {saving ? 'Saving…' : saveLabel}
+                {saveLabel}
                 </Button>
                 <Button variant="ghost" onClick={onCancel}>Cancel</Button>
                 {onDelete && (

@@ -145,8 +145,8 @@ export default function BrainDumpList({
 
             {hasMore && (
                 <FieldActions alignment="right">
-                    <Button variant="ghost" onClick={loadMore} disabled={loading}>
-                        {loading ? 'Loading…' : 'Load more'}
+                    <Button variant="ghost" onClick={loadMore} busy={loading}>
+                        Load more
                     </Button>
                 </FieldActions>
             )}

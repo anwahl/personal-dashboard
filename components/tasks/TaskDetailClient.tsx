@@ -2,7 +2,7 @@
 
 import { SaveState, Button, ConfirmButton, 
   Markdown, Card, CardBody, CardTitle, CardHeader, 
-  useToast, Badge
+  useToast, Badge, ModeToggle
 }    from '@/components/ui';
 import { useState, useCallback, useEffect }            from 'react';
 import { useRouter }                                   from 'next/navigation';
@@ -113,7 +113,7 @@ export function TaskDetailClient({
               {!task.completed_at && doneStatus && (
                 <Button variant="accent" size="sm" onClick={complete}>✓ Complete</Button>
               )}
-              <Button variant="ghost" size="sm" onClick={() => setMode('edit')}>✏️ Edit</Button>
+              <ModeToggle editing={false} onChange={() => setMode('edit')} />
               <ConfirmButton onConfirm={remove} disabled={deleting}>✕ Delete</ConfirmButton>
             </div>
           </div>

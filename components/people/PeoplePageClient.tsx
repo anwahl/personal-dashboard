@@ -1,6 +1,6 @@
 'use client';
 
-import { TextField, DateField, TextAreaField, SelectField, SaveStatus, SaveState, Card, CardHeader, CardBody, CardSection, CardSectionLabel, Button, EmptyState, Badge, InactiveGroup, ManageItem, RowMenu } from '@/components/ui';
+import { TextField, DateField, TextAreaField, SelectField, SaveStatus, SaveState, Card, CardHeader, CardBody, CardSection, CardSectionLabel, Button, EmptyState, Badge, InactiveGroup, ManageItem, RowMenu, ModeToggle } from '@/components/ui';
 import { useState, useCallback } from 'react';
 import { createClient }          from '@/lib/supabase/client';
 import { formatMediumDate, localTodayISO } from '@/lib/utils/dates';
@@ -281,8 +281,8 @@ function ChecklistSection({ checklist, mode, personId }: Readonly<{
         <TextField hideLabel label="New item" value={newText} onChange={setNewText}
           onKeyDown={e => e.key === 'Enter' && addItem()}
           placeholder="New item…" className="input--flex" />
-        <Button size="sm" variant="accent" onClick={addItem} disabled={adding || !newText.trim()}>
-          {adding ? '…' : 'Add'}
+        <Button size="sm" variant="accent" onClick={addItem} busy={adding} disabled={!newText.trim()}>
+          Add
         </Button>
       </div>
     </CardSection>
@@ -348,8 +348,8 @@ function ItemListSection({ list, mode, personId }: Readonly<{
           <TextField hideLabel label="New entry" value={newText} onChange={setNewText}
             onKeyDown={e => e.key === 'Enter' && add()}
             placeholder="New entry…" className="input--flex" />
-          <Button size="sm" variant="accent" onClick={add} disabled={adding || !newText.trim()}>
-            {adding ? '…' : 'Add'}
+          <Button size="sm" variant="accent" onClick={add} busy={adding} disabled={!newText.trim()}>
+            Add
           </Button>
         </div>
       )}
@@ -410,8 +410,8 @@ function LogSection({ log, mode, personId }: Readonly<{
               return <TextField key={f.id} {...props} />;
             })}
             <div className="form-row form-row--actions">
-              <Button size="sm" variant="accent" onClick={submit} disabled={adding}>
-                {adding ? 'Saving…' : 'Add Entry'}
+              <Button size="sm" variant="accent" onClick={submit} busy={adding}>
+                Add Entry
               </Button>
               <Button size="sm" variant="ghost" onClick={() => setShowForm(false)}>Cancel</Button>
             </div>
@@ -533,13 +533,10 @@ export function PeoplePageClient({ data, peopleCategories }: Readonly<{ data: Pe
               <>
                 <SaveStatus state={saveState} />
                 <Button variant="accent" size="sm" onClick={saveInfoGroups}
-                  disabled={saveState === 'saving'}>💾 Save</Button>
+                  busy={saveState === 'saving'}>💾 Save</Button>
               </>
             )}
-            <Button variant="ghost" size="sm"
-              onClick={() => setMode(m => m === 'view' ? 'edit' : 'view')}>
-              {mode === 'view' ? '✏️ Edit' : '← View'}
-            </Button>
+            <ModeToggle editing={mode === 'edit'} onChange={e => setMode(e ? 'edit' : 'view')} />
           </div>
         </CardHeader>
 

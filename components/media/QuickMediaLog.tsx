@@ -212,8 +212,8 @@ export function QuickMediaLog({
                       value: s.id,
                       label: `${STATUS_EMOJI[s.status_name] ?? ''} ${s.status_name}`.trim(),
                     }))} />
-                  <Button variant="accent" size="sm" onClick={handleAdd} disabled={!title.trim() || saving}>
-                        {saving ? '…' : 'Add'}
+                  <Button variant="accent" size="sm" onClick={handleAdd} busy={saving} disabled={!title.trim()}>
+                        Add
                       </Button>
                 </SubCardBody> 
               </SubCard>

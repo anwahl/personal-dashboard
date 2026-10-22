@@ -11,13 +11,13 @@
  * leaves nothing behind.
  */
 
-import { SaveStatus, SaveState, Button, FieldActions } from '@/components/ui';
+import { SaveStatus, SaveState, Button, FieldActions, ModeToggle } from '@/components/ui';
 import { saveJournalResponses, JournalResponseDetail } from '@/lib/dal/journal';
 import { useState, useCallback, useRef } from 'react';
 import { useRouter }              from 'next/navigation';
 import { createClient }           from '@/lib/supabase/client';
 import { localTodayISO } from '@/lib/utils/dates';
-import { createDailyEntry, updateDailyEntry, toggleTagEntry, upsertBrainDump } from '@/lib/dal/daily';
+import { createDailyEntry, updateDailyEntry, toggleTagEntry, upsertBrainDump, findOrCreateTag } from '@/lib/dal/daily';
 import { saveNumericEntries, upsertBooleanEntry, deleteBooleanEntry }            from '@/lib/dal/trackables';
 import { upsertSleepEntry, upsertNap, deleteNap, upsertWakeEvents,
          setSleepEvents, setSleepTimingEntry, setSleepConsumptionEntries } from '@/lib/dal/sleep';
@@ -199,6 +199,7 @@ export function DailyPageClient({
 
   const [checkedTrackableIds, setCheckedTrackableIds] = useState<number[]>(entry?.checked_trackable_ids ?? []);
   const [tagIds, setTagIds] = useState<number[]>(entry?.tag_ids ?? []);
+  const [tags,   setTags]   = useState(reference.tags);
 
   // ── Immediate-save toggles ────────────────────────────────────────────────
 
@@ -232,22 +233,13 @@ export function DailyPageClient({
     const trimmed = value.trim().toLowerCase().replace(/\s+/g, '-');
     if (!trimmed) return;
 
-    const { data: existing } = await supabase
-      .from('tags').select('id').eq('tag_value', trimmed).maybeSingle();
+    const tag = await findOrCreateTag(supabase, trimmed);
+    // A brand-new tag isn't in the page's tag list yet; add it so it shows.
+    setTags(prev => prev.some(t => t.id === tag.id) ? prev : [...prev, tag]);
 
-    let tagId: number;
-    if (existing) {
-      tagId = existing.id;
-    } else {
-      const { data: created, error } = await supabase
-        .from('tags').insert({ tag_value: trimmed }).select('id').single();
-      if (error || !created) return;
-      tagId = created.id;
-    }
-
-    if (!tagIds.includes(tagId)) {
-      setTagIds(prev => [...prev, tagId]);
-      await toggleTagEntry(supabase, await getEntryId(), tagId, true);
+    if (!tagIds.includes(tag.id)) {
+      setTagIds(prev => [...prev, tag.id]);
+      await toggleTagEntry(supabase, await getEntryId(), tag.id, true);
     }
   }, [tagIds, supabase, getEntryId]);
 
@@ -401,7 +393,7 @@ export function DailyPageClient({
         priorSleep={priorSleep}
         ess={ess}
         prescriptions={prescriptions}
-        reference={reference}
+        reference={tags === reference.tags ? reference : { ...reference, tags }}
         journalState={journalState}
         setJournalState={setJournalState}
         journalCategories={reference.journalCategories}
@@ -414,18 +406,12 @@ export function DailyPageClient({
           <Button
             variant="accent"
             onClick={save}
-            disabled={saveState === 'saving'}
+            busy={saveState === 'saving'}
           >
-            {saveState === 'saving' ? 'Saving…' : 'Save'}
+            Save
           </Button>
         )}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setMode(m => m === 'view' ? 'input' : 'view')}
-        >
-          {mode === 'view' ? '✏️ Edit' : '👁 View'}
-        </Button>
+        <ModeToggle editing={mode === 'input'} onChange={e => setMode(e ? 'input' : 'view')} />
         <SaveStatus state={saveState} />
       </FieldActions>
     </>

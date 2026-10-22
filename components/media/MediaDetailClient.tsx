@@ -15,7 +15,7 @@ import {
   getMediaNotes, createMediaNote, deleteMediaNote,
   updateMediaEntry, addMediaStatusEntry, deleteMediaEntry,
 } from '@/lib/dal/media';
-import { Button, Card, CardActions, CardBody, CardHeader, CardSection, CardSectionLabel, CardTitle, Chip, ChipGroup, ConfirmButton, DateField, TextAreaField, Markdown, SubCard, SubCardBody, EmptyState } from '@/components/ui';
+import { Button, Card, CardActions, CardBody, CardHeader, CardSection, CardSectionLabel, CardTitle, Chip, ChipGroup, ConfirmButton, DateField, TextAreaField, Markdown, SubCard, SubCardBody, EmptyState, ModeToggle } from '@/components/ui';
 import { localTodayISO, formatShortDate } from '@/lib/utils/dates';
 import type { MediaEntryDetail }  from '@/types/dal';
 import type {
@@ -48,7 +48,7 @@ export function MediaDetailClient({
   const supabase = createClient();
   const router   = useRouter();
 
-  const [entry]     = useState(initial);
+  const entry = initial;
   const [mode,      setMode]      = useState<'view' | 'edit'>('view');
   const [saving,    setSaving]    = useState(false);
   const [saveError, setSaveError] = useState('');
@@ -121,9 +121,7 @@ export function MediaDetailClient({
         <CardHeader>
           <CardTitle>{entry.title}</CardTitle>
           <CardActions>
-            <Button variant="action" size='sm' onClick={() => setMode('edit')}>
-              ✏️ Edit
-            </Button>
+            <ModeToggle editing={false} onChange={() => setMode('edit')} />
             <ConfirmButton variant='danger' onConfirm={handleDelete}>✕ Delete</ConfirmButton>
           </CardActions>
         </CardHeader>
@@ -190,18 +188,16 @@ export function MediaDetailClient({
               </CardHeader> 
               <CardSection>
                 <CardSectionLabel>New Note</CardSectionLabel>
-                <FieldGrid>
-                  <DateField label='Date' value={noteDate} onChange={setNoteDate} />
-                  <TextAreaField label='Note' value={newNote} onChange={setNewNote}
-                    placeholder="Add a note…"
-                    onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) addNote(); }}
-                    size="short" />
-                </FieldGrid>
+                <DateField label='Date' value={noteDate} onChange={setNoteDate} />
+                <TextAreaField label='Note' value={newNote} onChange={setNewNote}
+                  placeholder="Add a note…"
+                  onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) addNote(); }}
+                  size="short" />
                 <FieldActions alignment='right'>
                   <Button size="sm" variant="action-alt"
                     onClick={addNote}
-                    disabled={addingNote || !newNote.trim()}>
-                    {addingNote ? '…' : 'Add'}
+                    busy={addingNote} disabled={!newNote.trim()}>
+                    Add
                   </Button>
                 </FieldActions>
               </CardSection>
