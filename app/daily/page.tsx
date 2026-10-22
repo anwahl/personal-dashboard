@@ -1,9 +1,10 @@
 import { PageBody } from "@/components/layout"
+import { EmptyState } from "@/components/ui"
 
 export default function Page() {
   return (
     <PageBody>
-      <p className="empty-state">Coming soon.</p>
+      <EmptyState>Coming soon.</EmptyState>
     </PageBody>
   );
 }

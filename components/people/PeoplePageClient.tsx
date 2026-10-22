@@ -1,6 +1,6 @@
 'use client';
 
-import { InputField, SaveStatus, SaveState, Card, CardHeader, CardBody, CardSection, CardSectionLabel, Button, ConfirmButton } from '@/components/ui';
+import { InputField, SaveStatus, SaveState, Card, CardHeader, CardBody, CardSection, CardSectionLabel, Button, ConfirmButton, EmptyState, Badge, InactiveGroup } from '@/components/ui';
 import { useState, useCallback } from 'react';
 import { createClient }          from '@/lib/supabase/client';
 import { formatMediumDate, localTodayISO } from '@/lib/utils/dates';
@@ -132,22 +132,17 @@ function DiagnosisSection({ diagnoses: initial, mode, personId }: Readonly<{
           )}
         </div>
       ))}
-      {inactive.length > 0 && (
-        <details className="manage-inactive">
-          <summary className="manage-inactive__summary">{inactive.length} inactive</summary>
-          <div className="manage-inactive__body">
-            {inactive.map(d => (
-              <div key={d.id} className="manage-item manage-item--inactive">
-                <span className="manage-item__name">{d.diagnosis_name}</span>
-                <div className="manage-item__actions">
-                  <Button size="sm" variant="ghost" onClick={async () => { await toggleDiagnosis(supabase, d.id, true); setItems(prev => prev.map(x => x.id === d.id ? { ...x, is_active: true } : x)); }}>Activate</Button>
-                  <ConfirmButton onConfirm={async () => { await deleteDiagnosis(supabase, d.id); setItems(prev => prev.filter(x => x.id !== d.id)); }} size="sm">✕</ConfirmButton>
-                </div>
-              </div>
-            ))}
+      <InactiveGroup count={inactive.length}>
+        {inactive.map(d => (
+          <div key={d.id} className="manage-item manage-item--inactive">
+            <span className="manage-item__name">{d.diagnosis_name}</span>
+            <div className="manage-item__actions">
+              <Button size="sm" variant="ghost" onClick={async () => { await toggleDiagnosis(supabase, d.id, true); setItems(prev => prev.map(x => x.id === d.id ? { ...x, is_active: true } : x)); }}>Activate</Button>
+              <ConfirmButton onConfirm={async () => { await deleteDiagnosis(supabase, d.id); setItems(prev => prev.filter(x => x.id !== d.id)); }} size="sm">✕</ConfirmButton>
+            </div>
           </div>
-        </details>
-      )}
+        ))}
+      </InactiveGroup>
       <>
       <hr />
       <div className="manage-item">
@@ -350,7 +345,7 @@ function ItemListSection({ list, mode, personId }: Readonly<{
       </CardSectionLabel>
 
       <div className="list-entry-list">
-        {entries.length === 0 && <p className="empty-state">No entries yet.</p>}
+        {entries.length === 0 && <EmptyState>No entries yet.</EmptyState>}
         {entries.map(e => (
           <div key={e.id} className="list-entry-row">
             {e.entry_date && (
@@ -464,7 +459,7 @@ function LogSection({ log, mode, personId }: Readonly<{
 
       {/* Entries table */}
       {entries.length === 0 ? (
-        <p className="empty-state">No entries yet.</p>
+        <EmptyState>No entries yet.</EmptyState>
       ) : (
         <div className="log-table-wrap">
           <table className="log-table">
@@ -555,7 +550,7 @@ export function PeoplePageClient({ data, peopleCategories }: Readonly<{ data: Pe
             <h2 className="person-header__name">{person.person_name}</h2>
             {mode === 'view' && categoryId && (() => {
               const cat = peopleCategories.find(c => c.id === categoryId);
-              return cat ? <span className="badge badge--muted">{cat.category_name}</span> : null;
+              return cat ? <Badge variant="muted">{cat.category_name}</Badge> : null;
             })()}
             {mode === 'edit' && (
               <select value={categoryId ?? ''} onChange={e => saveCategory(e.target.value ? Number.parseInt(e.target.value) : null)}>
@@ -592,19 +587,19 @@ export function PeoplePageClient({ data, peopleCategories }: Readonly<{ data: Pe
               <CardSectionLabel>Active Prescriptions</CardSectionLabel>
               <div className="chip-group">
                 {prescriptions.map(rx => (
-                  <span key={rx.id} className="badge">
+                  <Badge key={rx.id}>
                     {rx.alias ?? rx.medication.medication_name}
                     {rx.dose ? ` · ${rx.dose}` : ''}
-                  </span>
+                  </Badge>
                 ))}
               </div>
             </CardSection>
           )}
 
           {!hasSections && diagnoses.length === 0 && prescriptions.length === 0 && (
-            <p className="empty-state">
+            <EmptyState>
               No data yet. Add info groups, lists, logs, or checklists in Settings to structure this page.
-            </p>
+            </EmptyState>
           )}
         </CardBody>
       </Card>

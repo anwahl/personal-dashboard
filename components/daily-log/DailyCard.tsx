@@ -15,7 +15,7 @@ import { createClient }    from '@/lib/supabase/client';
 import { togglePrescriptionEntry } from '@/lib/dal/daily';
 import { setEssResponse }          from '@/lib/dal/ess';
 import { formatTime } from '@/lib/utils/dates';
-import { Card, CardHeader, CardTitle, CardBody, CardSection, CardSectionLabel, TabBar, Toggle, SliderField, Chip, ChipGroup, InputField, SaveState, IconDisplay, IconPicker, Markdown, TagSelector } from '@/components/ui';
+import { Card, CardHeader, CardTitle, CardBody, CardSection, CardSectionLabel, TabBar, Toggle, SliderField, Chip, ChipGroup, InputField, SaveState, IconDisplay, IconPicker, Markdown, TagSelector, EmptyState } from '@/components/ui';
 import { JournalTab }       from './JournalTab';
 import type {
   JournalCategoryWithPrompts, DailyEntryDetail,
@@ -243,7 +243,7 @@ function MetricsTab({
   const numericTrackables = trackables.filter(t => t.track_type === 'numeric');
 
   if (!numericTrackables.length) {
-    return <p className="empty-state">No numeric metrics configured.</p>;
+    return <EmptyState>No numeric metrics configured.</EmptyState>;
   }
 
   // Group by category (same pattern as boolean metrics in OverviewTab)
@@ -321,7 +321,7 @@ function SymptomsTab({
 
   if (mode === 'view') {
     const anyData = state.symptomTypeIds.length > 0 || state.hadCrash || state.hadAnxiety;
-    if (!hasSymptomData && !anyData) return <p className="empty-state">No symptoms logged.</p>;
+    if (!hasSymptomData && !anyData) return <EmptyState>No symptoms logged.</EmptyState>;
 
     return (
       <div>
@@ -434,7 +434,7 @@ function MedsTab({
     }
   }, [supabase, entryId, takenIds, pending]);
 
-  if (!prescriptions.length) return <p className="empty-state">No active prescriptions.</p>;
+  if (!prescriptions.length) return <EmptyState>No active prescriptions.</EmptyState>;
 
   if (mode === 'view') {
     const taken    = prescriptions.filter(rx => takenIds.includes(rx.id));
@@ -547,7 +547,7 @@ function EssTab({
   };
 
   if (mode === 'view') {
-    if (!ess || !Object.keys(responses).length) return <p className="empty-state">ESS not completed.</p>;
+    if (!ess || !Object.keys(responses).length) return <EmptyState>ESS not completed.</EmptyState>;
     return (
       <div className="ess-score">
         <div className="ess-score__number" style={{ color: interp.color }}>{liveTotal}</div>
@@ -614,7 +614,7 @@ function SleepTab({
 
   if (mode === 'view') {
     const noData = !hasSleepData && sleepState.quality == null && !sleepState.hoursSlept;
-    if (noData) return <p className="empty-state">Sleep not logged.</p>;
+    if (noData) return <EmptyState>Sleep not logged.</EmptyState>;
 
     // Lookup helpers
     const eventNames   = sleepState.sleepEventIds.map(id =>

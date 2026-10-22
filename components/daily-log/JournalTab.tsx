@@ -17,7 +17,7 @@
  *   - Responses grouped by category, read-only
  */
 
-import { SaveStatus, SaveState, Button } from '@/components/ui';
+import { SaveStatus, SaveState, Button, EmptyState } from '@/components/ui';
 import type { JournalCategoryWithPrompts } from '@/types/dal';
 import type { JournalCard, JournalState } from './DailyPageClient';
 
@@ -193,7 +193,7 @@ export function JournalTab({ mode, entryId, categories, state, setState, onSave,
 
   if (mode === 'view') {
     if (state.length === 0) {
-      return <p className="empty-state">No journal entries for this day.</p>;
+      return <EmptyState>No journal entries for this day.</EmptyState>;
     }
 
     // Group by category
@@ -246,9 +246,9 @@ export function JournalTab({ mode, entryId, categories, state, setState, onSave,
 
       {/* Prompt sections */}
       {state.length === 0 && (
-        <p className="empty-state journal-category-chips__empty">
+        <EmptyState className="journal-category-chips__empty">
           Toggle some categories above to get started.
-        </p>
+        </EmptyState>
       )}
 
       {categories

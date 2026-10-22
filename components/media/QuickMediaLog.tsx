@@ -18,7 +18,7 @@ import {
 
 import { useState, useCallback, useEffect } from 'react';
 import { createClient }              from '@/lib/supabase/client';
-import { Button, Card, CardActions, CardBody, CardHeader, CardSection, CardSectionLabel, CardTitle, Chip, ChipGroup, ExpandCard, InputField, SubCard, SubCardBody }                    from '@/components/ui';
+import { Button, Card, CardActions, CardBody, CardHeader, CardSection, CardSectionLabel, CardTitle, Chip, ChipGroup, ExpandCard, InputField, SubCard, SubCardBody, EmptyState }        from '@/components/ui';
 import type { MediaEntryDetail }     from '@/types/dal';
 import type {
   MediaTypeRow, MediaStatusRow, MediaStatusTypeLinkRow,
@@ -231,7 +231,7 @@ export function QuickMediaLog({
             )}
 
             {inProgress.length === 0 && !showAdd && (
-              <p className="empty-state">Nothing in progress.</p>
+              <EmptyState>Nothing in progress.</EmptyState>
             )}
 
             {Object.entries(grouped).map(([typeName, items]) => (

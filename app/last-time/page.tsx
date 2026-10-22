@@ -25,15 +25,13 @@ export default async function LastTimePage() {
 
       <LastTimeTracker entries={entries} icons={icons} />
 
-      <div className="settings-section-gap">
-        <LastTimeSettings
-          trackables={booleanTrackables}
-          mediaTypes={mediaTypes}
-          mediaGenres={mediaGenres}
-          mediaStatuses={mediaStatuses}
-          icons={icons}
-        />
-      </div>
+      <LastTimeSettings
+        trackables={booleanTrackables}
+        mediaTypes={mediaTypes}
+        mediaGenres={mediaGenres}
+        mediaStatuses={mediaStatuses}
+        icons={icons}
+      />
     </PageBody>
   );
 }

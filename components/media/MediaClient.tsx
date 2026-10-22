@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter }              from 'next/navigation';
 import { createClient }           from '@/lib/supabase/client';
-import { Button, TabBar, Markdown, Card, CardHeader, CardTitle, CardActions, CardBody, CardSection, CardSectionLabel, ExpandPanel, ChipGroup, Chip, Field, ExpandCard } from '@/components/ui';
+import { Button, TabBar, Markdown, Card, CardHeader, CardTitle, CardActions, CardBody, CardSection, CardSectionLabel, ExpandPanel, ChipGroup, Chip, Field, ExpandCard, EmptyState } from '@/components/ui';
 import {
   getMediaNotes, createMediaNote, deleteMediaNote,
   updateMediaEntry, createMediaEntry, addMediaStatusEntry, deleteMediaEntry,
@@ -252,7 +252,7 @@ export function MediaClient({ entries, mediaTypes, mediaStatuses, statusTypeLink
           />
       )}
 
-      {filtered.length === 0 && !showAddForm && <p className="empty-state">Nothing here yet.</p>}
+      {filtered.length === 0 && !showAddForm && <EmptyState>Nothing here yet.</EmptyState>}
 
       {Object.entries(grouped).map(([statusName, items]) => (
           <ExpandCard key={statusName} title={`${STATUS_EMOJI[statusName] ?? ''} ${capitalize(statusName)} (${items.length})`}

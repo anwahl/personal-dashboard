@@ -15,7 +15,7 @@ import {
   getMediaNotes, createMediaNote, deleteMediaNote,
   updateMediaEntry, addMediaStatusEntry, deleteMediaEntry,
 } from '@/lib/dal/media';
-import { Button, Card, CardActions, CardBody, CardHeader, CardSection, CardSectionLabel, CardTitle, Chip, ChipGroup, ConfirmButton, InputField, Markdown, SubCard, SubCardBody } from '@/components/ui';
+import { Button, Card, CardActions, CardBody, CardHeader, CardSection, CardSectionLabel, CardTitle, Chip, ChipGroup, ConfirmButton, InputField, Markdown, SubCard, SubCardBody, EmptyState } from '@/components/ui';
 import { localTodayISO, formatShortDate } from '@/lib/utils/dates';
 import type { MediaEntryDetail }  from '@/types/dal';
 import type {
@@ -216,9 +216,9 @@ export function MediaDetailClient({
               </CardSection>
               <CardSection>
                 <CardSectionLabel>Previous Notes</CardSectionLabel>
-                {!notesLoaded && <p className="empty-state">Loading…</p>}
+                {!notesLoaded && <EmptyState>Loading…</EmptyState>}
                 {notesLoaded && notes.length === 0 && (
-                  <p className="empty-state">No notes yet.</p>
+                  <EmptyState>No notes yet.</EmptyState>
                 )}
                 {notes.map(n => (
                   <div key={n.id} className="media-note">

@@ -18,7 +18,8 @@ import { useRouter }                                    from 'next/navigation';
 import { createClient }                                 from '@/lib/supabase/client';
 import { Card, CardHeader, CardTitle, CardBody,
          TabBar, Button, Chip, 
-         useToast}                                      from '@/components/ui';
+         useToast, EmptyState
+}                                      from '@/components/ui';
 import type { TaskDetail }                              from '@/types/dal';
 import type { TaskRow }                                 from '@/types/schema';
 import { formatShortDate, formatTime, localTodayISO }   from '@/lib/utils/dates';
@@ -183,13 +184,13 @@ export function TaskList({
         <TabBar tabs={TABS} active={tab} onChange={id => setTab(id as TasksTabId)} />
         <div className="task-list">
           {bucket.length === 0 ? (
-            <p className="empty-state">
+            <EmptyState>
               {tab === 'today'       ? 'Nothing due today.'      :
                tab === 'tomorrow'   ? 'Nothing due tomorrow.'   :
                tab === 'upcoming'   ? 'No upcoming tasks.'      :
                tab === 'done'       ? 'No completed tasks.'     :
                'No unscheduled tasks.'}
-            </p>
+            </EmptyState>
           ) : (
             bucket.map(task => (
               <TaskItem

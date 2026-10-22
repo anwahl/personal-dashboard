@@ -1,4 +1,4 @@
-import { type ButtonHTMLAttributes, type AnchorHTMLAttributes, type ReactNode, useState } from 'react';
+import { type ComponentPropsWithRef, type AnchorHTMLAttributes, type ReactNode, useState } from 'react';
 import Link from 'next/link';
 
 type Variant =
@@ -19,7 +19,8 @@ interface BaseProps {
   className?: string;
 }
 
-type ButtonProps = BaseProps & ButtonHTMLAttributes<HTMLButtonElement> & { href?: undefined };
+// ComponentPropsWithRef so a ref can reach the <button> (e.g. a drag handle or menu trigger).
+type ButtonProps = BaseProps & ComponentPropsWithRef<'button'> & { href?: undefined };
 type LinkProps   = BaseProps & { href: string } & AnchorHTMLAttributes<HTMLAnchorElement>;
 
 type Props = ButtonProps | LinkProps;
@@ -43,7 +44,7 @@ export function Button(props: Props) {
   }
 
   return (
-    <button className={cls} {...(rest as ButtonHTMLAttributes<HTMLButtonElement>)}>
+    <button className={cls} {...(rest as ComponentPropsWithRef<'button'>)}>
       {children}
     </button>
   );

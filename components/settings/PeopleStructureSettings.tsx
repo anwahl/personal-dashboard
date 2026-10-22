@@ -20,7 +20,7 @@ import {
   createPerson, updatePersonField,
 } from '@/lib/dal/people';
 import { createClient }  from '@/lib/supabase/client';
-import { Button, ConfirmButton, InputField } from '@/components/ui';
+import { Button, ConfirmButton, InputField, EmptyState, Badge } from '@/components/ui';
 import type { PersonRow, PeopleCategoryRow, InfoFieldTypeRow, LogSchemaFieldRow,
               LogSchemaFieldOptionRow } from '@/types/schema';
 import { ManageableList } from './ManageableList';
@@ -485,7 +485,7 @@ function StructureSection({
       {creating && (
         <>
           {createForm}
-          <div className="settings-section-gap">
+          <div className="margin-top-md">
             <Button size="sm" variant="ghost" onClick={() => setCreating(false)}>Cancel</Button>
           </div>
         </>
@@ -783,7 +783,7 @@ function PersonNameRow({ person, categories, onSave }: Readonly<{
         <>
           <span className="manage-item__name">
             {person.person_name}
-            {cat && <span className="badge badge--muted margin-left-sm">{cat.category_name}</span>}
+            {cat && <Badge variant="muted" className="margin-left-sm">{cat.category_name}</Badge>}
           </span>
           <div className="manage-item__actions">
             <Button size="icon" variant="ghost" onClick={() => setEditing(true)} title="Rename">✏️</Button>
@@ -918,7 +918,7 @@ export function PeopleStructureSettings({
 
       <StructureSection title="Info Groups"
         createForm={<CreateInfoGroupForm onCreated={row => setInfoGroups(prev => [...prev, row])} />}>
-        {infoGroups.length === 0 && <p className="empty-state">No info groups yet.</p>}
+        {infoGroups.length === 0 && <EmptyState>No info groups yet.</EmptyState>}
         {infoGroups.map(g => (
           <InfoGroupItem key={g.id} group={g}
             onRename={async (name) => { await renameInfoGroup(supabase, g.id, name); setInfoGroups(prev => prev.map(x => x.id === g.id ? { ...x, group_title: name } : x)); }}
@@ -930,7 +930,7 @@ export function PeopleStructureSettings({
 
       <StructureSection title="Lists"
         createForm={<CreateListForm onCreated={row => setItemLists(prev => [...prev, row])} />}>
-        {itemLists.length === 0 && <p className="empty-state">No lists yet.</p>}
+        {itemLists.length === 0 && <EmptyState>No lists yet.</EmptyState>}
         {itemLists.map(l => (
           <ItemListItem key={l.id} list={l}
             onRename={async (name, label) => { await renameItemList(supabase, l.id, name, label ?? null); setItemLists(prev => prev.map(x => x.id === l.id ? { ...x, list_title: name, list_label: label ?? null } : x)); }}
@@ -942,7 +942,7 @@ export function PeopleStructureSettings({
 
       <StructureSection title="Logs"
         createForm={<CreateLogForm onCreated={row => setLogSchemas(prev => [...prev, row])} />}>
-        {logSchemas.length === 0 && <p className="empty-state">No logs yet.</p>}
+        {logSchemas.length === 0 && <EmptyState>No logs yet.</EmptyState>}
         {logSchemas.map(l => (
           <LogSchemaItem key={l.id} schema={l}
             onRename={async (name) => { await renameLogSchema(supabase, l.id, name); setLogSchemas(prev => prev.map(x => x.id === l.id ? { ...x, log_title: name } : x)); }}
@@ -954,7 +954,7 @@ export function PeopleStructureSettings({
 
       <StructureSection title="Checklists"
         createForm={<CreateChecklistForm onCreated={row => setChecklists(prev => [...prev, row])} />}>
-        {checklists.length === 0 && <p className="empty-state">No checklists yet.</p>}
+        {checklists.length === 0 && <EmptyState>No checklists yet.</EmptyState>}
         {checklists.map(c => (
           <ChecklistTemplateItem key={c.id} checklist={c}
             onRename={async (name, label) => { await renameChecklist(supabase, c.id, name, label ?? null); setChecklists(prev => prev.map(x => x.id === c.id ? { ...x, checklist_title: name, checklist_label: label ?? null } : x)); }}
@@ -979,7 +979,7 @@ export function PeopleStructureSettings({
             <div key={person.id} className="person-block">
               <h4 className="person-block__name">
                 {person.person_name}
-                {cat && <span className="badge badge--muted" style={{ marginLeft: 6 }}>{cat.category_name}</span>}
+                {cat && <Badge variant="muted" className="margin-left-sm">{cat.category_name}</Badge>}
               </h4>
               <StructureLinkGroup label="Info Groups" items={infoGroups} linkedIds={pl.infoGroupIds}
                 getName={g => g.group_title} onToggle={id => toggleLink(person.id, 'info_group', id)} />
@@ -990,7 +990,7 @@ export function PeopleStructureSettings({
               <StructureLinkGroup label="Checklists" items={checklists} linkedIds={pl.checklistIds}
                 getName={c => c.checklist_title} onToggle={id => toggleLink(person.id, 'checklist', id)} />
               {infoGroups.length === 0 && itemLists.length === 0 && logSchemas.length === 0 && checklists.length === 0 && (
-                <p className="empty-state">Create some structures above to link them here.</p>
+                <EmptyState>Create some structures above to link them here.</EmptyState>
               )}
             </div>
           );

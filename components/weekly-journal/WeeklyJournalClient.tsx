@@ -16,7 +16,7 @@ import {
   saveWeeklyResponses,
 } from '@/lib/dal/weekly-journal';
 import { addDays, getSundayOfWeek }  from '@/lib/utils/dates';
-import { Button, FieldActions, SaveStatus } from '@/components/ui';
+import { Button, FieldActions, SaveStatus, EmptyState } from '@/components/ui';
 import type { SaveState }            from '@/components/ui';
 import type { WeeklyEntryRow }       from '@/types/schema';
 import type {
@@ -132,7 +132,7 @@ export function WeeklyJournalClient({
       return (
         <div>
           <WeekNav weekStart={weekStart} weekNum={weekNum} weekRange={weekRange} />
-          <p className="empty-state">No responses yet for this week.</p>
+          <EmptyState>No responses yet for this week.</EmptyState>
           <Button variant="accent" onClick={() => setMode('edit')}>Write Entry</Button>
         </div>
       );

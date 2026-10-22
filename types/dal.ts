@@ -8,6 +8,9 @@
 
 import type {
   DailyTrackableRow,
+  LastTimeMediaRow,
+  LastTimeBooleanRow,
+  LastTimeCustomRow,
   DailyNumericEntryRow,
   TagRow,
   SymptomCategoryRow,
@@ -343,6 +346,13 @@ export interface LastTimeEntry {
   is_active: boolean;
   // Only set for 'custom' items (enables quick "log today" update)
   custom_id?: number;
+}
+
+/** Every Last Time item, by kind, for the settings list. */
+export interface LastTimeSettingsItems {
+  media:   LastTimeMediaRow[];
+  boolean: LastTimeBooleanRow[];
+  custom:  LastTimeCustomRow[];
 }
 
 // ── Inserts / Updates ─────────────────────────────────────────────────────────

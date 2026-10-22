@@ -42,6 +42,7 @@ import {
   getMediaGenres,
 } from '@/lib/dal/reference';
 import { getProviders } from '@/lib/dal/providers';
+import { getLastTimeSettingsItems } from '@/lib/dal/lasttime';
 import { getPrescriptionById, getPrescriptionChangesByRx } from '../dal/prescriptions';
 import { PrescriptionDetail } from '@/types/dal';
 
@@ -134,3 +135,9 @@ export const useTrackableCategories = () =>
 export const useMediaTypes    = () => useSWR('ref/media-types',    () => getMediaTypes(supabase));
 export const useMediaStatuses = () => useSWR('ref/media-statuses', () => getMediaStatuses(supabase));
 export const useMediaGenres   = () => useSWR('ref/media-genres',   () => getMediaGenres(supabase));
+
+// ── Last Time ─────────────────────────────────────────────────────────────────
+
+/** Every Last Time item (media, metric, custom), active or not — for settings. */
+export const useLastTimeSettingsItems = () =>
+  useSWR('ref/last-time-items', () => getLastTimeSettingsItems(supabase));

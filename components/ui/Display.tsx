@@ -198,3 +198,29 @@ export function FieldActions({
     </div>
   );
 }
+
+// ── Empty state ───────────────────────────────────────────────────────────────
+
+/** The "nothing here" line for an empty list or section. */
+export function EmptyState({ children, className }: Readonly<{ children: ReactNode; className?: string }>) {
+  return <p className={['empty-state', className].filter(Boolean).join(' ')}>{children}</p>;
+}
+
+// ── Badge ─────────────────────────────────────────────────────────────────────
+
+export type BadgeVariant = 'default' | 'accent' | 'success' | 'warn' | 'danger' | 'muted';
+
+/** Small inline label pill (a type, status, or count). */
+export function Badge({
+  variant = 'default',
+  className,
+  children,
+}: Readonly<{
+  variant?:   BadgeVariant;
+  className?: string;
+  children:   ReactNode;
+}>) {
+  const classes = ['badge', variant !== 'default' && `badge--${variant}`, className].filter(Boolean).join(' ');
+  return <span className={classes}>{children}</span>;
+}
+

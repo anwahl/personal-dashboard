@@ -183,3 +183,52 @@ export function CardActions({
     </>
   );
 }
+
+export function CardDescription({ children }: Readonly<{ children: ReactNode }>) {
+  return <div className="card__description">{children}</div>;
+}
+
+/**
+ * SectionCard — a titled card: the frame for a settings section or any
+ * other block with a heading.
+ *
+ *   <SectionCard title="Tags" meta="3 active" description="Used on…">
+ *     …
+ *   </SectionCard>
+ */
+export function SectionCard({
+  title,
+  meta,
+  actions,
+  description,
+  className,
+  children,
+}: Readonly<{
+  title:        ReactNode;
+  /** Small text at the right of the header (e.g. "3 active"). */
+  meta?:        ReactNode;
+  /** Buttons at the right of the header (shown after meta). */
+  actions?:     ReactNode;
+  /** Muted text under the title. */
+  description?: ReactNode;
+  className?:   string;
+  children:     ReactNode;
+}>) {
+  return (
+    <Card className={className}>
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+        {(meta || actions) && (
+          <div className="card__header-actions">
+            {meta && <span className="card__meta">{meta}</span>}
+            {actions}
+          </div>
+        )}
+      </CardHeader>
+      <CardBody>
+        {description && <CardDescription>{description}</CardDescription>}
+        {children}
+      </CardBody>
+    </Card>
+  );
+}

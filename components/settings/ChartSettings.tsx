@@ -6,7 +6,7 @@ import {
   updateChartSortOrders, deleteChartDefinition,
 } from '@/lib/dal/charts';
 import { createClient }          from '@/lib/supabase/client';
-import { Button, IconDisplay, ConfirmButton } from '@/components/ui';
+import { Button, IconDisplay, ConfirmButton, EmptyState, Badge } from '@/components/ui';
 import { TrackablePicker }       from '@/components/settings/TrackablePicker'; 
 import { ManageableList }        from './ManageableList';
 import type { ChartDefinitionDetail, ChartCategoryRow } from '@/types/dal';
@@ -148,8 +148,8 @@ function ChartCard({
       <div className="chart-settings-card__header">
         <div className="chart-settings-card__title-group">
           <span className="chart-settings-card__title">{chart.title}</span>
-          <span className="badge">{meta.label}</span>
-          {!active && <span className="badge badge--muted">inactive</span>}
+          <Badge>{meta.label}</Badge>
+          {!active && <Badge variant="muted">inactive</Badge>}
         </div>
         <div className="chart-settings-card__actions">
           <Button variant="ghost" size="icon" onClick={() => onMove(chart.id, 'up')}   disabled={idx === 0}            title="Move up">↑</Button>
@@ -182,9 +182,9 @@ function ChartCard({
       {/* Linked metrics */}
       <div className="chart-settings-card__links">
         {links.length === 0 && (
-          <p className="empty-state">
+          <EmptyState>
             No metrics linked. {meta.requirement}.
-          </p>
+          </EmptyState>
         )}
         {links.map(link => (
           <div key={link.id} className="chart-settings-card__link-row">
@@ -195,7 +195,7 @@ function ChartCard({
               />
               {link.trackable.name}
             </span>
-            <span className="badge">{ROLE_LABELS[link.metric_role]}</span>
+            <Badge>{ROLE_LABELS[link.metric_role]}</Badge>
             <Button variant="danger" size="icon" onClick={() => removeLink(link.id)}>✕</Button>
           </div>
         ))}
@@ -361,7 +361,7 @@ export function ChartSettings({ chartDefinitions, trackables, categories, icons 
       <div className="chart-settings-topbar">
         <div className="chart-settings-topbar__left">
           <h2 className="settings-section-heading settings-section-heading--flush">Charts</h2>
-          {invalidCount > 0 && <span className="badge badge--warn">{invalidCount} with issues</span>}
+          {invalidCount > 0 && <Badge variant="warn">{invalidCount} with issues</Badge>}
         </div>
         <Button variant="accent" size="sm" onClick={() => setShowNew(v => !v)}>
           {showNew ? '✕ Cancel' : '+ New chart'}
@@ -382,10 +382,10 @@ export function ChartSettings({ chartDefinitions, trackables, categories, icons 
       )}
 
       {filtered.length === 0 && filter && (
-        <p className="empty-state">No charts match "{filter}"</p>
+        <EmptyState>No charts match "{filter}"</EmptyState>
       )}
       {filtered.length === 0 && !filter && !showNew && (
-        <p className="empty-state">No charts yet. Create one above.</p>
+        <EmptyState>No charts yet. Create one above.</EmptyState>
       )}
 
       {/* Charts grouped by type */}
@@ -398,7 +398,7 @@ export function ChartSettings({ chartDefinitions, trackables, categories, icons 
               <span className="chart-settings-type-group__heading" style={{ margin: 0 }}>
                 {CHART_TYPE_META[type].label}
                 <span className="manage-item__meta margin-left-md">{group.length}</span>
-                {hasIssues && <span className="badge badge--warn margin-left-sm">issues</span>}
+                {hasIssues && <Badge variant="warn" className="margin-left-sm">issues</Badge>}
               </span>
               <span className="settings-section__caret">▸</span>
             </summary>

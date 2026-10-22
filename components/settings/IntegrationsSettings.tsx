@@ -10,7 +10,7 @@
 import { useState }                from 'react';
 import { createClient }            from '@/lib/supabase/client';
 import { regenerateCalendarToken } from '@/lib/dal/calendar';
-import { Button, ConfirmButton }   from '@/components/ui';
+import { Button, ConfirmButton, SectionCard, CardSectionLabel, CardDescription } from '@/components/ui';
 import type { CalendarTokenRow }   from '@/types/schema';
 
 interface Props {
@@ -44,19 +44,13 @@ export function IntegrationsSettings({ token: initialToken }: Readonly<Props>) {
   };
 
   return (
-    <section className="settings-section">
-      <div className="settings-section__header">
-        <h2 className="settings-section__title">Integrations</h2>
-      </div>
-
+    <SectionCard title="Integrations">
       {/* ── iCal feed ──────────────────────────────────────────────────── */}
-      <div className="settings-section__desc">
-        <strong>📅 iCal calendar subscription</strong>
-      </div>
-      <p className="settings-section__desc">
+      <CardSectionLabel>📅 iCal calendar subscription</CardSectionLabel>
+      <CardDescription>
         Subscribe to this URL in any calendar app to see your task reminders as calendar events.
         Tasks with a reminder set will appear as events with a built-in alert.
-      </p>
+      </CardDescription>
 
       {token ? (
         <>
@@ -79,7 +73,7 @@ export function IntegrationsSettings({ token: initialToken }: Readonly<Props>) {
             <li><strong>Google Calendar:</strong> Other calendars → From URL → paste URL (note: Google polls infrequently).</li>
           </ul>
 
-          <div style={{ marginTop: 16 }}>
+          <div className="margin-top-md">
             <ConfirmButton
               onConfirm={regenerate}
               size="sm"
@@ -95,6 +89,6 @@ export function IntegrationsSettings({ token: initialToken }: Readonly<Props>) {
       ) : (
         <p className="manage-item__meta">No calendar token found. Run the reminders migration SQL.</p>
       )}
-    </section>
+    </SectionCard>
   );
 }

@@ -2,6 +2,7 @@
 
 import { ManageableList }                  from '@/components/settings/ManageableList';
 import type { ProviderRow, ProviderTypeRow } from '@/types/schema';
+import { Badge } from '@/components/ui';
 
 interface Props {
   providers:     ProviderRow[];
@@ -16,7 +17,6 @@ export function ProviderSettings({ providers: initial, providerTypes }: Readonly
       tableName="providers"
       nameColumn="provider_type_id"
       items={initial}
-      showDelete={false}
       collapsibleAdd
       addFields={[
         {
@@ -38,7 +38,7 @@ export function ProviderSettings({ providers: initial, providerTypes }: Readonly
             {item.practice_name && item.provider_name && (
               <span className="manage-item__meta">{item.practice_name}</span>
             )}
-            {typeName && <span className="badge">{typeName}</span>}
+            {typeName && <Badge>{typeName}</Badge>}
           </>
         );
       }}

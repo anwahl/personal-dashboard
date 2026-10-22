@@ -2,7 +2,8 @@
 
 import { SaveState, Button, ConfirmButton, 
   Markdown, Card, CardBody, CardTitle, CardHeader, 
-  useToast}    from '@/components/ui';
+  useToast, Badge
+}    from '@/components/ui';
 import { useState, useCallback, useEffect }            from 'react';
 import { useRouter }                                   from 'next/navigation';
 import { createClient }                                from '@/lib/supabase/client';
@@ -121,11 +122,11 @@ export function TaskDetailClient({
           <dl className="detail-page__fields">
             <div className="detail-page__field">
               <dt>Status</dt>
-              <dd><span className="badge">{task.status.status_name}</span></dd>
+              <dd><Badge>{task.status.status_name}</Badge></dd>
             </div>
             <div className="detail-page__field">
               <dt>Priority</dt>
-              <dd><span className="badge">{task.priority.priority_name}</span></dd>
+              <dd><Badge>{task.priority.priority_name}</Badge></dd>
             </div>
             <div className="detail-page__field">
               <dt>Due</dt>

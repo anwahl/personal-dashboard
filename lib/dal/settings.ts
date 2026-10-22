@@ -3,8 +3,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 type Client = SupabaseClient;
 
 /**
- * Tables managed by ManageableList. Listing them explicitly gives
- * type coverage and documents what this DAL owns.
+ * Tables managed by the settings lists (ManageableList, HierarchicalList,
+ * LastTimeSettings). Listing them explicitly gives type coverage and
+ * documents what this DAL owns. Settings are deactivated, never deleted,
+ * so the history that points at them is kept.
  */
 export type ManageableTable =
   | "tags"
@@ -15,7 +17,10 @@ export type ManageableTable =
   | "chart_categories"
   | "daily_trackables"
   | "trackable_categories"
-  | "people_categories";
+  | "people_categories"
+  | "last_time_media"
+  | "last_time_boolean"
+  | "last_time_custom";
 
 /**
  * All tables with a sort_order column — superset of ManageableTable.
@@ -29,10 +34,7 @@ export type ReorderableTable =
   | "journal_categories"
   | "journal_prompts"
   | "weekly_journal_categories"
-  | "weekly_journal_prompts"
-  | "last_time_media"
-  | "last_time_boolean"
-  | "last_time_custom";
+  | "weekly_journal_prompts";
 
 // ── Generic active toggle ─────────────────────────────────────────────────────
 
@@ -83,17 +85,6 @@ export async function updateSettingsItem<T>(
   return data as T;
 }
 
-// ── Generic delete ────────────────────────────────────────────────────────────
-
-export async function deleteSettingsItem(
-  client: Client,
-  table: ManageableTable,
-  id: number,
-): Promise<void> {
-  const { error } = await client.from(table).delete().eq("id", id);
-  if (error) throw new Error(`deleteSettingsItem(${table}): ${error.message}`);
-}
-
 // ── Generic sort-order swap (any table with sort_order column) ────────────────
 
 /**
@@ -137,4 +128,30 @@ export async function batchSetSortOrder(
     if (res.error)
       throw new Error(`batchSetSortOrder(${table}): ${res.error.message}`);
   }
+}
+
+// ── Category assignment ───────────────────────────────────────────────────────
+
+/** Item tables that belong to a category via `category_id`. */
+export type CategorizedTable =
+  | "daily_trackables"
+  | "symptom_types"
+  | "journal_prompts"
+  | "weekly_journal_prompts";
+
+/**
+ * Moves an item to another category (or to none, where the column allows
+ * null — daily_trackables). Pair with batchSetSortOrder to place it.
+ */
+export async function setItemCategory(
+  client: Client,
+  table: CategorizedTable,
+  id: number,
+  categoryId: number | null,
+): Promise<void> {
+  const { error } = await client
+    .from(table)
+    .update({ category_id: categoryId })
+    .eq("id", id);
+  if (error) throw new Error(`setItemCategory(${table}): ${error.message}`);
 }

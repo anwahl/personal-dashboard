@@ -12,7 +12,8 @@ import { useState, useCallback, useEffect } from 'react';
 import { createClient }           from '@/lib/supabase/client';
 import { logCustomLastTime }      from '@/lib/dal/lasttime';
 import { Button, Card, CardActions, CardBody, CardGrid, CardHeader,
-         CardSection, CardTitle, Dialog, FieldActions, IconDisplay, Item }
+         CardSection, CardTitle, Dialog, FieldActions, IconDisplay, Item, EmptyState
+}
                                    from '@/components/ui';
 import type { LastTimeEntry }      from '@/types/dal';
 import type { IconRow }            from '@/types/schema';
@@ -117,7 +118,7 @@ export function LastTimeTracker({ entries, icons, compact = false }: Readonly<Pr
         </CardHeader>
         <CardSection>
           {sorted.length === 0 && (
-            <p className="empty-state">No items configured. Add them in Settings → Last Time.</p>
+            <EmptyState>No items configured. Add them in Settings → Last Time.</EmptyState>
           )}
 
           <div className="last-time-list">

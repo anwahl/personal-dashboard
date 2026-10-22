@@ -5,7 +5,7 @@ import { useRouter }             from 'next/navigation';
 import Link                      from 'next/link';
 import { createClient }          from '@/lib/supabase/client';
 import { createAppointment, updateAppointment, deleteAppointment } from '@/lib/dal/appointments';
-import { Button, Card, CardBody, CardHeader, CardTitle, Chip, ExpandPanel, FieldActions, Markdown, SubCard, SubCardBody }      from '@/components/ui';
+import { Button, Card, CardBody, CardHeader, CardTitle, Chip, ExpandPanel, FieldActions, Markdown, SubCard, SubCardBody, EmptyState } from '@/components/ui';
 import { localTodayISO, daysUntil, formatMediumDate, formatTime } from '@/lib/utils/dates';
 import type { AppointmentDetail }    from '@/types/dal';
 import type { AppointmentTypeRow, PersonRow, ProviderRow } from '@/types/schema';
@@ -182,7 +182,7 @@ export function AppointmentsClient({
         <CardBody>  
           <div className="section-divider">Upcoming ({localUpcoming.length})</div>
           {localUpcoming.length === 0
-            ? <p className="empty-state">No upcoming appointments.</p>
+            ? <EmptyState>No upcoming appointments.</EmptyState>
             : localUpcoming.map(a => <ApptRow key={a.id} appt={a} onEdit={() => openEdit(a)} />)
           }
 
@@ -198,7 +198,7 @@ export function AppointmentsClient({
             {showPast && (
               <div className="toggle-btn-section__body">
                 {localPast.length === 0
-                  ? <p className="empty-state">No past appointments on record.</p>
+                  ? <EmptyState>No past appointments on record.</EmptyState>
                   : localPast.map(a => <ApptRow key={a.id} appt={a} onEdit={() => openEdit(a)} />)
                 }
               </div>

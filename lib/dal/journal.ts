@@ -204,17 +204,6 @@ export async function updateJournalCategory(
   if (error) throw new Error(`updateJournalCategory: ${error.message}`);
 }
 
-export async function deleteJournalCategory(
-  client: Client,
-  id: number,
-): Promise<void> {
-  const { error } = await client
-    .from("journal_categories")
-    .delete()
-    .eq("id", id);
-  if (error) throw new Error(`deleteJournalCategory: ${error.message}`);
-}
-
 export async function updateJournalPrompt(
   client: Client,
   id: number,
@@ -225,12 +214,4 @@ export async function updateJournalPrompt(
     .update({ prompt_text: text.trim() })
     .eq("id", id);
   if (error) throw new Error(`updateJournalPrompt: ${error.message}`);
-}
-
-export async function deleteJournalPrompt(
-  client: Client,
-  id: number,
-): Promise<void> {
-  const { error } = await client.from("journal_prompts").delete().eq("id", id);
-  if (error) throw new Error(`deleteJournalPrompt: ${error.message}`);
 }

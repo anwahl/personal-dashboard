@@ -3,21 +3,26 @@
  *
  * Settings section for managing the icons library.
  *
- * - Lists all icons with SVG preview, editable name + tags, sort ↑/↓, delete
+ * - Lists icons as ManageItem rows: preview, name, tags; drag to reorder;
+ *   ⋯ menu for edit (name + tags) and activate/deactivate
  * - Add form: name, tags, svg_data textarea with live preview
  * - Mutations go through lib/dal/icons.ts
  */
 
 'use client';
 
-import { useState }                  from 'react';
+import { useState, type ChangeEvent } from 'react';
 import { useRouter }                  from 'next/navigation';
 import { createClient }               from '@/lib/supabase/client';
 import type { IconRow }               from '@/types/schema';
-import { createIcon, updateIcon, deleteIcon } from '@/lib/dal/icons';
+import { createIcon, updateIcon } from '@/lib/dal/icons';
 import { batchSetSortOrder }          from '@/lib/dal/settings';
-import { normalizedReorderUpdates }   from '@/lib/utils/sort';
-import { Button, ConfirmButton, IconDisplay }                     from '@/components/ui';
+import { bySortOrder, reorderUpdates } from '@/lib/utils/sort';
+import {
+  Button, DragHandle, IconDisplay, ManageItem, RowMenu, SortableItem, SortableList, SectionCard, InactiveGroup, EmptyState
+} from '@/components/ui';
+import type { SortMove } from '@/components/ui';
+import { FieldInputs, type AddField, type FieldValues } from './FieldInputs';
 
 interface Props {
   icons: IconRow[];
@@ -36,6 +41,8 @@ export function IconSettings({ icons: initialIcons }: Readonly<Props>) {
   const supabase = createClient();
 
   const [items, setItems] = useState<IconRow[]>(initialIcons);
+  const active   = items.filter(i =>  i.is_active).sort(bySortOrder);
+  const inactive = items.filter(i => !i.is_active).sort(bySortOrder);
 
   // ── Add form state ──────────────────────────────────────────────────────────
   const [addName,    setAddName]    = useState('');
@@ -46,7 +53,7 @@ export function IconSettings({ icons: initialIcons }: Readonly<Props>) {
 
   const svgPreview = cleanSvg(addSvg);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
@@ -69,7 +76,7 @@ export function IconSettings({ icons: initialIcons }: Readonly<Props>) {
         name,
         tags:       addTags.trim() || null,
         svg_data:   svgPreview,
-        sort_order: items.length,
+        sort_order: active.length,
       });
       setItems(prev => [...prev, newIcon]);
       setAddName('');
@@ -90,52 +97,40 @@ export function IconSettings({ icons: initialIcons }: Readonly<Props>) {
     router.refresh();
   };
 
-  // ── Delete ──────────────────────────────────────────────────────────────────
-  const handleDelete = async (id: number) => {
-    await deleteIcon(supabase, id);
-    setItems(prev => prev.filter(i => i.id !== id));
-    router.refresh();
-  };
-
-  // ── Sort ────────────────────────────────────────────────────────────────────
-  const move = async (idx: number, dir: -1 | 1) => {
-    const swapIdx = idx + dir;
-    if (swapIdx < 0 || swapIdx >= items.length) return;
-    const updates = normalizedReorderUpdates(items, idx, swapIdx);
-    // Apply optimistic update
-    const reordered = [...items];
-    [reordered[idx], reordered[swapIdx]] = [reordered[swapIdx], reordered[idx]];
-    setItems(reordered);
+  // ── Reorder (drag and drop) ─────────────────────────────────────────────────
+  const handleMove = async ({ fromIndex, toIndex }: SortMove) => {
+    const updates   = reorderUpdates(active, fromIndex, toIndex);
+    const updateMap = new Map(updates.map(u => [u.id, u.sort_order]));
+    setItems(prev => prev.map(i => updateMap.has(i.id) ? { ...i, sort_order: updateMap.get(i.id)! } : i));
     await batchSetSortOrder(supabase, 'icons', updates);
     router.refresh();
   };
 
   return (
-    <section className="settings-section">
-      <div className="settings-section__header">
-        <h2 className="settings-section__title">Icons</h2>
-      </div>
-      <p className="settings-section__desc">
-        SVG icons used throughout the app. Paste raw SVG markup below to add one.
-        Tags are space-separated keywords used for searching.
-      </p>
+    <SectionCard
+      title="Icons"
+      meta={`${active.length} active`}
+      description="SVG icons used throughout the app. Paste raw SVG markup below to add one. Tags are space-separated keywords used for searching."
+    >
 
       {/* ── Icon list ──────────────────────────────────────────────────────── */}
-      {items.length === 0 && (
-        <p className="manage-item__meta">No icons yet — add one below.</p>
-      )}
+      {items.length === 0 && <EmptyState>No icons yet — add one below.</EmptyState>}
 
-      {items.map((icon, idx) => (
-        <IconSettingsRow
-          key={icon.id}
-          icon={icon}
-          idx={idx}
-          total={items.length}
-          onSave={save}
-          onDelete={handleDelete}
-          onMove={move}
-        />
-      ))}
+      <div className="manage-list">
+        <SortableList onMove={handleMove}>
+          {active.map((icon, idx) => (
+            <SortableItem key={icon.id} id={`icon:${icon.id}`} index={idx}>
+              {sortable => <IconSettingsRow icon={icon} sortable={sortable} onSave={save} />}
+            </SortableItem>
+          ))}
+        </SortableList>
+      </div>
+
+      <InactiveGroup count={inactive.length}>
+        {inactive.map(icon => (
+          <IconSettingsRow key={icon.id} icon={icon} onSave={save} />
+        ))}
+      </InactiveGroup>
 
       {/* ── Add form ────────────────────────────────────────────────────────── */}
       <div className="icon-add-form">
@@ -171,12 +166,12 @@ export function IconSettings({ icons: initialIcons }: Readonly<Props>) {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
-          <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+        <div className="icon-add-form__upload-row">
+          <label className="icon-add-form__upload">
             📁 Upload .svg file
-            <input type="file" accept=".svg,image/svg+xml" onChange={handleFileUpload} style={{ display: 'none' }} />
+            <input type="file" accept=".svg,image/svg+xml" onChange={handleFileUpload} hidden />
           </label>
-          <span style={{ fontSize: '0.72rem', color: 'var(--text-faint)' }}>or paste below</span>
+          <span className="icon-add-form__hint">or paste below</span>
         </div>
         <textarea
           className="textarea--tall"
@@ -197,82 +192,73 @@ export function IconSettings({ icons: initialIcons }: Readonly<Props>) {
           {addLoading ? 'Adding…' : '+ Add Icon'}
         </Button>
       </div>
-    </section>
+    </SectionCard>
   );
 }
 
 // ── Row sub-component ─────────────────────────────────────────────────────────
 
+type IconPatch = Partial<Pick<IconRow, 'name' | 'tags' | 'is_active'>>;
+
+const EDIT_FIELDS: AddField[] = [
+  { key: 'name', type: 'text', label: 'Name', required: true },
+  { key: 'tags', type: 'text', label: 'Tags', placeholder: 'tags (space-separated)', required: false },
+];
+
 interface RowProps {
-  icon:     IconRow;
-  idx:      number;
-  total:    number;
-  onSave:   (id: number, patch: Partial<Pick<IconRow, 'name' | 'tags' | 'is_active'>>) => Promise<void>;
-  onDelete: (id: number) => Promise<void>;
-  onMove:   (idx: number, dir: -1 | 1) => Promise<void>;
+  icon:      IconRow;
+  sortable?: { ref: (el: Element | null) => void; handleRef: (el: Element | null) => void; isDragging: boolean };
+  onSave:    (id: number, patch: IconPatch) => Promise<void>;
 }
 
-function IconSettingsRow({ icon, idx, total, onSave, onDelete, onMove }: Readonly<RowProps>) {
+function IconSettingsRow({ icon, sortable, onSave }: Readonly<RowProps>) {
+  const [editVals, setEditVals] = useState<FieldValues | null>(null);
+
+  const saveEdit = async () => {
+    if (!editVals) return;
+    const name = editVals.name.trim();
+    if (!name) return;
+    await onSave(icon.id, { name, tags: editVals.tags.trim() || null });
+    setEditVals(null);
+  };
+
   return (
-    <div className={`icon-settings-item${icon.is_active ? '' : ' icon-settings-item--inactive'}`}>
-      {/* Preview */}
-      <div className="icon-settings-item__preview">
-        <IconDisplay icon={icon} size="lg" />
-      </div>
-
-      {/* Editable name + tags */}
-      <div className="icon-settings-item__fields">
-        <input
-          type="text"
-          className="icon-settings-item__name"
-          defaultValue={icon.name}
-          onBlur={e => {
-            const v = e.target.value.trim();
-            if (v && v !== icon.name) onSave(icon.id, { name: v });
-          }}
+    <ManageItem
+      ref={sortable?.ref}
+      dragging={sortable?.isDragging}
+      inactive={!icon.is_active}
+      handle={sortable && <DragHandle ref={sortable.handleRef} label={`Drag to reorder ${icon.name}`} />}
+      menu={
+        <RowMenu
+          label={icon.name}
+          items={[
+            { label: 'Edit', onSelect: () => setEditVals({ name: icon.name, tags: icon.tags ?? '' }) },
+            { label: icon.is_active ? 'Deactivate' : 'Activate', onSelect: () => onSave(icon.id, { is_active: !icon.is_active }) },
+          ]}
         />
-        <input
-          type="text"
-          className="icon-settings-item__tags"
-          defaultValue={icon.tags ?? ''}
-          placeholder="tags (space-separated)"
-          onBlur={e => {
-            const v = e.target.value.trim() || null;
-            if (v !== icon.tags) onSave(icon.id, { tags: v });
-          }}
-        />
-      </div>
-
-      {/* Sort buttons */}
-      <div className="icon-settings-item__sort">
-        <button
-          type="button"
-          className="icon-btn"
-          onClick={() => onMove(idx, -1)}
-          disabled={idx === 0}
-          title="Move up"
-        >↑</button>
-        <button
-          type="button"
-          className="icon-btn"
-          onClick={() => onMove(idx, 1)}
-          disabled={idx === total - 1}
-          title="Move down"
-        >↓</button>
-      </div>
-
-      {/* Actions */}
-      <div className="icon-settings-item__actions">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onSave(icon.id, { is_active: !icon.is_active })}
-          title={icon.is_active ? 'Deactivate' : 'Activate'}
-        >
-          {icon.is_active ? '●' : '○'}
-        </Button>
-        <ConfirmButton onConfirm={() => onDelete(icon.id)} size="sm" />
-      </div>
-    </div>
+      }
+      editing={editVals ? (
+        <>
+          <IconDisplay icon={icon} size="lg" />
+          <FieldInputs
+            fields={EDIT_FIELDS}
+            mode="edit"
+            values={editVals}
+            iconValues={{}}
+            onChange={(key, value) => setEditVals(prev => prev && ({ ...prev, [key]: value }))}
+            onIconChange={() => {}}
+            onEnter={saveEdit}
+            onEscape={() => setEditVals(null)}
+            autoFocusKey="name"
+          />
+          <Button size="sm" variant="accent" onClick={saveEdit} aria-label="Save">✓</Button>
+          <Button size="sm" variant="ghost"  onClick={() => setEditVals(null)} aria-label="Cancel">✕</Button>
+        </>
+      ) : undefined}
+    >
+      <IconDisplay icon={icon} size="lg" className="trackable-emoji" />
+      {icon.name}
+      {icon.tags && <span className="manage-item__meta manage-item__meta--truncate">{icon.tags}</span>}
+    </ManageItem>
   );
 }
