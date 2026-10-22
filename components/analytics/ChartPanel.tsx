@@ -137,7 +137,7 @@ export function ChartPanel({ chart, initialData, fromDate, toDate, icons }: Read
       </div>
 
       {/* Chart (dimmed while loading new range data) */}
-      <div style={{ opacity: loading ? 0.45 : 1, transition: 'opacity 0.15s' }}>
+      <div className={`chart-panel__body${loading ? ' chart-panel__body--loading' : ''}`}>
         <ChartRenderer chart={chart} data={data} fromDate={from} toDate={to} icons={icons} />
       </div>
     </div>

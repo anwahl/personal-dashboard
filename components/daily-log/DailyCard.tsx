@@ -15,10 +15,10 @@ import { createClient }    from '@/lib/supabase/client';
 import { togglePrescriptionEntry } from '@/lib/dal/daily';
 import { setEssResponse }          from '@/lib/dal/ess';
 import { formatTime } from '@/lib/utils/dates';
-import { Card, CardHeader, CardTitle, CardBody, CardSection, CardSectionLabel, TabBar, Toggle, SliderField, Chip, ChipGroup, InputField, SaveState, IconDisplay, IconPicker, Markdown, TagSelector, EmptyState } from '@/components/ui';
+import { Card, CardHeader, CardTitle, CardBody, CardSection, CardSectionLabel, TabBar, Toggle, SliderField, Chip, ChipGroup, InputField, SaveState, TextField, NumberField, TimeField, TextAreaField, IconDisplay, IconPicker, Markdown, TagSelector, EmptyState, ChipSelect } from '@/components/ui';
 import { JournalTab }       from './JournalTab';
 import type {
-  JournalCategoryWithPrompts, DailyEntryDetail,
+  JournalCategoryWithPrompts,
   EssEntryDetail, PrescriptionDetail, PriorSleepContext, ReferenceData,
 } from '@/types/dal';
 import type {  JournalState, DailyOverviewState, SymptomFormState, SleepFormState, MetricState, } from './DailyPageClient';
@@ -42,17 +42,12 @@ function Rating({ value, max = SEVERITY_MAX }: Readonly<{ value: number | null |
 
 function OverviewTab({
   mode, state, setState,
-  trackables, trackableCategories, checkedTrackableIds, toggleBoolean,
   tags, tagIds, toggleTag, addNewTag,
   icons,
 }: Readonly<{
   mode: Mode;
   state: DailyOverviewState;
   setState: React.Dispatch<React.SetStateAction<DailyOverviewState>>;
-  trackables:          ReferenceData['trackables'];
-  trackableCategories: ReferenceData['trackableCategories'];
-  checkedTrackableIds: number[];
-  toggleBoolean: (id: number) => void;
   tags: ReferenceData['tags'];
   tagIds: number[];
   toggleTag: (id: number) => void;
@@ -61,30 +56,6 @@ function OverviewTab({
 }>) {
   const set = <K extends keyof DailyOverviewState>(k: K, v: DailyOverviewState[K]) =>
     setState(prev => ({ ...prev, [k]: v }));
-
-  const booleanTrackables = trackables.filter(t => t.track_type === 'boolean');
-
-  // Group boolean trackables by category for display
-  // Category order follows sort_order; uncategorized appear last under 'Habits'
-  const categorizedGroups: { label: string; items: typeof booleanTrackables }[] = [];
-  const categorized = new Map<number, typeof booleanTrackables>();
-  const uncategorized: typeof booleanTrackables = [];
-  for (const t of booleanTrackables) {
-    if (t.category_id != null) {
-      if (!categorized.has(t.category_id)) categorized.set(t.category_id, []);
-      categorized.get(t.category_id)!.push(t);
-    } else {
-      uncategorized.push(t);
-    }
-  }
-  const sortedCats = [...trackableCategories].filter(c => c.is_active).sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
-  for (const cat of sortedCats) {
-    const items = categorized.get(cat.id) ?? [];
-    if (items.length > 0) categorizedGroups.push({ label: cat.category_name, items });
-  }
-  if (uncategorized.length > 0) {
-    categorizedGroups.push({ label: categorizedGroups.length === 0 ? 'Habits' : 'Other', items: uncategorized });
-  }
 
   const activeTags = tags.filter(t => tagIds.includes(t.id));
 
@@ -120,20 +91,6 @@ function OverviewTab({
           </CardSection>
         )}
         
-        {categorizedGroups.map(({ label, items }) => (
-          <CardSection key={label}>
-            <CardSectionLabel>{label}</CardSectionLabel>
-            <div className="habit-grid">
-              {items.map(t => (
-                <div key={t.id} className={`habit-btn${checkedTrackableIds.includes(t.id) ? ' habit-btn--done' : ''}`}>
-                  <IconDisplay icon={icons.find(i => i.id === t.icon_id) ?? null} size="sm" className="habit-btn__emoji" />
-                  <span className="habit-btn__label">{t.name}</span>
-                </div>
-              ))}
-            </div>
-          </CardSection>
-        ))}
-
         {activeTags.length > 0 && (
           <CardSection>
             <CardSectionLabel>Tags</CardSectionLabel>
@@ -158,24 +115,11 @@ function OverviewTab({
   return (
     <div>
       <CardSection>
-        <InputField label="Summary" id="summary">
-          <textarea
-            id="summary"
-            value={state.summary}
-            placeholder="How did today go? What did you do?"
-            onChange={e => set('summary', e.target.value)}
-            className="textarea--tall"
-          />
-        </InputField>
+        <TextAreaField label="Summary" value={state.summary} placeholder="How did today go? What did you do?"
+          onChange={v => set('summary', v)} size="tall" />
         <div className="field-grid">
-          <InputField label="Word of the day" id="word">
-            <input
-              id="word" type="text"
-              value={state.word}
-              placeholder="One word…"
-              onChange={e => set('word', e.target.value)}
-            />
-          </InputField>
+          <TextField label="Word of the day" value={state.word} placeholder="One word…"
+            onChange={v => set('word', v)} />
           <InputField label="Daily icon" id="daily-icon">
             <IconPicker
               icons={icons}
@@ -187,22 +131,6 @@ function OverviewTab({
         </div>
       </CardSection>
         
-      {categorizedGroups.map(({ label, items }) => (
-        <CardSection key={label}>
-          <CardSectionLabel>{label}</CardSectionLabel>
-          <div className="habit-grid">
-            {items.map(t => (
-              <button key={t.id} type="button"
-                className={`habit-btn${checkedTrackableIds.includes(t.id) ? ' habit-btn--done' : ''}`}
-                onClick={() => toggleBoolean(t.id)}
-                >
-                <IconDisplay icon={icons.find(i => i.id === t.icon_id) ?? null} size="sm" className="habit-btn__emoji" />
-                <span className="habit-btn__label">{t.name}</span>
-              </button>
-            ))}
-          </div>
-        </CardSection>
-      ))}
 
       <CardSection>
         <CardSectionLabel>Tags</CardSectionLabel>
@@ -215,87 +143,102 @@ function OverviewTab({
       </CardSection>
 
       <CardSection>
-        <InputField label="Brain dump" id="brain-dump">
-          <textarea
-            id="brain-dump"
-            value={state.brainDump}
-            placeholder="Anything on your mind…"
-            onChange={e => set('brainDump', e.target.value)}
-          />
-        </InputField>
+        <TextAreaField label="Brain dump" value={state.brainDump} placeholder="Anything on your mind…"
+          onChange={v => set('brainDump', v)} />
       </CardSection>
     </div>
   );
 }
 
-// ── Metrics tab ───────────────────────────────────────────────────────────────
+// ── Trackables tab ────────────────────────────────────────────────────────────
+// Every trackable, grouped by category in the same order as Settings → Metrics:
+// within a category, the Yes/No tiles first (they save as soon as they're
+// tapped), then the 0–10 sliders (saved with the Save button).
 
-function MetricsTab({
-  mode, trackables, trackableCategories, metricState, setMetricState, icons,
+function TrackablesTab({
+  mode, trackables, trackableCategories, checkedTrackableIds, toggleBoolean,
+  metricState, setMetricState, icons,
 }: Readonly<{
   mode: Mode;
   trackables: ReferenceData['trackables'];
   trackableCategories: ReferenceData['trackableCategories'];
+  checkedTrackableIds: number[];
+  toggleBoolean: (id: number) => void;
   metricState: MetricState;
   setMetricState: React.Dispatch<React.SetStateAction<MetricState>>;
   icons: IconRow[];
 }>) {
-  const numericTrackables = trackables.filter(t => t.track_type === 'numeric');
+  const iconOf = (id: number | null) => icons.find(i => i.id === id) ?? null;
+  const shown  = trackables.filter(t => t.track_type === 'boolean' || t.track_type === 'numeric');
 
-  if (!numericTrackables.length) {
-    return <EmptyState>No numeric metrics configured.</EmptyState>;
+  if (!shown.length) {
+    return <EmptyState>No trackables yet. Add them in Settings → Tracking.</EmptyState>;
   }
 
-  // Group by category (same pattern as boolean metrics in OverviewTab)
-  type Group = { label: string; items: typeof numericTrackables };
-  const groups: Group[] = [];
-  const byCategory = new Map<number, typeof numericTrackables>();
-  const uncategorized: typeof numericTrackables = [];
+  type Group = { key: string; label: string; items: typeof shown };
+  const bySort = (a: { sort_order?: number }, b: { sort_order?: number }) => (a.sort_order ?? 0) - (b.sort_order ?? 0);
+  const groups: Group[] = [...trackableCategories]
+    .filter(c => c.is_active)
+    .sort(bySort)
+    .map(c => ({ key: String(c.id), label: c.category_name, items: shown.filter(t => t.category_id === c.id) }));
+  const activeCatIds = new Set(trackableCategories.filter(c => c.is_active).map(c => c.id));
+  groups.push({
+    key: 'other', label: groups.some(g => g.items.length) ? 'Other' : '',
+    items: shown.filter(t => t.category_id == null || !activeCatIds.has(t.category_id)),
+  });
 
-  for (const t of numericTrackables) {
-    if (t.category_id != null) {
-      if (!byCategory.has(t.category_id)) byCategory.set(t.category_id, []);
-      byCategory.get(t.category_id)!.push(t);
-    } else {
-      uncategorized.push(t);
-    }
-  }
+  return (
+    <div>
+      {groups.filter(g => g.items.length).map(group => {
+        const tiles   = group.items.filter(t => t.track_type === 'boolean').sort(bySort);
+        const sliders = group.items.filter(t => t.track_type === 'numeric').sort(bySort);
+        return (
+          <CardSection key={group.key}>
+            {group.label && <CardSectionLabel>{group.label}</CardSectionLabel>}
 
-  for (const cat of [...trackableCategories].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))) {
-    const items = byCategory.get(cat.id);
-    if (items?.length) groups.push({ label: cat.category_name, items });
-  }
-  if (uncategorized.length) {
-    groups.push({ label: groups.length > 0 ? 'Other' : '', items: uncategorized });
-  }
+            {tiles.length > 0 && (
+              <div className="habit-grid">
+                {tiles.map(t => {
+                  const done = checkedTrackableIds.includes(t.id);
+                  return mode === 'view' ? (
+                    <div key={t.id} className={`habit-btn${done ? ' habit-btn--done' : ''}`}>
+                      <IconDisplay icon={iconOf(t.icon_id)} size="sm" className="habit-btn__emoji" />
+                      <span className="habit-btn__label">{t.name}</span>
+                    </div>
+                  ) : (
+                    <button key={t.id} type="button" aria-pressed={done}
+                      className={`habit-btn${done ? ' habit-btn--done' : ''}`}
+                      onClick={() => toggleBoolean(t.id)}>
+                      <IconDisplay icon={iconOf(t.icon_id)} size="sm" className="habit-btn__emoji" />
+                      <span className="habit-btn__label">{t.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
-  const renderGroup = (group: Group) => (
-    <div key={group.label}>
-      {group.label && <p className="category-group__label">{group.label}</p>}
-      {mode === 'view'
-        ? group.items.map(t => (
-            <div key={t.id} className="metric-display">
-              <IconDisplay icon={icons.find(i => i.id === t.icon_id) ?? null} size="sm" className="metric-display__emoji" />
-              <span className="metric-display__label">{t.name}</span>
-              <Rating value={metricState[t.id] ?? null} />
-            </div>
-          ))
-        : group.items.map(t => (
-            <SliderField
-              key={t.id}
-              emoji={<IconDisplay icon={icons.find(i => i.id === t.icon_id) ?? null} size="sm" />}
-              label={t.name}
-              value={metricState[t.id] ?? null}
-              min={0}
-              max={SEVERITY_MAX}
-              onChange={v => setMetricState(prev => ({ ...prev, [t.id]: v }))}
-            />
-          ))
-      }
+            {sliders.map(t => mode === 'view' ? (
+              <div key={t.id} className="metric-display">
+                <IconDisplay icon={iconOf(t.icon_id)} size="sm" className="metric-display__emoji" />
+                <span className="metric-display__label">{t.name}</span>
+                <Rating value={metricState[t.id] ?? null} />
+              </div>
+            ) : (
+              <SliderField
+                key={t.id}
+                emoji={<IconDisplay icon={iconOf(t.icon_id)} size="sm" />}
+                label={t.name}
+                value={metricState[t.id] ?? null}
+                min={0}
+                max={SEVERITY_MAX}
+                onChange={v => setMetricState(prev => ({ ...prev, [t.id]: v }))}
+              />
+            ))}
+          </CardSection>
+        );
+      })}
     </div>
   );
-
-  return <div>{groups.map(renderGroup)}</div>;
 }
 
 // ── Symptoms tab ──────────────────────────────────────────────────────────────
@@ -320,7 +263,7 @@ function SymptomsTab({
     );
 
   if (mode === 'view') {
-    const anyData = state.symptomTypeIds.length > 0 || state.hadCrash || state.hadAnxiety;
+    const anyData = state.symptomTypeIds.length > 0 || state.hadCrash;
     if (!hasSymptomData && !anyData) return <EmptyState>No symptoms logged.</EmptyState>;
 
     return (
@@ -330,16 +273,6 @@ function SymptomsTab({
             ⚡ Crash{state.crashSeverity != null ? ` · ${state.crashSeverity}/${SEVERITY_MAX}` : ''}
             {state.crashTiming ? ` · ${state.crashTiming}` : ''}
           </p>
-        )}
-        {state.hadAnxiety && (
-          <div>
-            <p className="daily-card__anxiety-line">
-              😰 Anxiety{state.anxietySeverity != null ? ` · ${state.anxietySeverity}/${SEVERITY_MAX}` : ''}
-            </p>
-            {state.anxietyDetail && (
-              <p className="daily-card__anxiety-detail">{state.anxietyDetail}</p>
-            )}
-          </div>
         )}
         {reference.symptomCategories.map(cat => {
           const active = cat.types.filter(t => state.symptomTypeIds.includes(t.id));
@@ -365,26 +298,8 @@ function SymptomsTab({
           <div className="conditional-block">
             <SliderField emoji="⚡" label="Severity" value={state.crashSeverity} min={0} max={SEVERITY_MAX}
               onChange={v => set('crashSeverity', v)} />
-            <InputField label="Timing" id="crash-timing">
-              <input id="crash-timing" type="text" value={state.crashTiming}
-                placeholder="Morning, afternoon…" onChange={e => set('crashTiming', e.target.value)} />
-            </InputField>
-          </div>
-        )}
-      </CardSection>
-
-      <CardSection>
-        <Toggle label="Notable anxiety" checked={state.hadAnxiety}
-          onChange={() => set('hadAnxiety', !state.hadAnxiety)} />
-        {state.hadAnxiety && (
-          <div className="conditional-block">
-            <SliderField emoji="😰" label="Severity" value={state.anxietySeverity} min={0} max={SEVERITY_MAX}
-              onChange={v => set('anxietySeverity', v)} />
-            <InputField label="Detail" id="anxiety-detail">
-              <textarea id="anxiety-detail" value={state.anxietyDetail}
-                onChange={e => set('anxietyDetail', e.target.value)}
-                placeholder="What triggered it…" className="textarea--short" />
-            </InputField>
+            <TextField label="Timing" value={state.crashTiming} placeholder="Morning, afternoon…"
+              onChange={v => set('crashTiming', v)} />
           </div>
         )}
       </CardSection>
@@ -392,14 +307,13 @@ function SymptomsTab({
       {reference.symptomCategories.map(cat => (
         <CardSection key={cat.id}>
           <CardSectionLabel>{cat.category_name}</CardSectionLabel>
-          <ChipGroup>
-            {cat.types.map(t => (
-              <Chip key={t.id} active={state.symptomTypeIds.includes(t.id)}
-                onClick={() => toggleSymptomType(t.id)}>
-                {t.symptom_name}
-              </Chip>
-            ))}
-          </ChipGroup>
+          <ChipSelect
+            label={cat.category_name}
+            small={false}
+            options={cat.types.map(t => ({ value: t.id, label: t.symptom_name }))}
+            selected={state.symptomTypeIds}
+            onToggle={id => toggleSymptomType(id)}
+          />
         </CardSection>
       ))}
     </div>
@@ -409,10 +323,10 @@ function SymptomsTab({
 // ── Meds tab ─────────────────────────────────────────────────────────────────
 
 function MedsTab({
-  mode, entryId, prescriptions, prescriptionIds: initialIds,
+  mode, getEntryId, prescriptions, prescriptionIds: initialIds,
 }: Readonly<{
   mode: Mode;
-  entryId: number;
+  getEntryId: () => Promise<number>;
   prescriptions: PrescriptionDetail[];
   prescriptionIds: number[];
 }>) {
@@ -426,13 +340,13 @@ function MedsTab({
     setTakenIds(prev => nowTaken ? [...prev, prescriptionId] : prev.filter(id => id !== prescriptionId));
     setPending(prev => new Set(prev).add(prescriptionId));
     try {
-      await togglePrescriptionEntry(supabase, entryId, prescriptionId, nowTaken);
+      await togglePrescriptionEntry(supabase, await getEntryId(), prescriptionId, nowTaken);
     } catch {
       setTakenIds(prev => nowTaken ? prev.filter(id => id !== prescriptionId) : [...prev, prescriptionId]);
     } finally {
       setPending(prev => { const next = new Set(prev); next.delete(prescriptionId); return next; });
     }
-  }, [supabase, entryId, takenIds, pending]);
+  }, [supabase, getEntryId, takenIds, pending]);
 
   if (!prescriptions.length) return <EmptyState>No active prescriptions.</EmptyState>;
 
@@ -496,9 +410,9 @@ function MedsTab({
 // ── ESS tab ───────────────────────────────────────────────────────────────────
 
 function EssTab({
-  entryId, ess, questionTypes, answerTypes, mode,
+  getEntryId, ess, questionTypes, answerTypes, mode,
 }: Readonly<{
-  entryId: number;
+  getEntryId: () => Promise<number>;
   ess: EssEntryDetail | null;
   questionTypes: EssQuestionTypeRow[];
   answerTypes:   EssAnswerTypeRow[];
@@ -532,7 +446,7 @@ function EssTab({
     setResponses(prev => ({ ...prev, [questionTypeId]: answerTypeId }));
     setSaving(prev => new Set(prev).add(questionTypeId));
     try {
-      await setEssResponse(supabase, entryId, questionTypeId, answerTypeId);
+      await setEssResponse(supabase, await getEntryId(), questionTypeId, answerTypeId);
     } catch {
       setResponses(prev => {
         const next = { ...prev };
@@ -791,31 +705,16 @@ function SleepTab({
       <CardSection>
         <CardSectionLabel>Times</CardSectionLabel>
         <div className="field-grid">
-          <InputField label="Bedtime" id="bedtime">
-            <input id="bedtime" type="time" value={sleepState.bedtime}
-              onChange={e => set('bedtime', e.target.value)} />
-          </InputField>
-          <InputField label="Wake time" id="wake-time">
-            <input id="wake-time" type="time" value={sleepState.wakeTime}
-              onChange={e => set('wakeTime', e.target.value)} />
-          </InputField>
+          <TimeField label="Bedtime" value={sleepState.bedtime} onChange={v => set('bedtime', v)} />
+          <TimeField label="Wake time" value={sleepState.wakeTime} onChange={v => set('wakeTime', v)} />
         </div>
         <div className="field-grid field-grid--3">
-          <InputField label="Hours" id="hours-slept">
-            <input id="hours-slept" type="number" min={0} max={24} step={0.25}
-              value={sleepState.hoursSlept} placeholder="7.5"
-              onChange={e => set('hoursSlept', e.target.value)} />
-          </InputField>
-          <InputField label="Latency (min)" id="latency">
-            <input id="latency" type="number" min={0}
-              value={sleepState.latencyMin} placeholder="20"
-              onChange={e => set('latencyMin', e.target.value)} />
-          </InputField>
-          <InputField label="OSA events/hr" id="osa">
-            <input id="osa" type="number" min={0} step={0.1}
-              value={sleepState.osaCount} placeholder="0.0"
-              onChange={e => set('osaCount', e.target.value)} />
-          </InputField>
+          <NumberField label="Hours" min={0} max={24} step={0.25} value={sleepState.hoursSlept}
+            placeholder="7.5" onChange={v => set('hoursSlept', v)} />
+          <NumberField label="Latency (min)" min={0} value={sleepState.latencyMin} placeholder="20"
+            onChange={v => set('latencyMin', v)} />
+          <NumberField label="OSA events/hr" min={0} step={0.1} value={sleepState.osaCount} placeholder="0.0"
+            onChange={v => set('osaCount', v)} />
         </div>
         <SliderField emoji="😵" label="Morning inertia" value={sleepState.inertiaSeverity}
           min={0} max={10} onChange={v => set('inertiaSeverity', v)} />
@@ -828,15 +727,11 @@ function SleepTab({
         {sleepState.wakeCount > 0 && (
           <div className="conditional-block">
             <div className="field-grid">
-              <InputField label="Duration (min)" id="wake-mins">
-                <input id="wake-mins" type="number" min={0} value={sleepState.wakeMins}
-                  onChange={e => set('wakeMins', e.target.value)} />
-              </InputField>
+              <NumberField label="Duration (min)" min={0} value={sleepState.wakeMins}
+                onChange={v => set('wakeMins', v)} />
             </div>
-            <InputField label="Detail" id="wake-detail">
-              <input id="wake-detail" type="text" value={sleepState.wakeDetail}
-                placeholder="What woke you?" onChange={e => set('wakeDetail', e.target.value)} />
-            </InputField>
+            <TextField label="Detail" value={sleepState.wakeDetail} placeholder="What woke you?"
+              onChange={v => set('wakeDetail', v)} />
           </div>
         )}
       </CardSection>
@@ -846,10 +741,8 @@ function SleepTab({
         {sleepState.hadNap && (
           <div className="conditional-block">
             <div className="field-grid">
-              <InputField label="Duration (min)" id="nap-duration">
-                <input id="nap-duration" type="number" min={0} value={sleepState.napDuration}
-                  onChange={e => set('napDuration', e.target.value)} />
-              </InputField>
+              <NumberField label="Duration (min)" min={0} value={sleepState.napDuration}
+                onChange={v => set('napDuration', v)} />
             </div>
             <Toggle label="Refreshing" checked={sleepState.napRefresh}
               onChange={() => set('napRefresh', !sleepState.napRefresh)} />
@@ -877,61 +770,47 @@ function SleepTab({
         <CardSectionLabel>Tonight's context</CardSectionLabel>
         {reference.timingCategories.map(cat => {
           const selected = sleepState.timingMap[cat.id];
-          const clearTiming = () => {
+          const pick = (optId: number | null) => {
             const next = { ...sleepState.timingMap };
-            delete next[cat.id];
+            if (optId == null) delete next[cat.id]; else next[cat.id] = optId;
             set('timingMap', next);
           };
           return (
             <div key={cat.id} className="daily-card__timing-group">
               <p className="card__section-label">{cat.category_name}</p>
-              <ChipGroup>
-                {reference.timingOptions
+              {/* Pick one: tapping the picked chip unpicks it. */}
+              <ChipSelect
+                label={cat.category_name}
+                options={reference.timingOptions
                   .filter(opt => opt.option_name.toLowerCase() !== 'none')
-                  .map(opt => (
-                    <Chip key={opt.id} active={selected === opt.id} small
-                      onClick={() => set('timingMap', { ...sleepState.timingMap, [cat.id]: opt.id })}>
-                      {opt.option_name}
-                    </Chip>
-                  ))}
-                {selected && (
-                  <Chip small onClick={clearTiming}>✕ clear</Chip>
-                )}
-              </ChipGroup>
+                  .map(opt => ({ value: opt.id, label: opt.option_name }))}
+                selected={selected != null ? [selected] : []}
+                onToggle={(id, on) => pick(on ? id : null)}
+              />
             </div>
           );
         })}
         <p className="card__section-label card__section-label--spaced">Pre-bed consumption</p>
-        <ChipGroup>
-          {reference.consumptionTypes
+        <ChipSelect
+          label="Pre-bed consumption"
+          options={reference.consumptionTypes
             .filter(t => t.type_name.toLowerCase() !== 'none')
-            .map(t => (
-              <Chip key={t.id} active={sleepState.consumptionIds.includes(t.id)} small
-                onClick={() => set('consumptionIds',
-                  sleepState.consumptionIds.includes(t.id)
-                    ? sleepState.consumptionIds.filter(id => id !== t.id)
-                    : [...sleepState.consumptionIds, t.id]
-                )}>
-                {t.type_name}
-              </Chip>
-            ))}
-          {sleepState.consumptionIds.length > 0 && (
-            <Chip small onClick={() => set('consumptionIds', [])}>✕ clear</Chip>
-          )}
-        </ChipGroup>
+            .map(t => ({ value: t.id, label: t.type_name }))}
+          selected={sleepState.consumptionIds}
+          onToggle={(id, on) => set('consumptionIds',
+            on ? [...sleepState.consumptionIds, id] : sleepState.consumptionIds.filter(x => x !== id))}
+          onClear={() => set('consumptionIds', [])}
+        />
         <div className="daily-card__timing-group">
-          <InputField label="Pre-bed activity" id="pre-bed-activity">
-            <input id="pre-bed-activity" type="text" value={sleepState.preBedActivity}
-              onChange={e => set('preBedActivity', e.target.value)}
-              placeholder="What did you do before bed?" />
-          </InputField>
+          <TextField label="Pre-bed activity" value={sleepState.preBedActivity}
+            onChange={v => set('preBedActivity', v)} placeholder="What did you do before bed?" />
         </div>
       </CardSection>
 
       <CardSection>
         <CardSectionLabel>Notes</CardSectionLabel>
-        <textarea value={sleepState.notes} onChange={e => set('notes', e.target.value)}
-          placeholder="Anything notable…" className="textarea--short" />
+        <TextAreaField hideLabel label="Sleep notes" value={sleepState.notes} onChange={v => set('notes', v)}
+          placeholder="Anything notable…" size="short" />
       </CardSection>
     </div>
   );
@@ -941,7 +820,10 @@ function SleepTab({
 
 interface Props {
   mode: Mode;
-  entry: DailyEntryDetail;
+  /** The day's entry id, creating the entry on first use (see DailyPageClient). */
+  getEntryId: () => Promise<number>;
+  /** Prescriptions already marked taken today. */
+  prescriptionIds: number[];
   date: string;
 
   overviewState: DailyOverviewState;
@@ -978,7 +860,7 @@ interface Props {
 }
 
 export function DailyCard({
-  mode, entry, date,
+  mode, getEntryId, prescriptionIds, date,
   overviewState, setOverviewState,
   metricState, setMetricState,
   checkedTrackableIds, toggleBoolean,
@@ -1018,10 +900,6 @@ export function DailyCard({
             mode={mode}
             state={overviewState}
             setState={setOverviewState}
-            trackables={reference.trackables}
-            trackableCategories={reference.trackableCategories}
-            checkedTrackableIds={checkedTrackableIds}
-            toggleBoolean={toggleBoolean}
             tags={reference.tags}
             tagIds={tagIds}
             toggleTag={toggleTag}
@@ -1030,11 +908,13 @@ export function DailyCard({
           />
         )}
 
-        {tab === 'metrics' && (
-          <MetricsTab
+        {tab === 'trackables' && (
+          <TrackablesTab
             mode={mode}
             trackables={reference.trackables}
             trackableCategories={reference.trackableCategories}
+            checkedTrackableIds={checkedTrackableIds}
+            toggleBoolean={toggleBoolean}
             metricState={metricState}
             setMetricState={setMetricState}
             icons={reference.icons}
@@ -1065,15 +945,15 @@ export function DailyCard({
         {tab === 'meds' && (
           <MedsTab
             mode={mode}
-            entryId={entry.id}
+            getEntryId={getEntryId}
             prescriptions={prescriptions}
-            prescriptionIds={entry.prescription_ids}
+            prescriptionIds={prescriptionIds}
           />
         )}
 
         {tab === 'ess' && (
           <EssTab
-            entryId={entry.id}
+            getEntryId={getEntryId}
             ess={ess}
             questionTypes={reference.essQuestionTypes}
             answerTypes={reference.essAnswerTypes}
@@ -1084,7 +964,6 @@ export function DailyCard({
         {tab === 'journal' && (
           <JournalTab
             mode={mode}
-            entryId={entry.id}
             categories={journalCategories}
             state={journalState}
             setState={setJournalState}

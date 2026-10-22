@@ -11,7 +11,7 @@
  */
 
 import { useState, useCallback, useRef } from 'react';
-import { Button, Card, CardBody, CardHeader, CardTitle, FieldActions, InputField, SliderField } from '@/components/ui';
+import { Button, Card, CardBody, CardHeader, CardTitle, FieldActions, SliderField, TextField, DateField, TextAreaField, SelectField } from '@/components/ui';
 import { localTodayISO } from '@/lib/utils/dates';
 import type { MediaEntryDetail } from '@/types/dal';
 import type {
@@ -107,7 +107,7 @@ function SearchPanel({ mediaTypeSlug, onSelect }: Readonly<{
   return (
     <div className="search-panel">
       <div className="search-panel__header">
-        <input type="text" value={query} onChange={e => handleInput(e.target.value)}
+        <TextField hideLabel label={`Search ${mediaTypeSlug}`} value={query} onChange={handleInput}
           placeholder={`Search ${capitalize(mediaTypeSlug)}…`} autoFocus />
         {loading && <span className="search-panel__loading">Searching…</span>}
       </div>
@@ -186,35 +186,20 @@ export function MediaForm({
             {/* Type selector — list page only */}
             {showTypeSelector && (
                 <div className="field-grid">
-                <InputField label="Type" id="mf-type">
-                    <select id="mf-type" value={form.media_type_id}
-                    onChange={e => {
-                        set('media_type_id', e.target.value);
+                <SelectField label="Type" value={form.media_type_id}
+                    onChange={v => {
+                        set('media_type_id', v);
                         set('status_id', '');
                         setShowSearch(false);
-                    }}>
-                    <option value="">Select type…</option>
-                    {mediaTypes.map(t => (
-                        <option key={t.id} value={t.id}>{capitalize(t.type_name)}</option>
-                    ))}
-                    </select>
-                </InputField>
-                <InputField label="Status" id="mf-status">
-                    <select id="mf-status" value={form.status_id}
-                    onChange={e => set('status_id', e.target.value)}>
-                    <option value="">Select status…</option>
-                    {filteredStats.map(s => (
-                        <option key={s.id} value={s.id}>
-                        {STATUS_EMOJI[s.status_name] ?? ''} {s.status_name}
-                        </option>
-                    ))}
-                    </select>
-                </InputField>
+                    }}
+                    placeholder="Select type…"
+                    options={mediaTypes.map(t => ({ value: t.id, label: capitalize(t.type_name) }))} />
+                <SelectField label="Status" value={form.status_id} onChange={v => set('status_id', v)}
+                    placeholder="Select status…"
+                    options={filteredStats.map(s => ({ value: s.id, label: `${STATUS_EMOJI[s.status_name] ?? ''} ${s.status_name}`.trim() }))} />
                 {form.status_id && (
-                    <InputField label="Status date" id="mf-status-date">
-                    <input id="mf-status-date" type="date" value={form.status_date}
-                        onChange={e => set('status_date', e.target.value)} />
-                    </InputField>
+                    <DateField label="Status date" value={form.status_date}
+                      onChange={v => set('status_date', v)} />
                 )}
                 </div>
             )}
@@ -222,22 +207,12 @@ export function MediaForm({
             {/* Status selector — detail page (type already known, shown in a simpler grid) */}
             {!showTypeSelector && (
                 <div className="field-grid">
-                <InputField label="Status" id="mf-status">
-                    <select id="mf-status" value={form.status_id}
-                    onChange={e => set('status_id', e.target.value)}>
-                    <option value="">No status</option>
-                    {filteredStats.map(s => (
-                        <option key={s.id} value={s.id}>
-                        {STATUS_EMOJI[s.status_name] ?? ''} {s.status_name}
-                        </option>
-                    ))}
-                    </select>
-                </InputField>
+                <SelectField label="Status" value={form.status_id} onChange={v => set('status_id', v)}
+                    placeholder="No status"
+                    options={filteredStats.map(s => ({ value: s.id, label: `${STATUS_EMOJI[s.status_name] ?? ''} ${s.status_name}`.trim() }))} />
                 {form.status_id && (
-                    <InputField label="Status date" id="mf-status-date">
-                    <input id="mf-status-date" type="date" value={form.status_date}
-                        onChange={e => set('status_date', e.target.value)} />
-                    </InputField>
+                    <DateField label="Status date" value={form.status_date}
+                      onChange={v => set('status_date', v)} />
                 )}
                 </div>
             )}
@@ -254,32 +229,21 @@ export function MediaForm({
                 <SearchPanel mediaTypeSlug={activeType.type_name} onSelect={applySearchResult} />
             )}
 
-            <InputField label="Title" id="mf-title">
-                <input id="mf-title" type="text" value={form.title}
-                onChange={e => set('title', e.target.value)} placeholder="Title…" />
-            </InputField>
+            <TextField label="Title" value={form.title} onChange={v => set('title', v)} placeholder="Title…" />
             <div className="field-grid">
-                <InputField label="Creator / Author / Director" id="mf-creator">
-                <input id="mf-creator" type="text" value={form.creator}
-                    onChange={e => set('creator', e.target.value)} />
-                </InputField>
-                <InputField label="Platform" id="mf-platform">
-                <input id="mf-platform" type="text" value={form.platform}
-                    onChange={e => set('platform', e.target.value)} placeholder="Netflix, Kindle…" />
-                </InputField>
+                <TextField label="Creator / Author / Director" value={form.creator}
+                  onChange={v => set('creator', v)} />
+                <TextField label="Platform" value={form.platform} onChange={v => set('platform', v)}
+                  placeholder="Netflix, Kindle…" />
             </div>
             <div className="field-grid">
                 <SliderField emoji="⭐" label="Rating" value={form.rating} min={0} max={10}
                 onChange={v => set('rating', v)} />
             </div>
-            <InputField label="Notes (while consuming)" id="mf-notes">
-                <textarea id="mf-notes" value={form.notes}
-                onChange={e => set('notes', e.target.value)} className="textarea--short" />
-            </InputField>
-            <InputField label="Review (after finishing)" id="mf-review">
-                <textarea id="mf-review" value={form.review}
-                onChange={e => set('review', e.target.value)} className="textarea--short" />
-            </InputField>
+            <TextAreaField label="Notes (while consuming)" value={form.notes} onChange={v => set('notes', v)}
+              size="short" />
+            <TextAreaField label="Review (after finishing)" value={form.review}
+              onChange={v => set('review', v)} size="short" />
 
             {saveError && <p className="save-status save-status--error">{saveError}</p>}
 

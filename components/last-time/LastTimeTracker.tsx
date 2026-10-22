@@ -12,7 +12,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { createClient }           from '@/lib/supabase/client';
 import { logCustomLastTime }      from '@/lib/dal/lasttime';
 import { Button, Card, CardActions, CardBody, CardGrid, CardHeader,
-         CardSection, CardTitle, Dialog, FieldActions, IconDisplay, Item, EmptyState
+         CardSection, CardTitle, Dialog, FieldActions, IconDisplay, Item, EmptyState, DateField
 }
                                    from '@/components/ui';
 import type { LastTimeEntry }      from '@/types/dal';
@@ -175,12 +175,7 @@ export function LastTimeTracker({ entries, icons, compact = false }: Readonly<Pr
         </>
       }
     >
-      <input
-        type="date"
-        value={pickedDate}
-        max={localTodayISO()}
-        onChange={e => setPickedDate(e.target.value)}
-      />
+      <DateField label="Date" value={pickedDate} max={localTodayISO()} onChange={setPickedDate} />
     </Dialog>
     </>
   );

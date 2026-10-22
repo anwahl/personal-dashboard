@@ -10,7 +10,7 @@
  */
 
 import type { KeyboardEvent } from 'react';
-import { IconPicker } from '@/components/ui';
+import { IconPicker, TextField, TextAreaField, SelectField } from '@/components/ui';
 import type { IconRow } from '@/types/schema';
 
 export interface AddField {
@@ -127,42 +127,41 @@ export function FieldInputs({
             );
           case 'select':
             return (
-              <select
+              <SelectField
                 key={f.key}
-                aria-label={f.label}
+                hideLabel
+                label={f.label}
                 value={values[f.key] ?? ''}
-                onChange={e => onChange(f.key, e.target.value)}
+                onChange={v => onChange(f.key, v)}
                 style={sizing}
-              >
-                {f.defaultValue == null && (
-                  <option value="">{f.placeholder ?? `No ${f.label.toLowerCase()}`}</option>
-                )}
-                {f.options?.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
+                placeholder={f.defaultValue == null ? (f.placeholder ?? `No ${f.label.toLowerCase()}`) : undefined}
+                options={f.options ?? []}
+              />
             );
           case 'textarea':
             return (
-              <textarea
+              <TextAreaField
                 key={f.key}
-                aria-label={f.label}
-                className="input--flex textarea--short"
+                hideLabel
+                label={f.label}
+                size="short"
+                className="input--flex"
                 value={values[f.key] ?? ''}
                 placeholder={f.placeholder ?? f.label}
-                onChange={e => onChange(f.key, e.target.value)}
+                onChange={v => onChange(f.key, v)}
                 onKeyDown={e => { if (e.key === 'Escape') onEscape?.(); }}
                 autoFocus={f.key === autoFocusKey}
               />
             );
           default:
             return (
-              <input
+              <TextField
                 key={f.key}
-                aria-label={f.label}
+                hideLabel
+                label={f.label}
                 type={f.type}
                 value={values[f.key] ?? ''}
-                onChange={e => onChange(f.key, e.target.value)}
+                onChange={v => onChange(f.key, v)}
                 onKeyDown={onKeyDown}
                 placeholder={f.placeholder ?? (mode === 'add' ? f.label : undefined)}
                 style={sizing}

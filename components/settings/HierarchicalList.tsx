@@ -30,7 +30,7 @@
 import { useState, useCallback, type ReactNode } from 'react';
 import {
   Button, DragHandle, ManageItem, RowMenu, SortableGroup, SortableItem, SortableList, EmptyState, SectionCard, InactiveGroup,
-  Dialog,
+  Dialog, TextField
 } from '@/components/ui';
 import type { RowMenuAction, RowMenuItem, SortMove } from '@/components/ui';
 import {
@@ -571,12 +571,12 @@ export function HierarchicalList({
       </InactiveGroup>
 
       <div className="category-block__footer">
-        <input
-          type="text"
+        <TextField
+          hideLabel
+          label={`New ${categoryNoun[0]} name`}
           className="input--flex"
-          aria-label={`New ${categoryNoun[0]} name`}
           value={newCatName}
-          onChange={e => setNewCatName(e.target.value)}
+          onChange={setNewCatName}
           onKeyDown={e => e.key === 'Enter' && addCategory()}
           placeholder={catPlaceholder}
         />

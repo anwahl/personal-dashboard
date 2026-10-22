@@ -15,7 +15,7 @@ import {
   getMediaNotes, createMediaNote, deleteMediaNote,
   updateMediaEntry, addMediaStatusEntry, deleteMediaEntry,
 } from '@/lib/dal/media';
-import { Button, Card, CardActions, CardBody, CardHeader, CardSection, CardSectionLabel, CardTitle, Chip, ChipGroup, ConfirmButton, InputField, Markdown, SubCard, SubCardBody, EmptyState } from '@/components/ui';
+import { Button, Card, CardActions, CardBody, CardHeader, CardSection, CardSectionLabel, CardTitle, Chip, ChipGroup, ConfirmButton, DateField, TextAreaField, Markdown, SubCard, SubCardBody, EmptyState } from '@/components/ui';
 import { localTodayISO, formatShortDate } from '@/lib/utils/dates';
 import type { MediaEntryDetail }  from '@/types/dal';
 import type {
@@ -191,20 +191,11 @@ export function MediaDetailClient({
               <CardSection>
                 <CardSectionLabel>New Note</CardSectionLabel>
                 <FieldGrid>
-                  <InputField label='Date' id='new-note-date'>
-                    <input id='new-note-date' type="date" value={noteDate}
-                        onChange={e => setNoteDate(e.target.value)} />
-                  </InputField>
-                  <InputField label='Note' id='new-note-text'>
-                    <textarea
-                      id='new-note-text'
-                      value={newNote}
-                      onChange={e => setNewNote(e.target.value)}
-                      placeholder="Add a note…"
-                      className="textarea--short"
-                      onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) addNote(); }}
-                    />
-                  </InputField>
+                  <DateField label='Date' value={noteDate} onChange={setNoteDate} />
+                  <TextAreaField label='Note' value={newNote} onChange={setNewNote}
+                    placeholder="Add a note…"
+                    onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) addNote(); }}
+                    size="short" />
                 </FieldGrid>
                 <FieldActions alignment='right'>
                   <Button size="sm" variant="action-alt"
@@ -224,8 +215,8 @@ export function MediaDetailClient({
                   <div key={n.id} className="media-note">
                     <div className="media-note__header">
                       <span className="media-note__date-badge">{formatShortDate(n.note_date)}</span>
-                      <button type="button" className="media-note__delete"
-                        onClick={() => deleteNote(n.id)} title="Delete note">✕</button>
+                      <Button variant="ghost" size="icon" onClick={() => deleteNote(n.id)}
+                        title="Delete note" aria-label="Delete note">✕</Button>
                     </div>
                     <div className="detail-page__body-markdown">
                       <Markdown>{n.body_md}</Markdown>

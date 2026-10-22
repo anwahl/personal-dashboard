@@ -1,7 +1,7 @@
 'use client';
 
 import {
-  InputField, SaveState, ConfirmButton,
+  SaveState, ConfirmButton, SelectField, DateField, TimeField,
   Markdown,Button, Card, CardHeader,
   CardTitle, CardBody, 
   FieldActions, Field, FieldGrid,
@@ -90,17 +90,12 @@ function MedChangesSection({
         {history.length === 0 && !selectedRxId && (
           <Item itemType='info' value='No prescription changes logged during this appointment.' />
         )}
-        <InputField label="Prescription" id="rx-select">
-          <select id="rx-select" value={selectedRxId}
-            onChange={e => setSelectedRxId(e.target.value)}>
-            <option value="">Select prescription…</option>
-            {activePrescriptions.map(p => (
-              <option key={p.id} value={p.id}>
-                {p.alias ?? p.medication.medication_name}{p.dose ? ` · ${p.dose}` : ''}
-              </option>
-            ))}
-          </select>
-        </InputField>
+        <SelectField label="Prescription" value={selectedRxId} onChange={setSelectedRxId}
+          placeholder="Select prescription…"
+          options={activePrescriptions.map(p => ({
+            value: p.id,
+            label: `${p.alias ?? p.medication.medication_name}${p.dose ? ` · ${p.dose}` : ''}`,
+          }))} />
         {selectedRx && (
           <RxPendingChanges
             key={selectedRxId}
@@ -159,12 +154,8 @@ function FollowUpForm({ appt, onCreated, onCancel }: Readonly<{
       </CardHeader>
       <SubCardBody>
         <FieldGrid>
-          <InputField label="Date" id="fu-date">
-            <input id="fu-date" type="date" value={date} onChange={e => setDate(e.target.value)} autoFocus />
-          </InputField>
-          <InputField label="Time (optional)" id="fu-time">
-            <input id="fu-time" type="time" value={time} onChange={e => setTime(e.target.value)} />
-          </InputField>
+          <DateField label="Date" value={date} onChange={setDate} autoFocus />
+          <TimeField label="Time (optional)" value={time} onChange={setTime} />
         </FieldGrid>
         <Item itemType='info' itemModifier={['italic', 'meta']}
           value = {

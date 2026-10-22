@@ -1,6 +1,6 @@
 'use client';
 
-import { InputField, SaveStatus, SaveState, Card, CardHeader, CardBody, CardSection, CardSectionLabel, Button, EmptyState, Badge, InactiveGroup, ManageItem, RowMenu } from '@/components/ui';
+import { TextField, DateField, TextAreaField, SelectField, SaveStatus, SaveState, Card, CardHeader, CardBody, CardSection, CardSectionLabel, Button, EmptyState, Badge, InactiveGroup, ManageItem, RowMenu } from '@/components/ui';
 import { useState, useCallback } from 'react';
 import { createClient }          from '@/lib/supabase/client';
 import { formatMediumDate, localTodayISO } from '@/lib/utils/dates';
@@ -94,26 +94,16 @@ function DiagnosisSection({ diagnoses: initial, mode, personId }: Readonly<{
             <>
             <div className="manage-item">
               <div className="manage-item__edit-block">
-                <InputField label="Diagnosis" id="diagnosis">
-                  <input id="diagnosis" type="text" value={editName}
-                    onChange={e => setEditName(e.target.value)}
-                    placeholder="Diagnosis name…" autoFocus
-                    onKeyDown={e => { if (e.key === 'Enter') saveEdit();
-                      if (e.key === 'Escape') setEditId(null); }} />
-                </InputField>
-                <InputField label="Date" id="diagnosis-date">
-                  <input type="date" id="diagnosis-date"
-                    value={editDate} onChange={e => setEditDate(e.target.value)} />
-                </InputField>
+                <TextField label="Diagnosis" value={editName} onChange={setEditName}
+                  placeholder="Diagnosis name…" autoFocus
+                  onKeyDown={e => { if (e.key === 'Enter') saveEdit();
+                    if (e.key === 'Escape') setEditId(null); }} />
+                <DateField label="Date" value={editDate} onChange={setEditDate} />
               </div>
             </div>
             <div className="manage-item">
               <div className="manage-item__edit-block">
-                <InputField label="Notes" id="diagnosis-notes">
-                  <textarea value={editNotes}
-                    onChange={e => setEditNotes(e.target.value)}
-                    placeholder="Notes…" />
-                </InputField>
+                <TextAreaField label="Notes" value={editNotes} onChange={setEditNotes} placeholder="Notes…" />
               </div>
             </div>
             <div className="manage-item__actions">
@@ -155,20 +145,14 @@ function DiagnosisSection({ diagnoses: initial, mode, personId }: Readonly<{
       <hr />
       <div className="manage-item">
         <div className="manage-item__edit-block">
-          <InputField label="Add Diagnosis" id="new-diagnosis">
-            <input id="new-diagnosis" type="text" className="input--flex" value={newName} onChange={e => setNewName(e.target.value)}
-              placeholder="Diagnosis name…" onKeyDown={e => e.key === 'Enter' && addItem()} />
-          </InputField>
-          <InputField label="Diagnosis Date" id="new-diagnosis-date">
-            <input id="new-diagnosis-date" type="date" className="input--date" value={newDate} onChange={e => setNewDate(e.target.value)} />
-          </InputField>
+          <TextField label="Add Diagnosis" value={newName} onChange={setNewName}
+            placeholder="Diagnosis name…" onKeyDown={e => e.key === 'Enter' && addItem()} />
+          <DateField label="Diagnosis Date" value={newDate} onChange={setNewDate} />
         </div>
       </div>
       <div className="manage-item">
         <div className="manage-item__edit-block">
-          <InputField label="Notes" id="new-diagnosis-notes">
-            <textarea id="new-diagnosis-notes" className="input--flex" value={newNotes} onChange={e => setNewNotes(e.target.value)} placeholder="Notes…" />
-          </InputField>
+          <TextAreaField label="Notes" value={newNotes} onChange={setNewNotes} placeholder="Notes…" />
         </div>
       </div>
       <Button size="sm" variant="accent" onClick={addItem} disabled={adding || !newName.trim()}>+ Add</Button>
@@ -196,17 +180,12 @@ function InfoGroupSection({ group, mode, onValueChange }: Readonly<{
                 {(f.field_type === 'date' && f.value) ? formatMediumDate(f.value) : (f.value || '—')}
               </span>
             ) : f.field_type === 'textarea' ? (
-              <textarea
-                value={f.value ?? ''}
-                onChange={e => onValueChange(f.id, e.target.value)}
-                className="textarea--short"
-              />
+              <TextAreaField hideLabel label={f.field_label} value={f.value ?? ''}
+                onChange={v => onValueChange(f.id, v)} size="short" />
+            ) : f.field_type === 'date' ? (
+              <DateField hideLabel label={f.field_label} value={f.value ?? ''} onChange={v => onValueChange(f.id, v)} />
             ) : (
-              <input
-                type={f.field_type === 'date' ? 'date' : 'text'}
-                value={f.value ?? ''}
-                onChange={e => onValueChange(f.id, e.target.value)}
-              />
+              <TextField hideLabel label={f.field_label} value={f.value ?? ''} onChange={v => onValueChange(f.id, v)} />
             )}
           </div>
         ))}
@@ -299,14 +278,9 @@ function ChecklistSection({ checklist, mode, personId }: Readonly<{
 
       {/* Add item always available — immediate save, no edit mode needed */}
       <div className="manage-add-row">
-        <input
-          type="text"
-          value={newText}
-          onChange={e => setNewText(e.target.value)}
+        <TextField hideLabel label="New item" value={newText} onChange={setNewText}
           onKeyDown={e => e.key === 'Enter' && addItem()}
-          placeholder="New item…"
-          className="input--flex"
-        />
+          placeholder="New item…" className="input--flex" />
         <Button size="sm" variant="accent" onClick={addItem} disabled={adding || !newText.trim()}>
           {adding ? '…' : 'Add'}
         </Button>
@@ -370,16 +344,10 @@ function ItemListSection({ list, mode, personId }: Readonly<{
 
       {mode === 'edit' && (
         <div className="manage-add-row">
-          <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
-            className="input--date" />
-          <input
-            type="text"
-            value={newText}
-            onChange={e => setNewText(e.target.value)}
+          <DateField hideLabel label="Entry date" value={newDate} onChange={setNewDate} className="input--date" />
+          <TextField hideLabel label="New entry" value={newText} onChange={setNewText}
             onKeyDown={e => e.key === 'Enter' && add()}
-            placeholder="New entry…"
-            className="input--flex"
-          />
+            placeholder="New entry…" className="input--flex" />
           <Button size="sm" variant="accent" onClick={add} disabled={adding || !newText.trim()}>
             {adding ? '…' : 'Add'}
           </Button>
@@ -431,26 +399,16 @@ function LogSection({ log, mode, personId }: Readonly<{
       {mode === 'edit' && (
         showForm ? (
           <div className="form-panel">
-            <InputField label="Date" id={`log-date-${log.id}`}>
-              <input id={`log-date-${log.id}`} type="date" value={formDate}
-                onChange={e => setFormDate(e.target.value)} />
-            </InputField>
-            {log.fields.map(f => (
-              <InputField key={f.id} label={f.field_label} id={`lf-${f.id}`}>
-                {f.field_type === 'select' ? (
-                  <select id={`lf-${f.id}`} value={formValues[f.id] ?? ''} onChange={e => setVal(f.id, e.target.value)}>
-                    <option value="">Select…</option>
-                    {f.options.map(o => <option key={o.id} value={o.option_value}>{o.option_value}</option>)}
-                  </select>
-                ) : f.field_type === 'textarea' ? (
-                  <textarea id={`lf-${f.id}`} value={formValues[f.id] ?? ''}
-                    onChange={e => setVal(f.id, e.target.value)} className="textarea--short" />
-                ) : (
-                  <input id={`lf-${f.id}`} type="text" value={formValues[f.id] ?? ''}
-                    onChange={e => setVal(f.id, e.target.value)} />
-                )}
-              </InputField>
-            ))}
+            <DateField label="Date" value={formDate} onChange={setFormDate} />
+            {log.fields.map(f => {
+              const props = { label: f.field_label, value: formValues[f.id] ?? '', onChange: (v: string) => setVal(f.id, v) };
+              if (f.field_type === 'select') return (
+                <SelectField key={f.id} {...props} placeholder="Select…"
+                  options={f.options.map(o => ({ value: o.option_value, label: o.option_value }))} />
+              );
+              if (f.field_type === 'textarea') return <TextAreaField key={f.id} {...props} size="short" />;
+              return <TextField key={f.id} {...props} />;
+            })}
             <div className="form-row form-row--actions">
               <Button size="sm" variant="accent" onClick={submit} disabled={adding}>
                 {adding ? 'Saving…' : 'Add Entry'}
@@ -561,12 +519,10 @@ export function PeoplePageClient({ data, peopleCategories }: Readonly<{ data: Pe
               return cat ? <Badge variant="muted">{cat.category_name}</Badge> : null;
             })()}
             {mode === 'edit' && (
-              <select value={categoryId ?? ''} onChange={e => saveCategory(e.target.value ? Number.parseInt(e.target.value) : null)}>
-                <option value="">No category</option>
-                {peopleCategories.filter(c => c.is_active).map(c => (
-                  <option key={c.id} value={c.id}>{c.category_name}</option>
-                ))}
-              </select>
+              <SelectField hideLabel label="Category" value={categoryId ?? ''}
+                onChange={v => saveCategory(v ? Number.parseInt(v) : null)}
+                placeholder="No category"
+                options={peopleCategories.filter(c => c.is_active).map(c => ({ value: c.id, label: c.category_name }))} />
             )}
             {person.birth_date && (
               <p className="person-header__sub">🎂 {formatMediumDate(person.birth_date)}</p>

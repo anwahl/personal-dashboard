@@ -18,7 +18,6 @@ import type {
   DailyEntryUpdate,
   WeekDayData,
 } from "@/types/dal";
-import { getRandomIntention } from "./reference";
 import { getWeekDates } from "@/lib/utils/dates";
 
 type Client = SupabaseClient;
@@ -173,23 +172,32 @@ export async function getWeekData(
 
 // ── Create / Update ───────────────────────────────────────────────────────────
 
-export async function ensureDailyEntry(
+/**
+ * Creates the daily entry for a date and returns its id — called the first
+ * time something on that day is saved (visiting a date doesn't create one).
+ * If the entry already exists (e.g. saved from another tab meanwhile), its id
+ * is returned instead.
+ */
+export async function createDailyEntry(
   client: Client,
   date: string,
-): Promise<DailyEntryDetail> {
-  const existing = await getDailyEntry(client, date);
-  if (existing) return existing;
-
-  const intention = await getRandomIntention(client);
+  intentionId: number | null,
+): Promise<number> {
+  const existing = await getDailyEntryRow(client, date);
+  if (existing) return existing.id;
 
   const { data, error } = await client
     .from("daily_entries")
-    .insert({ entry_date: date, intention_id: intention?.id ?? null })
-    .select()
+    .insert({ entry_date: date, intention_id: intentionId })
+    .select("id")
     .single();
-
-  if (error) throw new Error(`ensureDailyEntry(${date}): ${error.message}`);
-  return assembleDailyEntryDetail(client, data as DailyEntryRow);
+  if (error) {
+    // Lost a race with another save: use the entry that won.
+    const raced = await getDailyEntryRow(client, date);
+    if (raced) return raced.id;
+    throw new Error(`createDailyEntry(${date}): ${error.message}`);
+  }
+  return (data as { id: number }).id;
 }
 
 export async function updateDailyEntry(

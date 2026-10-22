@@ -12,6 +12,7 @@ import { Button, Card, CardActions,
 import { formatMediumDate }                     from "@/lib/utils/dates";
 import Link                                     from "next/link";
 import { BrainDumpForm } from "./BrainDumpForm";
+import { TextField } from "@/components/ui";
 
 function BrainDumpCard({ dump, onDelete }: Readonly<{ 
     dump: BrainDumpWithEntry; 
@@ -124,12 +125,8 @@ export default function BrainDumpList({
         </CardHeader>
         <CardBody>
             <FieldActions>
-                <input
-                    type="text"
-                    placeholder="Search dumps…"
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                />
+                <TextField hideLabel label="Search dumps" placeholder="Search dumps…"
+                    value={search} onChange={setSearch} />
                 <Button variant="ghost" size="sm" onClick={() => setAscending(a => !a)}>
                     {ascending ? '↑ Oldest first' : '↓ Newest first'}
                 </Button>

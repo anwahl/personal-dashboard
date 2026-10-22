@@ -93,6 +93,7 @@ export function TagSelector({ allTags, selectedIds, onToggle, onAdd, placeholder
         <input
           className="tag-selector__input"
           type="text"
+          aria-label="Search or add tag"
           value={query}
           placeholder={placeholder}
           onChange={e => { setQuery(e.target.value); setOpen(true); }}

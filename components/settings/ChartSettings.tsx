@@ -19,7 +19,7 @@ import { addSettingsItem, updateSettingsItem, toggleSettingsItem, batchSetSortOr
 import { HierarchicalList, type NormalizedChild } from './HierarchicalList';
 import type { AddField } from './FieldInputs';
 import { TrackablePicker } from './TrackablePicker';
-import { Badge, Button, EmptyState, IconDisplay, ManageItem, RowMenu } from '@/components/ui';
+import { Badge, Button, EmptyState, IconDisplay, ManageItem, RowMenu, SelectField } from '@/components/ui';
 import type { ChartDefinitionDetail, ChartCategoryRow, ChartTrackableLinkDetail } from '@/types/dal';
 import type { DailyTrackableRow, ChartType, MetricRole, IconRow } from '@/types/schema';
 
@@ -154,9 +154,8 @@ function ChartMetricsEditor({
           showType
         />
         {meta.validRoles.length > 1 && (
-          <select aria-label="Role" value={selRole} onChange={e => setSelRole(e.target.value as MetricRole)}>
-            {meta.validRoles.map(r => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
-          </select>
+          <SelectField hideLabel label="Role" value={selRole} onChange={v => setSelRole(v as MetricRole)}
+            options={meta.validRoles.map(r => ({ value: r, label: ROLE_LABELS[r] }))} />
         )}
         <Button variant="accent" size="sm" onClick={add} disabled={!selT || saving || full}>
           {saving ? '…' : '+ Add'}

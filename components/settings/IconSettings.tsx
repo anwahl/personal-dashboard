@@ -19,7 +19,7 @@ import { createIcon, updateIcon } from '@/lib/dal/icons';
 import { batchSetSortOrder }          from '@/lib/dal/settings';
 import { bySortOrder, reorderUpdates } from '@/lib/utils/sort';
 import {
-  Button, DragHandle, IconDisplay, ManageItem, RowMenu, SortableItem, SortableList, SectionCard, InactiveGroup, EmptyState
+  Button, DragHandle, IconDisplay, ManageItem, RowMenu, SortableItem, SortableList, SectionCard, InactiveGroup, EmptyState, TextField, TextAreaField
 } from '@/components/ui';
 import type { SortMove } from '@/components/ui';
 import { FieldInputs, type AddField, type FieldValues } from './FieldInputs';
@@ -151,18 +151,10 @@ export function IconSettings({ icons: initialIcons }: Readonly<Props>) {
           </div>
 
           <div className="icon-add-form__fields">
-            <input
-              type="text"
-              placeholder="Icon name (e.g. Bell)"
-              value={addName}
-              onChange={e => setAddName(e.target.value)}
-            />
-            <input
-              type="text"
-              placeholder="Tags — space-separated (e.g. alert reminder notification)"
-              value={addTags}
-              onChange={e => setAddTags(e.target.value)}
-            />
+            <TextField hideLabel label="Icon name" placeholder="Icon name (e.g. Bell)"
+              value={addName} onChange={setAddName} />
+            <TextField hideLabel label="Tags" placeholder="Tags — space-separated (e.g. alert reminder notification)"
+              value={addTags} onChange={setAddTags} />
           </div>
         </div>
 
@@ -173,13 +165,8 @@ export function IconSettings({ icons: initialIcons }: Readonly<Props>) {
           </label>
           <span className="icon-add-form__hint">or paste below</span>
         </div>
-        <textarea
-          className="textarea--tall"
-          placeholder="Paste SVG markup here…"
-          value={addSvg}
-          onChange={e => setAddSvg(e.target.value)}
-          spellCheck={false}
-        />
+        <TextAreaField hideLabel label="SVG markup" size="tall" placeholder="Paste SVG markup here…"
+          value={addSvg} onChange={setAddSvg} spellCheck={false} />
 
         {addError && <p className="form-error">{addError}</p>}
 

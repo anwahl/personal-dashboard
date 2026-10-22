@@ -9,11 +9,13 @@
  */
 
 import { useState }            from 'react';
-import { Button, Card, CardBody, CardHeader, CardSection, CardSectionLabel, CardTitle, FieldActions, InputField, SaveStatus } from '@/components/ui';
+import {
+  Button, Card, CardBody, CardHeader, CardSection, CardSectionLabel, CardTitle, FieldActions, FieldGrid, SaveStatus,
+  DateField, TimeField, SelectField, TextField, TextAreaField,
+} from '@/components/ui';
 import type { SaveState }      from '@/components/ui';
 import type { AppointmentDetail } from '@/types/dal';
 import type { AppointmentTypeRow, PersonRow, ProviderRow } from '@/types/schema';
-import { FieldGrid } from '../ui/Display';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -84,63 +86,34 @@ export function AppointmentForm({
             <CardSection>
                 <CardSectionLabel>Primary Details</CardSectionLabel>
                 <FieldGrid>
-                    <InputField label="Date" id="af-date">
-                        <input id="af-date" type="date" value={form.appointment_date}
-                            onChange={e => set('appointment_date', e.target.value)} />
-                    </InputField>
-                    <InputField label="Time" id="af-time">
-                        <input id="af-time" type="time" value={form.appointment_time}
-                            onChange={e => set('appointment_time', e.target.value)} />
-                    </InputField>
+                    <DateField label="Date" value={form.appointment_date} onChange={v => set('appointment_date', v)} />
+                    <TimeField label="Time" value={form.appointment_time} onChange={v => set('appointment_time', v)} />
                 </FieldGrid>
                 <FieldGrid>
-                    <InputField label="For" id="af-person">
-                        <select id="af-person" value={form.person_id}
-                            onChange={e => set('person_id', e.target.value)}>
-                            <option value="">Select person…</option>
-                            {people.map(p => <option key={p.id} value={p.id}>{p.person_name}</option>)}
-                        </select>
-                    </InputField>
-                    <InputField label="Type" id="af-type">
-                        <select id="af-type" value={form.appointment_type_id}
-                            onChange={e => set('appointment_type_id', e.target.value)}>
-                            <option value="">No type</option>
-                            {appointmentTypes.map(t => <option key={t.id} value={t.id}>{t.type_name}</option>)}
-                        </select>
-                    </InputField>
+                    <SelectField label="For" value={form.person_id} onChange={v => set('person_id', v)}
+                        placeholder="Select person…"
+                        options={people.map(p => ({ value: p.id, label: p.person_name }))} />
+                    <SelectField label="Type" value={form.appointment_type_id} onChange={v => set('appointment_type_id', v)}
+                        placeholder="No type"
+                        options={appointmentTypes.map(t => ({ value: t.id, label: t.type_name }))} />
                 </FieldGrid>
             </CardSection>
             <CardSection>
                 <CardSectionLabel>Secondary Details</CardSectionLabel>
                 <FieldGrid>
-                    <InputField label="Provider" id="af-provider">
-                        <select id="af-provider" value={form.provider_id}
-                        onChange={e => set('provider_id', e.target.value)}>
-                            <option value="">No provider linked</option>
-                            {providers.map(p => (
-                                <option key={p.id} value={p.id}>{p.provider_name ?? p.practice_name}</option>
-                            ))}
-                        </select>
-                    </InputField>
-                    <InputField label="Location" id="af-location">
-                        <input id="af-location" type="text" value={form.location}
-                            onChange={e => set('location', e.target.value)}
-                            placeholder="Office, telehealth…" />
-                    </InputField>
+                    <SelectField label="Provider" value={form.provider_id} onChange={v => set('provider_id', v)}
+                        placeholder="No provider linked"
+                        options={providers.map(p => ({ value: p.id, label: p.provider_name ?? p.practice_name ?? '' }))} />
+                    <TextField label="Location" value={form.location} onChange={v => set('location', v)}
+                        placeholder="Office, telehealth…" />
                 </FieldGrid>
             </CardSection>
             <CardSection>
                 <CardSectionLabel>Other</CardSectionLabel>
-                <InputField label="Questions to ask" id="af-questions">
-                    <textarea id="af-questions" value={form.questions}
-                        onChange={e => set('questions', e.target.value)}
-                        placeholder="Topics to cover…" className="textarea--short" />
-                </InputField>
-                <InputField label="Notes" id="af-notes">
-                    <textarea id="af-notes" value={form.notes}
-                        onChange={e => set('notes', e.target.value)}
-                        placeholder="Notes from the appointment…" className="textarea--short" />
-                </InputField>
+                <TextAreaField label="Questions to ask" value={form.questions} onChange={v => set('questions', v)}
+                    placeholder="Topics to cover…" size="short" />
+                <TextAreaField label="Notes" value={form.notes} onChange={v => set('notes', v)}
+                    placeholder="Notes from the appointment…" size="short" />
             </CardSection>
 
             <FieldActions docked alignment="right">

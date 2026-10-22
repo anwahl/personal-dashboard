@@ -1,9 +1,9 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { useState } from 'react';
 import { createClient }             from '@/lib/supabase/client';
 import { createStandaloneBrainDump, upsertBrainDump } from '@/lib/dal/daily';
-import { Button, Card, CardActions, CardBody, CardHeader, CardTitle, InputField, Item }                   from '@/components/ui';
+import { Button, Card, CardActions, CardBody, CardHeader, CardTitle, DateField, TextAreaField, Item }                   from '@/components/ui';
 import { localTodayISO } from '@/lib/utils/dates';
 
 interface Props {
@@ -25,7 +25,6 @@ export function BrainDumpForm({
   bare = false,
 }: Readonly<Props>) {
   const supabase = createClient();
-  const id       = useId();
   const [body,   setBody]   = useState('');
   const [date,   setDate]   = useState(dumpDate ?? localTodayISO());
   const [saving, setSaving] = useState(false);
@@ -50,24 +49,10 @@ export function BrainDumpForm({
 
   const fields = (
     <>
-      <InputField label='' id={`${id}-date`}>
-        <input
-          id={`${id}-date`}
-          type="date"
-          value={date}
-          onChange={e => setDate(e.target.value)}
-        />
-      </InputField>
-      <InputField label='' id={`${id}-value`}>
-        <textarea
-          id={`${id}-value`}
-          value={body}
-          placeholder={placeholder}
-          onChange={e => setBody(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit(); }}
-          rows={compact ? 3 : 5}
-        />
-      </InputField>
+      <DateField label="Date" value={date} onChange={setDate} />
+      <TextAreaField label="Brain dump" value={body} placeholder={placeholder} onChange={setBody}
+        onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit(); }}
+        rows={compact ? 3 : 5} />
       <CardActions>
         <Item value='⌘↵ to save' itemType='info' className='hide-on-touch' />
         <Button

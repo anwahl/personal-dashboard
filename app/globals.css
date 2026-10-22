@@ -1573,6 +1573,11 @@ textarea {
   grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
   gap: 8px;
 }
+/* Trackables tab: sliders after a category's tiles */
+.habit-grid + .slider-field,
+.habit-grid + .metric-display {
+  margin-top: 14px;
+}
 
 .habit-btn {
   display: flex;
@@ -2374,22 +2379,6 @@ textarea {
   padding: 2px 9px;
   letter-spacing: 0.03em;
 }
-.media-note__delete {
-  background: none;
-  border: none;
-  color: var(--text-faint);
-  cursor: pointer;
-  font-size: 0.75rem;
-  padding: 2px 4px;
-  border-radius: 4px;
-  line-height: 1;
-  transition: color 0.12s;
-}
-@media (hover: hover) {
-  .media-note__delete:hover {
-    color: var(--danger);
-  }
-}
 
 /* ── Settings ────────────────────────────────────────────────────────────────*/
 .manage-item {
@@ -2659,19 +2648,6 @@ textarea {
   margin: 4px 0;
 }
 
-.daily-card__anxiety-line {
-  color: var(--warn);
-  font-size: 0.9rem;
-  font-weight: 500;
-  margin: 4px 0;
-}
-
-.daily-card__anxiety-detail {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  margin: 2px 0 8px 20px;
-}
-
 .daily-card__ess-footnote {
   font-size: 0.8rem;
   color: var(--text-faint);
@@ -2726,6 +2702,13 @@ textarea {
   border-radius: var(--radius);
   padding: 10px;
   box-shadow: var(--box-shadow-standard);
+}
+
+.chart-panel__body {
+  transition: opacity 0.15s;
+}
+.chart-panel__body--loading {
+  opacity: 0.45;
 }
 
 .chart-panel__controls {
@@ -4457,6 +4440,10 @@ a.appt-secondary:last-child {
   flex: 1;
   min-width: 0;
 } /* fills remaining space in flex row */
+.input--narrow {
+  width: 110px;
+  flex: none;
+} /* short selects (e.g. a task's "For") */
 
 /* ── Manage item edit block (Sprint 1) ───────────────────────────────────────*/
 /* Inline edit layout for LastTimeSettings item rows */
@@ -4468,6 +4455,22 @@ a.appt-secondary:last-child {
   flex-wrap: wrap;
 }
 
+/* ── People nav (category tabs + person links) ───────────────────────────────*/
+.people-nav {
+  margin-bottom: 20px;
+}
+.people-nav__list {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.people-nav__link {
+  text-decoration: none;
+  padding: 5px 14px;
+  font-size: 0.82rem;
+}
+
 /* ── Weekly journal ──────────────────────────────────────────────────────────*/
 .week-nav {
   display: flex;
@@ -4475,22 +4478,7 @@ a.appt-secondary:last-child {
   gap: 12px;
   margin-bottom: 20px;
 }
-.week-nav__btn {
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  color: var(--text-muted);
-  font-size: 1.1rem;
-  padding: 4px 10px;
-  line-height: 1;
-}
-@media (hover: hover) {
-  .week-nav__btn:hover {
-    color: var(--text);
-    background: var(--surface-high);
-  }
-}
+
 .week-nav__label {
   flex: 1;
   text-align: center;
@@ -5052,20 +5040,7 @@ a.appt-secondary:last-child {
   margin-top: 10px;
   padding-top: 10px;
 }
-.reminder-section__toggle {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  margin-bottom: 8px;
-}
-@media (hover: hover) {
-  .reminder-section__toggle:hover {
-    color: var(--text);
-  }
-}
+
 .reminder-section__fields {
   display: flex;
   flex-direction: column;
@@ -5091,35 +5066,6 @@ a.appt-secondary:last-child {
 }
 
 /* ── Weekday chip toggles ────────────────────────────────────────────────────*/
-.weekday-chips {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-}
-.weekday-chip {
-  padding: 3px 7px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  font-size: 0.72rem;
-  cursor: pointer;
-  background: none;
-  color: var(--text-muted);
-  transition:
-    border-color 0.1s,
-    background 0.1s,
-    color 0.1s;
-}
-@media (hover: hover) {
-  .weekday-chip:hover {
-    border-color: var(--border-focus);
-    color: var(--text);
-  }
-}
-.weekday-chip--active {
-  border-color: var(--accent);
-  background: var(--accent-dim);
-  color: var(--text);
-}
 
 /* ── Integrations settings ───────────────────────────────────────────────────*/
 .ical-url-row {
@@ -5144,17 +5090,6 @@ a.appt-secondary:last-child {
 }
 
 /* ── Metric / boolean category group header (daily card Metrics tab) ─────────*/
-.category-group__label {
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-faint);
-  margin: 12px 0 6px;
-}
-.category-group__label:first-child {
-  margin-top: 0;
-}
 
 /* ── Mobile: prevent date/time inputs collapsing when empty ──────────────────*/
 input[type="date"],
@@ -5212,12 +5147,7 @@ input[type="datetime-local"] {
 
 /* ── Press feedback ──────────────────────────────────────────────────────────
    Touch devices never show :hover, so give taps an immediate response. */
-.btn:active:not(:disabled),
-.chip:active:not(:disabled):not(.chip--static),
-.habit-btn:active,
-.tab:active,
-.icon-picker-cell:active,
-.weekday-chip:active {
+.btn:active:not(:disabled), .chip:active:not(:disabled):not(.chip--static), .habit-btn:active, .tab:active, .icon-picker-cell:active {
   transform: scale(0.96);
 }
 .list-item:active,
@@ -5227,12 +5157,7 @@ input[type="datetime-local"] {
   filter: brightness(1.15);
 }
 @media (prefers-reduced-motion: reduce) {
-  .btn:active:not(:disabled),
-  .chip:active:not(:disabled):not(.chip--static),
-  .habit-btn:active,
-  .tab:active,
-  .icon-picker-cell:active,
-  .weekday-chip:active {
+  .btn:active:not(:disabled), .chip:active:not(:disabled):not(.chip--static), .habit-btn:active, .tab:active, .icon-picker-cell:active {
     transform: none;
   }
 }

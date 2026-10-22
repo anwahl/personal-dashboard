@@ -18,7 +18,7 @@ import {
 
 import { useState, useCallback, useEffect } from 'react';
 import { createClient }              from '@/lib/supabase/client';
-import { Button, Card, CardActions, CardBody, CardHeader, CardSection, CardSectionLabel, CardTitle, Chip, ChipGroup, ExpandCard, InputField, SubCard, SubCardBody, EmptyState }        from '@/components/ui';
+import { Button, Card, CardActions, CardBody, CardHeader, CardSection, CardSectionLabel, CardTitle, Chip, ChipGroup, ExpandCard, TextField, SelectField, SubCard, SubCardBody, EmptyState }        from '@/components/ui';
 import type { MediaEntryDetail }     from '@/types/dal';
 import type {
   MediaTypeRow, MediaStatusRow, MediaStatusTypeLinkRow,
@@ -203,27 +203,16 @@ export function QuickMediaLog({
                   <CardTitle>Add New</CardTitle>
                 </CardHeader>
                 <SubCardBody>
-                  <InputField label='Title' id='new-title'>
-                      <input id='new-title' type="text" value={title} onChange={e => setTitle(e.target.value)}
-                        placeholder="Title…" onKeyDown={e => { if (e.key === 'Enter') handleAdd(); }} />
-                  </InputField>
-                  <InputField label='Type' id='new-type'>
-                      <select id='new-type' value={typeId} onChange={e => setTypeId(e.target.value)}>
-                        <option value=''>Select an Option...</option>)
-                        {mediaTypes.map(t => <option key={t.id} value={t.id}>{capitalize(t.type_name)}</option>)}
-                      </select>
-                  </InputField>
-                  <InputField label='Status' id='new-status'>
-                      <select id='new-status' value={statusId} onChange={e => setStatusId(e.target.value)}>
-                        <option value=''>No status</option>
-                        {validStatuses.map(s => (
-                          <option key={s.id} value={s.id}>
-                            {STATUS_EMOJI[s.status_name] ?? ''} {s.status_name}
-                          </option>
-                        ))}
-                      </select>
-                    </InputField>
-                      <Button variant="accent" size="sm" onClick={handleAdd} disabled={!title.trim() || saving}>
+                  <TextField label='Title' value={title} onChange={setTitle} placeholder="Title…"
+                    onKeyDown={e => { if (e.key === 'Enter') handleAdd(); }} />
+                  <SelectField label="Type" value={typeId} onChange={setTypeId} placeholder="Select type…"
+                    options={mediaTypes.map(t => ({ value: t.id, label: capitalize(t.type_name) }))} />
+                  <SelectField label="Status" value={statusId} onChange={setStatusId} placeholder="No status"
+                    options={validStatuses.map(s => ({
+                      value: s.id,
+                      label: `${STATUS_EMOJI[s.status_name] ?? ''} ${s.status_name}`.trim(),
+                    }))} />
+                  <Button variant="accent" size="sm" onClick={handleAdd} disabled={!title.trim() || saving}>
                         {saving ? '…' : 'Add'}
                       </Button>
                 </SubCardBody> 

@@ -13,7 +13,7 @@
 
 import { useState, useEffect } from 'react';
 import {
-  Button, InputField, CardBody, CardActions,
+  Button, CardBody, CardActions, TextField, DateField, SelectField,
   CardSection, CardSectionLabel, FieldActions, FieldGrid,
   useToast,
 } from '@/components/ui';
@@ -106,16 +106,9 @@ export function PrescriptionForm({
   return (
     <CardBody>
       {showPersonField && (
-        <InputField label="Person" id="rx-person">
-          <select id="rx-person" value={form.person_id}
-            onChange={e => set('person_id', e.target.value)}
-            disabled={peopleLoading}>
-            <option value="">{peopleLoading ? 'Loading…' : 'Select person…'}</option>
-            {people.map(p => (
-              <option key={p.id} value={p.id}>{p.person_name}</option>
-            ))}
-          </select>
-        </InputField>
+        <SelectField label="Person" value={form.person_id} onChange={v => set('person_id', v)}
+          disabled={peopleLoading} placeholder={peopleLoading ? 'Loading…' : 'Select person…'}
+          options={people.map(p => ({ value: p.id, label: p.person_name }))} />
       )}
 
       <FieldActions alignment="middle">
@@ -133,82 +126,42 @@ export function PrescriptionForm({
         <CardSectionLabel>Medication Details</CardSectionLabel>
 
         {useNewMed ? (
-          <InputField label="Medication name" id="rx-new-med">
-            <input id="rx-new-med" type="text" value={form.new_medication_name}
-              onChange={e => set('new_medication_name', e.target.value)}
-              placeholder="e.g. Duloxetine" />
-          </InputField>
+          <TextField label="Medication name" value={form.new_medication_name}
+            onChange={v => set('new_medication_name', v)} placeholder="e.g. Duloxetine" />
         ) : (
-          <InputField label="Medication" id="rx-med-id">
-            <select id="rx-med-id" value={form.medication_id}
-              onChange={e => set('medication_id', e.target.value)}
-              disabled={medsLoading}>
-              <option value="">{medsLoading ? 'Loading…' : 'Select medication…'}</option>
-              {medications.map(m => (
-                <option key={m.id} value={m.id}>
-                  {m.medication_name}{m.generic_name ? ` (${m.generic_name})` : ''}
-                </option>
-              ))}
-            </select>
-          </InputField>
+          <SelectField label="Medication" value={form.medication_id} onChange={v => set('medication_id', v)}
+            disabled={medsLoading} placeholder={medsLoading ? 'Loading…' : 'Select medication…'}
+            options={medications.map(m => ({
+              value: m.id,
+              label: `${m.medication_name}${m.generic_name ? ` (${m.generic_name})` : ''}`,
+            }))} />
         )}
 
-        <InputField label="Display name / alias" id="rx-alias">
-          <input id="rx-alias" type="text" value={form.alias}
-            onChange={e => set('alias', e.target.value)}
-            placeholder="e.g. Duloxetine 20mg" />
-        </InputField>
+        <TextField label="Display name / alias" value={form.alias} onChange={v => set('alias', v)}
+          placeholder="e.g. Duloxetine 20mg" />
 
         <FieldGrid>
-          <InputField label="Dose" id="rx-dose">
-            <input id="rx-dose" type="text" value={form.dose}
-              onChange={e => set('dose', e.target.value)}
-              placeholder="e.g. 20mg" />
-          </InputField>
-          <InputField label="Timing" id="rx-timing">
-            <select id="rx-timing" value={form.timing_type_id}
-              onChange={e => set('timing_type_id', e.target.value)}
-              disabled={timingsLoading}>
-              <option value="">{timingsLoading ? 'Loading…' : 'Select timing…'}</option>
-              {timingTypes.map(t => (
-                <option key={t.id} value={t.id}>{t.timing_name}</option>
-              ))}
-            </select>
-          </InputField>
+          <TextField label="Dose" value={form.dose} onChange={v => set('dose', v)} placeholder="e.g. 20mg" />
+          <SelectField label="Timing" value={form.timing_type_id} onChange={v => set('timing_type_id', v)}
+            disabled={timingsLoading} placeholder={timingsLoading ? 'Loading…' : 'Select timing…'}
+            options={timingTypes.map(t => ({ value: t.id, label: t.timing_name }))} />
         </FieldGrid>
 
-        <InputField label="Purpose" id="rx-purpose">
-          <input id="rx-purpose" type="text" value={form.purpose}
-            onChange={e => set('purpose', e.target.value)}
-            placeholder="What it's for…" />
-        </InputField>
+        <TextField label="Purpose" value={form.purpose} onChange={v => set('purpose', v)}
+          placeholder="What it's for…" />
       </CardSection>
 
       <CardSection>
         <CardSectionLabel>Other Details</CardSectionLabel>
 
-        <InputField label="Prescriber" id="rx-prescriber">
-          <select id="rx-prescriber" value={form.prescriber_id}
-            onChange={e => set('prescriber_id', e.target.value)}
-            disabled={providersLoading}>
-            <option value="">{providersLoading ? 'Loading…' : 'No prescriber linked'}</option>
-            {providers.map(p => (
-              <option key={p.id} value={p.id}>
-                {p.provider_name ?? p.practice_name}
-              </option>
-            ))}
-          </select>
-        </InputField>
+        <SelectField label="Prescriber" value={form.prescriber_id} onChange={v => set('prescriber_id', v)}
+          disabled={providersLoading} placeholder={providersLoading ? 'Loading…' : 'No prescriber linked'}
+          options={providers.map(p => ({ value: p.id, label: p.provider_name ?? p.practice_name ?? '' }))} />
 
         <FieldGrid>
-          <InputField label="Start date" id="rx-start">
-            <input id="rx-start" type="date" value={form.start_date}
-              onChange={e => set('start_date', e.target.value)} />
-          </InputField>
-          <InputField label="Discontinued date" id="rx-disc">
-            <input id="rx-disc" type="date" value={form.discontinued_date}
-              onChange={e => set('discontinued_date', e.target.value)} />
-          </InputField>
+          <DateField label="Start date" value={form.start_date} onChange={v => set('start_date', v)} />
+          <DateField label="Discontinued date" value={form.discontinued_date}
+            onChange={v => set('discontinued_date', v)} />
         </FieldGrid>
       </CardSection>
 

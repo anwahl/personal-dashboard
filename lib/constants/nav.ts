@@ -102,7 +102,7 @@ export function isMoreActive(pathname: string): boolean {
 
 export const DAILY_TABS = [
   { id: 'overview',  label: '📋 Overview'  },
-  { id: 'metrics',   label: '📊 Metrics'   },
+  { id: 'trackables', label: '📊 Trackables' },
   { id: 'symptoms',  label: '🩺 Symptoms'  },
   { id: 'sleep',     label: '💤 Sleep'     },
   { id: 'meds',      label: '💊 Meds'      },

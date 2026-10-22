@@ -46,3 +46,7 @@ export type { SortMove } from "./SortableList";
 export { InactiveGroup } from "./InactiveGroup";
 export { ChipSelect } from "./ChipSelect";
 export type { ChipOption } from "./ChipSelect";
+export {
+  TextField, NumberField, DateField, TimeField, DateTimeField, TextAreaField, SelectField,
+} from "./Fields";
+export type { SelectOption } from "./Fields";

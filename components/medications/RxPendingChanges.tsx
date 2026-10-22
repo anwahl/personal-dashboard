@@ -13,7 +13,7 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import { Button, CardGridRow, FieldActions, InputField, Item, useToast } from '@/components/ui';
+import { Button, CardGridRow, FieldActions, Item, useToast, SelectField, DateField, TextField } from '@/components/ui';
 import {
   RX_FIELDS, RxFieldKey,
   PendingChange, getRxDisplayValue,
@@ -88,18 +88,13 @@ export function RxPendingChanges({ rx, onApply }: Readonly<Props>) {
   return (
     <>
       {availableFields.length > 0 && (
-        <InputField id="rx-field-change" label='Field to Change'>
-            <select id="rx-field-change" value={selectedField}
-            onChange={e => {
-                if (e.target.value) addField(e.target.value as RxFieldKey);
-                setSelectedField(e.target.value);
-            }}>
-                <option value="">+ Log a field change…</option>
-                {availableFields.map(f => (
-                    <option key={f.key} value={f.key}>{f.label}</option>
-                ))}
-            </select>
-        </InputField>
+        <SelectField label="Field to change" value={selectedField}
+          onChange={v => {
+            if (v) addField(v as RxFieldKey);
+            setSelectedField(v);
+          }}
+          placeholder="+ Log a field change…"
+          options={availableFields.map(f => ({ value: f.key, label: f.label }))} />
       )}
       
         {pending.map(c => (
@@ -108,25 +103,20 @@ export function RxPendingChanges({ rx, onApply }: Readonly<Props>) {
               <Item itemType='info' value={c.previousValue || '—'} />
               <Item itemType='info' value='→' />
               {c.fieldKey === 'timing_type_id' ? (
-                <select className="field" value={c.newTimingId}
-                  onChange={e => updatePending(c.uid, { newTimingId: e.target.value })}>
-                  <option value="">No timing</option>
-                  {timings.map(t => <option key={t.id} value={t.id}>{t.timing_name}</option>)}
-                </select>
+                <SelectField hideLabel label={`New ${c.fieldLabel}`} className="field" value={c.newTimingId}
+                  onChange={v => updatePending(c.uid, { newTimingId: v })}
+                  placeholder="No timing"
+                  options={timings.map(t => ({ value: t.id, label: t.timing_name }))} />
               ) : c.fieldKey === 'is_active' ? (
-                <select className="field" value={c.newValue}
-                  onChange={e => updatePending(c.uid, { newValue: e.target.value })}>
-                  <option value="Active">Active</option>
-                  <option value="Discontinued">Discontinued</option>
-                </select>
+                <SelectField hideLabel label={`New ${c.fieldLabel}`} className="field" value={c.newValue}
+                  onChange={v => updatePending(c.uid, { newValue: v })}
+                  options={[{ value: 'Active', label: 'Active' }, { value: 'Discontinued', label: 'Discontinued' }]} />
+              ) : c.fieldKey.endsWith('_date') ? (
+                <DateField hideLabel label={`New ${c.fieldLabel}`} className="field" value={c.newValue}
+                  onChange={v => updatePending(c.uid, { newValue: v })} />
               ) : (
-                <input
-                  type={c.fieldKey.endsWith('_date') ? 'date' : 'text'}
-                  className="field"
-                  value={c.newValue}
-                  onChange={e => updatePending(c.uid, { newValue: e.target.value })}
-                  placeholder="New value…"
-                />
+                <TextField hideLabel label={`New ${c.fieldLabel}`} className="field" value={c.newValue}
+                  onChange={v => updatePending(c.uid, { newValue: v })} placeholder="New value…" />
               )}
               <FieldActions alignment='right'>
                 <Button size="icon" variant="ghost"

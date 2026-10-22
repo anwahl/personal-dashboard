@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter }              from 'next/navigation';
 import { createClient }           from '@/lib/supabase/client';
-import { Button, TabBar, Markdown, Card, CardHeader, CardTitle, CardActions, CardBody, CardSection, CardSectionLabel, ExpandPanel, ChipGroup, Chip, Field, ExpandCard, EmptyState } from '@/components/ui';
+import { Button, TabBar, Markdown, Card, CardHeader, CardTitle, CardActions, CardBody, CardSection, CardSectionLabel, ExpandPanel, ChipGroup, Chip, Field, ExpandCard, EmptyState, DateField, TextAreaField } from '@/components/ui';
 import {
   getMediaNotes, createMediaNote, deleteMediaNote,
   updateMediaEntry, createMediaEntry, addMediaStatusEntry, deleteMediaEntry,
@@ -19,7 +19,7 @@ import {
   emptyMediaFormValues, entryToMediaFormValues,
   STATUS_EMOJI
 } from './MediaForm';
-import { FieldActions, FieldGrid, InputField } from '../ui/Display';
+import { FieldActions, FieldGrid } from '../ui/Display';
 import { capitalize } from '@/lib/utils/strings';
 
 interface Props {
@@ -103,8 +103,8 @@ function MediaItem({ entry }: Readonly<{
                 <div key={n.id} className="media-note">
                   <div className="media-note__header">
                     <span className="media-note__date-badge">{formatShortDate(n.note_date)}</span>
-                    <button type="button" className="media-note__delete"
-                      onClick={() => deleteNote(n.id)} title="Delete note">✕</button>
+                    <Button variant="ghost" size="icon" onClick={() => deleteNote(n.id)}
+                      title="Delete note" aria-label="Delete note">✕</Button>
                   </div>
                   <div className="detail-page__body-markdown">
                     <Markdown>{n.body_md}</Markdown>
@@ -117,20 +117,11 @@ function MediaItem({ entry }: Readonly<{
           <CardSection>
             <CardSectionLabel>New Note</CardSectionLabel>
             <FieldGrid>
-              <InputField label='Date' id={`${entry.id}-new-note-date`}>
-                <input id={`${entry.id}-new-note-date`} type="date" value={noteDate}
-                    onChange={e => setNoteDate(e.target.value)} />
-              </InputField>
-              <InputField label='Note' id={`${entry.id}-new-note-text`}>
-                <textarea
-                  id={`${entry.id}-new-note-text`}
-                  value={newNote}
-                  onChange={e => setNewNote(e.target.value)}
-                  placeholder="Add a note…"
-                  className="textarea--short"
-                  onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) addNote(); }}
-              />
-              </InputField>
+              <DateField label='Date' value={noteDate} onChange={setNoteDate} />
+              <TextAreaField label='Note' value={newNote} onChange={setNewNote}
+                placeholder="Add a note…"
+                onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) addNote(); }}
+                size="short" />
             </FieldGrid>
             <FieldActions alignment='right'>
               <Button size="sm" variant="action-alt"

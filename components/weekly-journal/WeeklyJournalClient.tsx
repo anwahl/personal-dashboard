@@ -16,7 +16,7 @@ import {
   saveWeeklyResponses,
 } from '@/lib/dal/weekly-journal';
 import { addDays, getSundayOfWeek }  from '@/lib/utils/dates';
-import { Button, FieldActions, SaveStatus, EmptyState } from '@/components/ui';
+import { Button, FieldActions, SaveStatus, EmptyState, TextAreaField } from '@/components/ui';
 import type { SaveState }            from '@/components/ui';
 import type { WeeklyEntryRow }       from '@/types/schema';
 import type {
@@ -191,10 +191,12 @@ export function WeeklyJournalClient({
           {catCards.map(card => (
             <div key={card.key} className="journal-prompt-card">
               <p className="journal-prompt-card__prompt">{card.promptText}</p>
-              <textarea
+              <TextAreaField
+                hideLabel
+                label={card.promptText}
                 className="journal-prompt-card__textarea"
                 value={card.responseText}
-                onChange={e => updateCard(card.key, e.target.value)}
+                onChange={v => updateCard(card.key, v)}
                 placeholder="Write your response…"
                 rows={3}
               />
@@ -221,15 +223,14 @@ export function WeeklyJournalClient({
 function WeekNav({ weekStart, weekNum, weekRange }: Readonly<{
   weekStart: string; weekNum: number; weekRange: string;
 }>) {
-  const router = useRouter();
   const prev = prevSunday(weekStart);
   const next = nextSunday(weekStart);
 
   return (
     <div className="week-nav">
-      <button type="button" className="week-nav__btn" onClick={() => router.push(`/journal/weekly/${prev}`)}>‹</button>
+      <Button variant="ghost" size="icon" href={`/journal/weekly/${prev}`} aria-label="Previous week">‹</Button>
       <span className="week-nav__label">Week {weekNum} · {weekRange}</span>
-      <button type="button" className="week-nav__btn" onClick={() => router.push(`/journal/weekly/${next}`)}>›</button>
+      <Button variant="ghost" size="icon" href={`/journal/weekly/${next}`} aria-label="Next week">›</Button>
     </div>
   );
 }

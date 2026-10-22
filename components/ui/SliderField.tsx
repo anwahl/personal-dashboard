@@ -25,6 +25,7 @@ export function SliderField({ emoji, label, value, min = 0, max = 10, onChange }
       <input
         type="range"
         className="slider-field__range"
+        aria-label={label}
         min={min}
         max={max}
         value={v}

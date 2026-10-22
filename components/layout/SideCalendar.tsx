@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import Link                    from 'next/link';
 import { usePathname }         from 'next/navigation';
 import { createClient }        from '@/lib/supabase/client';
@@ -87,7 +87,7 @@ export function SideCalendar() {
           const weekNum  = getSundayWeekNumber(sunday);
           const hasEntry = weeklyDates.has(sunday);
           return (
-            <div key={sunday} style={{ display: 'contents' }}>
+            <Fragment key={sunday}>
               <Link
                 href={`/journal/weekly/${sunday}`}
                 className={`side-calendar__week-num${hasEntry ? ' side-calendar__week-num--has-entry' : ''}`}
@@ -114,7 +114,7 @@ export function SideCalendar() {
                   </Link>
                 );
               })}
-            </div>
+            </Fragment>
           );
         })}
       </div>

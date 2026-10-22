@@ -6,7 +6,7 @@
  * passing back `saving` / `saveState` while the operation is in flight.
  */
 
-import { useState, useEffect, useCallback, useId, type ReactNode } from "react";
+import { useState, useEffect, useCallback, type ReactNode } from "react";
 import {
   Button,
   Card,
@@ -17,10 +17,16 @@ import {
   CardSectionLabel,
   CardTitle,
   ExpandCard,
-  InputField,
+  TextField,
+  NumberField,
+  DateField,
+  TimeField,
+  DateTimeField,
+  TextAreaField,
+  SelectField,
   SaveStatus,
   Toggle,
-  useToast,
+  useToast, ChipSelect, FieldActions, FieldGrid,
 } from "@/components/ui";
 import type { SaveState } from "@/components/ui";
 import type { TaskStatusRow, TaskPriorityRow } from "@/types/dal";
@@ -30,7 +36,6 @@ import {
   localISODateFromDateString,
   localTodayISO,
 } from "@/lib/utils/dates";
-import { FieldActions, FieldGrid } from "@/components/ui/Display";
 import { WEEKDAYS } from "@/lib/constants/dates";
 import { createClient } from "@/lib/supabase/client";
 import { createTask } from "@/lib/dal/tasks";
@@ -159,81 +164,38 @@ export function TaskForm({
       <CardSection>
         <CardSectionLabel>Details</CardSectionLabel>
 
-        <InputField label="Title" id="tf-title">
-          <input
-            id="tf-title"
-            type="text"
-            value={form.title}
-            onChange={(e) => set("title", e.target.value)}
-            autoFocus
-          />
-        </InputField>
+        <TextField label="Title" value={form.title} onChange={(v) => set("title", v)} autoFocus />
 
         <FieldGrid>
           {showStatus && statuses && (
-            <InputField label="Status" id="tf-status">
-              <select
-                id="tf-status"
-                value={form.status_id}
-                disabled={statusesLoading}
-                onChange={(e) => set("status_id", e.target.value)}
-              >
-                {statuses.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.status_name}
-                  </option>
-                ))}
-              </select>
-            </InputField>
+            <SelectField
+              label="Status"
+              value={form.status_id}
+              disabled={statusesLoading}
+              onChange={(v) => set("status_id", v)}
+              options={statuses.map((s) => ({ value: s.id, label: s.status_name }))}
+            />
           )}
-          <InputField label="Priority" id="tf-priority">
-            <select
-              id="tf-priority"
-              disabled={prioritiesLoading}
-              value={form.priority_id}
-              onChange={(e) => set("priority_id", e.target.value)}
-            >
-              {priorities.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.priority_name}
-                </option>
-              ))}
-            </select>
-          </InputField>
-          <InputField label="For" id="tf-person">
-            <select
-              id="tf-person"
-              disabled={peopleLoading}
-              value={form.person_id}
-              onChange={(e) => set("person_id", e.target.value)}
-            >
-              <option value="">Anyone</option>
-              {people.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.person_name}
-                </option>
-              ))}
-            </select>
-          </InputField>
+          <SelectField
+            label="Priority"
+            value={form.priority_id}
+            disabled={prioritiesLoading}
+            onChange={(v) => set("priority_id", v)}
+            options={priorities.map((p) => ({ value: p.id, label: p.priority_name }))}
+          />
+          <SelectField
+            label="For"
+            value={form.person_id}
+            disabled={peopleLoading}
+            onChange={(v) => set("person_id", v)}
+            placeholder="Anyone"
+            options={people.map((p) => ({ value: p.id, label: p.person_name }))}
+          />
         </FieldGrid>
 
         <FieldGrid>
-          <InputField label="Due date" id="tf-due">
-            <input
-              id="tf-due"
-              type="date"
-              value={form.due_date}
-              onChange={(e) => set("due_date", e.target.value)}
-            />
-          </InputField>
-          <InputField label="Time" id="tf-time">
-            <input
-              id="tf-time"
-              type="time"
-              value={form.due_time}
-              onChange={(e) => set("due_time", e.target.value)}
-            />
-          </InputField>
+          <DateField label="Due date" value={form.due_date} onChange={(v) => set("due_date", v)} />
+          <TimeField label="Time" value={form.due_time} onChange={(v) => set("due_time", v)} />
         </FieldGrid>
 
         {showDateShortcuts && contextDate && (
@@ -255,13 +217,7 @@ export function TaskForm({
           </FieldActions>
         )}
 
-        <InputField label="Notes" id="tf-body">
-          <textarea
-            id="tf-body"
-            value={form.body_md}
-            onChange={(e) => set("body_md", e.target.value)}
-          />
-        </InputField>
+        <TextAreaField label="Notes" value={form.body_md} onChange={(v) => set("body_md", v)} />
       </CardSection>
 
       <CardSection>
@@ -275,22 +231,19 @@ export function TaskForm({
         {(addReminder || hasReminder) && (
           <div className="reminder-section__row">
             <span className="reminder-section__label">Reminder</span>
-            <input
-              type="datetime-local"
+            <DateTimeField
+              hideLabel
+              label="Reminder"
               value={form.reminder_at}
-              onChange={(e) => {
-                set("reminder_at", e.target.value);
-                if (!e.target.value) clearReminder();
+              onChange={(v) => {
+                set("reminder_at", v);
+                if (!v) clearReminder();
               }}
             />
             {hasReminder && (
-              <button
-                type="button"
-                className="reminder-section__toggle"
-                onClick={clearReminder}
-              >
+              <Button size="sm" variant="ghost" onClick={clearReminder}>
                 ✕ Clear
-              </button>
+              </Button>
             )}
           </div>
         )}
@@ -299,32 +252,36 @@ export function TaskForm({
           <div className="reminder-section__fields">
             <div className="reminder-section__row">
               <span className="reminder-section__label">Repeat</span>
-              <select
+              <SelectField
+                hideLabel
+                label="Repeat"
                 value={form.recurrence_frequency}
-                onChange={(e) => {
-                  set("recurrence_frequency", e.target.value);
+                onChange={(v) => {
+                  set("recurrence_frequency", v);
                   set("recurrence_days", "");
                 }}
-              >
-                <option value="">No repeat</option>
-                <option value="daily">Daily</option>
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-                <option value="yearly">Yearly</option>
-              </select>
+                placeholder="No repeat"
+                options={[
+                  { value: "daily", label: "Daily" },
+                  { value: "weekly", label: "Weekly" },
+                  { value: "monthly", label: "Monthly" },
+                  { value: "yearly", label: "Yearly" },
+                ]}
+              />
             </div>
 
             {form.recurrence_frequency && (
               <>
                 <div className="reminder-section__row">
                   <span className="reminder-section__label">Every</span>
-                  <input
-                    type="number"
+                  <NumberField
+                    hideLabel
+                    label="Repeat every"
                     min="1"
                     max="99"
                     className="reminder-section__interval"
                     value={form.recurrence_interval}
-                    onChange={(e) => set("recurrence_interval", e.target.value)}
+                    onChange={(v) => set("recurrence_interval", v)}
                   />
                   <span className="reminder-section__unit">
                     {FREQUENCY_UNIT[form.recurrence_frequency]}
@@ -334,36 +291,32 @@ export function TaskForm({
                 {form.recurrence_frequency === "weekly" && (
                   <div className="reminder-section__row">
                     <span className="reminder-section__label">On</span>
-                    <div className="weekday-chips">
-                      {WEEKDAYS.map(({ code, label }) => (
-                        <button
-                          key={code}
-                          type="button"
-                          className={`weekday-chip${activeDays.includes(code) ? " weekday-chip--active" : ""}`}
-                          onClick={() => toggleDay(code)}
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
+                    <ChipSelect
+                      label="Repeat on"
+                      options={WEEKDAYS.map(({ code, label }) => ({ value: code, label }))}
+                      selected={activeDays}
+                      onToggle={code => toggleDay(code)}
+                    />
                   </div>
                 )}
 
                 <div className="reminder-section__row">
                   <span className="reminder-section__label">Until</span>
-                  <input
-                    type="date"
+                  <DateField
+                    hideLabel
+                    label="Repeat until"
                     value={form.recurrence_end_date}
-                    onChange={(e) => set("recurrence_end_date", e.target.value)}
+                    onChange={(v) => set("recurrence_end_date", v)}
                   />
                   {form.recurrence_end_date && (
-                    <button
-                      type="button"
-                      className="reminder-section__toggle"
+                    <Button
+                      size="sm"
+                      variant="ghost"
                       onClick={() => set("recurrence_end_date", "")}
+                      aria-label="Clear end date"
                     >
                       ✕
-                    </button>
+                    </Button>
                   )}
                 </div>
               </>
@@ -401,21 +354,24 @@ export function TaskForm({
  */
 export function QuickAddTaskForm({
   contextDate = localTodayISO(),
+  defaultDue = '',
   minimal = false,
   extraActions,
   onAdded,
 }: Readonly<{
   contextDate?:  string;
+  /** Due date the form starts with (and returns to after each add), e.g. the
+   *  daily page's date. Default: none. */
+  defaultDue?:   string;
   minimal?:      boolean;
   extraActions?: ReactNode;
   onAdded?:      () => void;
 }>) {
   const supabase = createClient();
   const router = useRouter();
-  const id = useId();
 
   const [newTitle, setNewTitle] = useState("");
-  const [newDue, setNewDue] = useState("");
+  const [newDue, setNewDue] = useState(defaultDue);
   const [newTime, setNewTime] = useState("");
   const [newPerson, setNewPerson] = useState("");
   const [adding, setAdding] = useState(false);
@@ -445,7 +401,7 @@ export function QuickAddTaskForm({
         completed_at: null,
       });
       setNewTitle("");
-      setNewDue("");
+      setNewDue(defaultDue);
       setNewTime("");
       router.refresh();
       onAdded?.();
@@ -460,6 +416,7 @@ export function QuickAddTaskForm({
     newDue,
     newTime,
     newPerson,
+    defaultDue,
     todoStatusId,
     normalPriorityId,
     router,
@@ -479,43 +436,19 @@ export function QuickAddTaskForm({
         </Button>
         {extraActions}
       </CardActions>
-      <InputField label="Title" id={`${id}-title`}>
-        <input
-          id={`${id}-title`}
-          type="text"
-          value={newTitle}
-          onChange={(e) => setNewTitle(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && quickAdd()}
-          placeholder="Quick add task…"
-        />
-      </InputField>
+      <TextField
+        label="Title"
+        value={newTitle}
+        onChange={setNewTitle}
+        onKeyDown={(e) => e.key === "Enter" && quickAdd()}
+        placeholder="Quick add task…"
+      />
       {minimal ? (
-        <InputField label="Date" id={`${id}-date`}>
-          <input
-            id={`${id}-date`}
-            type="date"
-            value={newDue}
-            onChange={(e) => setNewDue(e.target.value)}
-          />
-        </InputField>
+        <DateField label="Date" value={newDue} onChange={setNewDue} />
       ) : (
         <FieldGrid>
-          <InputField label="Date" id={`${id}-date`}>
-            <input
-              id={`${id}-date`}
-              type="date"
-              value={newDue}
-              onChange={(e) => setNewDue(e.target.value)}
-            />
-          </InputField>
-          <InputField label="Time" id={`${id}-time`}>
-            <input
-              id={`${id}-time`}
-              type="time"
-              value={newTime}
-              onChange={(e) => setNewTime(e.target.value)}
-            />
-          </InputField>
+          <DateField label="Date" value={newDue} onChange={setNewDue} />
+          <TimeField label="Time" value={newTime} onChange={setNewTime} />
         </FieldGrid>
       )}
       <FieldActions boxed>
@@ -535,22 +468,15 @@ export function QuickAddTaskForm({
         </Button>
       </FieldActions>
       {!minimal && (
-        <InputField label="For" id={`${id}-person`}>
-          <select
-            id={`${id}-person`}
-            disabled={peopleLoading}
-            value={newPerson}
-            onChange={(e) => setNewPerson(e.target.value)}
-            style={{ width: 110 }}
-          >
-            <option value="">Anyone</option>
-            {people.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.person_name}
-              </option>
-            ))}
-          </select>
-        </InputField>
+        <SelectField
+          label="For"
+          value={newPerson}
+          disabled={peopleLoading}
+          onChange={setNewPerson}
+          placeholder="Anyone"
+          options={people.map((p) => ({ value: p.id, label: p.person_name }))}
+          className="input--narrow"
+        />
       )}
     </>
   );
@@ -561,8 +487,11 @@ export function QuickAddTaskForm({
 /** Collapsible "Add Task" card: QuickAddTaskForm, plus a toggle to the full TaskForm. */
 export function QuickAdd({
   contextDate = localTodayISO(),
+  defaultDue = '',
 }: Readonly<{
   contextDate?: string;
+  /** Due date new tasks start with (e.g. the daily page's date). */
+  defaultDue?:  string;
 }>) {
   const supabase = createClient();
   const router = useRouter();
@@ -629,6 +558,7 @@ export function QuickAdd({
           initialValues={emptyTaskFormValues({
             status_id: String(todoStatusId),
             priority_id: String(normalPriorityId),
+            due_date: defaultDue,
           })}
           showDateShortcuts
           contextDate={contextDate}
@@ -646,6 +576,7 @@ export function QuickAdd({
       hiddenChildren={
         <QuickAddTaskForm
           contextDate={contextDate}
+          defaultDue={defaultDue}
           extraActions={
             <Button variant="action-alt" onClick={() => setShowFull(true)}>
               Full Add
