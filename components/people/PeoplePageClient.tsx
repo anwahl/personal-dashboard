@@ -1,7 +1,9 @@
 'use client';
 
-import { TextField, DateField, TextAreaField, SelectField, SaveStatus, SaveState, Card, CardHeader, CardBody, CardSection, CardSectionLabel, Button, EmptyState, Badge, InactiveGroup, ManageItem, RowMenu, ModeToggle, SubCard, SubCardBody, FieldActions, ChipGroup } from '@/components/ui';
+import { TextField, DateField, TextAreaField, SelectField, SaveStatus, SaveState, Card, CardHeader, CardBody, CardSection, CardSectionLabel, Button, EmptyState, Badge, ModeToggle, SubCard, SubCardBody, FieldActions, ChipGroup } from '@/components/ui';
 import { useState, useCallback } from 'react';
+import { ManageableList, type ManageableListDal } from '@/components/settings/ManageableList';
+import type { AddField } from '@/components/settings/FieldInputs';
 import { createClient }          from '@/lib/supabase/client';
 import { formatMediumDate, localTodayISO } from '@/lib/utils/dates';
 import {
@@ -22,52 +24,43 @@ type Mode = 'view' | 'edit';
 
 // ── Diagnoses ─────────────────────────────────────────────────────────────────
 
+const DIAGNOSIS_FIELDS: AddField[] = [
+  { key: 'diagnosis_name', type: 'text',     label: 'Diagnosis', placeholder: 'Diagnosis name…', required: true },
+  { key: 'diagnosed_date', type: 'date',     label: 'Date',      required: false },
+  { key: 'notes',          type: 'textarea', label: 'Notes',     placeholder: 'Notes…', required: false },
+];
+
+/** Diagnoses: a read-only list in view mode; in edit mode, rows edit in
+ *  place (⋯ → Edit / Deactivate) with an add row, like Settings. */
 function DiagnosisSection({ diagnoses: initial, mode, personId }: Readonly<{
   diagnoses: DiagnosisRow[];
   mode:      Mode;
   personId:  number;
 }>) {
   const supabase = createClient();
-  const [items,    setItems]    = useState<DiagnosisRow[]>(initial);
-  const [editId,   setEditId]   = useState<number | null>(null);
-  const [editName, setEditName] = useState('');
-  const [editDate, setEditDate] = useState('');
-  const [editNotes,setEditNotes]= useState('');
-  const [newName,  setNewName]  = useState('');
-  const [newDate,  setNewDate]  = useState('');
-  const [newNotes, setNewNotes] = useState('');
-  const [adding,   setAdding]   = useState(false);
+  // Kept here too, so view mode shows edits made in edit mode.
+  const [items, setItems] = useState<DiagnosisRow[]>(initial);
+  const str = (v: unknown) => (v == null ? null : String(v));
 
-  const startEdit = (d: DiagnosisRow) => {
-    setEditId(d.id); setEditName(d.diagnosis_name);
-    setEditDate(d.diagnosed_date ?? ''); setEditNotes(d.notes ?? '');
-  };
-
-  const saveEdit = useCallback(async () => {
-    if (!editId || !editName.trim()) return;
-    await updateDiagnosis(supabase, editId, editName, editDate || null, editNotes || null);
-    setItems(prev => prev.map(d => d.id === editId
-      ? { ...d, diagnosis_name: editName, diagnosed_date: editDate || null, notes: editNotes || null } : d));
-    setEditId(null);
-  }, [supabase, editId, editName, editDate, editNotes]);
-
-  const addItem = useCallback(async () => {
-    if (!newName.trim() || adding) return;
-    setAdding(true);
-    try {
-      const d = await addDiagnosis(supabase, personId, newName, newDate || null, newNotes || null, items.length);
+  const dal: ManageableListDal = {
+    add: async (payload, sortOrder) => {
+      const d = await addDiagnosis(supabase, personId, String(payload.diagnosis_name),
+        str(payload.diagnosed_date), str(payload.notes), sortOrder);
       setItems(prev => [...prev, d]);
-      setNewName(''); setNewDate(''); setNewNotes('');
-    } finally { setAdding(false); }
-  }, [supabase, personId, newName, newDate, newNotes, items.length, adding]);
-
-  const setActive = async (id: number, isActive: boolean) => {
-    await toggleDiagnosis(supabase, id, isActive);
-    setItems(prev => prev.map(x => x.id === id ? { ...x, is_active: isActive } : x));
+      return d as unknown as Awaited<ReturnType<ManageableListDal['add']>>;
+    },
+    update: async (id, payload) => {
+      await updateDiagnosis(supabase, id, String(payload.diagnosis_name),
+        str(payload.diagnosed_date), str(payload.notes));
+      setItems(prev => prev.map(d => d.id === id ? { ...d, ...payload } as DiagnosisRow : d));
+    },
+    toggle: async (id, active) => {
+      await toggleDiagnosis(supabase, id, active);
+      setItems(prev => prev.map(d => d.id === id ? { ...d, is_active: active } : d));
+    },
   };
 
-  const active   = items.filter(d =>  d.is_active);
-  const inactive = items.filter(d => !d.is_active);
+  const active = items.filter(d => d.is_active);
 
   if (mode === 'view') {
     if (active.length === 0) return null;
@@ -88,75 +81,20 @@ function DiagnosisSection({ diagnoses: initial, mode, personId }: Readonly<{
   return (
     <CardSection>
       <CardSectionLabel>Diagnoses</CardSectionLabel>
-      {active.map(d => (
-        <div key={d.id}>
-          {editId === d.id ? (
-            <>
-            <div className="manage-item">
-              <div className="manage-item__edit-block">
-                <TextField label="Diagnosis" value={editName} onChange={setEditName}
-                  placeholder="Diagnosis name…" autoFocus
-                  onKeyDown={e => { if (e.key === 'Enter') saveEdit();
-                    if (e.key === 'Escape') setEditId(null); }} />
-                <DateField label="Date" value={editDate} onChange={setEditDate} />
-              </div>
-            </div>
-            <div className="manage-item">
-              <div className="manage-item__edit-block">
-                <TextAreaField label="Notes" value={editNotes} onChange={setEditNotes} placeholder="Notes…" />
-              </div>
-            </div>
-            <div className="manage-item__actions">
-              <Button size="sm" variant="accent" onClick={saveEdit} disabled={!editName.trim()}>✓</Button>
-              <Button size="sm" variant="ghost"  onClick={() => setEditId(null)}>✕</Button>
-            </div>
-            </>
-          ) : (
-            <ManageItem
-              menu={
-                <RowMenu
-                  label={d.diagnosis_name}
-                  items={[
-                    { label: 'Edit', onSelect: () => startEdit(d) },
-                    { label: 'Deactivate', onSelect: () => setActive(d.id, false) },
-                  ]}
-                />
-              }
-            >
-              {d.diagnosis_name}
-              {d.diagnosed_date && <span className="manage-item__meta">{formatMediumDate(d.diagnosed_date)}</span>}
-              {d.notes && <span className="manage-item__meta manage-item__meta--truncate">{d.notes}</span>}
-            </ManageItem>
-          )}
-        </div>
-      ))}
-      <InactiveGroup count={inactive.length}>
-        {inactive.map(d => (
-          <ManageItem
-            key={d.id}
-            inactive
-            menu={<RowMenu label={d.diagnosis_name} items={[{ label: 'Activate', onSelect: () => setActive(d.id, true) }]} />}
-          >
+      <ManageableList
+        bare
+        nameColumn="diagnosis_name"
+        items={items}
+        addFields={DIAGNOSIS_FIELDS}
+        dal={dal}
+        renderName={(d: DiagnosisRow) => (
+          <>
             {d.diagnosis_name}
-          </ManageItem>
-        ))}
-      </InactiveGroup>
-      <>
-      <hr />
-      <div className="manage-item">
-        <div className="manage-item__edit-block">
-          <TextField label="Add Diagnosis" value={newName} onChange={setNewName}
-            placeholder="Diagnosis name…" onKeyDown={e => e.key === 'Enter' && addItem()} />
-          <DateField label="Diagnosis Date" value={newDate} onChange={setNewDate} />
-        </div>
-      </div>
-      <div className="manage-item">
-        <div className="manage-item__edit-block">
-          <TextAreaField label="Notes" value={newNotes} onChange={setNewNotes} placeholder="Notes…" />
-        </div>
-      </div>
-      <Button size="sm" variant="accent" onClick={addItem} disabled={adding || !newName.trim()}>+ Add</Button>
-      </>
+            {d.diagnosed_date && <span className="manage-item__meta">{formatMediumDate(d.diagnosed_date)}</span>}
+            {d.notes && <span className="manage-item__meta manage-item__meta--truncate">{d.notes}</span>}
+          </>
+        )}
+      />
     </CardSection>
   );
 }

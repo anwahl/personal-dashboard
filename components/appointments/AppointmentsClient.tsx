@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link                      from 'next/link';
-import { Button, Card, CardBody, CardHeader, CardTitle, Chip, ExpandPanel, FieldActions, Markdown, SubCard, SubCardBody, EmptyState, ListItem, CardSection, CardSectionLabel } from '@/components/ui';
+import { Button, Card, CardBody, CardHeader, CardTitle, Chip, ExpandPanel, FieldActions, Markdown, SubCard, SubCardBody, EmptyState, ListItem, CardSection, CardSectionLabel, RowMenu } from '@/components/ui';
 import { localTodayISO, daysUntil, formatMediumDate, formatTime } from '@/lib/utils/dates';
 import type { AppointmentDetail }    from '@/types/dal';
 import type { AppointmentTypeRow, PersonRow, ProviderRow } from '@/types/schema';
@@ -27,6 +26,7 @@ function ApptRow({ appt, onEdit }: Readonly<{ appt: AppointmentDetail; onEdit: (
         <SubCardBody>
           <ListItem
             muted={isPast}
+            href={`/appointments/${appt.id}`}
             title={
               <CardTitle>
                 {appt.appointment_type?.type_name ?? 'Appointment'}
@@ -44,9 +44,15 @@ function ApptRow({ appt, onEdit }: Readonly<{ appt: AppointmentDetail; onEdit: (
               </>
             }
             trailing={
-              <Chip small={true} fixed={true} className={`${!isPast ? ' chip--accent' : ''}`}>
-                {daysUntil(appt.appointment_date)}
-              </Chip>
+              <>
+                <Chip small={true} fixed={true} className={`${!isPast ? ' chip--accent' : ''}`}>
+                  {daysUntil(appt.appointment_date)}
+                </Chip>
+                <RowMenu
+                  label={appt.appointment_type?.type_name ?? 'Appointment'}
+                  items={[{ label: 'Edit…', onSelect: onEdit }]}
+                />
+              </>
             }
           />
 
@@ -74,14 +80,6 @@ function ApptRow({ appt, onEdit }: Readonly<{ appt: AppointmentDetail; onEdit: (
               } 
             />
           )}
-          <FieldActions alignment='bottom'>
-            <Link href={`/appointments/${appt.id}`} className="btn btn--action btn--sm">
-              View Details →
-            </Link>
-            <Button size="sm" variant="action" onClick={e => { e.stopPropagation(); onEdit(); }}>
-              ✏️ Edit
-            </Button>
-          </FieldActions>
         </SubCardBody>
       </SubCard>
     </>

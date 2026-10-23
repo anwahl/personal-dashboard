@@ -16,7 +16,7 @@ import { addMediaStatusEntry } from '@/lib/dal/media';
 import { localTodayISO } from '@/lib/utils/dates';
 import { capitalize } from '@/lib/utils/strings';
 import {
-  AddButton, CardBody, CardSection, CardSectionLabel, ExpandCard, EmptyState, ListItem, RowMenu,
+  AddButton, CardSection, CardSectionLabel, ExpandCard, EmptyState, ListItem, RowMenu,
 } from '@/components/ui';
 import type { MediaEntryDetail } from '@/types/dal';
 import type { MediaTypeRow, MediaStatusRow, MediaStatusTypeLinkRow } from '@/types/schema';
@@ -106,7 +106,6 @@ export function QuickMediaLog({
         actions={<AddButton label="Add media" onClick={openAdd} />}
         hiddenChildren={
           <>
-            <CardBody>
               {inProgress.length === 0 && <EmptyState>Nothing in progress.</EmptyState>}
 
               {Object.entries(grouped).map(([typeName, items]) => (
@@ -121,7 +120,6 @@ export function QuickMediaLog({
                   ))}
                 </CardSection>
               ))}
-            </CardBody>
           </>
         } />
 

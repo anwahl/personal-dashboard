@@ -69,22 +69,34 @@ function appointmentPayload(values: AppointmentFormValues) {
  * Add or edit an appointment in a FormDialog. With `appointment` it edits
  * it; without, it adds one. Saves itself and refreshes the page. Pass
  * `onDeleted` to offer Delete inside the dialog (list page).
+ *
+ * `followUpOf` adds a follow-up to that appointment: same person, type,
+ * provider and location, a blank date, linked back to it.
  */
 export function AppointmentDialog({
-  open, onOpenChange, appointment, appointmentTypes, people, providers, onDeleted,
+  open, onOpenChange, appointment, followUpOf, appointmentTypes, people, providers, onDeleted, onCreated,
 }: Readonly<{
   open:             boolean;
   onOpenChange:     (open: boolean) => void;
   /** The appointment to edit; omit to add a new one. */
   appointment?:     AppointmentDetail | null;
+  /** Add a follow-up to this appointment (prefilled from it). */
+  followUpOf?:      AppointmentDetail;
   appointmentTypes: AppointmentTypeRow[];
   people:           PersonRow[];
   providers:        ProviderRow[];
   onDeleted?:       () => void;
+  /** Called with the new appointment's id after adding one. */
+  onCreated?:       (id: number) => void;
 }>) {
   const supabase = createClient();
   const router   = useRouter();
-  const initialValues = appointment ? apptToFormValues(appointment) : emptyAppointmentFormValues;
+  const initialValues = appointment ? apptToFormValues(appointment)
+    : followUpOf ? {
+        ...apptToFormValues(followUpOf),
+        appointment_date: '', appointment_time: '', questions: '', notes: '',
+      }
+    : emptyAppointmentFormValues;
 
   const [form, setForm] = useState<AppointmentFormValues>(initialValues);
   // Each open starts from the appointment (or blank) again.
@@ -103,8 +115,12 @@ export function AppointmentDialog({
 
   const save = async () => {
     const payload = appointmentPayload(form);
-    if (appointment) await updateAppointment(supabase, appointment.id, payload);
-    else             await createAppointment(supabase, { ...payload, followup_for_id: null });
+    if (appointment) {
+      await updateAppointment(supabase, appointment.id, payload);
+    } else {
+      const created = await createAppointment(supabase, { ...payload, followup_for_id: followUpOf?.id ?? null });
+      onCreated?.(created.id);
+    }
     router.refresh();
   };
 
@@ -120,7 +136,7 @@ export function AppointmentDialog({
     <FormDialog
       open={open}
       onOpenChange={onOpenChange}
-      title={appointment ? 'Edit appointment' : 'New appointment'}
+      title={appointment ? 'Edit appointment' : followUpOf ? 'Schedule follow-up' : 'New appointment'}
       saveLabel={appointment ? 'Save' : 'Add'}
       canSave={Boolean(form.appointment_date && form.person_id)}
       onSave={save}

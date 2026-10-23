@@ -13,7 +13,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, FormDialog, SliderField, TextField, DateField, TextAreaField, SelectField, FieldGrid } from '@/components/ui';
 import { createClient } from '@/lib/supabase/client';
-import { createMediaEntry, updateMediaEntry, addMediaStatusEntry } from '@/lib/dal/media';
+import { createMediaEntry, updateMediaEntry, addMediaStatusEntry, createMediaNote } from '@/lib/dal/media';
 import { localTodayISO } from '@/lib/utils/dates';
 import type { MediaEntryDetail } from '@/types/dal';
 import type {
@@ -299,6 +299,40 @@ export function MediaDialog({
               size="short" />
             <TextAreaField label="Review (after finishing)" value={form.review}
               onChange={v => set('review', v)} size="short" />
+    </FormDialog>
+  );
+}
+
+// ── MediaNoteDialog ───────────────────────────────────────────────────────────
+
+/** Add a dated note to a media entry (Media list ⋯ → Add note…). */
+export function MediaNoteDialog({
+  open, onOpenChange, entry,
+}: Readonly<{
+  open:         boolean;
+  onOpenChange: (open: boolean) => void;
+  entry:        MediaEntryDetail | null;
+}>) {
+  const supabase = createClient();
+  const [date, setDate] = useState(localTodayISO());
+  const [note, setNote] = useState('');
+  useEffect(() => {
+    if (!open) return;
+    setDate(localTodayISO());
+    setNote('');
+  }, [open]);
+
+  return (
+    <FormDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={entry ? `Note on ${entry.title}` : 'Add note'}
+      saveLabel="Add"
+      canSave={Boolean(entry && note.trim())}
+      onSave={async () => { if (entry) await createMediaNote(supabase, entry.id, date, note.trim()); }}
+    >
+      <DateField label="Date" value={date} onChange={setDate} />
+      <TextAreaField label="Note" value={note} onChange={setNote} placeholder="Add a note…" autoFocus />
     </FormDialog>
   );
 }

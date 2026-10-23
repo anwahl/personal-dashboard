@@ -22,6 +22,9 @@ const PROVIDER_FIELDS: AddField[] = [
   { key: 'name',          type: 'text', label: 'Provider name', placeholder: 'Dr. Smith',              required: false },
   { key: 'practice_name', type: 'text', label: 'Practice',      placeholder: 'Helena Family Medicine', required: false },
   { key: 'phone',         type: 'text', label: 'Phone',         placeholder: '(406) 555-1234',         required: false },
+  // Edit only (⋯ → Edit), to keep the add row short.
+  { key: 'address',       type: 'text', label: 'Address',       placeholder: 'Address',                required: false, showInAdd: false },
+  { key: 'portal_url',    type: 'text', label: 'Patient portal', placeholder: 'https://…',             required: false, showInAdd: false },
 ];
 
 const orNull = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : null);
@@ -32,6 +35,8 @@ function toChild(p: ProviderRow): NormalizedChild {
     name:          p.provider_name ?? '',
     practice_name: p.practice_name ?? '',
     phone:         p.phone ?? '',
+    address:       p.address ?? '',
+    portal_url:    p.portal_url ?? '',
     is_active:     p.is_active,
     sort_order:    p.sort_order ?? 0,
   };
@@ -65,6 +70,9 @@ export function ProviderSettings({ providers, providerTypes }: Readonly<Props>) 
           <>
             {child.name || practice || 'Unnamed'}
             {child.name && practice && <span className="manage-item__meta">{practice}</span>}
+            {child.portal_url ? (
+              <a className="manage-item__meta text-link" href={String(child.portal_url)} target="_blank" rel="noreferrer">Portal ↗</a>
+            ) : null}
           </>
         );
       }}
@@ -86,6 +94,8 @@ export function ProviderSettings({ providers, providerTypes }: Readonly<Props>) 
             provider_name: orNull(values.name),
             practice_name: orNull(values.practice_name),
             phone:         orNull(values.phone),
+            address:       orNull(values.address),
+            portal_url:    orNull(values.portal_url),
           });
         },
         toggleChild:       (id, active)  => toggleProviderActive(supabase, id, active),

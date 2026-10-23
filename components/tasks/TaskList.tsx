@@ -215,7 +215,7 @@ export function TaskList({
         )}
       </CardHeader>
       <CardBody>
-        <TabBar tabs={TABS} active={tab} onChange={id => setTab(id as TasksTabId)} />
+        <TabBar label="Task lists" tabs={TABS} active={tab} onChange={id => setTab(id as TasksTabId)} />
         <div className="task-list">
           {bucket.length === 0 ? (
             <EmptyState>

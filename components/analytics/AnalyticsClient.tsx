@@ -52,7 +52,7 @@ export function AnalyticsClient({ charts, data, fromDate, toDate, icons }: Reado
       {/* Category tabs (only when more than one category) */}
       {tabs.length > 2 && (
         <div className="analytics-tabs">
-          <TabBar tabs={tabs} active={activeTab} onChange={setActiveTab} />
+          <TabBar label="Chart categories" tabs={tabs} active={activeTab} onChange={setActiveTab} />
         </div>
       )}
 

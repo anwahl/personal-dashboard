@@ -42,6 +42,7 @@ export function PeopleNavTabs({
   return (
     <nav className="people-nav">
       <TabBar
+        label="People categories"
         tabs={tabs}
         active={activeTab !== null ? String(activeTab) : 'other'}
         onChange={id => setActiveTab(id === 'other' ? null : Number(id))}

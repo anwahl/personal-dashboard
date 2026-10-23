@@ -1,26 +1,14 @@
 'use client';
 
 import {
-  ConfirmButton, SelectField, DateField, TimeField,
-  Markdown,Button, Card, CardHeader,
-  CardTitle, CardBody, 
-  FieldActions, Field, FieldGrid,
-  CardActions,
-  ExpandPanel,
-  CardSection,
-  CardSectionLabel,
-  Item, 
-  SubCard,
-  SubCardBody,
-  CardGrid, ModeToggle
-}                                   from '@/components/ui';
+  SelectField, Markdown, Card, CardHeader, CardTitle, CardBody,
+  Field, FieldGrid, CardActions, ExpandPanel, CardSection, CardSectionLabel,
+  Item, ModeToggle, RowMenu, useToast,
+} from '@/components/ui';
 import { useState, useCallback }              from 'react';
 import { useRouter }                          from 'next/navigation';
 import { createClient }                       from '@/lib/supabase/client';
-import {
-  deleteAppointment,
-  createAppointment,deletePrescriptionChange
-}                                             from '@/lib/dal/appointments';
+import { deleteAppointment, deletePrescriptionChange } from '@/lib/dal/appointments';
 import { applyPrescriptionChanges }           from '@/lib/dal/prescriptions';
 import { createTask }                         from '@/lib/dal/tasks';
 import type {
@@ -114,69 +102,6 @@ function MedChangesSection({
   );
 }
 
-// ── Follow-up mini form ───────────────────────────────────────────────────────
-
-function FollowUpForm({ appt, onCreated, onCancel }: Readonly<{
-  appt:      AppointmentDetail;
-  onCreated: (id: number) => void;
-  onCancel:  () => void;
-}>) {
-  const supabase = createClient();
-  const [date,   setDate]   = useState('');
-  const [time,   setTime]   = useState('');
-  const [saving, setSaving] = useState(false);
-
-  const create = async () => {
-    if (!date || saving) return;
-    setSaving(true);
-    try {
-      const newAppt = await createAppointment(supabase, {
-        appointment_date:    date,
-        appointment_time:    time || null,
-        person_id:           appt.person_id,
-        provider_id:         appt.provider_id ?? null,
-        appointment_type_id: appt.appointment_type_id ?? null,
-        location:            appt.location ?? null,
-        questions:           null,
-        notes:               null,
-        followup_for_id:     appt.id,
-      });
-      onCreated(newAppt.id);
-    } finally { setSaving(false); }
-  };
-
-  return (
-    <SubCard>
-      <CardHeader>
-        <CardTitle>
-          Schedule Follow-up
-        </CardTitle>
-      </CardHeader>
-      <SubCardBody>
-        <FieldGrid>
-          <DateField label="Date" value={date} onChange={setDate} autoFocus />
-          <TimeField label="Time (optional)" value={time} onChange={setTime} />
-        </FieldGrid>
-        <Item itemType='info' itemModifier={['italic', 'meta']}
-          value = {
-            <>
-              Copies: {appt.appointment_type?.type_name ?? 'same type'} ·{' '}
-              {appt.person?.person_name ?? 'same person'}
-              {appt.provider ? ` · ${appt.provider.provider_name ?? appt.provider.practice_name}` : ''}
-            </>
-          }
-        />
-        <FieldActions>
-          <Button variant="accent" onClick={create} disabled={saving || !date}>
-            {saving ? 'Creating…' : 'Create Follow-up'}
-          </Button>
-          <Button variant="ghost" onClick={onCancel}>Cancel</Button>
-        </FieldActions>
-      </SubCardBody>
-    </SubCard>
-  );
-}
-
 // ── Props ─────────────────────────────────────────────────────────────────────
 
 interface Props {
@@ -204,9 +129,8 @@ export function AppointmentDetailClient({
   const router   = useRouter();
 
   const [editOpen,     setEditOpen]     = useState(false);
-  const [showFollowUp, setShowFollowUp] = useState(false);
-  const [taskCreated,  setTaskCreated]  = useState(false);
-  const [creatingTask, setCreatingTask] = useState(false);
+  const [followUpOpen, setFollowUpOpen] = useState(false);
+  const { addToast } = useToast();
 
   const remove = useCallback(async () => {
     await deleteAppointment(supabase, appt.id);
@@ -217,7 +141,6 @@ export function AppointmentDetailClient({
     const todoStatus = taskStatuses.find(s => !s.is_terminal) ?? taskStatuses[0];
     const normalPrio = taskPriorities.find(p => p.priority_name === 'normal') ?? taskPriorities[0];
     if (!todoStatus || !normalPrio) return;
-    setCreatingTask(true);
     try {
       await createTask(supabase, {
         title:        apptLabel(appt),
@@ -228,10 +151,11 @@ export function AppointmentDetailClient({
         body_md:      null,
         completed_at: null,
       });
-      setTaskCreated(true);
-      setTimeout(() => setTaskCreated(false), 3000);
-    } finally { setCreatingTask(false); }
-  }, [supabase, appt, taskStatuses, taskPriorities]);
+      addToast('Task created', 'success');
+    } catch {
+      addToast('Couldn’t create the task', 'error');
+    }
+  }, [supabase, appt, taskStatuses, taskPriorities, addToast]);
 
   // ── View (editing happens in AppointmentDialog) ─────────────────────────────
 
@@ -242,14 +166,17 @@ export function AppointmentDetailClient({
       <Card>
         <CardHeader>
           <CardTitle>{appt.appointment_type?.type_name ?? 'Appointment'}</CardTitle>
-          {appt.provider && (
-            <>
-            {appt.provider.provider_name ?? appt.provider.practice_name ?? ''}
-            </>
-          )}
           <CardActions>
             <ModeToggle editing={false} onChange={() => setEditOpen(true)} />
-            <ConfirmButton onConfirm={remove}>✕ Delete</ConfirmButton>
+            <RowMenu
+              label="this appointment"
+              items={[
+                { label: '📅 Schedule follow-up…', onSelect: () => setFollowUpOpen(true) },
+                { label: '✅ Create task',          onSelect: createTaskForAppt },
+                'separator',
+                { label: 'Delete', onSelect: remove, destructive: true },
+              ]}
+            />
           </CardActions>
         </CardHeader>
         <CardBody>
@@ -267,6 +194,18 @@ export function AppointmentDetailClient({
               } />
               <Field label='For' value={appt.person.person_name} />
           </FieldGrid>
+          {appt.provider && (
+            <Field label='Provider'
+              value={
+                <>
+                  {appt.provider.provider_name ?? appt.provider.practice_name}
+                  {appt.provider.provider_name && appt.provider.practice_name ? ` · ${appt.provider.practice_name}` : ''}
+                  {appt.provider.phone && <> · <a href={`tel:${appt.provider.phone}`} className="text-link">{appt.provider.phone}</a></>}
+                  {appt.provider.portal_url && <> · <a href={appt.provider.portal_url} target="_blank" rel="noreferrer" className="text-link">Patient portal ↗</a></>}
+                  {appt.provider.address && <><br />{appt.provider.address}</>}
+                </>
+              } />
+          )}
           <FieldGrid>
             {appt.location && (
               <Field label='Location'
@@ -301,29 +240,18 @@ export function AppointmentDetailClient({
             initialHistory={prescriptionChanges}
           />
 
-          <CardGrid columns={1} rows>
-            {showFollowUp ? (
-              <FollowUpForm
-                appt={appt}
-                onCreated={id => router.push(`/appointments/${id}`)}
-                onCancel={() => setShowFollowUp(false)}
-              />
-            ) : (
-              <FieldActions alignment='right'>
-                <Button variant="action" size="sm" onClick={() => setShowFollowUp(true)}>
-                  📅 Schedule Follow-up
-                </Button>
-              </FieldActions>
-            )}
-            <FieldActions alignment='right'>
-              <Button variant="action" size="sm" onClick={createTaskForAppt} busy={creatingTask}>
-                {taskCreated ? '✓ Task created' : '✅ Create Task'}
-              </Button>
-            </FieldActions>
-          </CardGrid>
         </CardBody>
       </Card>
 
+      <AppointmentDialog
+        open={followUpOpen}
+        onOpenChange={setFollowUpOpen}
+        followUpOf={appt}
+        appointmentTypes={appointmentTypes}
+        people={people}
+        providers={providers}
+        onCreated={id => router.push(`/appointments/${id}`)}
+      />
       <AppointmentDialog
         open={editOpen}
         onOpenChange={setEditOpen}

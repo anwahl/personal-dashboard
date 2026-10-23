@@ -113,7 +113,7 @@ export function SettingsClient({
 
   return (
     <div>
-      <TabBar tabs={SETTINGS_TABS} active={tab} onChange={setTab} />
+      <TabBar label="Settings sections" tabs={SETTINGS_TABS} active={tab} onChange={setTab} />
 
       {/* Tab panels — always rendered, CSS-hidden when inactive to preserve local state */}
       <div className="settings-tab-content">

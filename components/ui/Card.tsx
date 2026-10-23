@@ -144,10 +144,13 @@ export function ExpandCard({ shownChildren, hiddenChildren, className, style, ti
               {actions && <div className="card__header-actions">{actions}</div>}
             </CardHeader>
           )}
+          {/* No empty body (and its padding) under a collapsed header. */}
+          {(shownChildren || expanded) && (
             <CardBody>
               {shownChildren}
               {expanded && (hiddenChildren)}
             </CardBody>
+          )}
         </Card>
 }
 

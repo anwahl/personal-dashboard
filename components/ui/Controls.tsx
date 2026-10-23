@@ -1,5 +1,7 @@
 'use client';
 
+import { Tabs } from 'radix-ui';
+
 // ── Toggle ────────────────────────────────────────────────────────────────────
 
 interface ToggleProps {
@@ -40,21 +42,31 @@ interface TabBarProps<T extends string> {
   tabs:     readonly TabDef[];
   active:   T;
   onChange: (id: T) => void;
+  /** Accessible name for the tab list (e.g. "Task lists"). */
+  label?:   string;
 }
 
-export function TabBar<T extends string>({ tabs, active, onChange }: Readonly<TabBarProps<T>>) {
+/**
+ * TabBar — a row of tabs (Radix Tabs). The caller renders the active tab's
+ * content itself, below the bar.
+ *
+ * Radix gives it tab semantics (role="tablist"/"tab", aria-selected) and
+ * keyboard support: ←/→ move between tabs, Home/End jump to the ends.
+ */
+export function TabBar<T extends string>({ tabs, active, onChange, label }: Readonly<TabBarProps<T>>) {
   return (
-    <div className="tab-bar">
-      {tabs.map(tab => (
-        <button
-          key={tab.id}
-          type="button"
-          className={`tab${active === tab.id ? ' tab--active' : ''}`}
-          onClick={() => onChange(tab.id as T)}
-        >
-          {tab.label}
-        </button>
-      ))}
-    </div>
+    <Tabs.Root value={active} onValueChange={v => onChange(v as T)}>
+      <Tabs.List className="tab-bar" aria-label={label}>
+        {tabs.map(tab => (
+          <Tabs.Trigger
+            key={tab.id}
+            value={tab.id}
+            className={`tab${active === tab.id ? ' tab--active' : ''}`}
+          >
+            {tab.label}
+          </Tabs.Trigger>
+        ))}
+      </Tabs.List>
+    </Tabs.Root>
   );
 }

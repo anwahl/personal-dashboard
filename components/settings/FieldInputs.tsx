@@ -16,7 +16,7 @@ import type { IconRow } from '@/types/schema';
 export interface AddField {
   key:          string;
   label:        string;
-  type:         'text' | 'textarea' | 'number' | 'color' | 'icon' | 'select';
+  type:         'text' | 'textarea' | 'number' | 'date' | 'color' | 'icon' | 'select';
   placeholder?: string;
   required?:    boolean;
   width?:       number;     // px, for short fields like color pickers
@@ -24,6 +24,8 @@ export interface AddField {
   parseAs?:     'string' | 'int' | 'float';  // how to cast select value in payload
   /** If false, this field is omitted from the edit form (but still appears in the add row). */
   showInEdit?:  boolean;
+  /** If false, this field only appears when editing (keeps the add row short). */
+  showInAdd?:   boolean;
   /** Show the field only when this returns true for the current values
    *  (e.g. a colour that only applies to one type). */
   showWhen?:    (values: Record<string, string>) => boolean;
@@ -37,7 +39,7 @@ export type IconValues  = Record<string, number | null>;
 /** Fields visible for the given mode and current values. */
 export function visibleFields(fields: AddField[], mode: 'add' | 'edit', values: FieldValues): AddField[] {
   return fields.filter(f =>
-    (mode === 'add' || f.showInEdit !== false) &&
+    (mode === 'add' ? f.showInAdd !== false : f.showInEdit !== false) &&
     (!f.showWhen || f.showWhen(values)));
 }
 
@@ -113,8 +115,8 @@ export function FieldInputs({
       {visibleFields(fields, mode, values).map(f => {
         // Dynamic px width from caller config — legitimate inline style exception
         const sizing = f.width ? { flex: 'none', width: f.width } : undefined;
-        // Add rows wrap two fields per row on phones (see .field-input--add).
-        const inputClass = mode === 'add' ? 'field-input field-input--add' : 'field-input';
+        // Rows wrap two fields per row on phones (see .field-input--wrap).
+        const inputClass = 'field-input field-input--wrap';
 
         switch (f.type) {
           case 'icon':

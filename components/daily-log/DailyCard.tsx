@@ -893,7 +893,7 @@ export function DailyCard({
         <CardTitle>📋 Daily Entry</CardTitle>
       </CardHeader>
       <CardBody>
-        <TabBar tabs={DAILY_TABS} active={tab} onChange={selectTab} />
+        <TabBar label="Daily entry sections" tabs={DAILY_TABS} active={tab} onChange={selectTab} />
 
         {tab === 'overview' && (
           <OverviewTab

@@ -8,6 +8,10 @@
  * described by `addFields` and rendered by FieldInputs.
  *
  * For lists grouped by category, use HierarchicalList instead.
+ *
+ * By default it saves through the settings DAL (tableName). Pass `dal` for
+ * a table that needs more (e.g. a person's diagnoses), and `bare` to render
+ * just the list and add row, inside another card's section.
  */
 
 import { useState, useCallback } from 'react';
@@ -39,10 +43,23 @@ interface Item {
   [key: string]: unknown;
 }
 
+/** Custom saves, for tables the settings DAL doesn't cover. */
+export interface ManageableListDal {
+  add:      (payload: Record<string, unknown>, sortOrder: number) => Promise<Item>;
+  update:   (id: number, payload: Record<string, unknown>) => Promise<void>;
+  toggle:   (id: number, active: boolean) => Promise<void>;
+  /** Enables drag-to-reorder. */
+  reorder?: (updates: { id: number; sort_order: number }[]) => Promise<void>;
+}
+
 interface Props {
-  title:       string;
+  title?:      string;
   description?: string;
-  tableName:   ManageableTable;
+  /** Settings table to save to (ignored when `dal` is given). */
+  tableName?:  ManageableTable;
+  dal?:        ManageableListDal;
+  /** No SectionCard around it (for use inside another card). */
+  bare?:       boolean;
   nameColumn:  string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   items:       any[];
@@ -63,6 +80,8 @@ export function ManageableList({
   icons = [],
   onItemAdded,
   collapsibleAdd = false,
+  dal: customDal,
+  bare = false,
 }: Readonly<Props>) {
   const supabase = createClient();
 
@@ -75,7 +94,16 @@ export function ManageableList({
   const [newIcons,    setNewIcons]    = useState<IconValues>(() => emptyValues(addFields).iconValues);
   const [saving,      setSaving]      = useState(false);
 
-  const hasSortOrder = items.length > 0 && 'sort_order' in items[0];
+  // Tables with a sort_order column (seen on their rows) can be reordered.
+  const tableHasSort = items.length > 0 && 'sort_order' in items[0];
+  const dal: ManageableListDal = customDal ?? {
+    add:     (payload, sortOrder) => addSettingsItem<Item>(supabase, tableName!,
+               tableHasSort ? { ...payload, sort_order: sortOrder } : payload),
+    update:  async (id, payload)  => { await updateSettingsItem(supabase, tableName!, id, payload); },
+    toggle:  (id, active)         => toggleSettingsItem(supabase, tableName!, id, active),
+    reorder: updates              => batchSetSortOrder(supabase, tableName!, updates),
+  };
+  const hasSortOrder = Boolean(dal.reorder) && tableHasSort;
 
   const active   = items.filter(i =>  i.is_active).sort(bySortOrder);
   const inactive = items.filter(i => !i.is_active).sort(bySortOrder);
@@ -87,8 +115,8 @@ export function ManageableList({
   const toggleActive = useCallback(async (item: Item) => {
     const next = !item.is_active;
     setItems(prev => prev.map(i => i.id === item.id ? { ...i, is_active: next } : i));
-    await toggleSettingsItem(supabase, tableName, item.id, next);
-  }, [supabase, tableName]);
+    await dal.toggle(item.id, next);
+  }, [dal]);
 
   // ── Add ────────────────────────────────────────────────────────────────────
 
@@ -100,17 +128,16 @@ export function ManageableList({
     setSaving(true);
     try {
       const payload = buildPayload(shown, newVals, newIcons);
-      if (hasSortOrder) payload.sort_order = active.length;
       Object.assign(payload, extraDefaultFields);
 
-      const data = await addSettingsItem<Item>(supabase, tableName, payload);
+      const data = await dal.add(payload, active.length);
       setItems(prev => [...prev, data]);
       const blank = emptyValues(addFields);
       setNewVals(blank.values);
       setNewIcons(blank.iconValues);
       onItemAdded?.(data);
     } finally { setSaving(false); }
-  }, [supabase, tableName, addFields, newVals, newIcons, active.length, hasSortOrder, extraDefaultFields, onItemAdded]);
+  }, [dal, addFields, newVals, newIcons, active.length, extraDefaultFields, onItemAdded]);
 
   // ── Reorder (drag and drop) ────────────────────────────────────────────────
 
@@ -118,8 +145,8 @@ export function ManageableList({
     const updates   = reorderUpdates(active, fromIndex, toIndex);
     const updateMap = new Map(updates.map(u => [u.id, u.sort_order]));
     setItems(prev => prev.map(i => updateMap.has(i.id) ? { ...i, sort_order: updateMap.get(i.id)! } : i));
-    await batchSetSortOrder(supabase, tableName, updates);
-  }, [supabase, tableName, active]);
+    await dal.reorder?.(updates);
+  }, [dal, active]);
 
   // ── Inline edit ────────────────────────────────────────────────────────────
 
@@ -134,10 +161,10 @@ export function ManageableList({
   const saveEdit = useCallback(async () => {
     if (!editId) return;
     const payload = buildPayload(visibleFields(addFields, 'edit', editVals), editVals, editIcons);
-    const data = await updateSettingsItem<Item>(supabase, tableName, editId, payload);
-    setItems(prev => prev.map(i => i.id === editId ? { ...i, ...data } : i));
+    await dal.update(editId, payload);
+    setItems(prev => prev.map(i => i.id === editId ? { ...i, ...payload } : i));
     setEditId(null);
-  }, [supabase, tableName, editId, editVals, editIcons, addFields]);
+  }, [dal, editId, editVals, editIcons, addFields]);
 
   // ── Row ────────────────────────────────────────────────────────────────────
 
@@ -184,8 +211,8 @@ export function ManageableList({
 
   const nameField = addFields.find(f => f.key === nameColumn) ?? addFields[0];
 
-  return (
-    <SectionCard title={title} meta={`${active.length} active`} description={description}>
+  const content = (
+    <>
 
       <div className="manage-list">
         {active.length === 0 && <EmptyState>None active.</EmptyState>}
@@ -235,6 +262,13 @@ export function ManageableList({
           )}
         </div>
       )}
+    </>
+  );
+
+  if (bare) return content;
+  return (
+    <SectionCard title={title ?? ''} meta={`${active.length} active`} description={description}>
+      {content}
     </SectionCard>
   );
 }
