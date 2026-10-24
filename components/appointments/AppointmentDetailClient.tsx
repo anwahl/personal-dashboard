@@ -1,25 +1,14 @@
 'use client';
 
 import {
-  InputField, SaveState, ConfirmButton,
-  Markdown,Button, Card, CardHeader,
-  CardTitle, CardBody, 
-  FieldActions, Field, FieldGrid,
-  CardActions,
-  ExpandPanel,
-  CardSection,
-  CardSectionLabel,
-  Item, 
-  SubCard,
-  SubCardBody,
-  CardGrid}                                   from '@/components/ui';
+  SelectField, Markdown, Card, CardHeader, CardTitle, CardBody,
+  Field, FieldGrid, CardActions, ExpandPanel, CardSection, CardSectionLabel,
+  Item, ModeToggle, RowMenu, useToast,
+} from '@/components/ui';
 import { useState, useCallback }              from 'react';
 import { useRouter }                          from 'next/navigation';
 import { createClient }                       from '@/lib/supabase/client';
-import {
-  updateAppointment, deleteAppointment,
-  createAppointment,deletePrescriptionChange
-}                                             from '@/lib/dal/appointments';
+import { deleteAppointment, deletePrescriptionChange } from '@/lib/dal/appointments';
 import { applyPrescriptionChanges }           from '@/lib/dal/prescriptions';
 import { createTask }                         from '@/lib/dal/tasks';
 import type {
@@ -32,8 +21,7 @@ import {
   daysUntil, formatMediumDate,
   formatTime, localTodayISO }                 from '@/lib/utils/dates';
 import { RxPendingChanges }                   from '@/components/medications/RxPendingChanges';
-import { AppointmentForm, apptToFormValues }  from './AppointmentForm';
-import type { AppointmentFormValues }         from './AppointmentForm';
+import { AppointmentDialog }                  from './AppointmentForm';
 import { PrescriptionChangeDisplayRow }       from '../medications/PrescriptionChangeDisplayRow';
 import { apptLabel } from '@/lib/utils/helpers';
 
@@ -90,17 +78,12 @@ function MedChangesSection({
         {history.length === 0 && !selectedRxId && (
           <Item itemType='info' value='No prescription changes logged during this appointment.' />
         )}
-        <InputField label="Prescription" id="rx-select">
-          <select id="rx-select" value={selectedRxId}
-            onChange={e => setSelectedRxId(e.target.value)}>
-            <option value="">Select prescription…</option>
-            {activePrescriptions.map(p => (
-              <option key={p.id} value={p.id}>
-                {p.alias ?? p.medication.medication_name}{p.dose ? ` · ${p.dose}` : ''}
-              </option>
-            ))}
-          </select>
-        </InputField>
+        <SelectField label="Prescription" value={selectedRxId} onChange={setSelectedRxId}
+          placeholder="Select prescription…"
+          options={activePrescriptions.map(p => ({
+            value: p.id,
+            label: `${p.alias ?? p.medication.medication_name}${p.dose ? ` · ${p.dose}` : ''}`,
+          }))} />
         {selectedRx && (
           <RxPendingChanges
             key={selectedRxId}
@@ -116,73 +99,6 @@ function MedChangesSection({
         )}
         </>
     } />
-  );
-}
-
-// ── Follow-up mini form ───────────────────────────────────────────────────────
-
-function FollowUpForm({ appt, onCreated, onCancel }: Readonly<{
-  appt:      AppointmentDetail;
-  onCreated: (id: number) => void;
-  onCancel:  () => void;
-}>) {
-  const supabase = createClient();
-  const [date,   setDate]   = useState('');
-  const [time,   setTime]   = useState('');
-  const [saving, setSaving] = useState(false);
-
-  const create = async () => {
-    if (!date || saving) return;
-    setSaving(true);
-    try {
-      const newAppt = await createAppointment(supabase, {
-        appointment_date:    date,
-        appointment_time:    time || null,
-        person_id:           appt.person_id,
-        provider_id:         appt.provider_id ?? null,
-        appointment_type_id: appt.appointment_type_id ?? null,
-        location:            appt.location ?? null,
-        questions:           null,
-        notes:               null,
-        followup_for_id:     appt.id,
-      });
-      onCreated(newAppt.id);
-    } finally { setSaving(false); }
-  };
-
-  return (
-    <SubCard>
-      <CardHeader>
-        <CardTitle>
-          Schedule Follow-up
-        </CardTitle>
-      </CardHeader>
-      <SubCardBody>
-        <FieldGrid>
-          <InputField label="Date" id="fu-date">
-            <input id="fu-date" type="date" value={date} onChange={e => setDate(e.target.value)} autoFocus />
-          </InputField>
-          <InputField label="Time (optional)" id="fu-time">
-            <input id="fu-time" type="time" value={time} onChange={e => setTime(e.target.value)} />
-          </InputField>
-        </FieldGrid>
-        <Item itemType='info' itemModifier={['italic', 'meta']}
-          value = {
-            <>
-              Copies: {appt.appointment_type?.type_name ?? 'same type'} ·{' '}
-              {appt.person?.person_name ?? 'same person'}
-              {appt.provider ? ` · ${appt.provider.provider_name ?? appt.provider.practice_name}` : ''}
-            </>
-          }
-        />
-        <FieldActions>
-          <Button variant="accent" onClick={create} disabled={saving || !date}>
-            {saving ? 'Creating…' : 'Create Follow-up'}
-          </Button>
-          <Button variant="ghost" onClick={onCancel}>Cancel</Button>
-        </FieldActions>
-      </SubCardBody>
-    </SubCard>
   );
 }
 
@@ -212,31 +128,9 @@ export function AppointmentDetailClient({
   const supabase = createClient();
   const router   = useRouter();
 
-  const [mode,         setMode]         = useState<'view' | 'edit'>('view');
-  const [saveState,    setSaveState]    = useState<SaveState>('idle');
-  const [showFollowUp, setShowFollowUp] = useState(false);
-  const [taskCreated,  setTaskCreated]  = useState(false);
-  const [creatingTask, setCreatingTask] = useState(false);
-
-  const handleSave = useCallback(async (values: AppointmentFormValues) => {
-    setSaveState('saving');
-    try {
-      await updateAppointment(supabase, appt.id, {
-        appointment_date:    values.appointment_date,
-        appointment_time:    values.appointment_time    || null,
-        appointment_type_id: values.appointment_type_id ? Number.parseInt(values.appointment_type_id) : null,
-        person_id:           Number.parseInt(values.person_id),
-        provider_id:         values.provider_id         ? Number.parseInt(values.provider_id)         : null,
-        location:  values.location  || null,
-        questions: values.questions || null,
-        notes:     values.notes     || null,
-      });
-      setSaveState('ok');
-      setTimeout(() => setSaveState('idle'), 2500);
-      setMode('view');
-      router.refresh();
-    } catch { setSaveState('error'); }
-  }, [supabase, appt.id, router]);
+  const [editOpen,     setEditOpen]     = useState(false);
+  const [followUpOpen, setFollowUpOpen] = useState(false);
+  const { addToast } = useToast();
 
   const remove = useCallback(async () => {
     await deleteAppointment(supabase, appt.id);
@@ -247,7 +141,6 @@ export function AppointmentDetailClient({
     const todoStatus = taskStatuses.find(s => !s.is_terminal) ?? taskStatuses[0];
     const normalPrio = taskPriorities.find(p => p.priority_name === 'normal') ?? taskPriorities[0];
     if (!todoStatus || !normalPrio) return;
-    setCreatingTask(true);
     try {
       await createTask(supabase, {
         title:        apptLabel(appt),
@@ -258,28 +151,32 @@ export function AppointmentDetailClient({
         body_md:      null,
         completed_at: null,
       });
-      setTaskCreated(true);
-      setTimeout(() => setTaskCreated(false), 3000);
-    } finally { setCreatingTask(false); }
-  }, [supabase, appt, taskStatuses, taskPriorities]);
+      addToast('Task created', 'success');
+    } catch {
+      addToast('Couldn’t create the task', 'error');
+    }
+  }, [supabase, appt, taskStatuses, taskPriorities, addToast]);
 
-  // ── View mode ───────────────────────────────────────────────────────────────
+  // ── View (editing happens in AppointmentDialog) ─────────────────────────────
 
-  if (mode === 'view') {
-    const isPast = appt.appointment_date < localTodayISO();
+  const isPast = appt.appointment_date < localTodayISO();
 
-    return (
+  return (
+    <>
       <Card>
         <CardHeader>
           <CardTitle>{appt.appointment_type?.type_name ?? 'Appointment'}</CardTitle>
-          {appt.provider && (
-            <>
-            {appt.provider.provider_name ?? appt.provider.practice_name ?? ''}
-            </>
-          )}
           <CardActions>
-            <Button variant="ghost" size="sm" onClick={() => setMode('edit')}>✏️ Edit</Button>
-            <ConfirmButton onConfirm={remove}>✕ Delete</ConfirmButton>
+            <ModeToggle editing={false} onChange={() => setEditOpen(true)} />
+            <RowMenu
+              label="this appointment"
+              items={[
+                { label: '📅 Schedule follow-up…', onSelect: () => setFollowUpOpen(true) },
+                { label: '✅ Create task',          onSelect: createTaskForAppt },
+                'separator',
+                { label: 'Delete', onSelect: remove, destructive: true },
+              ]}
+            />
           </CardActions>
         </CardHeader>
         <CardBody>
@@ -297,6 +194,18 @@ export function AppointmentDetailClient({
               } />
               <Field label='For' value={appt.person.person_name} />
           </FieldGrid>
+          {appt.provider && (
+            <Field label='Provider'
+              value={
+                <>
+                  {appt.provider.provider_name ?? appt.provider.practice_name}
+                  {appt.provider.provider_name && appt.provider.practice_name ? ` · ${appt.provider.practice_name}` : ''}
+                  {appt.provider.phone && <> · <a href={`tel:${appt.provider.phone}`} className="text-link">{appt.provider.phone}</a></>}
+                  {appt.provider.portal_url && <> · <a href={appt.provider.portal_url} target="_blank" rel="noreferrer" className="text-link">Patient portal ↗</a></>}
+                  {appt.provider.address && <><br />{appt.provider.address}</>}
+                </>
+              } />
+          )}
           <FieldGrid>
             {appt.location && (
               <Field label='Location'
@@ -331,43 +240,26 @@ export function AppointmentDetailClient({
             initialHistory={prescriptionChanges}
           />
 
-          <CardGrid columns={1} rows>
-            {showFollowUp ? (
-              <FollowUpForm
-                appt={appt}
-                onCreated={id => router.push(`/appointments/${id}`)}
-                onCancel={() => setShowFollowUp(false)}
-              />
-            ) : (
-              <FieldActions alignment='right'>
-                <Button variant="action" size="sm" onClick={() => setShowFollowUp(true)}>
-                  📅 Schedule Follow-up
-                </Button>
-              </FieldActions>
-            )}
-            <FieldActions alignment='right'>
-              <Button variant="action" size="sm" onClick={createTaskForAppt} disabled={creatingTask}>
-                {taskCreated ? '✓ Task created' : creatingTask ? '…' : '✅ Create Task'}
-              </Button>
-            </FieldActions>
-          </CardGrid>
         </CardBody>
       </Card>
-    );
-  }
 
-  // ── Edit mode ───────────────────────────────────────────────────────────────
-
-  return (
-    <AppointmentForm
-      initialValues={apptToFormValues(appt)}
-      appointmentTypes={appointmentTypes}
-      people={people}
-      providers={providers}
-      saving={saveState === 'saving'}
-      saveState={saveState}
-      onSave={handleSave}
-      onCancel={() => setMode('view')}
-    />
+      <AppointmentDialog
+        open={followUpOpen}
+        onOpenChange={setFollowUpOpen}
+        followUpOf={appt}
+        appointmentTypes={appointmentTypes}
+        people={people}
+        providers={providers}
+        onCreated={id => router.push(`/appointments/${id}`)}
+      />
+      <AppointmentDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        appointment={appt}
+        appointmentTypes={appointmentTypes}
+        people={people}
+        providers={providers}
+      />
+    </>
   );
 }

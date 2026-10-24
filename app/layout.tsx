@@ -7,7 +7,7 @@ import {
  } from "next/font/google";
 import './globals.css';
 import { SideNav }      from '@/components/layout/SideNav';
-import { MobileNavBar } from '@/components/layout/MobileNav';
+import { MobileTabBar } from '@/components/layout/MobileTabBar';
 import { ClientConfig } from '@/components/layout/ClientConfig';
 
 export const metadata: Metadata = {
@@ -100,7 +100,7 @@ export default function RootLayout({
               {children}
             </main>
           </div>
-          <MobileNavBar />
+          <MobileTabBar />
         </ClientConfig>
       </body>
     </html>

@@ -9,7 +9,7 @@
  */
 
 import { useState }         from 'react';
-import { TabBar }           from '@/components/ui';
+import { TabBar, EmptyState } from '@/components/ui';
 import { ChartPanel }       from './ChartPanel';
 import type { ChartDefinitionDetail, TrackingDataPoint } from '@/types/dal';
 import type { IconRow } from '@/types/schema';
@@ -52,16 +52,16 @@ export function AnalyticsClient({ charts, data, fromDate, toDate, icons }: Reado
       {/* Category tabs (only when more than one category) */}
       {tabs.length > 2 && (
         <div className="analytics-tabs">
-          <TabBar tabs={tabs} active={activeTab} onChange={setActiveTab} />
+          <TabBar label="Chart categories" tabs={tabs} active={activeTab} onChange={setActiveTab} />
         </div>
       )}
 
       {visibleCharts.length === 0 && (
-        <p className="empty-state">
+        <EmptyState>
           {charts.length === 0
             ? 'No charts configured. Add charts in Settings → Charts.'
             : `No charts in "${activeTab}".`}
-        </p>
+        </EmptyState>
       )}
 
       {visibleCharts.map(chart => (

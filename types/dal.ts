@@ -8,6 +8,9 @@
 
 import type {
   DailyTrackableRow,
+  LastTimeMediaRow,
+  LastTimeBooleanRow,
+  LastTimeCustomRow,
   DailyNumericEntryRow,
   TagRow,
   SymptomCategoryRow,
@@ -41,7 +44,6 @@ import type {
   WakeEventRow,
   SleepTimingEntryRow,
   CrashRow,
-  AnxietyEntryRow,
   DailySymptomEntryRow,
   EssEntryRow,
   EssQuestionResponseRow,
@@ -154,11 +156,10 @@ export interface PriorSleepContext {
 }
 
 // ── Symptom data (enriched) ───────────────────────────────────────────────────
-// symptom_entries is removed; crash/anxiety/symptom_types are fetched directly.
+// symptom_entries is removed; crash/symptom_types are fetched directly.
 
 export interface DailySymptomData {
   crash: CrashRow | null;
-  anxiety: AnxietyEntryRow | null;
   symptom_entries: DailySymptomEntryRow[]; // direct FK to daily_entries now
 }
 
@@ -345,6 +346,13 @@ export interface LastTimeEntry {
   custom_id?: number;
 }
 
+/** Every Last Time item, by kind, for the settings list. */
+export interface LastTimeSettingsItems {
+  media:   LastTimeMediaRow[];
+  boolean: LastTimeBooleanRow[];
+  custom:  LastTimeCustomRow[];
+}
+
 // ── Inserts / Updates ─────────────────────────────────────────────────────────
 
 export type DailyEntryInsert = Omit<
@@ -361,11 +369,6 @@ export type SleepEntryUpdate = Partial<SleepEntryInsert>;
 
 export type CrashInsert = Omit<CrashRow, "id">;
 export type CrashUpdate = Partial<Pick<CrashRow, "timing" | "severity">>;
-
-export type AnxietyEntryInsert = Omit<AnxietyEntryRow, "id">;
-export type AnxietyEntryUpdate = Partial<
-  Pick<AnxietyEntryRow, "severity" | "detail">
->;
 
 export type PrescriptionInsert = Omit<
   PrescriptionRow,

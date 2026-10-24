@@ -1,7 +1,7 @@
 import Link                              from 'next/link';
 import { notFound }                      from 'next/navigation';
 import { createClient }                  from '@/lib/supabase/server';
-import { ensureDailyEntry }     from '@/lib/dal/daily';
+import { getDailyEntry }        from '@/lib/dal/daily';
 import { addDays } from "@/lib/utils/dates";
 import { getSleepEntry, getPriorSleepContext } from '@/lib/dal/sleep';
 import { getDailySymptomData }           from '@/lib/dal/symptoms';
@@ -13,7 +13,7 @@ import { UpcomingAppointments }          from '@/components/appointments/Upcomin
 import { getTasksByDateContext }          from '@/lib/dal/tasks';
 import { getJournalResponsesForEntry }    from '@/lib/dal/journal';
 import { getUpcomingAppointments }       from '@/lib/dal/appointments';
-import { getTaskStatuses, getTaskPriorities, getReferenceData } from '@/lib/dal/reference';
+import { getTaskStatuses, getTaskPriorities, getReferenceData, getRandomIntention } from '@/lib/dal/reference';
 
 interface Props {
   params: Promise<{ date: string }>;
@@ -39,21 +39,26 @@ export default async function DailyPage({ params }: Readonly<Props>) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) notFound();
 
   const supabase  = await createClient();
-  const entry     = await ensureDailyEntry(supabase, date);
+  // Visiting a date doesn't create its entry: it's created the first time
+  // something is saved (see DailyPageClient). Until then the day loads empty.
+  const entry     = await getDailyEntry(supabase, date);
   const reference = await getReferenceData(supabase);
   const self      = reference.people.find(p => p.is_self);
+  // The day's intention: the saved one, or one picked now and stored with the
+  // entry when it's created.
+  const intention = entry ? entry.intention : await getRandomIntention(supabase);
 
   const [sleep, symptoms, ess, prescriptions, priorSleep, taskData, appointments, statuses, priorities, journalResponses] = await Promise.all([
-    getSleepEntry(supabase, entry.id),
-    getDailySymptomData(supabase, entry.id),
-    getEssEntry(supabase, entry.id),
+    entry ? getSleepEntry(supabase, entry.id)              : Promise.resolve(null),
+    entry ? getDailySymptomData(supabase, entry.id)        : Promise.resolve(null),
+    entry ? getEssEntry(supabase, entry.id)                : Promise.resolve(null),
     self ? getActivePrescriptions(supabase, self.id) : Promise.resolve([]),
-    getPriorSleepContext(supabase, date, entry.id),
+    getPriorSleepContext(supabase, date),
     getTasksByDateContext(supabase, date),
     getUpcomingAppointments(supabase, date, 6),
     getTaskStatuses(supabase, true),
     getTaskPriorities(supabase),
-    getJournalResponsesForEntry(supabase, entry.id),
+    entry ? getJournalResponsesForEntry(supabase, entry.id) : Promise.resolve([]),
   ]);
 
   const prevDate = addDays(date, -1);
@@ -78,6 +83,7 @@ export default async function DailyPage({ params }: Readonly<Props>) {
 
       <DailyPageClient
         entry={entry}
+        intention={intention}
         date={date}
         sleep={sleep}
         priorSleep={priorSleep}
@@ -89,10 +95,12 @@ export default async function DailyPage({ params }: Readonly<Props>) {
       />
 
       <div className="daily-extras">
-        <TaskList
-          contextDate={date}
-          initialData={taskData}
-        />
+        <div>
+          <TaskList
+            contextDate={date}
+            initialData={taskData}
+          />
+        </div>
         <UpcomingAppointments
           appointments={appointments}
           contextDate={date}

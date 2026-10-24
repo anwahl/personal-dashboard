@@ -1,15 +1,26 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+/**
+ * ChartSettings — the Analytics charts, grouped by chart category.
+ *
+ * Categories are the tabs on the Analytics page; charts with no category sit
+ * in an Uncategorized group at the bottom. Each chart is one row (title, type,
+ * an issues badge). Its metrics are edited in a dialog (⋯ → Edit metrics).
+ * Charts are deactivated, never deleted.
+ */
+
+import { useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import {
-  toggleChartActive, setChartCategory, removeChartLink,
-  updateChartSortOrders, deleteChartDefinition,
+  addChartLink, removeChartLink, toggleChartActive, setChartCategory,
+  updateChartSortOrders, createChartDefinition, renameChart,
 } from '@/lib/dal/charts';
-import { createClient }          from '@/lib/supabase/client';
-import { Button, IconDisplay, ConfirmButton } from '@/components/ui';
-import { TrackablePicker }       from '@/components/settings/TrackablePicker'; 
-import { ManageableList }        from './ManageableList';
-import type { ChartDefinitionDetail, ChartCategoryRow } from '@/types/dal';
+import { addSettingsItem, updateSettingsItem, toggleSettingsItem, batchSetSortOrder } from '@/lib/dal/settings';
+import { HierarchicalList, type NormalizedChild } from './HierarchicalList';
+import type { AddField } from './FieldInputs';
+import { TrackablePicker } from './TrackablePicker';
+import { Badge, Button, EmptyState, IconDisplay, ManageItem, RowMenu, SelectField } from '@/components/ui';
+import type { ChartDefinitionDetail, ChartCategoryRow, ChartTrackableLinkDetail } from '@/types/dal';
 import type { DailyTrackableRow, ChartType, MetricRole, IconRow } from '@/types/schema';
 
 // ── Chart type metadata ───────────────────────────────────────────────────────
@@ -28,10 +39,6 @@ const CHART_TYPE_META: Record<ChartType, ChartTypeMeta> = {
   chain:    { label: '🔗 Chain',           validRoles: ['series'],            requirement: 'Needs at least one boolean series metric' },
   heatmap:  { label: '🟦 Heatmap',         validRoles: ['series'],            requirement: 'Needs at least one series metric'       },
 };
-
-const CHART_TYPE_OPTIONS = Object.entries(CHART_TYPE_META).map(([value, meta]) => ({
-  value: value as ChartType, label: meta.label,
-}));
 
 const ROLE_LABELS: Record<MetricRole, string> = {
   series: 'Series', x_axis: 'X axis', y_axis: 'Y axis',
@@ -53,156 +60,91 @@ function getWarnings(chartType: ChartType, links: { metric_role: MetricRole }[])
     if (roles.includes('x_axis') || roles.includes('y_axis'))
       warns.push(`${CHART_TYPE_META[chartType].label} uses "series" role, not axis roles`);
   }
-  // Chain charts should only have boolean trackables
-  // (We can't check track_type here without links — callers should validate in UI)
   return warns;
 }
 
-// ── Filter matching ───────────────────────────────────────────────────────────
-
-function matchesFilter(chart: ChartDefinitionDetail, q: string): boolean {
-  if (!q) return true;
-  const lq = q.toLowerCase();
-  return (
-    chart.title.toLowerCase().includes(lq) ||
-    chart.chart_type.includes(lq) ||
-    CHART_TYPE_META[chart.chart_type].label.toLowerCase().includes(lq) ||
-    (chart.category?.name.toLowerCase().includes(lq) ?? false) ||
-    chart.links.some(l => l.trackable.name.toLowerCase().includes(lq))
-  );
+/** Whether adding another metric with this role would break the chart's rules. */
+function roleIsFull(chartType: ChartType, links: { metric_role: MetricRole }[], role: MetricRole): boolean {
+  return chartType === 'scatter' && role !== 'series' && links.some(l => l.metric_role === role);
 }
 
-// ── ChartCard ─────────────────────────────────────────────────────────────────
+// ── Metrics editor (dialog content) ───────────────────────────────────────────
 
-function ChartCard({
-  chart, idx, total, trackables, categories, icons,
-  onMove, onDelete,
+function ChartMetricsEditor({
+  chartId, chartType, initialLinks, trackables, icons, onLinksChange,
 }: Readonly<{
-  chart:      ChartDefinitionDetail;
-  idx:        number;
-  total:      number;
-  trackables: DailyTrackableRow[];
-  categories: ChartCategoryRow[];
-  icons:      IconRow[];
-  onMove:    (id: number, dir: 'up' | 'down') => Promise<void>;
-  onDelete:  (id: number) => Promise<void>;
+  chartId:       number;
+  chartType:     ChartType;
+  initialLinks:  ChartTrackableLinkDetail[];
+  trackables:    DailyTrackableRow[];
+  icons:         IconRow[];
+  onLinksChange: (links: ChartTrackableLinkDetail[]) => void;
 }>) {
   const supabase = createClient();
-  const [links,      setLinks]      = useState(chart.links);
-  const [active,     setActive]     = useState(chart.is_active);
-  const [categoryId, setCategoryId] = useState<number | null>(chart.category_id);
-  const [selT,       setSelT]       = useState('');
-  const [selRole,    setSelRole]    = useState<MetricRole>(CHART_TYPE_META[chart.chart_type].validRoles[0]);
-  const [saving,     setSaving]     = useState(false);
+  const meta     = CHART_TYPE_META[chartType];
+  const [links,   setLinks]   = useState(initialLinks);
+  const [selT,    setSelT]    = useState('');
+  // Start on the first role that still has room (e.g. Y axis once X is set).
+  const [selRole, setSelRole] = useState<MetricRole>(
+    () => meta.validRoles.find(r => !roleIsFull(chartType, initialLinks, r)) ?? meta.validRoles[0]);
+  const [saving,  setSaving]  = useState(false);
 
-  const meta       = CHART_TYPE_META[chart.chart_type];
-  const warnings   = getWarnings(chart.chart_type, links);
-  const linkedIds  = new Set(links.map(l => l.trackable_id));
-  const roleOptions = meta.validRoles.map(r => ({ value: r, label: ROLE_LABELS[r] }));
+  const warnings  = getWarnings(chartType, links);
+  const linkedIds = new Set(links.map(l => l.trackable_id));
+  const full      = roleIsFull(chartType, links, selRole);
 
-  const toggleActive = async () => {
-    const next = !active; setActive(next);
-    await toggleChartActive(supabase, chart.id, next);
-  };
+  const update = (next: ChartTrackableLinkDetail[]) => { setLinks(next); onLinksChange(next); };
 
-  const changeCategory = async (catId: string) => {
-    const id = catId === '' ? null : Number(catId);
-    setCategoryId(id);
-    await setChartCategory(supabase, chart.id, id);
-  };
-
-  const addLink = useCallback(async () => {
+  const add = async () => {
     const tid = Number(selT);
-    if (!tid || linkedIds.has(tid)) return;
-    // Block configurations that would violate chart constraints
-    const existingRoles = links.map(l => l.metric_role);
-    if (chart.chart_type === 'scatter') {
-      if (selRole === 'x_axis' && existingRoles.filter(r => r === 'x_axis').length >= 1) return;
-      if (selRole === 'y_axis' && existingRoles.filter(r => r === 'y_axis').length >= 1) return;
-    }
+    if (!tid || linkedIds.has(tid) || full || saving) return;
     setSaving(true);
     try {
-      const { data, error } = await supabase
-        .from('chart_trackable_links')
-        .insert({ chart_id: chart.id, trackable_id: tid, metric_role: selRole, sort_order: links.length })
-        .select().single();
-      if (error || !data) return;
+      const row = await addChartLink(supabase, chartId, tid, selRole, links.length);
       const trackable = trackables.find(t => t.id === tid)!;
-      setLinks(prev => [...prev, { ...data, trackable } as any]);
+      const next = [...links, { ...row, trackable }];
+      update(next);
       setSelT('');
+      const open = meta.validRoles.find(r => !roleIsFull(chartType, next, r));
+      if (open) setSelRole(open);
     } finally { setSaving(false); }
-  }, [supabase, chart.id, selT, selRole, links.length, linkedIds, trackables]);
-
-  const removeLink = async (linkId: number) => {
-    setLinks(prev => prev.filter(l => l.id !== linkId));
-    await removeChartLink(supabase, linkId);
   };
 
-  const handleDelete = async () => {
-    await onDelete(chart.id);
+  const remove = async (linkId: number) => {
+    await removeChartLink(supabase, linkId);
+    update(links.filter(l => l.id !== linkId));
   };
 
   return (
-    <div className={`chart-settings-card${!active ? ' chart-settings-card--inactive' : ''}${warnings.length > 0 ? ' chart-settings-card--warn' : ''}`}>
+    <div className="chart-metrics">
+      <p className="chart-metrics__requirement">{meta.requirement}.</p>
 
-      <div className="chart-settings-card__header">
-        <div className="chart-settings-card__title-group">
-          <span className="chart-settings-card__title">{chart.title}</span>
-          <span className="badge">{meta.label}</span>
-          {!active && <span className="badge badge--muted">inactive</span>}
-        </div>
-        <div className="chart-settings-card__actions">
-          <Button variant="ghost" size="icon" onClick={() => onMove(chart.id, 'up')}   disabled={idx === 0}            title="Move up">↑</Button>
-          <Button variant="ghost" size="icon" onClick={() => onMove(chart.id, 'down')} disabled={idx === total - 1}    title="Move down">↓</Button>
-          <Button variant="ghost" size="sm"   onClick={toggleActive}>{active ? '✓ Active' : '○ Inactive'}</Button>
-          <ConfirmButton onConfirm={handleDelete} size="sm" label="✕" />
-        </div>
-      </div>
-
-      {/* Category */}
-      <div className="chart-settings-card__category-row">
-        <span className="chart-settings-card__category-label">Category</span>
-        <select
-          value={categoryId ?? ''}
-          onChange={e => changeCategory(e.target.value)}
-          className="settings-select"
-        >
-          <option value="">— none —</option>
-          {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
-      </div>
-
-      {/* Validation warnings */}
       {warnings.length > 0 && (
-        <div className="chart-settings-card__warnings">
-          {warnings.map(w => <p key={w} className="chart-settings-card__warning">⚠️ {w}</p>)}
+        <div className="chart-metrics__warnings">
+          {warnings.map(w => <p key={w} className="chart-metrics__warning">⚠️ {w}</p>)}
         </div>
       )}
 
-      {/* Linked metrics */}
-      <div className="chart-settings-card__links">
-        {links.length === 0 && (
-          <p className="empty-state">
-            No metrics linked. {meta.requirement}.
-          </p>
-        )}
+      <div className="manage-list">
+        {links.length === 0 && <EmptyState>No metrics linked yet.</EmptyState>}
         {links.map(link => (
-          <div key={link.id} className="chart-settings-card__link-row">
-            <span className="chart-settings-card__link-name">
-              <IconDisplay
-              icon={icons.find(i => i.id === link.trackable.icon_id) ?? null}
-                size="sm"
+          <ManageItem
+            key={link.id}
+            menu={
+              <RowMenu
+                label={link.trackable.name}
+                items={[{ label: 'Remove from chart', onSelect: () => remove(link.id), destructive: true }]}
               />
-              {link.trackable.name}
-            </span>
-            <span className="badge">{ROLE_LABELS[link.metric_role]}</span>
-            <Button variant="danger" size="icon" onClick={() => removeLink(link.id)}>✕</Button>
-          </div>
+            }
+          >
+            <IconDisplay icon={icons.find(i => i.id === link.trackable.icon_id) ?? null} size="sm" className="trackable-emoji" />
+            {link.trackable.name}
+            <Badge>{ROLE_LABELS[link.metric_role]}</Badge>
+          </ManageItem>
         ))}
       </div>
 
-      {/* Add metric */}
-      <div className="chart-settings-card__add-row">
+      <div className="manage-add-row">
         <TrackablePicker
           trackables={trackables.filter(t => !linkedIds.has(t.id))}
           icons={icons}
@@ -211,77 +153,39 @@ function ChartCard({
           placeholder="Add metric…"
           showType
         />
-        <select value={selRole} onChange={e => setSelRole(e.target.value as MetricRole)} className="settings-select">
-          {roleOptions.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-        </select>
-        <Button variant="accent" size="sm" onClick={addLink}
-          disabled={!selT || saving || (() => {
-            if (!selT) return false;
-            const roles = links.map(l => l.metric_role);
-            if (chart.chart_type === 'scatter') {
-              if (selRole === 'x_axis' && roles.filter(r => r === 'x_axis').length >= 1) return true;
-              if (selRole === 'y_axis' && roles.filter(r => r === 'y_axis').length >= 1) return true;
-            }
-            return false;
-          })()}
-        >+ Add</Button>
+        {meta.validRoles.length > 1 && (
+          <SelectField hideLabel label="Role" value={selRole} onChange={v => setSelRole(v as MetricRole)}
+            options={meta.validRoles.map(r => ({ value: r, label: ROLE_LABELS[r] }))} />
+        )}
+        <Button variant="accent" size="sm" onClick={add} busy={saving} disabled={!selT || full}>
+          + Add
+        </Button>
+        {full && <p className="manage-add-row__hint">This chart already has its {ROLE_LABELS[selRole]} metric.</p>}
       </div>
     </div>
   );
 }
 
-// ── New chart form ────────────────────────────────────────────────────────────
+// ── ChartSettings ─────────────────────────────────────────────────────────────
 
-function NewChartForm({ categories, onCreated }: Readonly<{
-  categories: ChartCategoryRow[];
-  onCreated:  (chart: ChartDefinitionDetail) => void;
-}>) {
-  const supabase  = createClient();
-  const [title,    setTitle]    = useState('');
-  const [type,     setType]     = useState<ChartType>('line');
-  const [catId,    setCatId]    = useState<string>('');
-  const [creating, setCreating] = useState(false);
+const CHART_FIELDS: AddField[] = [
+  { key: 'name', type: 'text', label: 'Title', placeholder: 'Chart title…', required: true },
+  {
+    key: 'chart_type', type: 'select', label: 'Type', defaultValue: 'line', showInEdit: false,
+    options: Object.entries(CHART_TYPE_META).map(([value, m]) => ({ value, label: m.label })),
+  },
+];
 
-  const create = async () => {
-    const t = title.trim();
-    if (!t || creating) return;
-    setCreating(true);
-    try {
-      const { data, error } = await supabase
-        .from('chart_definitions')
-        .insert({ title: t, chart_type: type, category_id: catId ? Number(catId) : null, sort_order: 999, is_active: true })
-        .select().single();
-      if (error || !data) return;
-      const cat = categories.find(c => c.id === Number(catId)) ?? null;
-      onCreated({ ...data, links: [], category: cat } as ChartDefinitionDetail);
-      setTitle(''); setType('line'); setCatId('');
-    } finally { setCreating(false); }
+function toChild(c: ChartDefinitionDetail): NormalizedChild {
+  return {
+    id:         c.id,
+    name:       c.title,
+    is_active:  c.is_active,
+    sort_order: c.sort_order ?? 0,
+    chart_type: c.chart_type,
+    links:      c.links,
   };
-
-  return (
-    <div className="chart-settings-new-form">
-      <div className="chart-settings-new-form__fields">
-        <input type="text" value={title} placeholder="Chart title…"
-          className="chart-settings-new-form__title-input"
-          onChange={e => setTitle(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') create(); }} />
-        <select value={type} onChange={e => setType(e.target.value as ChartType)} className="settings-select">
-          {CHART_TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
-        <select value={catId} onChange={e => setCatId(e.target.value)} className="settings-select">
-          <option value="">No category</option>
-          {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
-      </div>
-      <p className="chart-settings-new-form__hint">{CHART_TYPE_META[type].requirement}</p>
-      <Button variant="accent" size="sm" onClick={create} disabled={!title.trim() || creating}>
-        Create chart
-      </Button>
-    </div>
-  );
 }
-
-// ── ChartSettings (main export) ───────────────────────────────────────────────
 
 interface Props {
   chartDefinitions: ChartDefinitionDetail[];
@@ -292,132 +196,67 @@ interface Props {
 
 export function ChartSettings({ chartDefinitions, trackables, categories, icons }: Readonly<Props>) {
   const supabase = createClient();
-  const [charts, setCharts] = useState(
-    [...chartDefinitions].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-  );
-  const [filter, setFilter] = useState('');
-  const [showNew, setShowNew] = useState(false);
-
-  const handleCreated = (chart: ChartDefinitionDetail) => {
-    setCharts(prev => [...prev, chart]);
-    setShowNew(false);
-  };
-
-  const handleMove = useCallback(async (chartId: number, dir: 'up' | 'down') => {
-    const sorted = [...charts].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
-    const idx    = sorted.findIndex(c => c.id === chartId);
-    const other  = dir === 'up' ? idx - 1 : idx + 1;
-    if (other < 0 || other >= sorted.length) return;
-    const [a, b] = [sorted[idx], sorted[other]];
-    if (a.sort_order == null || b.sort_order == null) return;
-    const aSort = a.sort_order;
-    const bSort = b.sort_order;
-    setCharts(charts.map(c =>
-      c.id === a.id ? { ...c, sort_order: bSort } :
-      c.id === b.id ? { ...c, sort_order: aSort } : c
-    ).sort((x, y) => (x.sort_order ?? 0) - (y.sort_order ?? 0)));
-    await updateChartSortOrders(supabase, [{ id: a.id, sort_order: bSort }, { id: b.id, sort_order: aSort }]);
-  }, [charts, supabase]);
-
-  const handleDelete = useCallback(async (chartId: number) => {
-    setCharts(prev => prev.filter(c => c.id !== chartId));
-    await deleteChartDefinition(supabase, chartId);
-  }, [supabase]);
-
-  // Filtered + sorted
-  const filtered = charts.filter(c => matchesFilter(c, filter))
-    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
-
-  // Group filtered charts by chart_type
-  const typeOrder: ChartType[] = ['scatter', 'line', 'bar', 'timeline', 'heatmap'];
-  const byType = new Map<ChartType, ChartDefinitionDetail[]>();
-  for (const t of typeOrder) byType.set(t, []);
-  for (const c of filtered) {
-    const arr = byType.get(c.chart_type);
-    if (arr) arr.push(c);
-    else byType.set(c.chart_type, [c]);
-  }
-
-  const invalidCount = filtered.filter(c => getWarnings(c.chart_type, c.links).length > 0).length;
-
-  // Flat index across all groups (for up/down within the full list)
-  const flatFiltered = filtered;
 
   return (
-    <div>
-      {/* ── Category management ── */}
-      <ManageableList
-        title="Categories"
-        description="Group charts into tabs on the Analytics page. Each active category becomes a tab."
-        tableName="chart_categories"
-        nameColumn="name"
-        items={categories}
-        addFields={[
-          { key: 'name', label: 'Category name', type: 'text', placeholder: 'e.g. Sleep', required: true },
-        ]}
-      />
-
-      {/* Top bar */}
-      <div className="chart-settings-topbar">
-        <div className="chart-settings-topbar__left">
-          <h2 className="settings-section-heading settings-section-heading--flush">Charts</h2>
-          {invalidCount > 0 && <span className="badge badge--warn">{invalidCount} with issues</span>}
-        </div>
-        <Button variant="accent" size="sm" onClick={() => setShowNew(v => !v)}>
-          {showNew ? '✕ Cancel' : '+ New chart'}
-        </Button>
-      </div>
-
-      {/* New chart form */}
-      {showNew && <NewChartForm categories={categories} onCreated={handleCreated} />}
-
-      {/* Filter */}
-      {charts.length > 2 && (
-        <div className="chart-settings-filter">
-          <input type="text" placeholder="Filter by title, type, or metric…"
-            value={filter} onChange={e => setFilter(e.target.value)}
-            className="chart-settings-filter__input" />
-          {filter && <Button variant="ghost" size="sm" onClick={() => setFilter('')}>Clear</Button>}
-        </div>
-      )}
-
-      {filtered.length === 0 && filter && (
-        <p className="empty-state">No charts match "{filter}"</p>
-      )}
-      {filtered.length === 0 && !filter && !showNew && (
-        <p className="empty-state">No charts yet. Create one above.</p>
-      )}
-
-      {/* Charts grouped by type */}
-      {[...byType.entries()].map(([type, group]) => {
-        if (!group.length) return null;
-        const hasIssues = group.some(c => getWarnings(c.chart_type, c.links).length > 0);
+    <HierarchicalList
+      title="Charts"
+      description="Each category is a tab on the Analytics page. ⋯ → Edit metrics to choose what a chart shows."
+      catPlaceholder="New category… (e.g. Sleep)"
+      childFields={CHART_FIELDS}
+      initialCategories={categories.map(c => ({
+        id:         c.id,
+        name:       c.name,
+        is_active:  c.is_active,
+        sort_order: c.sort_order ?? 0,
+        children:   chartDefinitions.filter(d => d.category_id === c.id).map(toChild),
+      }))}
+      uncategorized={chartDefinitions.filter(d => d.category_id == null).map(toChild)}
+      renderChildName={child => {
+        const type   = child.chart_type as ChartType;
+        const links  = (child.links as ChartTrackableLinkDetail[] | undefined) ?? [];
+        const issues = getWarnings(type, links).length;
         return (
-          <details key={type} className="chart-settings-type-group settings-section--collapsible" open>
-            <summary className="settings-section__header" style={{ padding: '8px 0' }}>
-              <span className="chart-settings-type-group__heading" style={{ margin: 0 }}>
-                {CHART_TYPE_META[type].label}
-                <span className="manage-item__meta margin-left-md">{group.length}</span>
-                {hasIssues && <span className="badge badge--warn margin-left-sm">issues</span>}
-              </span>
-              <span className="settings-section__caret">▸</span>
-            </summary>
-            {group.map(chart => (
-              <ChartCard
-                key={chart.id}
-                chart={chart}
-                idx={flatFiltered.indexOf(chart)}
-                total={flatFiltered.length}
-                trackables={trackables}
-                categories={categories}
-                icons={icons}
-                onMove={handleMove}
-                onDelete={handleDelete}
-              />
-            ))}
-          </details>
+          <>
+            {child.name}
+            <Badge>{CHART_TYPE_META[type].label}</Badge>
+            {issues > 0 && <Badge variant="warn">{issues === 1 ? '1 issue' : `${issues} issues`}</Badge>}
+          </>
         );
-      })}
-    </div>
+      }}
+      childDialog={{
+        label: 'Edit metrics',
+        title: child => <>Metrics for &ldquo;{child.name}&rdquo;</>,
+        render: (child, patch) => (
+          <ChartMetricsEditor
+            chartId={child.id}
+            chartType={child.chart_type as ChartType}
+            initialLinks={(child.links as ChartTrackableLinkDetail[] | undefined) ?? []}
+            trackables={trackables}
+            icons={icons}
+            onLinksChange={links => patch({ links })}
+          />
+        ),
+      }}
+      dal={{
+        addCategory:       (name, sort)  => addSettingsItem(supabase, 'chart_categories', { name, sort_order: sort }),
+        updateCategory:    async (id, name) => { await updateSettingsItem(supabase, 'chart_categories', id, { name }); },
+        toggleCategory:    (id, active)  => toggleSettingsItem(supabase, 'chart_categories', id, active),
+        reorderCategories: updates       => batchSetSortOrder(supabase, 'chart_categories', updates),
+        addChild:          async (catId, values, sort) => ({
+          ...await createChartDefinition(supabase, {
+            title:       String(values.name),
+            chart_type:  values.chart_type as ChartType,
+            category_id: catId,
+            sort_order:  sort,
+            is_active:   true,
+          }),
+          links: [],
+        }),
+        updateChild:       (id, values)  => renameChart(supabase, id, String(values.name)),
+        toggleChild:       (id, active)  => toggleChartActive(supabase, id, active),
+        reorderChildren:   updates       => updateChartSortOrders(supabase, updates),
+        moveChild:         (id, catId)   => setChartCategory(supabase, id, catId),
+      }}
+    />
   );
 }

@@ -1,22 +1,23 @@
 'use client';
 
 /**
- * Shared form used by PrescriptionsClient (add/edit from the list page) and
- * PrescriptionDetailClient (edit mode on the detail page).
+ * PrescriptionDialog — add or edit a prescription (FormDialog). Used by the
+ * Medications list (+ Add, Edit) and the prescription page (Edit).
  *
- * Owns form state + the useNewMed toggle internally.
- * Fetches its own reference data via SWR hooks — callers no longer need to
- * fetch or pass medications, timingTypes, people, or providers.
- * Calls onSave(values) on submit — the parent handles the async DB write,
- * including creating a new Medication row if values.new_medication_name is set.
+ * Fetches its own reference data (medications, timings, people, providers)
+ * via SWR hooks, and does its own save.
  */
 
 import { useState, useEffect } from 'react';
+import { useRouter }           from 'next/navigation';
 import {
-  Button, InputField, CardBody, CardActions,
+  TextField, DateField, SelectField, FormDialog,
   CardSection, CardSectionLabel, FieldActions, FieldGrid,
-  useToast,
+  useToast, SegmentedControl
 } from '@/components/ui';
+import { createClient }        from '@/lib/supabase/client';
+import { createPrescription, updatePrescription } from '@/lib/dal/prescriptions';
+import { createMedication }    from '@/lib/dal/medications';
 import {
   useMedications,
   useMedicationTimingTypes,
@@ -61,25 +62,41 @@ export function rxToFormValues(rx: PrescriptionDetail): PrescriptionFormValues {
   };
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
+// ── PrescriptionDialog ────────────────────────────────────────────────────────
 
-interface Props {
-  initialValues:    PrescriptionFormValues;
-  saving:           boolean;
-  saveLabel?:       string;
-  showPersonField?: boolean;
-  onSave:           (values: PrescriptionFormValues) => void;
-  onCancel:         () => void;
-}
+/**
+ * Add or edit a prescription in a FormDialog. With `prescription` it edits
+ * it (the person can't change); without, it adds one, optionally for
+ * `personId`. A medication typed under "New medication" is created first.
+ * Saves itself and refreshes the page. Prescriptions are discontinued
+ * (Discontinued date), never deleted.
+ */
+export function PrescriptionDialog({
+  open, onOpenChange, prescription, personId,
+}: Readonly<{
+  open:          boolean;
+  onOpenChange:  (open: boolean) => void;
+  /** The prescription to edit; omit to add a new one. */
+  prescription?: PrescriptionDetail | null;
+  /** Person a new prescription is for (e.g. "+ Add" on their card). */
+  personId?:     number;
+}>) {
+  const supabase = createClient();
+  const router   = useRouter();
+  const showPersonField = !prescription;
+  const initialValues = prescription
+    ? rxToFormValues(prescription)
+    : { ...emptyPrescriptionFormValues, person_id: personId ? String(personId) : '' };
 
-export function PrescriptionForm({
-  initialValues,
-  saving, saveLabel = 'Save',
-  showPersonField = true,
-  onSave, onCancel,
-}: Readonly<Props>) {
   const [form,      setForm]      = useState<PrescriptionFormValues>(initialValues);
   const [useNewMed, setUseNewMed] = useState(false);
+  // Each open starts from the prescription (or blank) again.
+  useEffect(() => {
+    if (!open) return;
+    setForm(initialValues);
+    setUseNewMed(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const { data: medications = [], isLoading: medsLoading,     error: medsError }     = useMedications();
   const { data: timingTypes = [], isLoading: timingsLoading,  error: timingsError }  = useMedicationTimingTypes();
@@ -99,126 +116,94 @@ export function PrescriptionForm({
 
   const hasMed    = useNewMed ? !!form.new_medication_name.trim() : !!form.medication_id;
   const hasPerson = !showPersonField || !!form.person_id;
-  const canSave   = hasMed && hasPerson;
-
   const referenceLoading = medsLoading || timingsLoading || (showPersonField && peopleLoading) || providersLoading;
 
+  const save = async () => {
+    const medicationId = useNewMed
+      ? (await createMedication(supabase, form.new_medication_name)).id
+      : Number.parseInt(form.medication_id);
+    const payload = {
+      medication_id:     medicationId,
+      alias:             form.alias             || null,
+      dose:              form.dose              || null,
+      timing_type_id:    form.timing_type_id   ? Number.parseInt(form.timing_type_id) : null,
+      purpose:           form.purpose           || null,
+      prescriber_id:     form.prescriber_id    ? Number.parseInt(form.prescriber_id)  : null,
+      start_date:        form.start_date        || null,
+      discontinued_date: form.discontinued_date || null,
+      is_active:         !form.discontinued_date,
+    };
+    if (prescription) await updatePrescription(supabase, prescription.id, payload);
+    else              await createPrescription(supabase, { ...payload, person_id: Number.parseInt(form.person_id) });
+    router.refresh();
+  };
+
   return (
-    <CardBody>
+    <FormDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={prescription ? 'Edit prescription' : 'Add prescription'}
+      saveLabel={prescription ? 'Save' : 'Add'}
+      canSave={hasMed && hasPerson && !referenceLoading}
+      onSave={save}
+    >
       {showPersonField && (
-        <InputField label="Person" id="rx-person">
-          <select id="rx-person" value={form.person_id}
-            onChange={e => set('person_id', e.target.value)}
-            disabled={peopleLoading}>
-            <option value="">{peopleLoading ? 'Loading…' : 'Select person…'}</option>
-            {people.map(p => (
-              <option key={p.id} value={p.id}>{p.person_name}</option>
-            ))}
-          </select>
-        </InputField>
+        <SelectField label="Person" value={form.person_id} onChange={v => set('person_id', v)}
+          disabled={peopleLoading} placeholder={peopleLoading ? 'Loading…' : 'Select person…'}
+          options={people.map(p => ({ value: p.id, label: p.person_name }))} />
       )}
 
       <FieldActions alignment="middle">
-        <Button size="sm" variant={!useNewMed ? 'accent' : 'ghost'}
-          onClick={() => setUseNewMed(false)}>
-          Existing
-        </Button>
-        <Button size="sm" variant={useNewMed ? 'accent' : 'ghost'}
-          onClick={() => setUseNewMed(true)}>
-          New medication
-        </Button>
+        <SegmentedControl
+          label="Medication"
+          options={[{ value: 'existing', label: 'Existing' }, { value: 'new', label: 'New medication' }]}
+          value={useNewMed ? 'new' : 'existing'}
+          onChange={v => setUseNewMed(v === 'new')}
+        />
       </FieldActions>
 
       <CardSection>
         <CardSectionLabel>Medication Details</CardSectionLabel>
 
         {useNewMed ? (
-          <InputField label="Medication name" id="rx-new-med">
-            <input id="rx-new-med" type="text" value={form.new_medication_name}
-              onChange={e => set('new_medication_name', e.target.value)}
-              placeholder="e.g. Duloxetine" />
-          </InputField>
+          <TextField label="Medication name" value={form.new_medication_name}
+            onChange={v => set('new_medication_name', v)} placeholder="e.g. Duloxetine" />
         ) : (
-          <InputField label="Medication" id="rx-med-id">
-            <select id="rx-med-id" value={form.medication_id}
-              onChange={e => set('medication_id', e.target.value)}
-              disabled={medsLoading}>
-              <option value="">{medsLoading ? 'Loading…' : 'Select medication…'}</option>
-              {medications.map(m => (
-                <option key={m.id} value={m.id}>
-                  {m.medication_name}{m.generic_name ? ` (${m.generic_name})` : ''}
-                </option>
-              ))}
-            </select>
-          </InputField>
+          <SelectField label="Medication" value={form.medication_id} onChange={v => set('medication_id', v)}
+            disabled={medsLoading} placeholder={medsLoading ? 'Loading…' : 'Select medication…'}
+            options={medications.map(m => ({
+              value: m.id,
+              label: `${m.medication_name}${m.generic_name ? ` (${m.generic_name})` : ''}`,
+            }))} />
         )}
 
-        <InputField label="Display name / alias" id="rx-alias">
-          <input id="rx-alias" type="text" value={form.alias}
-            onChange={e => set('alias', e.target.value)}
-            placeholder="e.g. Duloxetine 20mg" />
-        </InputField>
+        <TextField label="Display name / alias" value={form.alias} onChange={v => set('alias', v)}
+          placeholder="e.g. Duloxetine 20mg" />
 
         <FieldGrid>
-          <InputField label="Dose" id="rx-dose">
-            <input id="rx-dose" type="text" value={form.dose}
-              onChange={e => set('dose', e.target.value)}
-              placeholder="e.g. 20mg" />
-          </InputField>
-          <InputField label="Timing" id="rx-timing">
-            <select id="rx-timing" value={form.timing_type_id}
-              onChange={e => set('timing_type_id', e.target.value)}
-              disabled={timingsLoading}>
-              <option value="">{timingsLoading ? 'Loading…' : 'Select timing…'}</option>
-              {timingTypes.map(t => (
-                <option key={t.id} value={t.id}>{t.timing_name}</option>
-              ))}
-            </select>
-          </InputField>
+          <TextField label="Dose" value={form.dose} onChange={v => set('dose', v)} placeholder="e.g. 20mg" />
+          <SelectField label="Timing" value={form.timing_type_id} onChange={v => set('timing_type_id', v)}
+            disabled={timingsLoading} placeholder={timingsLoading ? 'Loading…' : 'Select timing…'}
+            options={timingTypes.map(t => ({ value: t.id, label: t.timing_name }))} />
         </FieldGrid>
 
-        <InputField label="Purpose" id="rx-purpose">
-          <input id="rx-purpose" type="text" value={form.purpose}
-            onChange={e => set('purpose', e.target.value)}
-            placeholder="What it's for…" />
-        </InputField>
+        <TextField label="Purpose" value={form.purpose} onChange={v => set('purpose', v)}
+          placeholder="What it's for…" />
       </CardSection>
 
       <CardSection>
         <CardSectionLabel>Other Details</CardSectionLabel>
 
-        <InputField label="Prescriber" id="rx-prescriber">
-          <select id="rx-prescriber" value={form.prescriber_id}
-            onChange={e => set('prescriber_id', e.target.value)}
-            disabled={providersLoading}>
-            <option value="">{providersLoading ? 'Loading…' : 'No prescriber linked'}</option>
-            {providers.map(p => (
-              <option key={p.id} value={p.id}>
-                {p.provider_name ?? p.practice_name}
-              </option>
-            ))}
-          </select>
-        </InputField>
+        <SelectField label="Prescriber" value={form.prescriber_id} onChange={v => set('prescriber_id', v)}
+          disabled={providersLoading} placeholder={providersLoading ? 'Loading…' : 'No prescriber linked'}
+          options={providers.map(p => ({ value: p.id, label: p.provider_name ?? p.practice_name ?? '' }))} />
 
         <FieldGrid>
-          <InputField label="Start date" id="rx-start">
-            <input id="rx-start" type="date" value={form.start_date}
-              onChange={e => set('start_date', e.target.value)} />
-          </InputField>
-          <InputField label="Discontinued date" id="rx-disc">
-            <input id="rx-disc" type="date" value={form.discontinued_date}
-              onChange={e => set('discontinued_date', e.target.value)} />
-          </InputField>
+          <DateField label="Start date" value={form.start_date} onChange={v => set('start_date', v)} />
+          <DateField label="Discontinued date" value={form.discontinued_date}
+            onChange={v => set('discontinued_date', v)} />
         </FieldGrid>
       </CardSection>
-
-      <CardActions>
-        <Button variant="accent" onClick={() => onSave(form)}
-          disabled={saving || !canSave || referenceLoading}>
-          {saving ? 'Saving…' : saveLabel}
-        </Button>
-        <Button variant="ghost" onClick={onCancel}>Cancel</Button>
-      </CardActions>
-    </CardBody>
+    </FormDialog>
   );
 }

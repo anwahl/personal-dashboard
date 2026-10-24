@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * Trigger button + searchable modal grid for picking an icon.
  *
@@ -10,10 +12,10 @@
 
 'use client';
 
-import { useState, useMemo }  from 'react';
-import type { IconRow }        from '@/types/schema';
-import { IconDisplay }         from './IconDisplay';
-import { Button }              from './Button';
+import { useState, useMemo, useRef } from 'react';
+import type { IconRow }               from '@/types/schema';
+import { IconDisplay }                from './IconDisplay';
+import { Dialog }                     from './Dialog';
 
 interface Props {
   icons:          IconRow[];
@@ -30,6 +32,7 @@ export function IconPicker({
 }: Readonly<Props>) {
   const [open,   setOpen]   = useState(false);
   const [search, setSearch] = useState('');
+  const searchRef           = useRef<HTMLInputElement>(null);
 
   const currentIcon = useMemo(
     () => icons.find(i => i.id === value) ?? null,
@@ -45,17 +48,16 @@ export function IconPicker({
     );
   }, [icons, search]);
 
+  // Reset the search when opening (not closing), so the grid doesn't
+  // visibly re-fill while the exit animation plays.
+  const openPicker = () => {
+    setSearch('');
+    setOpen(true);
+  };
+
   const select = (iconId: number | null) => {
     onChange(iconId);
     setOpen(false);
-    setSearch('');
-  };
-
-  const closeOnBackdrop = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) {
-      setOpen(false);
-      setSearch('');
-    }
   };
 
   return (
@@ -63,62 +65,60 @@ export function IconPicker({
       <button
         type="button"
         className="icon-picker-btn"
-        onClick={() => setOpen(true)}
+        onClick={openPicker}
         title="Choose icon"
         aria-label="Choose icon"
       >
         <IconDisplay icon={currentIcon} size={size} />
       </button>
 
-      {open && (
-        <div className="modal-overlay" onClick={closeOnBackdrop}>
-          <div className="modal-panel" role="dialog" aria-label="Icon picker">
-            <div className="modal-panel__header">
-              <span className="modal-panel__title">Choose icon</span>
-              <Button variant="ghost" size="sm" onClick={() => { setOpen(false); setSearch(''); }}>✕</Button>
-            </div>
+      <Dialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Choose icon"
+        desktopFocusRef={searchRef}
+      >
+        <input
+          ref={searchRef}
+          type="text"
+          inputMode="search"
+          enterKeyHint="search"
+          placeholder="Search by name or tag…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
 
-            <input
-              autoFocus
-              type="text"
-              placeholder="Search by name or tag…"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
+        <div className="icon-picker-grid">
+          {/* None / clear option */}
+          <button
+            type="button"
+            className={`icon-picker-cell icon-picker-cell--none${value === null ? ' icon-picker-cell--active' : ''}`}
+            onClick={() => select(null)}
+          >
+            <span className="icon-picker-cell__icon">—</span>
+            <span className="icon-picker-cell__name">None</span>
+          </button>
 
-            <div className="icon-picker-grid">
-              {/* None / clear option */}
-              <button
-                type="button"
-                className={`icon-picker-cell icon-picker-cell--none${value === null ? ' icon-picker-cell--active' : ''}`}
-                onClick={() => select(null)}
-              >
-                <span className="icon-picker-cell__icon">—</span>
-                <span className="icon-picker-cell__name">None</span>
-              </button>
+          {filtered.map(icon => (
+            <button
+              key={icon.id}
+              type="button"
+              className={`icon-picker-cell${value === icon.id ? ' icon-picker-cell--active' : ''}`}
+              onClick={() => select(icon.id)}
+              title={icon.name}
+            >
+              <span className="icon-picker-cell__icon">
+                <IconDisplay icon={icon} size="md" />
+              </span>
+              <span className="icon-picker-cell__name">{icon.name}</span>
+            </button>
+          ))}
 
-              {filtered.map(icon => (
-                <button
-                  key={icon.id}
-                  type="button"
-                  className={`icon-picker-cell${value === icon.id ? ' icon-picker-cell--active' : ''}`}
-                  onClick={() => select(icon.id)}
-                  title={icon.name}
-                >
-                  <span className="icon-picker-cell__icon">
-                    <IconDisplay icon={icon} size="md" />
-                  </span>
-                  <span className="icon-picker-cell__name">{icon.name}</span>
-                </button>
-              ))}
-
-              {filtered.length === 0 && (
-                <p className="icon-picker-empty">No icons match &ldquo;{search}&rdquo;.</p>
-              )}
-            </div>
-          </div>
+          {filtered.length === 0 && (
+            <p className="icon-picker-empty">No icons match &ldquo;{search}&rdquo;.</p>
+          )}
         </div>
-      )}
+      </Dialog>
     </>
   );
 }

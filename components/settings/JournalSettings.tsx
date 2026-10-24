@@ -1,16 +1,16 @@
 'use client';
 
 import { createClient }      from '@/lib/supabase/client';
-import { batchSetSortOrder } from '@/lib/dal/settings';
+import { batchSetSortOrder, setItemCategory } from '@/lib/dal/settings';
 import {
-  addJournalCategory,    updateJournalCategory, deleteJournalCategory, toggleJournalCategory,
-  addJournalPrompt,      updateJournalPrompt,   deleteJournalPrompt,   toggleJournalPrompt,
+  addJournalCategory,    updateJournalCategory, toggleJournalCategory,
+  addJournalPrompt,      updateJournalPrompt,   toggleJournalPrompt,
 } from '@/lib/dal/journal';
 import {
   addWeeklyJournalCategory,    updateWeeklyJournalCategory,
-  deleteWeeklyJournalCategory, toggleWeeklyJournalCategory,
+  toggleWeeklyJournalCategory,
   addWeeklyJournalPrompt,      updateWeeklyJournalPrompt,
-  deleteWeeklyJournalPrompt,   toggleWeeklyJournalPrompt,
+  toggleWeeklyJournalPrompt,
 } from '@/lib/dal/weekly-journal';
 import { HierarchicalList }  from '@/components/settings/HierarchicalList';
 import type { JournalCategoryWithPrompts, WeeklyJournalCategoryWithPrompts } from '@/types/dal';
@@ -35,12 +35,15 @@ function normaliseWeekly(cats: WeeklyJournalCategoryWithPrompts[]) {
   }));
 }
 
+// Prompts always have a category (no Uncategorized group), so addChild's catId is set.
+
 // ── Shared prompt-list config ─────────────────────────────────────────────────
 
 const PROMPT_LIST_CONFIG = {
   childInputType:   'textarea'   as const,
   childItalic:      true,
   childPlaceholder: 'New prompt…',
+  childrenSortable: false,   // prompts are picked at random, so their order doesn't matter
   catPlaceholder:   'New category…',
 };
 
@@ -64,17 +67,15 @@ export function JournalSettings({ categories: initial, weeklyCategories: initial
         dal={{
           addCategory:       (name, sort)          => addJournalCategory(supabase, name, sort),
           updateCategory:    (id, name)             => updateJournalCategory(supabase, id, name),
-          deleteCategory:    id                     => deleteJournalCategory(supabase, id),
           toggleCategory:    (id, active)           => toggleJournalCategory(supabase, id, active),
           reorderCategories: updates                => batchSetSortOrder(supabase, 'journal_categories', updates),
-          addChild:          (catId, text, _sort)   => addJournalPrompt(supabase, catId, text),
-          updateChild:       (id, text)             => updateJournalPrompt(supabase, id, text),
-          deleteChild:       id                     => deleteJournalPrompt(supabase, id),
+          addChild:          (catId, v)             => addJournalPrompt(supabase, catId!, String(v.name)),
+          updateChild:       (id, v)                => updateJournalPrompt(supabase, id, String(v.name)),
           toggleChild:       (id, active)           => toggleJournalPrompt(supabase, id, active),
           reorderChildren:   updates                => batchSetSortOrder(supabase, 'journal_prompts', updates),
+          moveChild:         (id, catId)            => setItemCategory(supabase, 'journal_prompts', id, catId),
         }}
       />
-      <div className="settings-section-gap" />
       <HierarchicalList
         title="Weekly Journal Prompts"
         description="Prompts for the weekly journal, organised by category."
@@ -83,14 +84,13 @@ export function JournalSettings({ categories: initial, weeklyCategories: initial
         dal={{
           addCategory:       (name, sort)          => addWeeklyJournalCategory(supabase, name, sort),
           updateCategory:    (id, name)             => updateWeeklyJournalCategory(supabase, id, name),
-          deleteCategory:    id                     => deleteWeeklyJournalCategory(supabase, id),
           toggleCategory:    (id, active)           => toggleWeeklyJournalCategory(supabase, id, active),
           reorderCategories: updates                => batchSetSortOrder(supabase, 'weekly_journal_categories', updates),
-          addChild:          (catId, text, _sort)   => addWeeklyJournalPrompt(supabase, catId, text),
-          updateChild:       (id, text)             => updateWeeklyJournalPrompt(supabase, id, text),
-          deleteChild:       id                     => deleteWeeklyJournalPrompt(supabase, id),
+          addChild:          (catId, v)             => addWeeklyJournalPrompt(supabase, catId!, String(v.name)),
+          updateChild:       (id, v)                => updateWeeklyJournalPrompt(supabase, id, String(v.name)),
           toggleChild:       (id, active)           => toggleWeeklyJournalPrompt(supabase, id, active),
           reorderChildren:   updates                => batchSetSortOrder(supabase, 'weekly_journal_prompts', updates),
+          moveChild:         (id, catId)            => setItemCategory(supabase, 'weekly_journal_prompts', id, catId),
         }}
       />
     </>

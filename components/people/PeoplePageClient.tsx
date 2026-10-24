@@ -1,7 +1,9 @@
 'use client';
 
-import { InputField, SaveStatus, SaveState, Card, CardHeader, CardBody, CardSection, CardSectionLabel, Button, ConfirmButton } from '@/components/ui';
+import { TextField, DateField, TextAreaField, SelectField, SaveStatus, SaveState, Card, CardHeader, CardBody, CardSection, CardSectionLabel, Button, EmptyState, Badge, ModeToggle, SubCard, SubCardBody, FieldActions, ChipGroup } from '@/components/ui';
 import { useState, useCallback } from 'react';
+import { ManageableList, type ManageableListDal } from '@/components/settings/ManageableList';
+import type { AddField } from '@/components/settings/FieldInputs';
 import { createClient }          from '@/lib/supabase/client';
 import { formatMediumDate, localTodayISO } from '@/lib/utils/dates';
 import {
@@ -9,7 +11,7 @@ import {
   addItemListEntry, deleteItemListEntry,
   addLogEntry, deleteLogEntry,
   createChecklistItem, deleteChecklistItem,
-  addDiagnosis, updateDiagnosis, toggleDiagnosis, deleteDiagnosis,
+  addDiagnosis, updateDiagnosis, toggleDiagnosis,
   updatePersonField,
 }                                from '@/lib/dal/people';
 import type {
@@ -22,47 +24,43 @@ type Mode = 'view' | 'edit';
 
 // ── Diagnoses ─────────────────────────────────────────────────────────────────
 
+const DIAGNOSIS_FIELDS: AddField[] = [
+  { key: 'diagnosis_name', type: 'text',     label: 'Diagnosis', placeholder: 'Diagnosis name…', required: true },
+  { key: 'diagnosed_date', type: 'date',     label: 'Date',      required: false },
+  { key: 'notes',          type: 'textarea', label: 'Notes',     placeholder: 'Notes…', required: false },
+];
+
+/** Diagnoses: a read-only list in view mode; in edit mode, rows edit in
+ *  place (⋯ → Edit / Deactivate) with an add row, like Settings. */
 function DiagnosisSection({ diagnoses: initial, mode, personId }: Readonly<{
   diagnoses: DiagnosisRow[];
   mode:      Mode;
   personId:  number;
 }>) {
   const supabase = createClient();
-  const [items,    setItems]    = useState<DiagnosisRow[]>(initial);
-  const [editId,   setEditId]   = useState<number | null>(null);
-  const [editName, setEditName] = useState('');
-  const [editDate, setEditDate] = useState('');
-  const [editNotes,setEditNotes]= useState('');
-  const [newName,  setNewName]  = useState('');
-  const [newDate,  setNewDate]  = useState('');
-  const [newNotes, setNewNotes] = useState('');
-  const [adding,   setAdding]   = useState(false);
+  // Kept here too, so view mode shows edits made in edit mode.
+  const [items, setItems] = useState<DiagnosisRow[]>(initial);
+  const str = (v: unknown) => (v == null ? null : String(v));
 
-  const startEdit = (d: DiagnosisRow) => {
-    setEditId(d.id); setEditName(d.diagnosis_name);
-    setEditDate(d.diagnosed_date ?? ''); setEditNotes(d.notes ?? '');
+  const dal: ManageableListDal = {
+    add: async (payload, sortOrder) => {
+      const d = await addDiagnosis(supabase, personId, String(payload.diagnosis_name),
+        str(payload.diagnosed_date), str(payload.notes), sortOrder);
+      setItems(prev => [...prev, d]);
+      return d as unknown as Awaited<ReturnType<ManageableListDal['add']>>;
+    },
+    update: async (id, payload) => {
+      await updateDiagnosis(supabase, id, String(payload.diagnosis_name),
+        str(payload.diagnosed_date), str(payload.notes));
+      setItems(prev => prev.map(d => d.id === id ? { ...d, ...payload } as DiagnosisRow : d));
+    },
+    toggle: async (id, active) => {
+      await toggleDiagnosis(supabase, id, active);
+      setItems(prev => prev.map(d => d.id === id ? { ...d, is_active: active } : d));
+    },
   };
 
-  const saveEdit = useCallback(async () => {
-    if (!editId || !editName.trim()) return;
-    await updateDiagnosis(supabase, editId, editName, editDate || null, editNotes || null);
-    setItems(prev => prev.map(d => d.id === editId
-      ? { ...d, diagnosis_name: editName, diagnosed_date: editDate || null, notes: editNotes || null } : d));
-    setEditId(null);
-  }, [supabase, editId, editName, editDate, editNotes]);
-
-  const addItem = useCallback(async () => {
-    if (!newName.trim() || adding) return;
-    setAdding(true);
-    try {
-      const d = await addDiagnosis(supabase, personId, newName, newDate || null, newNotes || null, items.length);
-      setItems(prev => [...prev, d]);
-      setNewName(''); setNewDate(''); setNewNotes('');
-    } finally { setAdding(false); }
-  }, [supabase, personId, newName, newDate, newNotes, items.length, adding]);
-
-  const active   = items.filter(d =>  d.is_active);
-  const inactive = items.filter(d => !d.is_active);
+  const active = items.filter(d => d.is_active);
 
   if (mode === 'view') {
     if (active.length === 0) return null;
@@ -83,93 +81,20 @@ function DiagnosisSection({ diagnoses: initial, mode, personId }: Readonly<{
   return (
     <CardSection>
       <CardSectionLabel>Diagnoses</CardSectionLabel>
-      {active.map(d => (
-        <div key={d.id}>
-          {editId === d.id ? (
-            <>
-            <div className="manage-item">
-              <div className="manage-item__edit-block">
-                <InputField label="Diagnosis" id="diagnosis">
-                  <input id="diagnosis" type="text" value={editName}
-                    onChange={e => setEditName(e.target.value)}
-                    placeholder="Diagnosis name…" autoFocus
-                    onKeyDown={e => { if (e.key === 'Enter') saveEdit();
-                      if (e.key === 'Escape') setEditId(null); }} />
-                </InputField>
-                <InputField label="Date" id="diagnosis-date">
-                  <input type="date" id="diagnosis-date"
-                    value={editDate} onChange={e => setEditDate(e.target.value)} />
-                </InputField>
-              </div>
-            </div>
-            <div className="manage-item">
-              <div className="manage-item__edit-block">
-                <InputField label="Notes" id="diagnosis-notes">
-                  <textarea value={editNotes}
-                    onChange={e => setEditNotes(e.target.value)}
-                    placeholder="Notes…" />
-                </InputField>
-              </div>
-            </div>
-            <div className="manage-item__actions">
-              <Button size="sm" variant="accent" onClick={saveEdit} disabled={!editName.trim()}>✓</Button>
-              <Button size="sm" variant="ghost"  onClick={() => setEditId(null)}>✕</Button>
-            </div>
-            </>
-          ) : (
-            <div className="manage-item">
-              <span className="manage-item__name">
-                {d.diagnosis_name}
-                {d.diagnosed_date && <span className="manage-item__meta"> · {formatMediumDate(d.diagnosed_date)}</span>}
-                {d.notes && <span className="manage-item__meta"> · {d.notes}</span>}
-              </span>
-              <div className="manage-item__actions">
-                <Button size="icon" variant="ghost" onClick={() => startEdit(d)} title="Edit">✏️</Button>
-                <Button size="sm"   variant="ghost" onClick={async () => { await toggleDiagnosis(supabase, d.id, false); setItems(prev => prev.map(x => x.id === d.id ? { ...x, is_active: false } : x)); }}>Deactivate</Button>
-                <ConfirmButton onConfirm={async () => { await deleteDiagnosis(supabase, d.id); setItems(prev => prev.filter(x => x.id !== d.id)); }} size="sm">✕</ConfirmButton>
-              </div>
-            </div>
-          )}
-        </div>
-      ))}
-      {inactive.length > 0 && (
-        <details className="manage-inactive">
-          <summary className="manage-inactive__summary">{inactive.length} inactive</summary>
-          <div className="manage-inactive__body">
-            {inactive.map(d => (
-              <div key={d.id} className="manage-item manage-item--inactive">
-                <span className="manage-item__name">{d.diagnosis_name}</span>
-                <div className="manage-item__actions">
-                  <Button size="sm" variant="ghost" onClick={async () => { await toggleDiagnosis(supabase, d.id, true); setItems(prev => prev.map(x => x.id === d.id ? { ...x, is_active: true } : x)); }}>Activate</Button>
-                  <ConfirmButton onConfirm={async () => { await deleteDiagnosis(supabase, d.id); setItems(prev => prev.filter(x => x.id !== d.id)); }} size="sm">✕</ConfirmButton>
-                </div>
-              </div>
-            ))}
-          </div>
-        </details>
-      )}
-      <>
-      <hr />
-      <div className="manage-item">
-        <div className="manage-item__edit-block">
-          <InputField label="Add Diagnosis" id="new-diagnosis">
-            <input id="new-diagnosis" type="text" className="input--flex" value={newName} onChange={e => setNewName(e.target.value)}
-              placeholder="Diagnosis name…" onKeyDown={e => e.key === 'Enter' && addItem()} />
-          </InputField>
-          <InputField label="Diagnosis Date" id="new-diagnosis-date">
-            <input id="new-diagnosis-date" type="date" className="input--date" value={newDate} onChange={e => setNewDate(e.target.value)} />
-          </InputField>
-        </div>
-      </div>
-      <div className="manage-item">
-        <div className="manage-item__edit-block">
-          <InputField label="Notes" id="new-diagnosis-notes">
-            <textarea id="new-diagnosis-notes" className="input--flex" value={newNotes} onChange={e => setNewNotes(e.target.value)} placeholder="Notes…" />
-          </InputField>
-        </div>
-      </div>
-      <Button size="sm" variant="accent" onClick={addItem} disabled={adding || !newName.trim()}>+ Add</Button>
-      </>
+      <ManageableList
+        bare
+        nameColumn="diagnosis_name"
+        items={items}
+        addFields={DIAGNOSIS_FIELDS}
+        dal={dal}
+        renderName={(d: DiagnosisRow) => (
+          <>
+            {d.diagnosis_name}
+            {d.diagnosed_date && <span className="manage-item__meta">{formatMediumDate(d.diagnosed_date)}</span>}
+            {d.notes && <span className="manage-item__meta manage-item__meta--truncate">{d.notes}</span>}
+          </>
+        )}
+      />
     </CardSection>
   );
 }
@@ -193,17 +118,12 @@ function InfoGroupSection({ group, mode, onValueChange }: Readonly<{
                 {(f.field_type === 'date' && f.value) ? formatMediumDate(f.value) : (f.value || '—')}
               </span>
             ) : f.field_type === 'textarea' ? (
-              <textarea
-                value={f.value ?? ''}
-                onChange={e => onValueChange(f.id, e.target.value)}
-                className="textarea--short"
-              />
+              <TextAreaField hideLabel label={f.field_label} value={f.value ?? ''}
+                onChange={v => onValueChange(f.id, v)} size="short" />
+            ) : f.field_type === 'date' ? (
+              <DateField hideLabel label={f.field_label} value={f.value ?? ''} onChange={v => onValueChange(f.id, v)} />
             ) : (
-              <input
-                type={f.field_type === 'date' ? 'date' : 'text'}
-                value={f.value ?? ''}
-                onChange={e => onValueChange(f.id, e.target.value)}
-              />
+              <TextField hideLabel label={f.field_label} value={f.value ?? ''} onChange={v => onValueChange(f.id, v)} />
             )}
           </div>
         ))}
@@ -296,16 +216,11 @@ function ChecklistSection({ checklist, mode, personId }: Readonly<{
 
       {/* Add item always available — immediate save, no edit mode needed */}
       <div className="manage-add-row">
-        <input
-          type="text"
-          value={newText}
-          onChange={e => setNewText(e.target.value)}
+        <TextField hideLabel label="New item" value={newText} onChange={setNewText}
           onKeyDown={e => e.key === 'Enter' && addItem()}
-          placeholder="New item…"
-          className="input--flex"
-        />
-        <Button size="sm" variant="accent" onClick={addItem} disabled={adding || !newText.trim()}>
-          {adding ? '…' : 'Add'}
+          placeholder="New item…" className="input--flex" />
+        <Button size="sm" variant="accent" onClick={addItem} busy={adding} disabled={!newText.trim()}>
+          Add
         </Button>
       </div>
     </CardSection>
@@ -350,7 +265,7 @@ function ItemListSection({ list, mode, personId }: Readonly<{
       </CardSectionLabel>
 
       <div className="list-entry-list">
-        {entries.length === 0 && <p className="empty-state">No entries yet.</p>}
+        {entries.length === 0 && <EmptyState>No entries yet.</EmptyState>}
         {entries.map(e => (
           <div key={e.id} className="list-entry-row">
             {e.entry_date && (
@@ -367,18 +282,12 @@ function ItemListSection({ list, mode, personId }: Readonly<{
 
       {mode === 'edit' && (
         <div className="manage-add-row">
-          <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
-            className="input--date" />
-          <input
-            type="text"
-            value={newText}
-            onChange={e => setNewText(e.target.value)}
+          <DateField hideLabel label="Entry date" value={newDate} onChange={setNewDate} className="input--date" />
+          <TextField hideLabel label="New entry" value={newText} onChange={setNewText}
             onKeyDown={e => e.key === 'Enter' && add()}
-            placeholder="New entry…"
-            className="input--flex"
-          />
-          <Button size="sm" variant="accent" onClick={add} disabled={adding || !newText.trim()}>
-            {adding ? '…' : 'Add'}
+            placeholder="New entry…" className="input--flex" />
+          <Button size="sm" variant="accent" onClick={add} busy={adding} disabled={!newText.trim()}>
+            Add
           </Button>
         </div>
       )}
@@ -427,34 +336,26 @@ function LogSection({ log, mode, personId }: Readonly<{
       {/* Add entry form */}
       {mode === 'edit' && (
         showForm ? (
-          <div className="form-panel">
-            <InputField label="Date" id={`log-date-${log.id}`}>
-              <input id={`log-date-${log.id}`} type="date" value={formDate}
-                onChange={e => setFormDate(e.target.value)} />
-            </InputField>
-            {log.fields.map(f => (
-              <InputField key={f.id} label={f.field_label} id={`lf-${f.id}`}>
-                {f.field_type === 'select' ? (
-                  <select id={`lf-${f.id}`} value={formValues[f.id] ?? ''} onChange={e => setVal(f.id, e.target.value)}>
-                    <option value="">Select…</option>
-                    {f.options.map(o => <option key={o.id} value={o.option_value}>{o.option_value}</option>)}
-                  </select>
-                ) : f.field_type === 'textarea' ? (
-                  <textarea id={`lf-${f.id}`} value={formValues[f.id] ?? ''}
-                    onChange={e => setVal(f.id, e.target.value)} className="textarea--short" />
-                ) : (
-                  <input id={`lf-${f.id}`} type="text" value={formValues[f.id] ?? ''}
-                    onChange={e => setVal(f.id, e.target.value)} />
-                )}
-              </InputField>
-            ))}
-            <div className="form-row form-row--actions">
-              <Button size="sm" variant="accent" onClick={submit} disabled={adding}>
-                {adding ? 'Saving…' : 'Add Entry'}
-              </Button>
+          <SubCard>
+            <SubCardBody>
+            <DateField label="Date" value={formDate} onChange={setFormDate} />
+            {log.fields.map(f => {
+              const props = { label: f.field_label, value: formValues[f.id] ?? '', onChange: (v: string) => setVal(f.id, v) };
+              if (f.field_type === 'select') return (
+                <SelectField key={f.id} {...props} placeholder="Select…"
+                  options={f.options.map(o => ({ value: o.option_value, label: o.option_value }))} />
+              );
+              if (f.field_type === 'textarea') return <TextAreaField key={f.id} {...props} size="short" />;
+              return <TextField key={f.id} {...props} />;
+            })}
+            <FieldActions alignment="right">
               <Button size="sm" variant="ghost" onClick={() => setShowForm(false)}>Cancel</Button>
-            </div>
-          </div>
+              <Button size="sm" variant="accent" onClick={submit} busy={adding}>
+                Add Entry
+              </Button>
+            </FieldActions>
+            </SubCardBody>
+          </SubCard>
         ) : (
           <div className="manage-list">
             <Button size="sm" variant="ghost" onClick={() => setShowForm(true)}>+ Add Entry</Button>
@@ -464,7 +365,7 @@ function LogSection({ log, mode, personId }: Readonly<{
 
       {/* Entries table */}
       {entries.length === 0 ? (
-        <p className="empty-state">No entries yet.</p>
+        <EmptyState>No entries yet.</EmptyState>
       ) : (
         <div className="log-table-wrap">
           <table className="log-table">
@@ -555,15 +456,13 @@ export function PeoplePageClient({ data, peopleCategories }: Readonly<{ data: Pe
             <h2 className="person-header__name">{person.person_name}</h2>
             {mode === 'view' && categoryId && (() => {
               const cat = peopleCategories.find(c => c.id === categoryId);
-              return cat ? <span className="badge badge--muted">{cat.category_name}</span> : null;
+              return cat ? <Badge variant="muted">{cat.category_name}</Badge> : null;
             })()}
             {mode === 'edit' && (
-              <select value={categoryId ?? ''} onChange={e => saveCategory(e.target.value ? Number.parseInt(e.target.value) : null)}>
-                <option value="">No category</option>
-                {peopleCategories.filter(c => c.is_active).map(c => (
-                  <option key={c.id} value={c.id}>{c.category_name}</option>
-                ))}
-              </select>
+              <SelectField hideLabel label="Category" value={categoryId ?? ''}
+                onChange={v => saveCategory(v ? Number.parseInt(v) : null)}
+                placeholder="No category"
+                options={peopleCategories.filter(c => c.is_active).map(c => ({ value: c.id, label: c.category_name }))} />
             )}
             {person.birth_date && (
               <p className="person-header__sub">🎂 {formatMediumDate(person.birth_date)}</p>
@@ -574,13 +473,10 @@ export function PeoplePageClient({ data, peopleCategories }: Readonly<{ data: Pe
               <>
                 <SaveStatus state={saveState} />
                 <Button variant="accent" size="sm" onClick={saveInfoGroups}
-                  disabled={saveState === 'saving'}>💾 Save</Button>
+                  busy={saveState === 'saving'}>💾 Save</Button>
               </>
             )}
-            <Button variant="ghost" size="sm"
-              onClick={() => setMode(m => m === 'view' ? 'edit' : 'view')}>
-              {mode === 'view' ? '✏️ Edit' : '← View'}
-            </Button>
+            <ModeToggle editing={mode === 'edit'} onChange={e => setMode(e ? 'edit' : 'view')} />
           </div>
         </CardHeader>
 
@@ -590,21 +486,21 @@ export function PeoplePageClient({ data, peopleCategories }: Readonly<{ data: Pe
           {prescriptions.length > 0 && (
             <CardSection>
               <CardSectionLabel>Active Prescriptions</CardSectionLabel>
-              <div className="chip-group">
+              <ChipGroup>
                 {prescriptions.map(rx => (
-                  <span key={rx.id} className="badge">
+                  <Badge key={rx.id}>
                     {rx.alias ?? rx.medication.medication_name}
                     {rx.dose ? ` · ${rx.dose}` : ''}
-                  </span>
+                  </Badge>
                 ))}
-              </div>
+              </ChipGroup>
             </CardSection>
           )}
 
           {!hasSections && diagnoses.length === 0 && prescriptions.length === 0 && (
-            <p className="empty-state">
+            <EmptyState>
               No data yet. Add info groups, lists, logs, or checklists in Settings to structure this page.
-            </p>
+            </EmptyState>
           )}
         </CardBody>
       </Card>

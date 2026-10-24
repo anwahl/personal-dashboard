@@ -1,10 +1,10 @@
 'use client';
 
 import { createClient }      from '@/lib/supabase/client';
-import { batchSetSortOrder } from '@/lib/dal/settings';
+import { batchSetSortOrder, setItemCategory } from '@/lib/dal/settings';
 import {
-  addSymptomCategory,    updateSymptomCategory, deleteSymptomCategory, toggleSymptomCategory,
-  addSymptomType,        updateSymptomType,      deleteSymptomType,      toggleSymptomType,
+  addSymptomCategory,    updateSymptomCategory, toggleSymptomCategory,
+  addSymptomType,        updateSymptomType,      toggleSymptomType,
 } from '@/lib/dal/symptoms';
 import { HierarchicalList }  from '@/components/settings/HierarchicalList';
 import type { SymptomCategoryWithTypes } from '@/types/dal';
@@ -35,14 +35,14 @@ export function SymptomSettings({ categories: initial }: Readonly<Props>) {
       dal={{
         addCategory:       (name, sort)       => addSymptomCategory(supabase, name, sort),
         updateCategory:    (id, name)          => updateSymptomCategory(supabase, id, name),
-        deleteCategory:    id                  => deleteSymptomCategory(supabase, id),
         toggleCategory:    (id, active)        => toggleSymptomCategory(supabase, id, active),
         reorderCategories: updates             => batchSetSortOrder(supabase, 'symptom_categories', updates),
-        addChild:          (catId, name, sort) => addSymptomType(supabase, catId, name, sort),
-        updateChild:       (id, name)          => updateSymptomType(supabase, id, name),
-        deleteChild:       id                  => deleteSymptomType(supabase, id),
+        // Symptom types always have a category (no Uncategorized group), so catId is set.
+        addChild:          (catId, v, sort)    => addSymptomType(supabase, catId!, String(v.name), sort),
+        updateChild:       (id, v)             => updateSymptomType(supabase, id, String(v.name)),
         toggleChild:       (id, active)        => toggleSymptomType(supabase, id, active),
         reorderChildren:   updates             => batchSetSortOrder(supabase, 'symptom_types', updates),
+        moveChild:         (id, catId)         => setItemCategory(supabase, 'symptom_types', id, catId),
       }}
     />
   );

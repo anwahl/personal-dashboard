@@ -8,7 +8,8 @@
 
 import { Card, CardHeader, CardTitle, CardBody,
   CardSection, SubCard, SubCardBody, Field, Chip,
-  Info, CardSectionLabel, ChipGroup }                   from '@/components/ui';
+  Info, CardSectionLabel, ChipGroup, EmptyState
+}                   from '@/components/ui';
 import type { AppointmentDetail }                       from '@/types/dal';
 import { daysUntil, formatMediumDate, formatTime }      from '@/lib/utils/dates';
 import Link                                             from 'next/link';
@@ -29,9 +30,9 @@ export function UpcomingAppointments({ appointments, contextDate }: Readonly<Pro
       <Card>
         <CardHeader><CardTitle>📅 Appointments</CardTitle></CardHeader>
         <CardBody>
-          <p className="empty-state">
+          <EmptyState>
             No upcoming appointments.
-          </p>
+          </EmptyState>
         </CardBody>
       </Card>
     );

@@ -100,7 +100,6 @@ export async function getSleepEntry(
 export async function getPriorSleepContext(
   client: Client,
   currentDate: string,
-  currentEntryId: number,
 ): Promise<PriorSleepContext | null> {
   const priorDate = addDays(localISODateFromDateString(currentDate), -1);
 

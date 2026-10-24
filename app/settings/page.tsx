@@ -21,8 +21,13 @@ import { getWeeklyJournalCategories } from '@/lib/dal/weekly-journal';
 import type { PersonLinks } from '@/types/dal';
 import { SettingsClient } from '@/components/settings/SettingsClient';
 import { Header, PageBody } from '@/components/layout';
+import { SETTINGS_TABS } from '@/lib/constants/nav';
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: Readonly<{ searchParams: Promise<{ tab?: string }> }>) {
+  const { tab } = await searchParams;
+  const initialTab = SETTINGS_TABS.find(t => t.id === tab)?.id;
   const supabase = await createClient();
 
   const [
@@ -42,16 +47,16 @@ export default async function SettingsPage() {
     calendarToken,
   ] = await Promise.all([
     getIconsRef(supabase, true),
-    getSymptomCategoriesWithTypes(supabase),
-    getJournalCategoriesWithPrompts(supabase),
-    getProviderTypes(supabase),
-    getSleepEventTypes(supabase),
-    getAllPeople(supabase),
+    getSymptomCategoriesWithTypes(supabase, true),
+    getJournalCategoriesWithPrompts(supabase, true),
+    getProviderTypes(supabase, true),
+    getSleepEventTypes(supabase, true),
+    getAllPeople(supabase, true),
     getPeopleCategories(supabase, true),
     getTrackables(supabase, true),
     getTrackableCategories(supabase, true),
-    getChartDefinitions(supabase),
-    getChartCategories(supabase),
+    getChartDefinitions(supabase, true),
+    getChartCategories(supabase, true),
     getSettingsPageData(supabase),
     getWeeklyJournalCategories(supabase, true),
     getCalendarToken(supabase),
@@ -75,6 +80,7 @@ export default async function SettingsPage() {
     <PageBody>
       <Header title='Settings' />
       <SettingsClient
+        initialTab={initialTab}
         icons={icons}
         trackables={trackables}
         trackableCategories={trackableCategories}
@@ -97,6 +103,9 @@ export default async function SettingsPage() {
         itemLists={settingsData.itemLists}
         logSchemas={settingsData.logSchemas}
         checklists={settingsData.checklists}
+        infoFieldTypes={settingsData.infoFieldTypes}
+        logSchemaFields={settingsData.logSchemaFields}
+        logSchemaFieldOptions={settingsData.logSchemaFieldOptions}
         weeklyJournalCategories={weeklyJournalCategories}
         calendarToken={calendarToken}
       />

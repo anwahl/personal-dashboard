@@ -9,7 +9,7 @@
  */
 
 import { useState }                  from 'react';
-import { TabBar }                     from '@/components/ui';
+import { TabBar, EmptyState }         from '@/components/ui';
 import type { PersonRow, PeopleCategoryRow } from '@/types/schema';
 import { toSlug } from '@/lib/utils/strings';
 
@@ -40,13 +40,14 @@ export function PeopleNavTabs({
       );
 
   return (
-    <nav style={{ marginBottom: 20 }}>
+    <nav className="people-nav">
       <TabBar
+        label="People categories"
         tabs={tabs}
         active={activeTab !== null ? String(activeTab) : 'other'}
         onChange={id => setActiveTab(id === 'other' ? null : Number(id))}
       />
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
+      <div className="people-nav__list">
         {visible.map(p => {
           const slug   = toSlug(p.person_name);
           const active = slug === currentSlug;
@@ -54,15 +55,14 @@ export function PeopleNavTabs({
             <a
               key={p.id}
               href={`/people/${slug}`}
-              className={`badge${active ? ' badge--accent' : ''}`}
-              style={{ textDecoration: 'none', padding: '5px 14px', fontSize: '0.82rem' }}
+              className={`badge people-nav__link${active ? ' badge--accent' : ''}`}
             >
               {p.person_name}
             </a>
           );
         })}
         {visible.length === 0 && (
-          <p style={{ color: 'var(--text-faint)', fontSize: '0.82rem' }}>No people in this category yet.</p>
+          <EmptyState>No people in this category yet.</EmptyState>
         )}
       </div>
     </nav>

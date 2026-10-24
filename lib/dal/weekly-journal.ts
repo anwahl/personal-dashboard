@@ -202,13 +202,6 @@ export async function toggleWeeklyJournalCategory(
   if (error) throw new Error(`toggleWeeklyJournalCategory: ${error.message}`);
 }
 
-export async function deleteWeeklyJournalCategory(
-  client: Client, id: number,
-): Promise<void> {
-  const { error } = await client.from('weekly_journal_categories').delete().eq('id', id);
-  if (error) throw new Error(`deleteWeeklyJournalCategory: ${error.message}`);
-}
-
 // ── Settings: prompt CRUD ─────────────────────────────────────────────────────
 
 export async function addWeeklyJournalPrompt(
@@ -236,11 +229,4 @@ export async function toggleWeeklyJournalPrompt(
   const { error } = await client.from('weekly_journal_prompts')
     .update({ is_active: isActive }).eq('id', id);
   if (error) throw new Error(`toggleWeeklyJournalPrompt: ${error.message}`);
-}
-
-export async function deleteWeeklyJournalPrompt(
-  client: Client, id: number,
-): Promise<void> {
-  const { error } = await client.from('weekly_journal_prompts').delete().eq('id', id);
-  if (error) throw new Error(`deleteWeeklyJournalPrompt: ${error.message}`);
 }

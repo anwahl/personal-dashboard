@@ -5,26 +5,29 @@
  *
  * Single client-side owner of ALL daily entry form state.
  * Passes state + setters down to DailyCard (merged card with 6 tabs).
+ *
+ * A date with no entry loads empty: the entry is created the first time
+ * anything on the day is saved (getEntryId), so just visiting a date
+ * leaves nothing behind.
  */
 
-import { SaveStatus, SaveState, Button } from '@/components/ui';
+import { SaveStatus, SaveState, Button, FieldActions, ModeToggle } from '@/components/ui';
 import { saveJournalResponses, JournalResponseDetail } from '@/lib/dal/journal';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useRouter }              from 'next/navigation';
 import { createClient }           from '@/lib/supabase/client';
 import { localTodayISO } from '@/lib/utils/dates';
-import { updateDailyEntry, toggleTagEntry, upsertBrainDump } from '@/lib/dal/daily';
+import { createDailyEntry, updateDailyEntry, toggleTagEntry, upsertBrainDump, findOrCreateTag } from '@/lib/dal/daily';
 import { saveNumericEntries, upsertBooleanEntry, deleteBooleanEntry }            from '@/lib/dal/trackables';
 import { upsertSleepEntry, upsertNap, deleteNap, upsertWakeEvents,
          setSleepEvents, setSleepTimingEntry, setSleepConsumptionEntries } from '@/lib/dal/sleep';
-import { setDailySymptomEntries, upsertCrash, deleteCrash,
-    upsertAnxiety, deleteAnxiety }                      from '@/lib/dal/symptoms';
+import { setDailySymptomEntries, upsertCrash, deleteCrash } from '@/lib/dal/symptoms';
 import { DailyCard }   from './DailyCard';
 import type {
   DailyEntryDetail, SleepEntryDetail, DailySymptomData,
   EssEntryDetail, PrescriptionDetail, PriorSleepContext, ReferenceData,
 } from '@/types/dal';
-import type { SleepEntryRow } from '@/types/schema';
+import type { SleepEntryRow, IntentionRow } from '@/types/schema';
 
 // ── Form state types ──────────────────────────────────────────────────────────
 
@@ -44,9 +47,6 @@ export interface SymptomFormState {
   hadCrash:        boolean;
   crashTiming:     string;
   crashSeverity:   number | null;
-  hadAnxiety:      boolean;
-  anxietySeverity: number | null;
-  anxietyDetail:   string;
   symptomTypeIds:  number[];
 }
 
@@ -86,18 +86,18 @@ export type JournalState = JournalCard[];
 
 // ── State initialisers ─────────────────────────────────────────────────────────
 
-function initOverviewState(entry: DailyEntryDetail): DailyOverviewState {
+function initOverviewState(entry: DailyEntryDetail | null): DailyOverviewState {
   return {
-    summary:     entry.summary  ?? '',
-    word:        entry.word     ?? '',
-    dailyIconId: entry.icon_id  ?? null,
-    brainDump:   entry.brain_dump?.body_md ?? '',
+    summary:     entry?.summary  ?? '',
+    word:        entry?.word     ?? '',
+    dailyIconId: entry?.icon_id  ?? null,
+    brainDump:   entry?.brain_dump?.body_md ?? '',
   };
 }
 
-function initMetricState(entry: DailyEntryDetail): MetricState {
+function initMetricState(entry: DailyEntryDetail | null): MetricState {
   return Object.fromEntries(
-    entry.numeric_entries.map(e => [e.trackable_id, e.metric_value])
+    (entry?.numeric_entries ?? []).map(e => [e.trackable_id, e.metric_value])
   );
 }
 
@@ -106,9 +106,6 @@ function initSymptomState(symptoms: DailySymptomData | null): SymptomFormState {
     hadCrash:        !!symptoms?.crash,
     crashTiming:     symptoms?.crash?.timing    ?? '',
     crashSeverity:   symptoms?.crash?.severity  ?? null,
-    hadAnxiety:      !!symptoms?.anxiety,
-    anxietySeverity: symptoms?.anxiety?.severity ?? null,
-    anxietyDetail:   symptoms?.anxiety?.detail   ?? '',
     symptomTypeIds:  symptoms?.symptom_entries.map(s => s.symptom_type_id) ?? [],
   };
 }
@@ -152,7 +149,10 @@ function initJournalState(responses: JournalResponseDetail[]): JournalState {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 interface Props {
-  entry:         DailyEntryDetail;
+  /** null = nothing saved for this date yet. */
+  entry:         DailyEntryDetail | null;
+  /** The day's intention (the saved one, or one picked for a new entry). */
+  intention:     IntentionRow | null;
   journalResponses: JournalResponseDetail[];
   date:          string;
   sleep:         SleepEntryDetail | null;
@@ -164,10 +164,23 @@ interface Props {
 }
 
 export function DailyPageClient({
-  entry, date, sleep, priorSleep, symptoms, ess, prescriptions, reference, journalResponses,
+  entry, intention, date, sleep, priorSleep, symptoms, ess, prescriptions, reference, journalResponses,
 }: Readonly<Props>) {
   const supabase = createClient();
   const router   = useRouter();
+
+  // ── The day's entry: created on first save ────────────────────────────────
+  // A ref (not state) so every save sees the id as soon as it exists, and a
+  // shared promise so taps in quick succession create just one entry.
+  const entryIdRef  = useRef<number | null>(entry?.id ?? null);
+  const creatingRef = useRef<Promise<number> | null>(null);
+  const getEntryId  = useCallback(async (): Promise<number> => {
+    if (entryIdRef.current != null) return entryIdRef.current;
+    creatingRef.current ??= createDailyEntry(supabase, date, intention?.id ?? null)
+      .then(id => { entryIdRef.current = id; return id; })
+      .finally(() => { creatingRef.current = null; });
+    return creatingRef.current;
+  }, [supabase, date, intention]);
 
   const isToday  = date === localTodayISO();
   const [mode,      setMode]      = useState<Mode>(isToday ? 'input' : 'view');
@@ -184,8 +197,9 @@ export function DailyPageClient({
   const [journalState,   setJournalState]   = useState<JournalState>(() => initJournalState(journalResponses));
   const [journalSaveState, setJournalSaveState] = useState<SaveState>('idle');
 
-  const [checkedTrackableIds, setCheckedTrackableIds] = useState<number[]>(entry.checked_trackable_ids);
-  const [tagIds, setTagIds] = useState<number[]>(entry.tag_ids);
+  const [checkedTrackableIds, setCheckedTrackableIds] = useState<number[]>(entry?.checked_trackable_ids ?? []);
+  const [tagIds, setTagIds] = useState<number[]>(entry?.tag_ids ?? []);
+  const [tags,   setTags]   = useState(reference.tags);
 
   // ── Immediate-save toggles ────────────────────────────────────────────────
 
@@ -195,54 +209,46 @@ export function DailyPageClient({
       nowDone ? [...prev, trackableId] : prev.filter(id => id !== trackableId)
     );
     try {
-      nowDone ? await upsertBooleanEntry(supabase, entry.id, trackableId) 
-              : await deleteBooleanEntry(supabase, entry.id, trackableId);
+      const entryId = await getEntryId();
+      nowDone ? await upsertBooleanEntry(supabase, entryId, trackableId)
+              : await deleteBooleanEntry(supabase, entryId, trackableId);
     } catch {
       setCheckedTrackableIds(prev =>
         nowDone ? prev.filter(id => id !== trackableId) : [...prev, trackableId]
       );
     }
-  }, [checkedTrackableIds, supabase, entry.id]);
+  }, [checkedTrackableIds, supabase, getEntryId]);
 
   const toggleTag = useCallback(async (tagId: number) => {
     const nowActive = !tagIds.includes(tagId);
     setTagIds(prev => nowActive ? [...prev, tagId] : prev.filter(id => id !== tagId));
     try {
-      await toggleTagEntry(supabase, entry.id, tagId, nowActive);
+      await toggleTagEntry(supabase, await getEntryId(), tagId, nowActive);
     } catch {
       setTagIds(prev => nowActive ? prev.filter(id => id !== tagId) : [...prev, tagId]);
     }
-  }, [tagIds, supabase, entry.id]);
+  }, [tagIds, supabase, getEntryId]);
 
   const addNewTag = useCallback(async (value: string) => {
     const trimmed = value.trim().toLowerCase().replace(/\s+/g, '-');
     if (!trimmed) return;
 
-    const { data: existing } = await supabase
-      .from('tags').select('id').eq('tag_value', trimmed).maybeSingle();
+    const tag = await findOrCreateTag(supabase, trimmed);
+    // A brand-new tag isn't in the page's tag list yet; add it so it shows.
+    setTags(prev => prev.some(t => t.id === tag.id) ? prev : [...prev, tag]);
 
-    let tagId: number;
-    if (existing) {
-      tagId = existing.id;
-    } else {
-      const { data: created, error } = await supabase
-        .from('tags').insert({ tag_value: trimmed }).select('id').single();
-      if (error || !created) return;
-      tagId = created.id;
+    if (!tagIds.includes(tag.id)) {
+      setTagIds(prev => [...prev, tag.id]);
+      await toggleTagEntry(supabase, await getEntryId(), tag.id, true);
     }
-
-    if (!tagIds.includes(tagId)) {
-      setTagIds(prev => [...prev, tagId]);
-      await toggleTagEntry(supabase, entry.id, tagId, true);
-    }
-  }, [tagIds, supabase, entry.id]);
+  }, [tagIds, supabase, getEntryId]);
 
   // ── Journal-only save (tab Save button) ──────────────────────────────────
 
   const saveJournal = async () => {
     setJournalSaveState('saving');
     try {
-      await saveJournalResponses(supabase, entry.id, journalState.map(c => ({
+      await saveJournalResponses(supabase, await getEntryId(), journalState.map(c => ({
         promptId:     c.promptId,
         responseText: c.responseText,
         dbId:         c.dbId,
@@ -259,15 +265,17 @@ export function DailyPageClient({
   const save = useCallback(async () => {
     setSaveState('saving');
     try {
+      const entryId = await getEntryId();
+
       // 1. Core daily entry fields + numeric metrics + brain dump (parallel)
       await Promise.all([
-        updateDailyEntry(supabase, entry.id, {
+        updateDailyEntry(supabase, entryId, {
           summary:  overviewState.summary     || null,
           word:     overviewState.word        || null,
           icon_id:  overviewState.dailyIconId ?? null,
         }),
-        saveNumericEntries(supabase, entry.id, metricState),
-        upsertBrainDump(supabase, entry.id, date, overviewState.brainDump),
+        saveNumericEntries(supabase, entryId, metricState),
+        upsertBrainDump(supabase, entryId, date, overviewState.brainDump),
       ]);
 
       // 2. Sleep entry + child tables (sequential: need sleepRow.id)
@@ -287,7 +295,7 @@ export function DailyPageClient({
           today_pre_bed_activity: sleepState.preBedActivity   || null,
         };
 
-        const sleepRow = await upsertSleepEntry(supabase, entry.id, sleepFields);
+        const sleepRow = await upsertSleepEntry(supabase, entryId, sleepFields);
 
         await Promise.all([
           sleepState.wakeCount > 0
@@ -314,36 +322,29 @@ export function DailyPageClient({
         setHasSleepData(true);
       }
 
-      // 3. Symptom types + crash + anxiety
+      // 3. Symptom types + crash
       const anySymptomData =
         symptomState.symptomTypeIds.length > 0 ||
-        symptomState.hadCrash ||
-        symptomState.hadAnxiety;
+        symptomState.hadCrash;
 
       if (anySymptomData || hasSymptomData) {
         await Promise.all([
           setDailySymptomEntries(
-            supabase, entry.id,
+            supabase, entryId,
             symptomState.symptomTypeIds.map(id => ({ symptom_type_id: id, severity: null }))
           ),
           symptomState.hadCrash
-            ? upsertCrash(supabase, entry.id, {
+            ? upsertCrash(supabase, entryId, {
                 timing:   symptomState.crashTiming || null,
                 severity: symptomState.crashSeverity,
               })
-            : deleteCrash(supabase, entry.id),
-          symptomState.hadAnxiety
-            ? upsertAnxiety(supabase, entry.id, {
-                severity: symptomState.anxietySeverity,
-                detail:   symptomState.anxietyDetail || null,
-              })
-            : deleteAnxiety(supabase, entry.id),
+            : deleteCrash(supabase, entryId),
         ]);
         setHasSymptomData(true);
       }
 
       // 4. Journal responses
-      await saveJournalResponses(supabase, entry.id, journalState.map(c => ({
+      await saveJournalResponses(supabase, entryId, journalState.map(c => ({
         promptId:     c.promptId,
         responseText: c.responseText,
         dbId:         c.dbId,
@@ -357,7 +358,7 @@ export function DailyPageClient({
       setSaveState('error');
     }
   }, [
-    supabase, router, entry.id, date,
+    supabase, router, getEntryId, date,
     overviewState, metricState, sleepState, symptomState, hasSymptomData, journalState,
   ]);
 
@@ -365,13 +366,14 @@ export function DailyPageClient({
 
   return (
     <>
-      {entry.intention && (
-        <p className="intention-header">"{entry.intention.value}"</p>
+      {intention && (
+        <p className="intention-header">"{intention.value}"</p>
       )}
 
       <DailyCard
         mode={mode}
-        entry={entry}
+        getEntryId={getEntryId}
+        prescriptionIds={entry?.prescription_ids ?? []}
         date={date}
         overviewState={overviewState}
         setOverviewState={setOverviewState}
@@ -391,7 +393,7 @@ export function DailyPageClient({
         priorSleep={priorSleep}
         ess={ess}
         prescriptions={prescriptions}
-        reference={reference}
+        reference={tags === reference.tags ? reference : { ...reference, tags }}
         journalState={journalState}
         setJournalState={setJournalState}
         journalCategories={reference.journalCategories}
@@ -399,25 +401,19 @@ export function DailyPageClient({
         journalSaveState={journalSaveState}
       />
 
-      <div className="page-actions">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setMode(m => m === 'view' ? 'input' : 'view')}
-        >
-          {mode === 'view' ? '✏️ Edit' : '👁 View'}
-        </Button>
+      <FieldActions docked alignment="right">
         {mode === 'input' && (
           <Button
             variant="accent"
             onClick={save}
-            disabled={saveState === 'saving'}
+            busy={saveState === 'saving'}
           >
-            {saveState === 'saving' ? 'Saving…' : 'Save'}
+            Save
           </Button>
         )}
+        <ModeToggle editing={mode === 'input'} onChange={e => setMode(e ? 'input' : 'view')} />
         <SaveStatus state={saveState} />
-      </div>
+      </FieldActions>
     </>
   );
 }

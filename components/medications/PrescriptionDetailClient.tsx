@@ -5,20 +5,21 @@
  * and the full RxChangeHistory log.
  */
 
-import { useState, useCallback, useEffect }   from 'react';
+import { useState, useEffect }                from 'react';
 import { useRouter }                          from 'next/navigation';
-import { applyPrescriptionChanges, updatePrescription } from '@/lib/dal/prescriptions';
+import { applyPrescriptionChanges }           from '@/lib/dal/prescriptions';
 import { deletePrescriptionChange }           from '@/lib/dal/appointments';
 import { createClient }                       from '@/lib/supabase/client';
-import { Button, Card, CardActions, CardBody, CardHeader, CardSection,
+import { Card, CardActions, CardBody, CardHeader, CardSection,
   CardSectionLabel, CardTitle, Field, FieldGrid,
-  Item, SaveState, SaveStatus, useToast } from '@/components/ui';
+  Item, useToast, ModeToggle
+} from '@/components/ui';
 import type { PrescriptionDetail }            from '@/types/dal';
 import type { PrescriptionChangeRow }         from '@/types/schema';
 import { RX_FIELDS, RxFieldKey, getRxDisplayValue } from '@/lib/constants/prescriptions';
 import { getRxChangesByRx, useMedicationTimingTypes }           from '@/lib/hooks/reference';
 import { RxPendingChanges }  from './RxPendingChanges';
-import { PrescriptionForm, PrescriptionFormValues, rxToFormValues } from './PrescriptionForm';
+import { PrescriptionDialog } from './PrescriptionForm';
 import Link from 'next/link';
 import { PrescriptionChangeDisplayRow } from './PrescriptionChangeDisplayRow';
 
@@ -29,42 +30,20 @@ interface Props {
 }
 
 export function PrescriptionDetailClient({ prescription }: Readonly<{prescription:   PrescriptionDetail;}>) {
-  const { data: timings = [], isLoading: timingsLoading, error: timingsError } = useMedicationTimingTypes();
-  const { data: initialHistory = [], isLoading: historyLoading, error: changesError } = getRxChangesByRx(prescription.id);
+  const { data: timings = [], error: timingsError } = useMedicationTimingTypes();
+  const { data: loadedHistory, error: changesError } = getRxChangesByRx(prescription.id);
   
   const { addToast } = useToast();
   useEffect(() => { if (timingsError) addToast('Failed to load timing types', 'error'); }, [timingsError, addToast]);
   useEffect(() => { if (changesError) addToast('Failed to load prescription history', 'error'); }, [changesError, addToast]);
   
-  const isLoading = timingsLoading || historyLoading;
-
   const supabase = createClient();
   const router   = useRouter();
 
-  const [mode,      setMode]      = useState<'view' | 'edit'>('view');
-  const [saveState, setSaveState] = useState<SaveState>('idle');
-  const [history,   setHistory]   = useState<PrescriptionChangeRow[]>(initialHistory);
-
-  const handleSave = useCallback(async (values: PrescriptionFormValues) => {
-    if(isLoading || !prescription) return;
-    setSaveState('saving');
-    try {
-      await updatePrescription(supabase, prescription.id, {
-        alias:             values.alias             || null,
-        dose:              values.dose              || null,
-        timing_type_id:    values.timing_type_id   ? Number.parseInt(values.timing_type_id) : null,
-        purpose:           values.purpose           || null,
-        prescriber_id:     values.prescriber_id    ? Number.parseInt(values.prescriber_id)  : null,
-        start_date:        values.start_date        || null,
-        discontinued_date: values.discontinued_date || null,
-        is_active:         !values.discontinued_date,
-      });
-      setSaveState('ok');
-      setTimeout(() => setSaveState('idle'), 2500);
-      setMode('view');
-      router.refresh();
-    } catch { setSaveState('error'); }
-  }, [supabase, prescription, router]);
+  const [editOpen,  setEditOpen]  = useState(false);
+  const [history,   setHistory]   = useState<PrescriptionChangeRow[]>(loadedHistory ?? []);
+  // The history loads after the first render; show it once it arrives.
+  useEffect(() => { if (loadedHistory) setHistory(loadedHistory); }, [loadedHistory]);
 
   const removeHistory = async (id: number) => {
     await deletePrescriptionChange(supabase, id);
@@ -73,30 +52,9 @@ export function PrescriptionDetailClient({ prescription }: Readonly<{prescriptio
 
   if(!prescription) return;
 
-  // ── Edit mode ───────────────────────────────────────────────────────────────
-
-  if (mode === 'edit') {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Edit Prescription</CardTitle>
-          <CardActions>
-            <SaveStatus state={saveState} />
-          </CardActions>
-        </CardHeader>
-        <PrescriptionForm
-          initialValues={rxToFormValues(prescription)}
-          saving={saveState === 'saving'}
-          showPersonField={false}
-          onSave={handleSave}
-          onCancel={() => setMode('view')}
-        />
-      </Card>
-    );
-  }
-
-  // ── View mode ────────────────────────────────────────────────────────────────
-    return (
+  // ── View (editing happens in PrescriptionDialog) ──────────────────────────────
+  return (
+    <>
     <Card>
       <CardHeader>
         <CardTitle>
@@ -104,7 +62,7 @@ export function PrescriptionDetailClient({ prescription }: Readonly<{prescriptio
           {!prescription.is_active && <Item itemType='inactive' value='Discontinued' />}
         </CardTitle>
         <CardActions>
-          <Button variant="ghost" size="sm" onClick={() => setMode('edit')}>✏️ Edit</Button>
+          <ModeToggle editing={false} onChange={() => setEditOpen(true)} />
         </CardActions>
       </CardHeader>
       <CardBody>
@@ -155,5 +113,8 @@ export function PrescriptionDetailClient({ prescription }: Readonly<{prescriptio
         </CardSection>
       </CardBody>
     </Card>
+
+    <PrescriptionDialog open={editOpen} onOpenChange={setEditOpen} prescription={prescription} />
+    </>
   );
 }

@@ -1,18 +1,16 @@
 'use client';
 
-import { SaveState, Button, ConfirmButton, 
+import { Button, ConfirmButton, 
   Markdown, Card, CardBody, CardTitle, CardHeader, 
-  useToast}    from '@/components/ui';
+  useToast, Badge, ModeToggle
+}    from '@/components/ui';
 import { useState, useCallback, useEffect }            from 'react';
 import { useRouter }                                   from 'next/navigation';
 import { createClient }                                from '@/lib/supabase/client';
-import { updateTask, updateTaskStatus,
-         deleteTask, spawnNextRecurrence }             from '@/lib/dal/tasks';
+import { updateTaskStatus, deleteTask, spawnNextRecurrence } from '@/lib/dal/tasks';
 import type { TaskDetail }                             from '@/types/dal';
-import type { TaskRow }                                from '@/types/schema';
-import { formatLongDate, formatMediumDate,
-         formatTime, toLocalInput }                    from '@/lib/utils/dates';
-import { TaskForm, type TaskFormValues }               from './TaskForm';
+import { formatLongDate, formatMediumDate, formatTime } from '@/lib/utils/dates';
+import { TaskDialog }                                  from './TaskForm';
 import { useTaskStatuses }                             from '@/lib/hooks/reference';
 
 export function TaskDetailClient({
@@ -21,59 +19,12 @@ export function TaskDetailClient({
   const supabase = createClient();
   const router   = useRouter();
 
-  const [mode,      setMode]      = useState<'view' | 'edit'>('view');
-  const [saveState, setSaveState] = useState<SaveState>('idle');
+  const [editOpen,  setEditOpen]  = useState(false);
   const [deleting,  setDeleting]  = useState(false);
-  const { data: statuses = [], isLoading: statusesLoading, error: statusesError } = useTaskStatuses();
+  const { data: statuses = [], error: statusesError } = useTaskStatuses();
   const { addToast } = useToast();
   useEffect(() => { if (statusesError) addToast('Failed to load task statuses', 'error'); }, [statusesError, addToast]);
   const doneStatus = statuses.find(s => s.is_terminal);
-
-  // ── Save ──────────────────────────────────────────────────────────────────
-  const handleSave = useCallback(async (values: TaskFormValues) => {
-    if (!values.title.trim() || statusesLoading) return;
-    setSaveState('saving');
-    try {
-      const reminderPayload = values.reminder_at
-        ? {
-            reminder_at:          values.reminder_at,
-            recurrence_frequency: (values.recurrence_frequency || null) as TaskRow['recurrence_frequency'],
-            recurrence_interval:  values.recurrence_interval
-              ? Number.parseInt(values.recurrence_interval) : null,
-            recurrence_days:      values.recurrence_days || null,
-            recurrence_end_date:  values.recurrence_end_date || null,
-          }
-        : {
-            reminder_at:          null,
-            recurrence_frequency: null,
-            recurrence_interval:  null,
-            recurrence_days:      null,
-            recurrence_end_date:  null,
-          };
-
-      await updateTask(supabase, task.id, {
-        title:              values.title,
-        status_id:          Number.parseInt(values.status_id),
-        priority_id:        Number.parseInt(values.priority_id),
-        due_date:           values.due_date  || null,
-        due_time:           values.due_time  || null,
-        person_id:          values.person_id ? Number.parseInt(values.person_id) : null,
-        body_md:            values.body_md   || null,
-        snoozed_until:      null,
-        reminder_last_sent: null,
-        ...reminderPayload,
-      });
-
-      setSaveState('ok');
-      setTimeout(() => setSaveState('idle'), 2500);
-      setMode('view');
-      router.refresh();
-    } catch(e) {
-
-      console.error('Task save failed:', e);
-      setSaveState('error');
-    }
-  }, [supabase, task.id, router]);
 
   // ── Complete ──────────────────────────────────────────────────────────────
   const complete = useCallback(async () => {
@@ -98,9 +49,9 @@ export function TaskDetailClient({
     }
   }, [supabase, task.id, router]);
 
-  // ── View mode ─────────────────────────────────────────────────────────────
-  if (mode === 'view') {
-    return (
+  // ── View (editing happens in TaskDialog) ──────────────────────────────────
+  return (
+    <>
       <Card>
         <CardHeader>
           <CardTitle>View Task</CardTitle>
@@ -112,7 +63,7 @@ export function TaskDetailClient({
               {!task.completed_at && doneStatus && (
                 <Button variant="accent" size="sm" onClick={complete}>✓ Complete</Button>
               )}
-              <Button variant="ghost" size="sm" onClick={() => setMode('edit')}>✏️ Edit</Button>
+              <ModeToggle editing={false} onChange={() => setEditOpen(true)} />
               <ConfirmButton onConfirm={remove} disabled={deleting}>✕ Delete</ConfirmButton>
             </div>
           </div>
@@ -121,11 +72,11 @@ export function TaskDetailClient({
           <dl className="detail-page__fields">
             <div className="detail-page__field">
               <dt>Status</dt>
-              <dd><span className="badge">{task.status.status_name}</span></dd>
+              <dd><Badge>{task.status.status_name}</Badge></dd>
             </div>
             <div className="detail-page__field">
               <dt>Priority</dt>
-              <dd><span className="badge">{task.priority.priority_name}</span></dd>
+              <dd><Badge>{task.priority.priority_name}</Badge></dd>
             </div>
             <div className="detail-page__field">
               <dt>Due</dt>
@@ -164,36 +115,8 @@ export function TaskDetailClient({
           )}
         </CardBody>
       </Card>
-    );
-  }
 
-  // ── Edit mode ─────────────────────────────────────────────────────────────
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Edit Task</CardTitle>
-      </CardHeader>
-      <TaskForm
-        initialValues={{
-          title:                task.title,
-          status_id:            String(task.status_id),
-          priority_id:          String(task.priority_id),
-          due_date:             task.due_date  ?? '',
-          due_time:             task.due_time  ?? '',
-          person_id:            task.person_id ? String(task.person_id) : '',
-          body_md:              task.body_md   ?? '',
-          reminder_at:          task.reminder_at ? toLocalInput(task.reminder_at) : '',
-          recurrence_frequency: task.recurrence_frequency  ?? '',
-          recurrence_interval:  String(task.recurrence_interval ?? 1),
-          recurrence_days:      task.recurrence_days        ?? '',
-          recurrence_end_date:  task.recurrence_end_date    ?? '',
-        }}
-        showStatus
-        saving={saveState === 'saving'}
-        saveState={saveState}
-        onSave={handleSave}
-        onCancel={() => setMode('view')}
-      />
-    </Card>
+      <TaskDialog open={editOpen} onOpenChange={setEditOpen} task={task} />
+    </>
   );
 }

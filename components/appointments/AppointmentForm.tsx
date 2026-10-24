@@ -1,19 +1,20 @@
 'use client';
 
 /**
- * AppointmentForm — shared form used by both AppointmentsClient (add/edit
- * from the list page) and AppointmentDetailClient (edit mode on detail page).
- *
- * Owns its own form state; calls onSave(values) on submit so the parent
- * can handle the async operation and pass back `saving` / `saveState`.
+ * AppointmentDialog — add or edit an appointment (FormDialog). Used by the
+ * Appointments list (+ New, Edit) and the appointment page (Edit).
  */
 
-import { useState }            from 'react';
-import { Button, Card, CardBody, CardHeader, CardSection, CardSectionLabel, CardTitle, InputField, SaveStatus } from '@/components/ui';
-import type { SaveState }      from '@/components/ui';
+import { useEffect, useState } from 'react';
+import { useRouter }           from 'next/navigation';
+import {
+  CardSection, CardSectionLabel, ConfirmButton, FieldGrid, FormDialog,
+  DateField, TimeField, SelectField, TextField, TextAreaField,
+} from '@/components/ui';
+import { createClient }        from '@/lib/supabase/client';
+import { createAppointment, updateAppointment, deleteAppointment } from '@/lib/dal/appointments';
 import type { AppointmentDetail } from '@/types/dal';
 import type { AppointmentTypeRow, PersonRow, ProviderRow } from '@/types/schema';
-import { FieldGrid } from '../ui/Display';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -48,115 +49,133 @@ export function apptToFormValues(a: AppointmentDetail): AppointmentFormValues {
   };
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
+/** The appointment columns the form edits, ready for create/update. */
+function appointmentPayload(values: AppointmentFormValues) {
+  return {
+    appointment_date:    values.appointment_date,
+    appointment_time:    values.appointment_time    || null,
+    person_id:           Number.parseInt(values.person_id),
+    provider_id:         values.provider_id         ? Number.parseInt(values.provider_id)         : null,
+    appointment_type_id: values.appointment_type_id ? Number.parseInt(values.appointment_type_id) : null,
+    location:  values.location  || null,
+    questions: values.questions || null,
+    notes:     values.notes     || null,
+  };
+}
 
-interface Props {
-  initialValues:    AppointmentFormValues;
+// ── AppointmentDialog ─────────────────────────────────────────────────────────
+
+/**
+ * Add or edit an appointment in a FormDialog. With `appointment` it edits
+ * it; without, it adds one. Saves itself and refreshes the page. Pass
+ * `onDeleted` to offer Delete inside the dialog (list page).
+ *
+ * `followUpOf` adds a follow-up to that appointment: same person, type,
+ * provider and location, a blank date, linked back to it.
+ */
+export function AppointmentDialog({
+  open, onOpenChange, appointment, followUpOf, appointmentTypes, people, providers, onDeleted, onCreated,
+}: Readonly<{
+  open:             boolean;
+  onOpenChange:     (open: boolean) => void;
+  /** The appointment to edit; omit to add a new one. */
+  appointment?:     AppointmentDetail | null;
+  /** Add a follow-up to this appointment (prefilled from it). */
+  followUpOf?:      AppointmentDetail;
   appointmentTypes: AppointmentTypeRow[];
   people:           PersonRow[];
   providers:        ProviderRow[];
-  /** The parent's async save is in flight. */
-  saving:           boolean;
-  /** Renders a <SaveStatus> indicator when provided (detail page). */
-  saveState?:       SaveState;
-  saveLabel?:       string;
-  onSave:           (values: AppointmentFormValues) => void;
-  onCancel:         () => void;
-  /** Renders a danger Delete button when provided (list page). */
-  onDelete?:        () => void;
-}
+  onDeleted?:       () => void;
+  /** Called with the new appointment's id after adding one. */
+  onCreated?:       (id: number) => void;
+}>) {
+  const supabase = createClient();
+  const router   = useRouter();
+  const initialValues = appointment ? apptToFormValues(appointment)
+    : followUpOf ? {
+        ...apptToFormValues(followUpOf),
+        appointment_date: '', appointment_time: '', questions: '', notes: '',
+      }
+    : emptyAppointmentFormValues;
 
-export function AppointmentForm({
-  initialValues, appointmentTypes, people, providers,
-  saving, saveState, saveLabel = 'Save',
-  onSave, onCancel, onDelete,
-}: Readonly<Props>) {
   const [form, setForm] = useState<AppointmentFormValues>(initialValues);
+  // Each open starts from the appointment (or blank) again.
+  useEffect(() => {
+    if (open) setForm(initialValues);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
   const set = (k: keyof AppointmentFormValues, v: string) =>
     setForm(p => ({ ...p, [k]: v }));
+  // Picking a provider fills an empty Location with their practice name.
+  const pickProvider = (id: string) => setForm(p => {
+    const practice = providers.find(pr => String(pr.id) === id)?.practice_name;
+    return { ...p, provider_id: id, location: p.location.trim() || !practice ? p.location : practice };
+  });
+
+  const save = async () => {
+    const payload = appointmentPayload(form);
+    if (appointment) {
+      await updateAppointment(supabase, appointment.id, payload);
+    } else {
+      const created = await createAppointment(supabase, { ...payload, followup_for_id: followUpOf?.id ?? null });
+      onCreated?.(created.id);
+    }
+    router.refresh();
+  };
+
+  const remove = async () => {
+    if (!appointment) return;
+    await deleteAppointment(supabase, appointment.id);
+    onOpenChange(false);
+    router.refresh();
+    onDeleted?.();
+  };
 
   return (
-    <Card>
-        <CardHeader>
-            <CardTitle>Appointment</CardTitle>
-        </CardHeader>
-        <CardBody>
+    <FormDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={appointment ? 'Edit appointment' : followUpOf ? 'Schedule follow-up' : 'New appointment'}
+      saveLabel={appointment ? 'Save' : 'Add'}
+      canSave={Boolean(form.appointment_date && form.person_id)}
+      onSave={save}
+      extraActions={appointment && onDeleted && (
+        <ConfirmButton onConfirm={remove}>✕ Delete appointment</ConfirmButton>
+      )}
+    >
             <CardSection>
                 <CardSectionLabel>Primary Details</CardSectionLabel>
                 <FieldGrid>
-                    <InputField label="Date" id="af-date">
-                        <input id="af-date" type="date" value={form.appointment_date}
-                            onChange={e => set('appointment_date', e.target.value)} />
-                    </InputField>
-                    <InputField label="Time" id="af-time">
-                        <input id="af-time" type="time" value={form.appointment_time}
-                            onChange={e => set('appointment_time', e.target.value)} />
-                    </InputField>
+                    <DateField label="Date" value={form.appointment_date} onChange={v => set('appointment_date', v)} />
+                    <TimeField label="Time" value={form.appointment_time} onChange={v => set('appointment_time', v)} />
                 </FieldGrid>
                 <FieldGrid>
-                    <InputField label="For" id="af-person">
-                        <select id="af-person" value={form.person_id}
-                            onChange={e => set('person_id', e.target.value)}>
-                            <option value="">Select person…</option>
-                            {people.map(p => <option key={p.id} value={p.id}>{p.person_name}</option>)}
-                        </select>
-                    </InputField>
-                    <InputField label="Type" id="af-type">
-                        <select id="af-type" value={form.appointment_type_id}
-                            onChange={e => set('appointment_type_id', e.target.value)}>
-                            <option value="">No type</option>
-                            {appointmentTypes.map(t => <option key={t.id} value={t.id}>{t.type_name}</option>)}
-                        </select>
-                    </InputField>
+                    <SelectField label="For" value={form.person_id} onChange={v => set('person_id', v)}
+                        placeholder="Select person…"
+                        options={people.map(p => ({ value: p.id, label: p.person_name }))} />
+                    <SelectField label="Type" value={form.appointment_type_id} onChange={v => set('appointment_type_id', v)}
+                        placeholder="No type"
+                        options={appointmentTypes.map(t => ({ value: t.id, label: t.type_name }))} />
                 </FieldGrid>
             </CardSection>
             <CardSection>
                 <CardSectionLabel>Secondary Details</CardSectionLabel>
                 <FieldGrid>
-                    <InputField label="Provider" id="af-provider">
-                        <select id="af-provider" value={form.provider_id}
-                        onChange={e => set('provider_id', e.target.value)}>
-                            <option value="">No provider linked</option>
-                            {providers.map(p => (
-                                <option key={p.id} value={p.id}>{p.provider_name ?? p.practice_name}</option>
-                            ))}
-                        </select>
-                    </InputField>
-                    <InputField label="Location" id="af-location">
-                        <input id="af-location" type="text" value={form.location}
-                            onChange={e => set('location', e.target.value)}
-                            placeholder="Office, telehealth…" />
-                    </InputField>
+                    <SelectField label="Provider" value={form.provider_id} onChange={pickProvider}
+                        placeholder="No provider linked"
+                        options={providers.map(p => ({ value: p.id, label: p.provider_name ?? p.practice_name ?? '' }))} />
+                    <TextField label="Location" value={form.location} onChange={v => set('location', v)}
+                        placeholder="Office, telehealth…" />
                 </FieldGrid>
             </CardSection>
             <CardSection>
                 <CardSectionLabel>Other</CardSectionLabel>
-                <InputField label="Questions to ask" id="af-questions">
-                    <textarea id="af-questions" value={form.questions}
-                        onChange={e => set('questions', e.target.value)}
-                        placeholder="Topics to cover…" className="textarea--short" />
-                </InputField>
-                <InputField label="Notes" id="af-notes">
-                    <textarea id="af-notes" value={form.notes}
-                        onChange={e => set('notes', e.target.value)}
-                        placeholder="Notes from the appointment…" className="textarea--short" />
-                </InputField>
+                <TextAreaField label="Questions to ask" value={form.questions} onChange={v => set('questions', v)}
+                    placeholder="Topics to cover…" size="short" />
+                <TextAreaField label="Notes" value={form.notes} onChange={v => set('notes', v)}
+                    placeholder="Notes from the appointment…" size="short" />
             </CardSection>
-
-            <div className="page-actions">
-                <Button
-                        variant="accent"
-                        onClick={() => onSave(form)}
-                        disabled={saving || !form.appointment_date || !form.person_id} >
-                    {saving ? 'Saving…' : saveLabel}
-                </Button>
-                <Button variant="ghost" onClick={onCancel}>Cancel</Button>
-                {onDelete && (
-                    <Button variant="danger" onClick={onDelete} disabled={saving}>Delete</Button>
-                )}
-                {saveState && <SaveStatus state={saveState} />}
-            </div>
-        </CardBody>
-    </Card>
+    </FormDialog>
   );
 }

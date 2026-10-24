@@ -7,6 +7,8 @@
  * Returns null if message is empty (allows conditional usage).
  */
 
+import { EmptyState } from '@/components/ui';
+
 interface Props {
   title:   string;
   message: string;
@@ -16,7 +18,7 @@ export function ChartEmptyState({ title, message }: Readonly<Props>) {
   return (
     <div className="chart-block">
       <h3 className="chart-block__title">{title}</h3>
-      <p className="empty-state">{message}</p>
+      <EmptyState>{message}</EmptyState>
     </div>
   );
 }

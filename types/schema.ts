@@ -453,6 +453,7 @@ export interface CrashRow {
   severity: number | null;
 }
 
+/** Past "notable anxiety" logs. No longer read or written by the app. */
 export interface AnxietyEntryRow {
   id: number;
   entry_id: number;

@@ -1,22 +1,15 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { useRouter }             from 'next/navigation';
-import { updatePrescription, createPrescription } from '@/lib/dal/medications';
+import { useState } from 'react';
 import { Button, Card, CardHeader, CardTitle,
   CardBody, CardActions, ExpandPanel, Info, Meta, FieldActions,
   CardGrid, CardGridColumn, Item,
-  ITEM_TYPES, CardSection } from '@/components/ui';
+  ITEM_TYPES, CardSection, EmptyState, AddButton, RowMenu
+} from '@/components/ui';
 import type { PersonRow } from '@/types/schema';
-import { createClient }          from '@/lib/supabase/client';
 import type { PrescriptionDetail } from '@/types/dal';
 import Link from 'next/link';
-import {
-  PrescriptionForm,
-  PrescriptionFormValues,
-  emptyPrescriptionFormValues,
-  rxToFormValues,
-} from './PrescriptionForm';
+import { PrescriptionDialog } from './PrescriptionForm';
 
 interface PrescriptionsByPerson {
   person:        PersonRow;
@@ -64,8 +57,7 @@ Readonly<{
       </CardGridColumn>
       <CardGridColumn>
         <FieldActions alignment='right'>
-          <Button size="sm" variant="ghost" onClick={onEdit}>Edit</Button>
-          {isActive && <span className="badge badge--success">Active</span>}
+          <RowMenu label={rx.alias ?? rx.medication.medication_name} items={[{ label: 'Edit…', onSelect: onEdit }]} />
         </FieldActions>
       </CardGridColumn>
     </CardGrid>
@@ -74,94 +66,35 @@ Readonly<{
 
 export function PrescriptionsClient({ prescriptionsByPerson }: Readonly<Props>) {
   //TODO Actually, should just pass person in as param, then get prescriptions here.
-  const supabase = createClient();
-  const router   = useRouter();
-  const [showForm,   setShowForm]   = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<PrescriptionDetail | null>(null);
-  const [form,       setForm]       = useState<PrescriptionFormValues>(emptyPrescriptionFormValues);
-  const [saving,     setSaving]     = useState(false);
+  const [forPerson,  setForPerson]  = useState<number | undefined>();
 
-  const openNew  = (personId?: number) => {
+  const openNew = (personId?: number) => {
     setEditTarget(null);
-    setForm({ ...emptyPrescriptionFormValues, person_id: personId ? String(personId) : '' });
-    setShowForm(true);
+    setForPerson(personId);
+    setDialogOpen(true);
   };
 
   const openEdit = (rx: PrescriptionDetail) => {
     setEditTarget(rx);
-    setForm(rxToFormValues(rx));
-    setShowForm(true);
+    setDialogOpen(true);
   };
-
-  const cancel = () => { setShowForm(false); setEditTarget(null); };
-
-  const handleSave = useCallback(async (values: PrescriptionFormValues) => {
-    setSaving(true);
-    try {
-      let medId = values.medication_id ? Number.parseInt(values.medication_id) : null;
-
-      if (!medId && values.new_medication_name.trim()) {
-        const { data: newMed } = await supabase
-          .from('medications')
-          .insert({ medication_name: values.new_medication_name.trim() })
-          .select('id')
-          .single();
-        if (newMed) medId = newMed.id;
-      }
-
-      if (!medId || !values.person_id) return;
-
-      const payload = {
-        person_id:         Number.parseInt(values.person_id),
-        medication_id:     medId,
-        alias:             values.alias             || null,
-        dose:              values.dose              || null,
-        timing_type_id:    values.timing_type_id   ? Number.parseInt(values.timing_type_id)   : null,
-        purpose:           values.purpose           || null,
-        prescriber_id:     values.prescriber_id    ? Number.parseInt(values.prescriber_id)    : null,
-        start_date:        values.start_date        || null,
-        discontinued_date: values.discontinued_date || null,
-        is_active:         !values.discontinued_date,
-      };
-
-      if (editTarget) {
-        await updatePrescription(supabase, editTarget.id, payload);
-      } else {
-        await createPrescription(supabase, payload);
-      }
-
-      router.refresh();
-      cancel();
-    } finally {
-      setSaving(false);
-    }
-  }, [supabase, editTarget, router]);
-
-  if (showForm) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>{editTarget ? 'Edit Prescription' : 'Add Prescription'}</CardTitle>
-        </CardHeader>
-        <PrescriptionForm
-          key={editTarget?.id ?? 'new'}
-          initialValues={form}
-          saving={saving}
-          saveLabel={editTarget ? 'Update' : 'Add'}
-          onSave={handleSave}
-          onCancel={cancel}
-        />
-      </Card>
-    );
-  }
 
   return (
     <>
-      <FieldActions alignment='right'>
+      <FieldActions docked alignment='right'>
         <Button variant="accent" onClick={() => openNew()}>
-          + Add Prescription
+          + New Prescription
         </Button>
       </FieldActions>
+
+      <PrescriptionDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        prescription={editTarget}
+        personId={forPerson}
+      />
 
       {prescriptionsByPerson.map(({ person, prescriptions }) => {
         const active = prescriptions.filter(rx => rx.is_active);
@@ -174,11 +107,7 @@ export function PrescriptionsClient({ prescriptionsByPerson }: Readonly<Props>) 
                 {person.person_name}
               </CardTitle>
               <CardActions>
-                <Button size="sm" 
-                  variant="action" 
-                  onClick={() => openNew(person.id)}>
-                    + Add
-                </Button>
+                <AddButton label={`Add a prescription for ${person.person_name}`} onClick={() => openNew(person.id)} />
               </CardActions>
             </CardHeader>
             <CardBody>
@@ -208,7 +137,7 @@ export function PrescriptionsClient({ prescriptionsByPerson }: Readonly<Props>) 
       })}
 
       {prescriptionsByPerson.every(({ prescriptions }) => prescriptions.length === 0) && (
-        <p className="empty-state">No prescriptions yet. Add one above.</p>
+        <EmptyState>No prescriptions yet. Add one above.</EmptyState>
       )}
     </>
   );

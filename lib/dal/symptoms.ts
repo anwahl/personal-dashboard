@@ -1,14 +1,14 @@
 /**
  * lib/dal/symptoms.ts
  *
- * symptom_entries is removed — crash, anxiety, and daily_symptom_entries
- * are now fetched directly by entry_id from daily_entries.
+ * symptom_entries is removed — crash and daily_symptom_entries are fetched
+ * directly by entry_id from daily_entries. (anxiety_entries still holds past
+ * data, but the app no longer reads or writes it.)
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   CrashRow,
-  AnxietyEntryRow,
   DailySymptomEntryRow,
   SymptomCategoryRow,
   SymptomTypeRow,
@@ -16,7 +16,6 @@ import type {
 import type {
   DailySymptomData,
   CrashInsert,
-  AnxietyEntryInsert,
 } from "@/types/dal";
 
 type Client = SupabaseClient;
@@ -27,24 +26,18 @@ export async function getDailySymptomData(
   client: Client,
   entryId: number,
 ): Promise<DailySymptomData | null> {
-  const [crashRes, anxietyRes, symptomsRes] = await Promise.all([
+  const [crashRes, symptomsRes] = await Promise.all([
     client.from("crashes").select("*").eq("entry_id", entryId).maybeSingle(),
-    client
-      .from("anxiety_entries")
-      .select("*")
-      .eq("entry_id", entryId)
-      .maybeSingle(),
     client.from("daily_symptom_entries").select("*").eq("entry_id", entryId),
   ]);
 
   const crash = crashRes.data as CrashRow | null;
-  const anxiety = anxietyRes.data as AnxietyEntryRow | null;
   const symptomEntries = (symptomsRes.data ?? []) as DailySymptomEntryRow[];
 
   // Return null if nothing has been logged for this entry yet
-  if (!crash && !anxiety && symptomEntries.length === 0) return null;
+  if (!crash && symptomEntries.length === 0) return null;
 
-  return { crash, anxiety, symptom_entries: symptomEntries };
+  return { crash, symptom_entries: symptomEntries };
 }
 
 // ── Daily symptom types (which symptoms were present) ─────────────────────────
@@ -134,44 +127,6 @@ export async function deleteCrash(
   await client.from("crashes").delete().eq("entry_id", entryId).throwOnError();
 }
 
-// ── Anxiety entries ───────────────────────────────────────────────────────────
-
-export async function upsertAnxiety(
-  client: Client,
-  entryId: number,
-  fields: Omit<AnxietyEntryInsert, "entry_id">,
-): Promise<void> {
-  const { data: existing } = await client
-    .from("anxiety_entries")
-    .select("id")
-    .eq("entry_id", entryId)
-    .maybeSingle();
-
-  if (existing) {
-    await client
-      .from("anxiety_entries")
-      .update(fields)
-      .eq("id", existing.id)
-      .throwOnError();
-  } else {
-    await client
-      .from("anxiety_entries")
-      .insert({ entry_id: entryId, ...fields })
-      .throwOnError();
-  }
-}
-
-export async function deleteAnxiety(
-  client: Client,
-  entryId: number,
-): Promise<void> {
-  await client
-    .from("anxiety_entries")
-    .delete()
-    .eq("entry_id", entryId)
-    .throwOnError();
-}
-
 // ── Settings operations ───────────────────────────────────────────────────────
 
 export async function addSymptomCategory(
@@ -243,17 +198,6 @@ export async function updateSymptomCategory(
   if (error) throw new Error(`updateSymptomCategory: ${error.message}`);
 }
 
-export async function deleteSymptomCategory(
-  client: Client,
-  id: number,
-): Promise<void> {
-  const { error } = await client
-    .from("symptom_categories")
-    .delete()
-    .eq("id", id);
-  if (error) throw new Error(`deleteSymptomCategory: ${error.message}`);
-}
-
 export async function updateSymptomType(
   client: Client,
   id: number,
@@ -264,12 +208,4 @@ export async function updateSymptomType(
     .update({ symptom_name: name.trim() })
     .eq("id", id);
   if (error) throw new Error(`updateSymptomType: ${error.message}`);
-}
-
-export async function deleteSymptomType(
-  client: Client,
-  id: number,
-): Promise<void> {
-  const { error } = await client.from("symptom_types").delete().eq("id", id);
-  if (error) throw new Error(`deleteSymptomType: ${error.message}`);
 }

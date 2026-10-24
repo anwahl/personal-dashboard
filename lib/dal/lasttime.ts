@@ -16,7 +16,7 @@ import type {
   LastTimeBooleanRow,
   LastTimeCustomRow,
 } from "@/types/schema";
-import type { LastTimeEntry } from "@/types/dal";
+import type { LastTimeEntry, LastTimeSettingsItems } from "@/types/dal";
 
 type Client = SupabaseClient;
 
@@ -207,7 +207,6 @@ export async function logCustomLastTime(
     .throwOnError();
 }
 
-
 export async function getLastTimeMedia(
   client: Client,
 ): Promise<LastTimeMediaRow[]> {
@@ -241,14 +240,6 @@ export async function createLastTimeMedia(
   return data as LastTimeMediaRow;
 }
 
-export async function deleteLastTimeMedia(
-  client: Client,
-  id: number,
-): Promise<void> {
-  const { error } = await client.from("last_time_media").delete().eq("id", id);
-  if (error) throw new Error(`deleteLastTimeMedia: ${error.message}`);
-}
-
 // ── Boolean last-time ─────────────────────────────────────────────────────────
 
 export async function getLastTimeBoolean(
@@ -264,6 +255,7 @@ export async function getLastTimeBoolean(
 
 export interface LastTimeBooleanPayload {
   trackable_id: number;
+  icon_id?: number | null;
   sort_order: number;
 }
 
@@ -278,18 +270,6 @@ export async function createLastTimeBoolean(
     .single();
   if (error) throw new Error(`createLastTimeBoolean: ${error.message}`);
   return data as LastTimeBooleanRow;
-}
-
-
-export async function deleteLastTimeBoolean(
-  client: Client,
-  id: number,
-): Promise<void> {
-  const { error } = await client
-    .from("last_time_boolean")
-    .delete()
-    .eq("id", id);
-  if (error) throw new Error(`deleteLastTimeBoolean: ${error.message}`);
 }
 
 // ── Custom last-time ──────────────────────────────────────────────────────────
@@ -324,36 +304,16 @@ export async function createLastTimeCustom(
   return data as LastTimeCustomRow;
 }
 
-export async function deleteLastTimeCustom(
-  client: Client,
-  id: number,
-): Promise<void> {
-  const { error } = await client.from("last_time_custom").delete().eq("id", id);
-  if (error) throw new Error(`deleteLastTimeCustom: ${error.message}`);
-}
+// ── Settings ──────────────────────────────────────────────────────────────────
 
-// ── Update functions ──────────────────────────────────────────────────────────
-
-export async function updateLastTimeMedia(
+/** Every Last Time item, active or not, for the settings list. */
+export async function getLastTimeSettingsItems(
   client: Client,
-  id: number,
-  payload: Partial<LastTimeMediaPayload>,
-): Promise<void> {
-  const { error } = await client
-    .from("last_time_media")
-    .update(payload)
-    .eq("id", id);
-  if (error) throw new Error(`updateLastTimeMedia: ${error.message}`);
-}
-
-export async function updateLastTimeCustom(
-  client: Client,
-  id: number,
-  payload: Partial<LastTimeCustomPayload>,
-): Promise<void> {
-  const { error } = await client
-    .from("last_time_custom")
-    .update(payload)
-    .eq("id", id);
-  if (error) throw new Error(`updateLastTimeCustom: ${error.message}`);
+): Promise<LastTimeSettingsItems> {
+  const [media, boolean, custom] = await Promise.all([
+    getLastTimeMedia(client),
+    getLastTimeBoolean(client),
+    getLastTimeCustom(client),
+  ]);
+  return { media, boolean, custom };
 }

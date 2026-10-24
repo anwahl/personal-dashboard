@@ -1,0 +1,26 @@
+'use client';
+
+/**
+ * useMediaQuery — whether a CSS media query currently matches.
+ *
+ * Returns false during server rendering and hydration, then the live value,
+ * updating when the query's result changes (e.g. rotating a tablet).
+ */
+
+import { useCallback, useSyncExternalStore } from 'react';
+
+/** The app's phone breakpoint (matches the CSS `max-width: 767px` rules). */
+export const PHONE_QUERY = '(max-width: 767px)';
+
+export function useMediaQuery(query: string): boolean {
+  const subscribe = useCallback((onChange: () => void) => {
+    const mql = window.matchMedia(query);
+    mql.addEventListener('change', onChange);
+    return () => mql.removeEventListener('change', onChange);
+  }, [query]);
+  return useSyncExternalStore(
+    subscribe,
+    () => window.matchMedia(query).matches,
+    () => false,
+  );
+}

@@ -5,7 +5,7 @@ import { TabBar }                  from '@/components/ui';
 import { ManageableList }          from './ManageableList';
 import { SymptomSettings }         from './SymptomSettings';
 import { JournalSettings }         from './JournalSettings';
-import { PeopleStructureSettings } from './PeopleStructureSettings';
+import { PeopleSettings }          from './people/PeopleSettings';
 import { TrackableSettings }       from './TrackableSettings';
 import { ChartSettings }           from './ChartSettings';
 import { LastTimeSettings }        from '@/components/last-time/LastTimeSettings';
@@ -25,6 +25,9 @@ import type {
   ItemListRow,
   LogSchemaRow,
   ChecklistRow,
+  InfoFieldTypeRow,
+  LogSchemaFieldRow,
+  LogSchemaFieldOptionRow,
   PersonRow,
   ProviderRow,
   ProviderTypeRow,
@@ -45,6 +48,8 @@ import { SETTINGS_TABS, SettingsTabId } from '@/lib/constants/nav';
 // ── Props ─────────────────────────────────────────────────────────────────────
 
 interface Props {
+  /** Tab to open first (from ?tab=…). Default: Daily. */
+  initialTab?:       SettingsTabId;
   // Icons
   icons:                IconRow[];
   // People
@@ -79,11 +84,15 @@ interface Props {
   itemLists:         ItemListRow[];
   logSchemas:        LogSchemaRow[];
   checklists:        ChecklistRow[];
+  infoFieldTypes:        InfoFieldTypeRow[];
+  logSchemaFields:       LogSchemaFieldRow[];
+  logSchemaFieldOptions: LogSchemaFieldOptionRow[];
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function SettingsClient({
+  initialTab = 'daily',
   icons,
   calendarToken,
   peopleCategories,
@@ -95,15 +104,16 @@ export function SettingsClient({
   providers, providerTypes,
   mediaTypes, mediaGenres, mediaStatuses,
   people, personLinks, infoGroups, itemLists, logSchemas, checklists,
+  infoFieldTypes, logSchemaFields, logSchemaFieldOptions,
 }: Readonly<Props>) {
-  const [tab, setTab] = useState<SettingsTabId>('daily');
+  const [tab, setTab] = useState<SettingsTabId>(initialTab);
   // Lifted trackables state — allows ChartSettings dropdown to update when
   // new metrics are added in TrackableSettings without a full page refresh
   const [liveTrackables, setLiveTrackables] = useState<DailyTrackableRow[]>(trackables);
 
   return (
     <div>
-      <TabBar tabs={SETTINGS_TABS} active={tab} onChange={setTab} />
+      <TabBar label="Settings sections" tabs={SETTINGS_TABS} active={tab} onChange={setTab} />
 
       {/* Tab panels — always rendered, CSS-hidden when inactive to preserve local state */}
       <div className="settings-tab-content">
@@ -183,14 +193,17 @@ export function SettingsClient({
         </div>
 
         <div className={tab === 'people' ? '' : 'hidden'}>
-          <PeopleStructureSettings
+          <PeopleSettings
             people={people}
             personLinks={personLinks}
+            peopleCategories={peopleCategories}
             infoGroups={infoGroups}
+            infoFieldTypes={infoFieldTypes}
             itemLists={itemLists}
             logSchemas={logSchemas}
+            logSchemaFields={logSchemaFields}
+            logSchemaFieldOptions={logSchemaFieldOptions}
             checklists={checklists}
-            peopleCategories={peopleCategories}
           />
         </div>
 

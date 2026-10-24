@@ -9,10 +9,13 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
+import { useRouter }              from 'next/navigation';
 import { createClient }           from '@/lib/supabase/client';
 import { logCustomLastTime }      from '@/lib/dal/lasttime';
-import { Button, Card, CardActions, CardBody, CardGrid, CardHeader,
-         CardSection, CardTitle, FieldActions, IconDisplay, Item}    from '@/components/ui';
+import {
+  Button, Card, CardActions, CardBody, CardHeader, CardSection, CardTitle,
+  Dialog, IconDisplay, EmptyState, DateField, ListItem, RowMenu,
+} from '@/components/ui';
 import type { LastTimeEntry }      from '@/types/dal';
 import type { IconRow }            from '@/types/schema';
 import { formatDaysAgo, formatMediumDate, localTodayISO } from '@/lib/utils/dates';
@@ -42,10 +45,14 @@ function daysAgoColorClass(days: number | null): string {
 
 export function LastTimeTracker({ entries, icons, compact = false }: Readonly<Props>) {
   const supabase = createClient();
+  const router   = useRouter();
   const [items,          setItems]          = useState<LastTimeEntry[]>(entries);
   const [sortBy,         setSortBy]         = useState<'order' | 'recent'>('order');
   const [logging,        setLogging]        = useState<Set<number>>(new Set());
+  // The item is kept after closing so the title doesn't blank out while
+  // the dialog's exit animation plays; `datePickerOpen` controls visibility.
   const [datePickerItem, setDatePickerItem] = useState<LastTimeEntry | null>(null);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [pickedDate,     setPickedDate]     = useState<string>('');
 
   // Re-sync when server refreshes (router.refresh() from LastTimeSettings)
@@ -76,6 +83,7 @@ export function LastTimeTracker({ entries, icons, compact = false }: Readonly<Pr
   const openDatePicker = useCallback((item: LastTimeEntry) => {
     setDatePickerItem(item);
     setPickedDate(item.last_date ?? localTodayISO());
+    setDatePickerOpen(true);
   }, []);
 
   const saveCustomDate = useCallback(async () => {
@@ -85,102 +93,96 @@ export function LastTimeTracker({ entries, icons, compact = false }: Readonly<Pr
       i.id === datePickerItem.id && i.category === datePickerItem.category
         ? { ...i, last_date: pickedDate, days_ago: daysAgoFromDate(pickedDate) } : i
     ));
-    setDatePickerItem(null);
+    setDatePickerOpen(false);
   }, [supabase, datePickerItem, pickedDate]);
-
-  const closePickerOnBackdrop = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) setDatePickerItem(null);
-  }, []);
 
   return (
     <>
     <Card>
-      <CardBody>
         <CardHeader>
           <CardTitle>
             Last Time...
           </CardTitle>
           <CardActions>
-            <Button variant='action-alt' size='sm'
-              className={`${sortBy === 'recent' ? ' btn--inactive' : ''}`}
-              onClick={() => setSortBy('order')}>
-                Custom Order
-            </Button>
-            
-            <Button variant='action-alt' size='sm'
-              className={`${sortBy === 'order' ? ' btn--inactive' : ''}`}
-              onClick={() => setSortBy('recent')}>
-                Most recent first
-            </Button>
+            <RowMenu
+              label="Last Time"
+              items={[
+                { label: 'Custom order',      checked: sortBy === 'order',  onSelect: () => setSortBy('order') },
+                { label: 'Most recent first', checked: sortBy === 'recent', onSelect: () => setSortBy('recent') },
+                'separator',
+                { label: 'Manage items…', onSelect: () => router.push('/settings?tab=lasttime') },
+              ]}
+            />
           </CardActions>
         </CardHeader>
+      <CardBody>
         <CardSection>
           {sorted.length === 0 && (
-            <p className="empty-state">No items configured. Add them in Settings → Last Time.</p>
+            <EmptyState>No items configured. Add them in Settings → Last Time.</EmptyState>
           )}
 
           <div className="last-time-list">
-            
-             
             {sorted.map(item => (
-              <span className='border__btm pad pad__btm margin-tb-md' key={`${item.category}-${item.id}`}  >
-                <CardGrid columns={4} className=''>
+              <ListItem
+                key={`${item.category}-${item.id}`}
+                leading={
                   <IconDisplay
                     icon={icons.find(i => i.id === item.icon_id) ?? null}
                     size="sm"
                     className="last-time-item__emoji"
                   />
-                  <Item itemType='title' value={item.label} />
-                  <Item itemType='info' value={formatMediumDate(item.last_date)} />
-                  <Item itemType='meta' itemModifier={'bold'} value={formatDaysAgo(item.days_ago)} className={`${daysAgoColorClass(item.days_ago)}`} />
-                </CardGrid>
-              
-                {item.category === 'custom' && (
-                  <FieldActions alignment='right' className=''>
+                }
+                title={item.label}
+                meta={
+                  <>
+                    <span className={`last-time-item__ago ${daysAgoColorClass(item.days_ago)}`}>
+                      {formatDaysAgo(item.days_ago)}
+                    </span>
+                    {item.last_date && <span>{formatMediumDate(item.last_date)}</span>}
+                  </>
+                }
+                trailing={item.category === 'custom' && (
+                  <>
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => openDatePicker(item)}
-                      title="Log custom date">
+                      title="Log custom date"
+                      aria-label={`Log a date for ${item.label}`}>
                       📅
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => logToday(item)}
-                      disabled={logging.has(item.id)}
-                      title="Log today">
-                      {logging.has(item.id) ? '…' : '✓'}
+                      busy={logging.has(item.id)}
+                      title="Log today"
+                      aria-label={`Log ${item.label} today`}>
+                      ✓
                     </Button>
-                  </FieldActions>
+                  </>
                 )}
-              </span>
+              />
             ))}
           </div>
         </CardSection>
       </CardBody>
     </Card>
 
-    {datePickerItem && (
-      <div className="modal-overlay" onClick={closePickerOnBackdrop}>
-        <div className="modal-panel" style={{ maxWidth: 320 }} role="dialog" aria-label="Log custom date">
-          <div className="modal-panel__header">
-            <span className="modal-panel__title">Log date for &ldquo;{datePickerItem.label}&rdquo;</span>
-            <Button variant="ghost" size="sm" onClick={() => setDatePickerItem(null)}>✕</Button>
-          </div>
-          <input
-            type="date"
-            value={pickedDate}
-            max={localTodayISO()}
-            onChange={e => setPickedDate(e.target.value)}
-          />
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-            <Button variant="ghost" onClick={() => setDatePickerItem(null)}>Cancel</Button>
-            <Button onClick={saveCustomDate} disabled={!pickedDate}>Save</Button>
-          </div>
-        </div>
-      </div>
-    )}
+    <Dialog
+      open={datePickerOpen}
+      onOpenChange={setDatePickerOpen}
+      title={<>Log date for &ldquo;{datePickerItem?.label}&rdquo;</>}
+      size="sm"
+      footer={
+        <>
+          <Button variant="ghost" onClick={() => setDatePickerOpen(false)}>Cancel</Button>
+          <Button onClick={saveCustomDate} disabled={!pickedDate}>Save</Button>
+        </>
+      }
+    >
+      <DateField label="Date" value={pickedDate} max={localTodayISO()} onChange={setPickedDate} />
+    </Dialog>
     </>
   );
 }

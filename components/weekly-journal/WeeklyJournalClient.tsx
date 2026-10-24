@@ -16,7 +16,7 @@ import {
   saveWeeklyResponses,
 } from '@/lib/dal/weekly-journal';
 import { addDays, getSundayOfWeek }  from '@/lib/utils/dates';
-import { Button, SaveStatus }        from '@/components/ui';
+import { Button, FieldActions, SaveStatus, EmptyState, TextAreaField, ModeToggle, CardSectionLabel } from '@/components/ui';
 import type { SaveState }            from '@/components/ui';
 import type { WeeklyEntryRow }       from '@/types/schema';
 import type {
@@ -132,7 +132,7 @@ export function WeeklyJournalClient({
       return (
         <div>
           <WeekNav weekStart={weekStart} weekNum={weekNum} weekRange={weekRange} />
-          <p className="empty-state">No responses yet for this week.</p>
+          <EmptyState>No responses yet for this week.</EmptyState>
           <Button variant="accent" onClick={() => setMode('edit')}>Write Entry</Button>
         </div>
       );
@@ -151,12 +151,12 @@ export function WeeklyJournalClient({
     return (
       <div>
         <WeekNav weekStart={weekStart} weekNum={weekNum} weekRange={weekRange} />
-        <div className="page-actions">
-          <Button variant="ghost" onClick={() => setMode('edit')}>✏️ Edit</Button>
-        </div>
+        <FieldActions docked alignment="right">
+          <ModeToggle editing={false} onChange={() => setMode('edit')} />
+        </FieldActions>
         {Object.values(byCategory).map(({ catName, cards: catCards }) => (
           <div key={catName} className="journal-category-section">
-            <p className="card__section-label">{catName}</p>
+            <CardSectionLabel>{catName}</CardSectionLabel>
             {catCards.map(card => (
               <div key={card.key} className="journal-prompt-card">
                 <p className="journal-prompt-card__prompt">{card.promptText}</p>
@@ -187,14 +187,16 @@ export function WeeklyJournalClient({
 
       {Object.values(cardsByCategory).map(({ catName, cards: catCards }) => (
         <div key={catName} className="journal-category-section">
-          <p className="card__section-label">{catName}</p>
+          <CardSectionLabel>{catName}</CardSectionLabel>
           {catCards.map(card => (
             <div key={card.key} className="journal-prompt-card">
               <p className="journal-prompt-card__prompt">{card.promptText}</p>
-              <textarea
+              <TextAreaField
+                hideLabel
+                label={card.promptText}
                 className="journal-prompt-card__textarea"
                 value={card.responseText}
-                onChange={e => updateCard(card.key, e.target.value)}
+                onChange={v => updateCard(card.key, v)}
                 placeholder="Write your response…"
                 rows={3}
               />
@@ -203,15 +205,15 @@ export function WeeklyJournalClient({
         </div>
       ))}
 
-      <div className="page-actions">
-        <Button variant="accent" onClick={save} disabled={saveState === 'saving' || !hasContent}>
-          {saveState === 'saving' ? 'Saving…' : 'Save Entry'}
+      <FieldActions docked alignment="right">
+        <Button variant="accent" onClick={save} busy={saveState === 'saving'} disabled={!hasContent}>
+          Save Entry
         </Button>
         {existingEntry && (
           <Button variant="ghost" onClick={() => setMode('view')}>Cancel</Button>
         )}
         <SaveStatus state={saveState} />
-      </div>
+      </FieldActions>
     </div>
   );
 }
@@ -221,15 +223,14 @@ export function WeeklyJournalClient({
 function WeekNav({ weekStart, weekNum, weekRange }: Readonly<{
   weekStart: string; weekNum: number; weekRange: string;
 }>) {
-  const router = useRouter();
   const prev = prevSunday(weekStart);
   const next = nextSunday(weekStart);
 
   return (
     <div className="week-nav">
-      <button type="button" className="week-nav__btn" onClick={() => router.push(`/journal/weekly/${prev}`)}>‹</button>
+      <Button variant="ghost" size="icon" href={`/journal/weekly/${prev}`} aria-label="Previous week">‹</Button>
       <span className="week-nav__label">Week {weekNum} · {weekRange}</span>
-      <button type="button" className="week-nav__btn" onClick={() => router.push(`/journal/weekly/${next}`)}>›</button>
+      <Button variant="ghost" size="icon" href={`/journal/weekly/${next}`} aria-label="Next week">›</Button>
     </div>
   );
 }

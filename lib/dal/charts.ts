@@ -70,13 +70,14 @@ export async function removeChartLink(
   if (error) throw new Error(`removeChartLink: ${error.message}`);
 }
 
-// ── Create / delete ───────────────────────────────────────────────────────────
+// ── Create / rename ───────────────────────────────────────────────────────────
 
 export interface CreateChartPayload {
   title: string;
   chart_type: ChartType;
   sort_order?: number;
   category_id: number | null;
+  is_active?: boolean;
 }
 
 export async function createChartDefinition(
@@ -92,15 +93,17 @@ export async function createChartDefinition(
   return data as ChartDefinitionRow;
 }
 
-export async function deleteChartDefinition(
+/** Charts are deactivated, never deleted (see the delete rule). */
+export async function renameChart(
   client: Client,
   chartId: number,
+  title: string,
 ): Promise<void> {
   const { error } = await client
     .from("chart_definitions")
-    .delete()
+    .update({ title })
     .eq("id", chartId);
-  if (error) throw new Error(`deleteChartDefinition: ${error.message}`);
+  if (error) throw new Error(`renameChart: ${error.message}`);
 }
 
 // ── Sort order ────────────────────────────────────────────────────────────────

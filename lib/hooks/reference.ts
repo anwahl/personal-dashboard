@@ -42,6 +42,7 @@ import {
   getMediaGenres,
 } from '@/lib/dal/reference';
 import { getProviders } from '@/lib/dal/providers';
+import { getLastTimeSettingsItems } from '@/lib/dal/lasttime';
 import { getPrescriptionById, getPrescriptionChangesByRx } from '../dal/prescriptions';
 import { PrescriptionDetail } from '@/types/dal';
 
@@ -96,6 +97,29 @@ export const useTaskStatuses = () =>
 export const useTaskPriorities = () =>
   useSWR('ref/task-priorities', () => getTaskPriorities(supabase));
 
+/**
+ * Default status + priority for a newly created task: the first non-terminal
+ * status and the lowest-sort_order priority. Ids are 0 until both lists load;
+ * check `isLoading` before inserting.
+ */
+export function useTaskDefaults() {
+  const statuses   = useTaskStatuses();
+  const priorities = useTaskPriorities();
+
+  const statusRows   = statuses.data ?? [];
+  const priorityRows = priorities.data ?? [];
+
+  const status   = statusRows.find(s => !s.is_terminal) ?? statusRows[0];
+  const priority = [...priorityRows].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0];
+
+  return {
+    statusId:   status?.id ?? 0,
+    priorityId: priority?.id ?? 0,
+    isLoading:  statuses.isLoading || priorities.isLoading,
+    error:      statuses.error ?? priorities.error,
+  };
+}
+
 // ── Trackables ────────────────────────────────────────────────────────────────
 
 /** Active daily trackables (boolean + numeric habits/metrics). */
@@ -111,3 +135,9 @@ export const useTrackableCategories = () =>
 export const useMediaTypes    = () => useSWR('ref/media-types',    () => getMediaTypes(supabase));
 export const useMediaStatuses = () => useSWR('ref/media-statuses', () => getMediaStatuses(supabase));
 export const useMediaGenres   = () => useSWR('ref/media-genres',   () => getMediaGenres(supabase));
+
+// ── Last Time ─────────────────────────────────────────────────────────────────
+
+/** Every Last Time item (media, metric, custom), active or not — for settings. */
+export const useLastTimeSettingsItems = () =>
+  useSWR('ref/last-time-items', () => getLastTimeSettingsItems(supabase));

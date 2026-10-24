@@ -7,8 +7,9 @@
  * (contextDate = that entry's date). All tabs are relative to contextDate.
  *
  * Tabs: Today (incl. overdue) | Tomorrow | Upcoming | No Date | Done
- * QuickAdd row on each tab. "Full Add" opens FullAddForm which uses
- * the shared <TaskForm> component.
+ * Adding: the ＋ in the header (cards on the Hub / Daily page), or a
+ * "+ New Task" bottom bar (addPlacement="page", the Tasks page). Both open
+ * TaskDialog, due on the open tab's day (none on No Date).
  */
 import { updateTaskStatus, TaskContextData,
          spawnNextRecurrence, getTaskById, 
@@ -18,12 +19,13 @@ import { useRouter }                                    from 'next/navigation';
 import { createClient }                                 from '@/lib/supabase/client';
 import { Card, CardHeader, CardTitle, CardBody,
          TabBar, Button, Chip, 
-         useToast}                                      from '@/components/ui';
+         useToast, EmptyState, ListItem, AddButton, CardActions, FieldActions
+}                                      from '@/components/ui';
 import type { TaskDetail }                              from '@/types/dal';
 import type { TaskRow }                                 from '@/types/schema';
-import { formatShortDate, formatTime, localTodayISO }   from '@/lib/utils/dates';
-import Link                                             from 'next/link';
-import { useTaskStatuses }                              from '@/lib/hooks/reference';
+import { addDays, formatShortDate, formatTime, localTodayISO } from '@/lib/utils/dates';
+import { useTaskDefaults, useTaskStatuses }             from '@/lib/hooks/reference';
+import { TaskDialog }                                   from './TaskForm';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -70,25 +72,27 @@ export function TaskItem({
 
   return (
     <Card>
-      <CardBody className={`list-item${done ? ' list-item--muted' : ''}${isReminderOverdue(task) ? ' list-item--reminder-overdue' : ''}`}>
-        <div className={`priority-dot ${PRIORITY_COLOR[task.priority.priority_name] ?? 'priority-dot--normal'}`} />
-        <Button
-          className={`task-item__check ${done ? 'task-item__is-checked' : 'task-item__is-unchecked'}${busy ? ' task-item__check--busy' : ''}`}
-          onClick={() => onUpdate(task.id)}
-          disabled={busy}
-          size='check'
-          aria-label={done ? 'Mark Not Done' : 'Mark Done'}
-          title={done ? 'Mark Not Done' : 'Mark Done'}
-        >
-          {busy ? '…' : ''}
-        </Button>
-
-        <Link href={`/tasks/${task.id}`} className="item-body-link">
-          <div className="list-item__body">
-            <div className={`list-item__title${done ? ' list-item__title--strike' : ''}`}>
-              {task.title}
-            </div>
-            <div className="list-item__meta">
+      <CardBody className={isReminderOverdue(task) ? 'list-item--reminder-overdue' : undefined}>
+        <ListItem
+          muted={done}
+          strike={done}
+          href={`/tasks/${task.id}`}
+          leading={
+            <>
+              <div className={`priority-dot ${PRIORITY_COLOR[task.priority.priority_name] ?? 'priority-dot--normal'}`} />
+              <Button
+                className={`task-item__check ${done ? 'task-item__is-checked' : 'task-item__is-unchecked'}`}
+                onClick={() => onUpdate(task.id)}
+                busy={busy}
+                size='check'
+                aria-label={done ? 'Mark Not Done' : 'Mark Done'}
+                title={done ? 'Mark Not Done' : 'Mark Done'}
+              />
+            </>
+          }
+          title={task.title}
+          meta={
+            <>
               <Chip small={true} className={`${overdue ? ' chip--due' : ''}`}>
                 {task.status.status_name}
               </Chip>
@@ -109,9 +113,9 @@ export function TaskItem({
                 </span>
               )}
               {task.person && <span>{task.person.person_name}</span>}
-            </div>
-          </div>
-        </Link>
+            </>
+          }
+        />
       </CardBody>
     </Card>
   );
@@ -122,11 +126,14 @@ export function TaskItem({
 interface Props {
   contextDate: string;
   initialData: TaskContextData;
+  /** Where the add button goes: the card header (default) or the page's bottom bar. */
+  addPlacement?: 'card' | 'page';
 }
 
 export function TaskList({
   contextDate,
   initialData,
+  addPlacement = 'card',
 }: Readonly<Props>) {
   const supabase = createClient();
   const router = useRouter();
@@ -141,6 +148,7 @@ export function TaskList({
   const doneStatus    = statuses.find(s => s.is_terminal);
   const doneStatusId  = doneStatus?.id ?? 0;
   const todoStatusId  = defaultStatus?.id ?? 0;
+  const { priorityId: normalPriorityId } = useTaskDefaults();
   const data = initialData;
 
   //TODO Update here or in TaskItem?
@@ -174,22 +182,49 @@ export function TaskList({
 
   const bucket = data[tab];
 
+  const [addOpen, setAddOpen] = useState(false);
+  // A new task is due on the day of the tab you're looking at.
+  const newDue = tab === 'tomorrow' ? addDays(contextDate, 1)
+    : tab === 'unscheduled' ? ''
+    : contextDate;
+  const addDialog = (
+    <TaskDialog
+      open={addOpen}
+      onOpenChange={setAddOpen}
+      defaults={{ status_id: String(todoStatusId), priority_id: String(normalPriorityId), due_date: newDue }}
+      showDateShortcuts
+      contextDate={contextDate}
+    />
+  );
+
   return (
+    <>
+    {addPlacement === 'page' && (
+      <FieldActions docked alignment="right">
+        <Button variant="accent" onClick={() => setAddOpen(true)}>+ New Task</Button>
+      </FieldActions>
+    )}
+    {addDialog}
     <Card>
       <CardHeader>
         <CardTitle>Tasks</CardTitle>
+        {addPlacement === 'card' && (
+          <CardActions>
+            <AddButton label="Add task" onClick={() => setAddOpen(true)} />
+          </CardActions>
+        )}
       </CardHeader>
       <CardBody>
-        <TabBar tabs={TABS} active={tab} onChange={id => setTab(id as TasksTabId)} />
+        <TabBar label="Task lists" tabs={TABS} active={tab} onChange={id => setTab(id as TasksTabId)} />
         <div className="task-list">
           {bucket.length === 0 ? (
-            <p className="empty-state">
+            <EmptyState>
               {tab === 'today'       ? 'Nothing due today.'      :
                tab === 'tomorrow'   ? 'Nothing due tomorrow.'   :
                tab === 'upcoming'   ? 'No upcoming tasks.'      :
                tab === 'done'       ? 'No completed tasks.'     :
                'No unscheduled tasks.'}
-            </p>
+            </EmptyState>
           ) : (
             bucket.map(task => (
               <TaskItem
@@ -204,6 +239,7 @@ export function TaskList({
         </div>
       </CardBody>
     </Card>
+    </>
   );
 }
 

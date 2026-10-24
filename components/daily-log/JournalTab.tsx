@@ -17,7 +17,7 @@
  *   - Responses grouped by category, read-only
  */
 
-import { SaveStatus, SaveState, Button } from '@/components/ui';
+import { SaveStatus, SaveState, Button, EmptyState, ChipSelect, TextAreaField, CardSectionLabel } from '@/components/ui';
 import type { JournalCategoryWithPrompts } from '@/types/dal';
 import type { JournalCard, JournalState } from './DailyPageClient';
 
@@ -25,7 +25,6 @@ type Mode = 'view' | 'input';
 
 interface Props {
   mode:          Mode;
-  entryId:       number;
   categories:    JournalCategoryWithPrompts[];
   state:         JournalState;
   setState:      React.Dispatch<React.SetStateAction<JournalState>>;
@@ -59,11 +58,13 @@ function PromptCard({
   return (
     <div className="journal-prompt-card">
       <p className="journal-prompt-card__prompt">{card.promptText}</p>
-      <textarea
+      <TextAreaField
+        hideLabel
+        label={card.promptText}
         className="journal-prompt-card__textarea"
         value={card.responseText}
         placeholder="Your response…"
-        onChange={e => onUpdate(card.clientId, e.target.value)}
+        onChange={v => onUpdate(card.clientId, v)}
         rows={3}
       />
       <div className="journal-prompt-card__actions">
@@ -119,7 +120,7 @@ function CategorySection({
 
 // ── JournalTab ────────────────────────────────────────────────────────────────
 
-export function JournalTab({ mode, entryId, categories, state, setState, onSave, saveState }: Readonly<Props>) {
+export function JournalTab({ mode, categories, state, setState, onSave, saveState }: Readonly<Props>) {
 
   // Which category IDs are currently active (have cards)
   const activeCategoryIds = new Set(state.map(c => c.categoryId));
@@ -193,7 +194,7 @@ export function JournalTab({ mode, entryId, categories, state, setState, onSave,
 
   if (mode === 'view') {
     if (state.length === 0) {
-      return <p className="empty-state">No journal entries for this day.</p>;
+      return <EmptyState>No journal entries for this day.</EmptyState>;
     }
 
     // Group by category
@@ -209,7 +210,7 @@ export function JournalTab({ mode, entryId, categories, state, setState, onSave,
       <div>
         {[...grouped.entries()].map(([catName, cards]) => (
           <div key={catName} className="journal-view-category">
-            <p className="card__section-label">{catName}</p>
+            <CardSectionLabel>{catName}</CardSectionLabel>
             {cards.filter(c => c.responseText.trim()).map(card => (
               <div key={card.clientId} className="journal-view-entry">
                 <p className="journal-view-entry__prompt">{card.promptText}</p>
@@ -229,26 +230,19 @@ export function JournalTab({ mode, entryId, categories, state, setState, onSave,
       {/* Category chips */}
       <div className="journal-category-chips">
         <p className="journal-category-chips__label">What do you feel like exploring today?</p>
-        <div className="chip-group">
-          {categories.map(cat => (
-            <button
-              key={cat.id}
-              type="button"
-              className={`chip chip--sm${activeCategoryIds.has(cat.id) ? ' chip--active' : ''}`}
-              onClick={() => toggleCategory(cat)}
-              disabled={cat.prompts.length === 0}
-            >
-              {cat.category_name}
-            </button>
-          ))}
-        </div>
+        <ChipSelect
+          label="Journal categories"
+          options={categories.map(cat => ({ value: cat.id, label: cat.category_name, disabled: cat.prompts.length === 0 }))}
+          selected={[...activeCategoryIds]}
+          onToggle={id => { const cat = categories.find(c => c.id === id); if (cat) toggleCategory(cat); }}
+        />
       </div>
 
       {/* Prompt sections */}
       {state.length === 0 && (
-        <p className="empty-state journal-category-chips__empty">
+        <EmptyState className="journal-category-chips__empty">
           Toggle some categories above to get started.
-        </p>
+        </EmptyState>
       )}
 
       {categories
@@ -268,8 +262,8 @@ export function JournalTab({ mode, entryId, categories, state, setState, onSave,
 
       {/* Tab-level save */}
       <div className="journal-save-row">
-        <Button variant="accent" size="sm" onClick={onSave} disabled={saveState === 'saving'}>
-          {saveState === 'saving' ? 'Saving…' : '💾 Save journal'}
+        <Button variant="accent" size="sm" onClick={onSave} busy={saveState === 'saving'}>
+          💾 Save journal
         </Button>
         <SaveStatus state={saveState} />
       </div>
