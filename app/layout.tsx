@@ -19,6 +19,8 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
+  // Browser chrome (address/status bar) matches --bg; must be a literal, CSS vars aren't read here
+  themeColor: '#0c0b0e',
 };
 
 const unica = Unica_One({

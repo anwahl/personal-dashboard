@@ -227,7 +227,7 @@ export function ManageableList({
               icons={icons}
               autoFocusKey={nameColumn}
             />
-            <Button size="sm" variant="accent" onClick={saveEdit} aria-label="Save">✓</Button>
+            <Button size="sm" variant="secondary" onClick={saveEdit} aria-label="Save">✓</Button>
             <Button size="sm" variant="ghost"  onClick={() => setEditId(null)} aria-label="Cancel">✕</Button>
           </>
         ) : undefined}
@@ -279,7 +279,7 @@ export function ManageableList({
           />
           <Button
             size="sm"
-            variant="accent"
+            variant="secondary"
             onClick={add}
             busy={saving} disabled={!newVals[nameField.key]?.trim()}
           >

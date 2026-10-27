@@ -61,7 +61,7 @@ export function TaskDetailClient({
             <h2 className="detail-page__title">{task.title}</h2>
             <div className="detail-page__actions">
               {!task.completed_at && doneStatus && (
-                <Button variant="accent" size="sm" onClick={complete}>✓ Complete</Button>
+                <Button variant="secondary" size="sm" onClick={complete}>✓ Complete</Button>
               )}
               <ModeToggle editing={false} onChange={() => setEditOpen(true)} />
               <ConfirmButton onConfirm={remove} disabled={deleting}>✕ Delete</ConfirmButton>

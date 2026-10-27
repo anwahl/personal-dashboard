@@ -75,7 +75,7 @@ export function FormDialog({
         </Button>
       }
       headerEnd={
-        <Button type="submit" form={formId} variant="accent" size="sm" busy={busy} disabled={!canSave}>
+        <Button type="submit" form={formId} variant="secondary" size="sm" busy={busy} disabled={!canSave}>
           {saveLabel}
         </Button>
       }

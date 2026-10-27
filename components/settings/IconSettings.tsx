@@ -171,7 +171,7 @@ export function IconSettings({ icons: initialIcons }: Readonly<Props>) {
         {addError && <p className="form-error">{addError}</p>}
 
         <Button
-          variant="accent"
+          variant="secondary"
           size="sm"
           onClick={handleAdd}
           disabled={addLoading}
@@ -238,7 +238,7 @@ function IconSettingsRow({ icon, sortable, onSave }: Readonly<RowProps>) {
             onEscape={() => setEditVals(null)}
             autoFocusKey="name"
           />
-          <Button size="sm" variant="accent" onClick={saveEdit} aria-label="Save">✓</Button>
+          <Button size="sm" variant="secondary" onClick={saveEdit} aria-label="Save">✓</Button>
           <Button size="sm" variant="ghost"  onClick={() => setEditVals(null)} aria-label="Cancel">✕</Button>
         </>
       ) : undefined}

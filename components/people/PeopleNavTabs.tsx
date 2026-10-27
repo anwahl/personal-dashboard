@@ -55,7 +55,7 @@ export function PeopleNavTabs({
             <a
               key={p.id}
               href={`/people/${slug}`}
-              className={`badge people-nav__link${active ? ' badge--accent' : ''}`}
+              className={`badge people-nav__link${active ? ' badge--selected' : ''}`}
             >
               {p.person_name}
             </a>

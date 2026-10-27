@@ -84,7 +84,7 @@ export function PrescriptionsClient({ prescriptionsByPerson }: Readonly<Props>) 
   return (
     <>
       <FieldActions docked alignment='right'>
-        <Button variant="accent" onClick={() => openNew()}>
+        <Button variant="primary" onClick={() => openNew()}>
           + New Prescription
         </Button>
       </FieldActions>

@@ -262,7 +262,7 @@ export function JournalTab({ mode, categories, state, setState, onSave, saveStat
 
       {/* Tab-level save */}
       <div className="journal-save-row">
-        <Button variant="accent" size="sm" onClick={onSave} busy={saveState === 'saving'}>
+        <Button variant="secondary" size="sm" onClick={onSave} busy={saveState === 'saving'}>
           💾 Save journal
         </Button>
         <SaveStatus state={saveState} />

@@ -69,7 +69,7 @@ export function PeopleList({
       renderCategoryName={cat => (
         <>
           {cat.name}
-          {Boolean(cat.is_assignable) && <Badge variant="accent">Assignable</Badge>}
+          {Boolean(cat.is_assignable) && <Badge variant="highlight">Assignable</Badge>}
         </>
       )}
       categoryMenuItems={(cat, patch) => [{

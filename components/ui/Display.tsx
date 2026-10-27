@@ -211,7 +211,7 @@ export function EmptyState({ children, className }: Readonly<{ children: ReactNo
 
 // ── Badge ─────────────────────────────────────────────────────────────────────
 
-export type BadgeVariant = 'default' | 'accent' | 'success' | 'warn' | 'danger' | 'muted';
+export type BadgeVariant = 'default' | 'highlight' | 'selected' | 'success' | 'warn' | 'danger' | 'muted';
 
 /** Small inline label pill (a type, status, or count). */
 export function Badge({

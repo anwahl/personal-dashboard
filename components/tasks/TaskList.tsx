@@ -93,7 +93,7 @@ export function TaskItem({
           title={task.title}
           meta={
             <>
-              <Chip small={true} className={`${overdue ? ' chip--due' : ''}`}>
+              <Chip small={true} className={`${overdue ? ' chip--overdue' : ''}`}>
                 {task.status.status_name}
               </Chip>
               {task.due_date && (
@@ -201,7 +201,7 @@ export function TaskList({
     <>
     {addPlacement === 'page' && (
       <FieldActions docked alignment="right">
-        <Button variant="accent" onClick={() => setAddOpen(true)}>+ New Task</Button>
+        <Button variant="primary" onClick={() => setAddOpen(true)}>+ New Task</Button>
       </FieldActions>
     )}
     {addDialog}

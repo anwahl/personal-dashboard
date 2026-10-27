@@ -62,7 +62,7 @@ export function IntegrationsSettings({ token: initialToken }: Readonly<Props>) {
               value={feedUrl}
               onFocus={e => e.target.select()}
             />
-            <Button variant="accent" size="sm" onClick={copy}>
+            <Button variant="secondary" size="sm" onClick={copy}>
               {copied ? '✓ Copied' : 'Copy'}
             </Button>
           </div>

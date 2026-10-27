@@ -84,7 +84,7 @@ export function MediaClient({ entries, mediaTypes, mediaStatuses, statusTypeLink
     <>
       <TabBar label="Media types" tabs={typeTabs} active={activeTypeId} onChange={setActiveTypeId} />
       <FieldActions docked alignment='right'>
-        <Button variant="accent" onClick={openAdd}>+ New Media</Button>
+        <Button variant="primary" onClick={openAdd}>+ New Media</Button>
       </FieldActions>
       <MediaDialog
         open={dialogOpen}

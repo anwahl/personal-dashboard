@@ -133,7 +133,7 @@ export function WeeklyJournalClient({
         <div>
           <WeekNav weekStart={weekStart} weekNum={weekNum} weekRange={weekRange} />
           <EmptyState>No responses yet for this week.</EmptyState>
-          <Button variant="accent" onClick={() => setMode('edit')}>Write Entry</Button>
+          <Button variant="primary" onClick={() => setMode('edit')}>Write Entry</Button>
         </div>
       );
     }
@@ -206,7 +206,7 @@ export function WeeklyJournalClient({
       ))}
 
       <FieldActions docked alignment="right">
-        <Button variant="accent" onClick={save} busy={saveState === 'saving'} disabled={!hasContent}>
+        <Button variant="primary" onClick={save} busy={saveState === 'saving'} disabled={!hasContent}>
           Save Entry
         </Button>
         {existingEntry && (

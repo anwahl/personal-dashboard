@@ -70,7 +70,7 @@ function OwnValues({ refs, values, children }: Readonly<{
   });
   const footer = (
     <>
-      <Button variant="accent" size="sm" onClick={() => save().catch(() => {})} busy={saveState === 'saving'}>Save</Button>
+      <Button variant="secondary" size="sm" onClick={() => save().catch(() => {})} busy={saveState === 'saving'}>Save</Button>
       <SaveStatus state={saveState} />
     </>
   );

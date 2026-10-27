@@ -4,7 +4,9 @@ import { type ComponentPropsWithRef, type AnchorHTMLAttributes, type ReactNode, 
 import Link from 'next/link';
 
 type Variant =
-  | 'default' | 'accent' | 'ghost' | 'action' | 'action-alt' | 'action-del' | 'danger'
+  | 'default' | 'primary' | 'ghost' | 'action' | 'action-alt' | 'action-del' | 'danger'
+  /** Secondary action: inline save / add / apply. `primary` is a page's main action. */
+  | 'secondary'
   /** Square-ish tile, icon above label (menu grids). */
   | 'tile'
   /** Full-width row, icon beside label (menu lists). */

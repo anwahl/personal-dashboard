@@ -98,11 +98,11 @@ export function MediaDetailClient({
             <ChipGroup>
               <Chip fixed={true}>{capitalize(entry.media_type.type_name)}</Chip>
               {entry.current_status && (
-                <Chip fixed={true} variant="accent">
+                <Chip fixed={true} variant="highlight">
                   {STATUS_EMOJI[entry.current_status.status_name] ?? ''} {entry.current_status.status_name}
                 </Chip>
               )}
-              {entry.rating != null && <Chip fixed={true} variant="accent">{entry.rating}/10</Chip>}
+              {entry.rating != null && <Chip fixed={true} variant="highlight">{entry.rating}/10</Chip>}
               {entry.platform && <Chip fixed={true}>{entry.platform}</Chip>}
               {entry.latest_status_date && (
                 <Chip fixed={true}>{formatShortDate(entry.latest_status_date)}</Chip>

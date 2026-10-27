@@ -220,7 +220,7 @@ function ChecklistSection({ checklist, mode, personId }: Readonly<{
         <TextField hideLabel label="New item" value={newText} onChange={setNewText}
           onKeyDown={e => e.key === 'Enter' && addItem()}
           placeholder="New item…" className="input--flex" />
-        <Button size="sm" variant="accent" onClick={addItem} busy={adding} disabled={!newText.trim()}>
+        <Button size="sm" variant="secondary" onClick={addItem} busy={adding} disabled={!newText.trim()}>
           Add
         </Button>
       </div>
@@ -289,7 +289,7 @@ function ItemListSection({ list, mode, personId }: Readonly<{
           <TextField hideLabel label="New entry" value={newText} onChange={setNewText}
             onKeyDown={e => e.key === 'Enter' && add()}
             placeholder="New entry…" className="input--flex" />
-          <Button size="sm" variant="accent" onClick={add} busy={adding} disabled={!newText.trim()}>
+          <Button size="sm" variant="secondary" onClick={add} busy={adding} disabled={!newText.trim()}>
             Add
           </Button>
         </div>
@@ -354,7 +354,7 @@ function LogSection({ log, mode, personId }: Readonly<{
             })}
             <FieldActions alignment="right">
               <Button size="sm" variant="ghost" onClick={() => setShowForm(false)}>Cancel</Button>
-              <Button size="sm" variant="accent" onClick={submit} busy={adding}>
+              <Button size="sm" variant="secondary" onClick={submit} busy={adding}>
                 Add Entry
               </Button>
             </FieldActions>
@@ -476,7 +476,7 @@ export function PeoplePageClient({ data, peopleCategories }: Readonly<{ data: Pe
             {mode === 'edit' && hasInfoGroups && (
               <>
                 <SaveStatus state={saveState} />
-                <Button variant="accent" size="sm" onClick={saveInfoGroups}
+                <Button variant="secondary" size="sm" onClick={saveInfoGroups}
                   busy={saveState === 'saving'}>💾 Save</Button>
               </>
             )}

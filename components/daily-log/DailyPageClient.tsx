@@ -109,7 +109,7 @@ export function DailyPageClient({
       <FieldActions docked alignment="right">
         {mode === 'input' && (
           <Button
-            variant="accent"
+            variant="primary"
             onClick={save}
             busy={saveState === 'saving'}
           >

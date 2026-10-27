@@ -47,7 +47,7 @@ export function MobileTabBar() {
 
         <Button
           type="button"
-          variant="accent"
+          variant="primary"
           size="icon"
           className="mobile-tabbar__add"
           aria-label="Quick add"

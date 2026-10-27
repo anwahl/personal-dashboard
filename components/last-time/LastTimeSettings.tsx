@@ -287,7 +287,7 @@ export function LastTimeSettings({ trackables, mediaTypes, mediaGenres, mediaSta
             icons={icons}
             autoFocusKey="name"
           />
-          <Button size="sm" variant="accent" onClick={() => saveEdit(item)} aria-label="Save">✓</Button>
+          <Button size="sm" variant="secondary" onClick={() => saveEdit(item)} aria-label="Save">✓</Button>
           <Button size="sm" variant="ghost"  onClick={() => setEdit(null)} aria-label="Cancel">✕</Button>
         </>
       ) : undefined}
@@ -342,7 +342,7 @@ export function LastTimeSettings({ trackables, mediaTypes, mediaGenres, mediaSta
             placeholder="Select metric…"
           />
         )}
-        <Button variant="accent" size="sm" onClick={addItem} busy={saving} disabled={!canAdd}>
+        <Button variant="secondary" size="sm" onClick={addItem} busy={saving} disabled={!canAdd}>
           + Add
         </Button>
         {kind === 'media' && add.name.trim() && !hasFilter && (

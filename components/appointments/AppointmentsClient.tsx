@@ -48,7 +48,7 @@ function ApptRow({ appt, onEdit }: Readonly<{ appt: AppointmentDetail; onEdit: (
             }
             trailing={
               <>
-                <Chip small={true} fixed={true} className={`${!isPast ? ' chip--accent' : ''}`}>
+                <Chip small={true} fixed={true} className={`${!isPast ? ' chip--attention' : ''}`}>
                   {daysUntil(appt.appointment_date, contextDate)}
                 </Chip>
                 <RowMenu
@@ -109,7 +109,7 @@ export function AppointmentsClient({
   return (
     <div>
       <FieldActions docked alignment="right">
-        <Button variant="accent" onClick={openNew}>+ New Appointment</Button>
+        <Button variant="primary" onClick={openNew}>+ New Appointment</Button>
       </FieldActions>
 
       <AppointmentDialog

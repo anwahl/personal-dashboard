@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
-type VariantType = 'default' | 'accent';
+type VariantType = 'default' | 'highlight';
 
 interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
   active?:    boolean;
@@ -18,7 +18,7 @@ export function Chip({
   if (active) classes.push('chip--active');
   if (small)  classes.push('chip--sm');
   if (fixed)  classes.push('chip--static');
-  if (variant === 'accent')  classes.push('chip--accent');
+  if (variant === 'highlight') classes.push('chip--highlight');
   if (className) classes.push(className);
 
   return (

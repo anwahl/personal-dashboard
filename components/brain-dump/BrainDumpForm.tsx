@@ -56,7 +56,7 @@ export function BrainDumpForm({
       <CardActions>
         <Item value='⌘↵ to save' itemType='info' className='hide-on-touch' />
         <Button
-          variant="accent"
+          variant="primary"
           size="sm"
           onClick={submit}
           busy={saving}

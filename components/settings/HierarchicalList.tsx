@@ -460,7 +460,7 @@ export function HierarchicalList({
               icons={icons}
               autoFocusKey={NAME_KEY}
             />
-            <Button size="sm" variant="accent" onClick={() => saveChild(group, fields)} aria-label="Save">✓</Button>
+            <Button size="sm" variant="secondary" onClick={() => saveChild(group, fields)} aria-label="Save">✓</Button>
             <Button size="sm" variant="ghost"  onClick={() => setEditChild(null)} aria-label="Cancel">✕</Button>
           </>
         ) : undefined}
@@ -560,7 +560,7 @@ export function HierarchicalList({
               onEscape={() => setEditingCat(null)}
               autoFocusKey={NAME_KEY}
             />
-            <Button size="sm" variant="accent" onClick={saveCategoryName} aria-label="Save">✓</Button>
+            <Button size="sm" variant="secondary" onClick={saveCategoryName} aria-label="Save">✓</Button>
             <Button size="sm" variant="ghost"  onClick={() => setEditingCat(null)} aria-label="Cancel">✕</Button>
           </>
         ) : undefined}
@@ -623,7 +623,7 @@ export function HierarchicalList({
           placeholder={catPlaceholder}
         />
         <Button
-          size="sm" variant="accent"
+          size="sm" variant="secondary"
           onClick={addCategory}
           busy={addingCat} disabled={!newCatName.trim()}
         >
