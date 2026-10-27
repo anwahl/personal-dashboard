@@ -6,13 +6,13 @@
  *
  *   <SliderField emoji="💧" label="Water" value={oz} min={0} max={80} step={1} onChange={setOz} />
  *
- * Built on the native range input on purpose: on iOS it only moves when you
- * drag the thumb, so swiping down a page full of sliders scrolls instead of
- * changing values (custom sliders such as Radix's jump to wherever the
- * finger lands). Arrow keys move by `step`.
+ * Built on Radix Slider: touching anywhere on the track jumps the knob there
+ * (a native range input on iOS only moves when you drag the knob itself).
+ * Vertical swipes still scroll the page (`touch-action: pan-y`). Arrow keys
+ * move by `step`; Page Up/Down by ten steps; Home/End to the ends.
  */
 
-import type { CSSProperties } from 'react';
+import { Slider } from 'radix-ui';
 
 interface Props {
   emoji:    React.ReactNode;
@@ -26,9 +26,6 @@ interface Props {
 }
 
 export function SliderField({ emoji, label, value, min = 0, max = 10, step = 1, onChange }: Readonly<Props>) {
-  const v   = value ?? min;
-  const pct = max > min ? ((v - min) / (max - min)) * 100 : 0;
-
   return (
     <div className="slider-field">
       <div className="slider-field__header">
@@ -38,18 +35,19 @@ export function SliderField({ emoji, label, value, min = 0, max = 10, step = 1, 
           {value ?? '–'}
         </span>
       </div>
-      <input
-        type="range"
-        className="slider-field__range"
-        aria-label={label}
+      <Slider.Root
+        className={`slider-field__root${value == null ? ' slider-field__root--empty' : ''}`}
         min={min}
         max={max}
         step={step}
-        value={v}
-        // The filled part of the track (a dynamic value, so an inline style).
-        style={{ '--slider-fill': `${pct}%` } as CSSProperties}
-        onChange={e => onChange(Number.parseFloat(e.target.value))}
-      />
+        value={[value ?? min]}
+        onValueChange={([v]) => onChange(v)}
+      >
+        <Slider.Track className="slider-field__track">
+          <Slider.Range className="slider-field__fill" />
+        </Slider.Track>
+        <Slider.Thumb className="slider-field__thumb" aria-label={label} />
+      </Slider.Root>
     </div>
   );
 }

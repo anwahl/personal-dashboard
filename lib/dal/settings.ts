@@ -11,13 +11,10 @@ type Client = SupabaseClient;
 export type ManageableTable =
   | "tags"
   | "intentions"
-  | "sleep_event_types"
   | "providers"
   | "provider_types"
   | "medications"
   | "chart_categories"
-  | "daily_trackables"
-  | "trackable_categories"
   | "people_categories"
   | "people"
   | "item_lists"
@@ -33,8 +30,6 @@ export type ManageableTable =
 export type ReorderableTable =
   | ManageableTable
   | "icons"
-  | "symptom_categories"
-  | "symptom_types"
   | "journal_categories"
   | "journal_prompts"
   | "weekly_journal_categories"
@@ -98,7 +93,7 @@ export async function updateSettingsItem<T>(
 /**
  * Swaps the sort_order of two items. Both updates run in parallel.
  * Works on any table in ReorderableTable — used by ManageableList and
- * the category/child settings components (symptoms, journal, last-time).
+ * the category/child settings components (journal, last-time).
  */
 export async function reorderSettingsItem(
   client: Client,
@@ -142,15 +137,12 @@ export async function batchSetSortOrder(
 
 /** Item tables that belong to a category via `category_id`. */
 export type CategorizedTable =
-  | "daily_trackables"
-  | "symptom_types"
   | "journal_prompts"
   | "weekly_journal_prompts"
   | "people";
 
 /**
- * Moves an item to another category (or to none, where the column allows
- * null — daily_trackables). Pair with batchSetSortOrder to place it.
+ * Moves an item to another category. Pair with batchSetSortOrder to place it.
  */
 export async function setItemCategory(
   client: Client,

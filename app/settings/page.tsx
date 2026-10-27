@@ -1,10 +1,8 @@
 import { createClient }    from '@/lib/supabase/server';
 import {
   getTrackableCategories,
-  getSymptomCategoriesWithTypes,
   getJournalCategoriesWithPrompts,
   getProviderTypes,
-  getSleepEventTypes,
   getTrackables,
   getChartDefinitions,
   getChartCategories,
@@ -15,6 +13,9 @@ import {
   getIconsRef,
 } from '@/lib/dal/reference';
 import { getAllPeople }    from '@/lib/dal/people';
+import { getTrackableLinks } from '@/lib/dal/trackables';
+import { getSections }     from '@/lib/dal/placement';
+import { getEveryPrescription } from '@/lib/dal/prescriptions';
 import { getPeopleCategories } from '@/lib/dal/reference';
 import { getCalendarToken } from '@/lib/dal/calendar';
 import { getWeeklyJournalCategories } from '@/lib/dal/weekly-journal';
@@ -32,14 +33,14 @@ export default async function SettingsPage({
 
   const [
     icons,
-    symptomCategories,
     journalCategories,
     providerTypes,
-    sleepEventTypes,
     people,
     peopleCategories,
     trackables,
     trackableCategories,
+    trackableLinks,
+    sections,
     chartDefinitions,
     chartCategories,
     settingsData,
@@ -47,14 +48,14 @@ export default async function SettingsPage({
     calendarToken,
   ] = await Promise.all([
     getIconsRef(supabase, true),
-    getSymptomCategoriesWithTypes(supabase, true),
     getJournalCategoriesWithPrompts(supabase, true),
     getProviderTypes(supabase, true),
-    getSleepEventTypes(supabase, true),
     getAllPeople(supabase, true),
     getPeopleCategories(supabase, true),
     getTrackables(supabase, true),
     getTrackableCategories(supabase, true),
+    getTrackableLinks(supabase),
+    getSections(supabase, undefined, true),
     getChartDefinitions(supabase, true),
     getChartCategories(supabase, true),
     getSettingsPageData(supabase),
@@ -62,10 +63,11 @@ export default async function SettingsPage({
     getCalendarToken(supabase),
   ]);
 
-  const [mediaTypes, mediaGenres, mediaStatuses] = await Promise.all([
+  const [mediaTypes, mediaGenres, mediaStatuses, prescriptions] = await Promise.all([
     getMediaTypes(supabase),
     getMediaGenres(supabase),
     getMediaStatuses(supabase),
+    getEveryPrescription(supabase),
   ]);
 
   const personLinks: PersonLinks[] = people.map(person => ({
@@ -84,12 +86,13 @@ export default async function SettingsPage({
         icons={icons}
         trackables={trackables}
         trackableCategories={trackableCategories}
+        trackableLinks={trackableLinks}
+        prescriptions={prescriptions}
+        sections={sections}
         chartDefinitions={chartDefinitions}
         chartCategories={chartCategories}
         tags={settingsData.tags}
         intentions={settingsData.intentions}
-        symptomCategories={symptomCategories}
-        sleepEventTypes={sleepEventTypes}
         journalCategories={journalCategories}
         providers={settingsData.providers}
         providerTypes={providerTypes}

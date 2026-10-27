@@ -12,9 +12,14 @@
  * By default it saves through the settings DAL (tableName). Pass `dal` for
  * a table that needs more (e.g. a person's diagnoses), and `bare` to render
  * just the list and add row, inside another card's section.
+ *
+ * Rows that are links rather than settings (e.g. what's in a layout card)
+ * have no active state: give `dal.remove` and they get "Remove" instead of
+ * Deactivate. `editable={false}` drops "Edit" (nothing to edit in a row);
+ * `itemDialog` adds a ⋯ item opening a dialog for more than fits in a row.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, type ReactNode } from 'react';
 import { createClient }      from '@/lib/supabase/client';
 import {
   toggleSettingsItem,
@@ -25,9 +30,10 @@ import {
 import type { ManageableTable }      from '@/lib/dal/settings';
 import { bySortOrder, reorderUpdates } from '@/lib/utils/sort';
 import {
-  Button, DragHandle, ManageItem, RowMenu, SortableItem, SortableList, EmptyState, SectionCard, InactiveGroup
+  Button, DragHandle, ManageItem, RowMenu, SortableItem, SortableList, EmptyState, SectionCard, InactiveGroup,
+  Dialog,
 } from '@/components/ui';
-import type { SortMove } from '@/components/ui';
+import type { RowMenuItem, SortMove } from '@/components/ui';
 import {
   FieldInputs, buildPayload, emptyValues, valuesFrom, visibleFields,
   type AddField, type FieldValues, type IconValues,
@@ -50,6 +56,8 @@ export interface ManageableListDal {
   toggle:   (id: number, active: boolean) => Promise<void>;
   /** Enables drag-to-reorder. */
   reorder?: (updates: { id: number; sort_order: number }[]) => Promise<void>;
+  /** For rows with no active state: "Remove" replaces Deactivate/Activate. */
+  remove?:  (id: number) => Promise<void>;
 }
 
 interface Props {
@@ -72,6 +80,12 @@ interface Props {
   onItemAdded?: (item: any) => void; // called after a successful add
   /** Collapse the add row behind a button until the user expands it. Default: false. */
   collapsibleAdd?: boolean;
+  /** Whether rows have an "Edit" item (default true). */
+  editable?:   boolean;
+  /** An extra ⋯ item that opens a dialog for editing more than fits in a row.
+   *  `render` gets the item and a `patch` to update what the row shows. */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  itemDialog?: { label: string; title: (item: any) => ReactNode; render: (item: any, patch: (p: Record<string, unknown>) => void) => ReactNode };
 }
 
 export function ManageableList({
@@ -82,6 +96,8 @@ export function ManageableList({
   collapsibleAdd = false,
   dal: customDal,
   bare = false,
+  editable = true,
+  itemDialog,
 }: Readonly<Props>) {
   const supabase = createClient();
 
@@ -93,6 +109,10 @@ export function ManageableList({
   const [newVals,     setNewVals]     = useState<FieldValues>(() => emptyValues(addFields).values);
   const [newIcons,    setNewIcons]    = useState<IconValues>(() => emptyValues(addFields).iconValues);
   const [saving,      setSaving]      = useState(false);
+  // The dialog's item is kept after closing so its content doesn't blank
+  // out during the exit animation; `dialogOpen` controls visibility.
+  const [dialogId,    setDialogId]    = useState<number | null>(null);
+  const [dialogOpen,  setDialogOpen]  = useState(false);
 
   // Tables with a sort_order column (seen on their rows) can be reordered.
   const tableHasSort = items.length > 0 && 'sort_order' in items[0];
@@ -116,6 +136,11 @@ export function ManageableList({
     const next = !item.is_active;
     setItems(prev => prev.map(i => i.id === item.id ? { ...i, is_active: next } : i));
     await dal.toggle(item.id, next);
+  }, [dal]);
+
+  const remove = useCallback(async (item: Item) => {
+    await dal.remove?.(item.id);
+    setItems(prev => prev.filter(i => i.id !== item.id));
   }, [dal]);
 
   // ── Add ────────────────────────────────────────────────────────────────────
@@ -180,9 +205,12 @@ export function ManageableList({
           <RowMenu
             label={name}
             items={[
-              { label: 'Edit', onSelect: () => startEdit(item) },
-              { label: item.is_active ? 'Deactivate' : 'Activate', onSelect: () => toggleActive(item) },
-            ]}
+              ...(editable ? [{ label: 'Edit', onSelect: () => startEdit(item) }] : []),
+              ...(itemDialog ? [{ label: itemDialog.label, onSelect: () => { setDialogId(item.id); setDialogOpen(true); } }] : []),
+              dal.remove
+                ? { label: 'Remove', onSelect: () => remove(item), destructive: true }
+                : { label: item.is_active ? 'Deactivate' : 'Activate', onSelect: () => toggleActive(item) },
+            ] satisfies RowMenuItem[]}
           />
         }
         editing={editId === item.id ? (
@@ -265,10 +293,19 @@ export function ManageableList({
     </>
   );
 
-  if (bare) return content;
+  const dialogItem = itemDialog && dialogId != null ? items.find(i => i.id === dialogId) : undefined;
+  const dialog = itemDialog && dialogItem && (
+    <Dialog open={dialogOpen} onOpenChange={setDialogOpen} title={itemDialog.title(dialogItem)} placement="auto">
+      {itemDialog.render(dialogItem, patch =>
+        setItems(prev => prev.map(i => i.id === dialogItem.id ? { ...i, ...patch } : i)))}
+    </Dialog>
+  );
+
+  if (bare) return <>{content}{dialog}</>;
   return (
     <SectionCard title={title ?? ''} meta={`${active.length} active`} description={description}>
       {content}
+      {dialog}
     </SectionCard>
   );
 }

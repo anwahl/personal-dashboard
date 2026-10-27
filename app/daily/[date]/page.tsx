@@ -3,17 +3,10 @@ import { notFound }                      from 'next/navigation';
 import { createClient }                  from '@/lib/supabase/server';
 import { getDailyEntry }        from '@/lib/dal/daily';
 import { addDays } from "@/lib/utils/dates";
-import { getSleepEntry, getPriorSleepContext } from '@/lib/dal/sleep';
-import { getDailySymptomData }           from '@/lib/dal/symptoms';
-import { getEssEntry }                   from '@/lib/dal/ess';
-import { getActivePrescriptions }        from '@/lib/dal/prescriptions';
 import { DailyPageClient }               from '@/components/daily-log/DailyPageClient';
-import { TaskList }                      from '@/components/tasks/TaskList';
-import { UpcomingAppointments }          from '@/components/appointments/UpcomingAppointments';
-import { getTasksByDateContext }          from '@/lib/dal/tasks';
-import { getJournalResponsesForEntry }    from '@/lib/dal/journal';
-import { getUpcomingAppointments }       from '@/lib/dal/appointments';
-import { getTaskStatuses, getTaskPriorities, getReferenceData, getRandomIntention } from '@/lib/dal/reference';
+import { getReferenceData, getRandomIntention } from '@/lib/dal/reference';
+import { getSections, modulesIn }        from '@/lib/dal/placement';
+import { getModuleData }                 from '@/lib/dal/modules';
 
 interface Props {
   params: Promise<{ date: string }>;
@@ -43,23 +36,12 @@ export default async function DailyPage({ params }: Readonly<Props>) {
   // something is saved (see DailyPageClient). Until then the day loads empty.
   const entry     = await getDailyEntry(supabase, date);
   const reference = await getReferenceData(supabase);
-  const self      = reference.people.find(p => p.is_self);
   // The day's intention: the saved one, or one picked now and stored with the
   // entry when it's created.
   const intention = entry ? entry.intention : await getRandomIntention(supabase);
 
-  const [sleep, symptoms, ess, prescriptions, priorSleep, taskData, appointments, statuses, priorities, journalResponses] = await Promise.all([
-    entry ? getSleepEntry(supabase, entry.id)              : Promise.resolve(null),
-    entry ? getDailySymptomData(supabase, entry.id)        : Promise.resolve(null),
-    entry ? getEssEntry(supabase, entry.id)                : Promise.resolve(null),
-    self ? getActivePrescriptions(supabase, self.id) : Promise.resolve([]),
-    getPriorSleepContext(supabase, date),
-    getTasksByDateContext(supabase, date),
-    getUpcomingAppointments(supabase, date, 6),
-    getTaskStatuses(supabase, true),
-    getTaskPriorities(supabase),
-    entry ? getJournalResponsesForEntry(supabase, entry.id) : Promise.resolve([]),
-  ]);
+  const sections = await getSections(supabase, 'DAILY');
+  const moduleData = await getModuleData(supabase, modulesIn(sections), date);
 
   const prevDate = addDays(date, -1);
   const nextDate = addDays(date, 1);
@@ -85,27 +67,11 @@ export default async function DailyPage({ params }: Readonly<Props>) {
         entry={entry}
         intention={intention}
         date={date}
-        sleep={sleep}
-        priorSleep={priorSleep}
-        symptoms={symptoms}
-        ess={ess}
-        prescriptions={prescriptions}
+        sections={sections}
+        moduleData={moduleData}
         reference={reference}
-        journalResponses={journalResponses}
       />
 
-      <div className="daily-extras">
-        <div>
-          <TaskList
-            contextDate={date}
-            initialData={taskData}
-          />
-        </div>
-        <UpcomingAppointments
-          appointments={appointments}
-          contextDate={date}
-        />
-      </div>
     </div>
   );
 }

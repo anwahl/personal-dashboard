@@ -195,11 +195,21 @@ export function daysUntil(targetDate: string, contextDate?: string): string {
 }
 
 /**
- * "Today", "Yesterday", "3d ago", "2w ago", "4mo ago", "1y ago", "Never"
+ * "Today", "Yesterday", "3d ago", "2w ago", "4mo ago", "1y ago", "Never";
+ * for a negative count (after the date counted to): "Tomorrow", "3d from now", "3mo from now"…
  */
 export function formatDaysAgo(days: number | null): string {
   if (days === null) return "Never";
   if (days === 0) return "Today";
+  // After the date it's counted to (e.g. on an earlier day's page).
+  if (days < 0) {
+    const ahead = -days;
+    if (ahead === 1) return "Tomorrow";
+    if (ahead < 7) return `${ahead}d from now`;
+    if (ahead < 30) return `${Math.floor(ahead / 7)}w from now`;
+    if (ahead < 365) return `${Math.floor(ahead / 30)}mo from now`;
+    return `${Math.floor(ahead / 365)}y from now`;
+  }
   if (days === 1) return "Yesterday";
   if (days < 7) return `${days}d ago`;
   if (days < 30) return `${Math.floor(days / 7)}w ago`;

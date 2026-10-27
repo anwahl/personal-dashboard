@@ -3,24 +3,26 @@
 import { useState }               from 'react';
 import { TabBar }                  from '@/components/ui';
 import { ManageableList }          from './ManageableList';
-import { SymptomSettings }         from './SymptomSettings';
 import { JournalSettings }         from './JournalSettings';
 import { PeopleSettings }          from './people/PeopleSettings';
 import { TrackableSettings }       from './TrackableSettings';
+import { LayoutSettings }          from './LayoutSettings';
 import { ChartSettings }           from './ChartSettings';
 import { LastTimeSettings }        from '@/components/last-time/LastTimeSettings';
 import { ProviderSettings }        from '@/components/settings/ProviderSettings';
 import { IconSettings }            from './IconSettings';
 import { IntegrationsSettings }   from './IntegrationsSettings';
 import type {
-  SymptomCategoryWithTypes,
   JournalCategoryWithPrompts,
+  SectionDetail,
+  TrackableDetail,
   ChartDefinitionDetail,
   ChartCategoryRow,
   PersonLinks,
 } from '@/types/dal';
 import type {
-  DailyTrackableRow,
+  TrackableCategoryRow,
+  TrackableToCategoryRow,
   InfoGroupRow,
   ItemListRow,
   LogSchemaRow,
@@ -33,7 +35,6 @@ import type {
   ProviderTypeRow,
   TagRow,
   IntentionRow,
-  SleepEventTypeRow,
   MediaTypeRow,
   MediaGenreRow,
   MediaStatusRow,
@@ -42,6 +43,7 @@ import type {
   PeopleCategoryRow,
 } from '@/types/schema';
 import { SETTINGS_TABS, SettingsTabId } from '@/lib/constants/nav';
+import { CHARTABLE_TYPES } from '@/lib/dal/analytics';
 
 
 
@@ -56,17 +58,17 @@ interface Props {
   peopleCategories:     PeopleCategoryRow[];
   // Integrations
   calendarToken:        CalendarTokenRow | null;
-  // Tracking & charts
-  trackables:           DailyTrackableRow[];
-  trackableCategories:  import('@/types/schema').TrackableCategoryRow[];
+  // Tracking, layout & charts
+  trackables:           TrackableDetail[];
+  trackableCategories:  TrackableCategoryRow[];
+  trackableLinks:       TrackableToCategoryRow[];
+  prescriptions:        import('@/types/dal').PrescriptionDetail[];
+  sections:             SectionDetail[];
   chartDefinitions:  ChartDefinitionDetail[];
   chartCategories:   ChartCategoryRow[];
   // Daily
   tags:              TagRow[];
   intentions:        IntentionRow[];
-  // Health
-  symptomCategories: SymptomCategoryWithTypes[];
-  sleepEventTypes:   SleepEventTypeRow[];
   // Journal
   journalCategories:       JournalCategoryWithPrompts[];
   weeklyJournalCategories: import('@/types/dal').WeeklyJournalCategoryWithPrompts[];
@@ -96,9 +98,8 @@ export function SettingsClient({
   icons,
   calendarToken,
   peopleCategories,
-  trackables, trackableCategories, chartDefinitions, chartCategories,
+  trackables, trackableCategories, trackableLinks, prescriptions, sections, chartDefinitions, chartCategories,
   tags, intentions,
-  symptomCategories, sleepEventTypes,
   journalCategories,
   weeklyJournalCategories,
   providers, providerTypes,
@@ -107,9 +108,10 @@ export function SettingsClient({
   infoFieldTypes, logSchemaFields, logSchemaFieldOptions,
 }: Readonly<Props>) {
   const [tab, setTab] = useState<SettingsTabId>(initialTab);
-  // Lifted trackables state — allows ChartSettings dropdown to update when
-  // new metrics are added in TrackableSettings without a full page refresh
-  const [liveTrackables, setLiveTrackables] = useState<DailyTrackableRow[]>(trackables);
+  // Lifted from TrackableSettings so Charts, Last Time and Layout see
+  // trackables and categories added there without a page refresh.
+  const [liveTrackables, setLiveTrackables] = useState<TrackableDetail[]>(trackables);
+  const [liveCategories, setLiveCategories] = useState<TrackableCategoryRow[]>(trackableCategories);
 
   return (
     <div>
@@ -144,17 +146,25 @@ export function SettingsClient({
 
         <div className={tab === 'tracking' ? '' : 'hidden'}>
           <TrackableSettings
-            trackables={liveTrackables}
+            trackables={trackables}
             categories={trackableCategories}
+            links={trackableLinks}
+            prescriptions={prescriptions}
+            people={people}
             icons={icons}
-            onTrackableAdded={(t: DailyTrackableRow) => setLiveTrackables(prev => [...prev, t])}
+            onTrackablesChange={setLiveTrackables}
+            onCategoriesChange={setLiveCategories}
           />
+        </div>
+
+        <div className={tab === 'layout' ? '' : 'hidden'}>
+          <LayoutSettings sections={sections} categories={liveCategories} />
         </div>
 
         <div className={tab === 'charts' ? '' : 'hidden'}>
           <ChartSettings
             chartDefinitions={chartDefinitions}
-            trackables={liveTrackables.filter(t => t.is_active)}
+            trackables={liveTrackables.filter(t => t.is_active && CHARTABLE_TYPES.includes(t.track_type))}
             categories={chartCategories}
             icons={icons}
           />
@@ -167,20 +177,6 @@ export function SettingsClient({
             mediaGenres={mediaGenres}
             mediaStatuses={mediaStatuses}
             icons={icons}
-          />
-        </div>
-
-        <div className={tab === 'health' ? '' : 'hidden'}>
-          <SymptomSettings categories={symptomCategories} />
-          <ManageableList
-            title="Sleep Events"
-            description="Boolean sleep events tracked on the health log (hallucinations, restless legs, etc.)."
-            tableName="sleep_event_types"
-            nameColumn="type_name"
-            items={sleepEventTypes}
-            addFields={[
-              { key: 'type_name', label: 'Event name', type: 'text', placeholder: 'e.g. Night Sweats', required: true },
-            ]}
           />
         </div>
 

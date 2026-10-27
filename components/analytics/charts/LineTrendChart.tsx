@@ -12,6 +12,7 @@ import { useState }          from 'react';
 import { ChartEmptyState }   from './ChartEmptyState';
 import { ChartLegend }       from './ChartLegend';
 import type { ChartDefinitionDetail, TrackingDataPoint } from '@/types/dal';
+import { trackableColors, niceAxis, trackableMax } from '@/lib/utils/charts';
 
 interface Props {
   chart: ChartDefinitionDetail;
@@ -20,6 +21,7 @@ interface Props {
 
 export function LineTrendChart({ chart, data }: Readonly<Props>) {
   const seriesLinks = chart.links.filter(l => l.metric_role === 'series');
+  const colors      = trackableColors(chart.links);
   const [hoveredDate, setHoveredDate] = useState<string | null>(null);
 
   if (!seriesLinks.length) {
@@ -32,8 +34,13 @@ export function LineTrendChart({ chart, data }: Readonly<Props>) {
   const W = 600, H = 240, PAD = { top: 20, right: 16, bottom: 36, left: 36 };
   const INNER_W = W - PAD.left - PAD.right;
   const INNER_H = H - PAD.top  - PAD.bottom;
-  const TICK_MAX = 10;
-  const yTicks   = [0, 2, 4, 6, 8, 10];
+  // Fits the trackables' ranges (and any value past them).
+  const axis     = niceAxis(
+    Math.max(...seriesLinks.map(l => trackableMax(l.trackable))),
+    data.flatMap(dp => seriesLinks.map(l => dp.values[l.trackable_id] ?? 0)),
+  );
+  const TICK_MAX = axis.max;
+  const yTicks   = axis.ticks;
 
   const toX = (date: string) => {
     const idx = data.findIndex(dp => dp.date === date);
@@ -49,7 +56,7 @@ export function LineTrendChart({ chart, data }: Readonly<Props>) {
   const legendItems = seriesLinks.map(l => ({
     id:    l.trackable_id,
     name:  l.trackable.name,
-    color: l.trackable.color_hex,
+    color: colors[l.trackable_id],
   }));
 
   return (
@@ -85,7 +92,7 @@ export function LineTrendChart({ chart, data }: Readonly<Props>) {
           {/* One polyline + dots per series */}
           {seriesLinks.map(link => {
             const id    = link.trackable_id;
-            const color = link.trackable.color_hex ?? 'var(--accent)';
+            const color = colors[link.trackable_id];
             const pts   = data.filter(dp => dp.values[id] != null)
                               .map(dp => ({ date: dp.date, v: dp.values[id] }));
 
@@ -125,7 +132,7 @@ export function LineTrendChart({ chart, data }: Readonly<Props>) {
                 {seriesLinks.map(link => {
                   if (!hoveredPoint?.values[link.trackable_id]) return null;
                   const v     = hoveredPoint.values[link.trackable_id];
-                  const color = link.trackable.color_hex ?? 'var(--accent)';
+                  const color = colors[link.trackable_id];
                   return (
                     <text key={link.trackable_id} x={hx + 6} y={toY(v) - 4}
                       style={{ fill: color }}>

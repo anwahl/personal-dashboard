@@ -21,8 +21,7 @@ import { ChainChart }                from './charts/ChainChart';
 import { HabitHeatmap }              from './charts/HabitHeatmap';
 import type { ChartDefinitionDetail, TrackingDataPoint } from '@/types/dal';
 import type { IconRow } from '@/types/schema';
-import type { ChartType, TrackType } from '@/types/schema';
-import { localTodayISO } from '@/lib/utils/dates';
+import type { ChartType } from '@/types/schema';
 import { SegmentedControl } from '@/components/ui';
 
 // ── Range presets ─────────────────────────────────────────────────────────────
@@ -47,8 +46,8 @@ const DEFAULT_RANGE: Record<ChartType, number> = {
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
 
-function toDateFromDays(days: number): { fromDate: string; toDate: string } {
-  const toDate   = localTodayISO();
+/** A range of `days` ending on `toDate`. */
+function toDateFromDays(days: number, toDate: string): { fromDate: string; toDate: string } {
   const from     = new Date(`${toDate}T12:00:00`);
   from.setDate(from.getDate() - days);
   const [y, m, d] = [from.getFullYear(), from.getMonth() + 1, from.getDate()];
@@ -104,16 +103,11 @@ export function ChartPanel({ chart, initialData, fromDate, toDate, icons }: Read
     setRange(days);
     setLoading(true);
     try {
-      const { fromDate: newFrom, toDate: newTo } = toDateFromDays(days);
+      const { fromDate: newFrom, toDate: newTo } = toDateFromDays(days, toDate);
       setFrom(newFrom);
       setTo(newTo);
 
-      const allIds     = chart.links.map(l => l.trackable_id);
-      const booleanIds = chart.links
-        .filter(l => (l.trackable.track_type as TrackType) === 'boolean')
-        .map(l => l.trackable_id);
-
-      const newData = await getCombinedTrackingData(supabase, allIds, booleanIds, newFrom, newTo);
+      const newData = await getCombinedTrackingData(supabase, chart.links.map(l => l.trackable), newFrom, newTo);
       setData(newData);
     } finally {
       setLoading(false);

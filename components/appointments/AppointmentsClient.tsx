@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { Button, Card, CardBody, CardHeader, CardTitle, Chip, ExpandPanel, FieldActions, Markdown, SubCard, SubCardBody, EmptyState, ListItem, CardSection, CardSectionLabel, RowMenu } from '@/components/ui';
-import { localTodayISO, daysUntil, formatMediumDate, formatTime } from '@/lib/utils/dates';
+import { daysUntil, formatMediumDate, formatTime } from '@/lib/utils/dates';
+import { useContextDate } from '@/components/sections/DayContext';
 import type { AppointmentDetail }    from '@/types/dal';
 import type { AppointmentTypeRow, PersonRow, ProviderRow } from '@/types/schema';
 import { AppointmentDialog } from './AppointmentForm';
@@ -18,7 +19,9 @@ interface Props {
 // ── Appointment row (collapsible) ─────────────────────────────────────────────
 
 function ApptRow({ appt, onEdit }: Readonly<{ appt: AppointmentDetail; onEdit: () => void }>) {
-  const isPast = appt.appointment_date < localTodayISO();
+  // "Past" and "in N days" count from a daily page's date when placed on one.
+  const contextDate = useContextDate();
+  const isPast = appt.appointment_date < contextDate;
 
   return (
     <>
@@ -46,7 +49,7 @@ function ApptRow({ appt, onEdit }: Readonly<{ appt: AppointmentDetail; onEdit: (
             trailing={
               <>
                 <Chip small={true} fixed={true} className={`${!isPast ? ' chip--accent' : ''}`}>
-                  {daysUntil(appt.appointment_date)}
+                  {daysUntil(appt.appointment_date, contextDate)}
                 </Chip>
                 <RowMenu
                   label={appt.appointment_type?.type_name ?? 'Appointment'}

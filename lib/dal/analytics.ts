@@ -1,175 +1,101 @@
 /**
  * lib/dal/analytics.ts
  *
- * Queries for the health analytics page.
- * Reads chart configuration from chart_definitions + chart_trackable_links,
- * then fetches daily_numeric_entries for the linked trackables.
- * Fully data-agnostic — no hardcoded metric names or chart types.
+ * Chart data: one number per trackable per day, read from the trackable's
+ * entries table by its type. Fully data-agnostic: which trackables a chart
+ * shows comes from chart_definitions + chart_trackable_links.
+ *
+ *   boolean    1 on days marked yes (prescription: 1 on days taken)
+ *   numeric    the value
+ *   combo      the value; 1 on "yes" days with no value
+ *   aggregate  the day's total (sum of the answers' values)
+ *
+ * Other types (time, choice, text, icon, tags) aren't charted yet.
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { TrackingDataPoint } from "@/types/dal";
-import type { HabitEntryRow } from "@/types/schema";
+import type { DailyTrackableRow, TrackType } from "@/types/schema";
 
 type Client = SupabaseClient;
+type Charted = Pick<DailyTrackableRow, "id" | "track_type">;
 
-// ── Numeric / aggregate trend data ────────────────────────────────────────────
+/** The types charts can show. */
+export const CHARTABLE_TYPES: readonly TrackType[] = ["boolean", "prescription", "numeric", "combo", "aggregate"];
 
 /**
- * Fetch daily_numeric_entries for the given trackable IDs over a date range.
- * Returns one TrackingDataPoint per day that has at least one value.
+ * Every value of the given trackables between two dates (inclusive), one
+ * data point per day that has at least one value.
  */
-export async function getTrackingData(
+export async function getCombinedTrackingData(
   client: Client,
-  trackableIds: number[],
+  trackables: Charted[],
   fromDate: string,
   toDate: string,
 ): Promise<TrackingDataPoint[]> {
-  if (!trackableIds.length) return [];
+  const idsOf = (type: TrackType) => trackables.filter(t => t.track_type === type).map(t => t.id);
+  const booleanIds   = [...idsOf("boolean"), ...idsOf("prescription")];
+  const numericIds   = idsOf("numeric");
+  const comboIds     = idsOf("combo");
+  const aggregateIds = idsOf("aggregate");
+  if (!booleanIds.length && !numericIds.length && !comboIds.length && !aggregateIds.length) return [];
 
-  // Fetch daily_entries in range to get the entry_id → date mapping
   const { data: entries, error: eErr } = await client
     .from("daily_entries")
     .select("id, entry_date")
     .gte("entry_date", fromDate)
-    .lte("entry_date", toDate)
-    .order("entry_date", { ascending: true });
-
-  if (eErr) throw new Error(`getTrackingData entries: ${eErr.message}`);
+    .lte("entry_date", toDate);
+  if (eErr) throw new Error(`getCombinedTrackingData entries: ${eErr.message}`);
   if (!entries?.length) return [];
 
-  const dateById = new Map<number, string>(
-    (entries as { id: number; entry_date: string }[]).map((e) => [
-      e.id,
-      e.entry_date,
-    ]),
-  );
+  const dateById = new Map((entries as { id: number; entry_date: string }[]).map(e => [e.id, e.entry_date]));
+  const entryIds = [...dateById.keys()];
 
-  // Fetch numeric entries for the relevant trackables
-  const { data: numeric, error: nErr } = await client
-    .from("daily_numeric_entries")
-    .select("entry_id, trackable_id, metric_value")
-    .in("entry_id", [...dateById.keys()])
-    .in("trackable_id", trackableIds);
+  const fetchRows = async (table: string, cols: string, ids: number[], idCol = "trackable_id") => {
+    if (!ids.length) return [] as Record<string, unknown>[];
+    const { data, error } = await client.from(table).select(cols).in("entry_id", entryIds).in(idCol, ids);
+    if (error) throw new Error(`getCombinedTrackingData ${table}: ${error.message}`);
+    return (data ?? []) as unknown as Record<string, unknown>[];
+  };
 
-  if (nErr) throw new Error(`getTrackingData numeric: ${nErr.message}`);
+  // Aggregates: question → trackable, answer → value.
+  const questionTrackable = new Map<number, number>();
+  const answerValue       = new Map<number, number>();
+  if (aggregateIds.length) {
+    const [{ data: qs, error: qErr }, { data: answers, error: aErr }] = await Promise.all([
+      client.from("trackable_aggregate_questions").select("id, trackable_id").in("trackable_id", aggregateIds),
+      client.from("trackable_aggregate_options").select("id, value"),
+    ]);
+    if (qErr) throw new Error(`getCombinedTrackingData questions: ${qErr.message}`);
+    if (aErr) throw new Error(`getCombinedTrackingData answers: ${aErr.message}`);
+    for (const q of qs ?? []) questionTrackable.set(q.id as number, q.trackable_id as number);
+    for (const a of answers ?? []) answerValue.set(a.id as number, Number(a.value));
+  }
 
-  // Group by entry_id → build TrackingDataPoint[]
+  const [bool, num, combo, agg] = await Promise.all([
+    fetchRows("trackable_boolean_entries", "entry_id, trackable_id", booleanIds),
+    fetchRows("trackable_numeric_entries", "entry_id, trackable_id, value", numericIds),
+    fetchRows("trackable_combo_entries", "entry_id, trackable_id, value", comboIds),
+    fetchRows("trackable_aggregate_entries", "entry_id, question_id, option_id", [...questionTrackable.keys()], "question_id"),
+  ]);
+
   const byEntry = new Map<number, Record<number, number>>();
-  for (const row of (numeric ?? []) as {
-    entry_id: number;
-    trackable_id: number;
-    metric_value: number;
-  }[]) {
-    if (!byEntry.has(row.entry_id)) byEntry.set(row.entry_id, {});
-    byEntry.get(row.entry_id)![row.trackable_id] = row.metric_value;
+  const put = (entryId: number, trackableId: number, value: number, add = false) => {
+    const values = byEntry.get(entryId) ?? {};
+    values[trackableId] = add ? (values[trackableId] ?? 0) + value : value;
+    byEntry.set(entryId, values);
+  };
+
+  for (const r of bool)  put(r.entry_id as number, r.trackable_id as number, 1);
+  for (const r of num)   put(r.entry_id as number, r.trackable_id as number, Number(r.value));
+  for (const r of combo) put(r.entry_id as number, r.trackable_id as number, r.value == null ? 1 : Number(r.value));
+  for (const r of agg) {
+    const trackableId = questionTrackable.get(r.question_id as number);
+    if (trackableId != null) put(r.entry_id as number, trackableId, answerValue.get(r.option_id as number) ?? 0, true);
   }
 
   return [...byEntry.entries()]
     .map(([entryId, values]) => ({ date: dateById.get(entryId)!, values }))
-    .filter((p) => p.date)
-    .sort((a, b) => a.date.localeCompare(b.date));
-}
-
-// ── Boolean (habit) completion data ──────────────────────────────────────────
-
-/**
- * Fetch habit_entries for the given trackable IDs over a date range.
- * Returns one TrackingDataPoint per day that has at least one boolean entry,
- * where values[trackable_id] = 1 (done) or absent (not done).
- */
-export async function getBooleanData(
-  client: Client,
-  trackableIds: number[],
-  fromDate: string,
-  toDate: string,
-): Promise<TrackingDataPoint[]> {
-  if (!trackableIds.length) return [];
-
-  const { data: entries, error: eErr } = await client
-    .from("daily_entries")
-    .select("id, entry_date")
-    .gte("entry_date", fromDate)
-    .lte("entry_date", toDate)
-    .order("entry_date", { ascending: true });
-
-  if (eErr) throw new Error(`getBooleanData entries: ${eErr.message}`);
-  if (!entries?.length) return [];
-
-  const dateById = new Map<number, string>(
-    (entries as { id: number; entry_date: string }[]).map((e) => [
-      e.id,
-      e.entry_date,
-    ]),
-  );
-
-  const { data: habitData, error: hErr } = await client
-    .from("habit_entries")
-    .select("entry_id, trackable_id")
-    .in("entry_id", [...dateById.keys()])
-    .in("trackable_id", trackableIds);
-
-  if (hErr) throw new Error(`getBooleanData habits: ${hErr.message}`);
-
-  // Build one data point per entry that had at least one habit logged
-  const byEntry = new Map<number, Record<number, number>>();
-  for (const row of (habitData ?? []) as Pick<
-    HabitEntryRow,
-    "entry_id" | "trackable_id"
-  >[]) {
-    if (!byEntry.has(row.entry_id)) byEntry.set(row.entry_id, {});
-    byEntry.get(row.entry_id)![row.trackable_id] = 1;
-  }
-
-  // Return ALL dates in range so the heatmap can show empty cells too
-  return (entries as { id: number; entry_date: string }[]).map((e) => ({
-    date: e.entry_date,
-    values: byEntry.get(e.id) ?? {},
-  }));
-}
-
-// ── Combined data (numeric + boolean merged) ──────────────────────────────────
-
-/**
- * Fetch all trackable data and merge into one TrackingDataPoint[] stream.
- * Boolean trackables appear as value=1 on days they were completed.
- * This single dataset is used by ALL chart types — no more split numeric/boolean.
- */
-export async function getCombinedTrackingData(
-  client: Client,
-  allTrackableIds: number[],
-  booleanTrackableIds: number[],
-  fromDate: string,
-  toDate: string,
-): Promise<TrackingDataPoint[]> {
-  if (!allTrackableIds.length) return [];
-
-  const numericIds = allTrackableIds.filter(
-    (id) => !booleanTrackableIds.includes(id),
-  );
-
-  const [numericData, booleanData] = await Promise.all([
-    numericIds.length
-      ? getTrackingData(client, numericIds, fromDate, toDate)
-      : Promise.resolve([]),
-    booleanTrackableIds.length
-      ? getBooleanData(client, booleanTrackableIds, fromDate, toDate)
-      : Promise.resolve([]),
-  ]);
-
-  // Merge both into a single date-keyed map
-  const byDate = new Map<string, Record<number, number>>();
-
-  const merge = (dp: TrackingDataPoint) => {
-    if (!byDate.has(dp.date)) byDate.set(dp.date, {});
-    Object.assign(byDate.get(dp.date)!, dp.values);
-  };
-
-  numericData.forEach(merge);
-  // Only merge boolean dates that actually have values (don't inflate with empty days)
-  booleanData.filter((dp) => Object.keys(dp.values).length > 0).forEach(merge);
-
-  return [...byDate.entries()]
-    .map(([date, values]) => ({ date, values }))
+    .filter(p => p.date)
     .sort((a, b) => a.date.localeCompare(b.date));
 }

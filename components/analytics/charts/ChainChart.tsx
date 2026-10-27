@@ -13,6 +13,7 @@
 import { ChartEmptyState } from './ChartEmptyState';
 import { IconDisplay }      from '@/components/ui';
 import type { ChartDefinitionDetail, TrackingDataPoint } from '@/types/dal';
+import { trackableColors } from '@/lib/utils/charts';
 import type { IconRow } from '@/types/schema';
 import { localTodayISO } from '@/lib/utils/dates';
 
@@ -49,6 +50,7 @@ function buildDates(fromDate: string, toDate: string): string[] {
 
 export function ChainChart({ chart, data, fromDate, toDate, icons }: Readonly<Props>) {
   const seriesLinks = chart.links.filter(l => l.metric_role === 'series');
+  const colors      = trackableColors(chart.links);
 
   if (!seriesLinks.length) {
     return <ChartEmptyState title={chart.title} message="No series configured. Add boolean metrics in Settings → Charts." />;
@@ -106,7 +108,7 @@ export function ChainChart({ chart, data, fromDate, toDate, icons }: Readonly<Pr
           {/* Rows */}
           {seriesLinks.map((link, rowIdx) => {
             const rowCY  = DATE_H + rowIdx * ROW_H + ROW_H / 2;
-            const color  = link.trackable.color_hex ?? 'var(--accent)';
+            const color  = colors[link.trackable_id];
             const streak = streaks[rowIdx];
 
             return (

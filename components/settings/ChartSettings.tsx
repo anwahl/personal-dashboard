@@ -20,8 +20,8 @@ import { HierarchicalList, type NormalizedChild } from './HierarchicalList';
 import type { AddField } from './FieldInputs';
 import { TrackablePicker } from './TrackablePicker';
 import { Badge, Button, EmptyState, IconDisplay, ManageItem, RowMenu, SelectField } from '@/components/ui';
-import type { ChartDefinitionDetail, ChartCategoryRow, ChartTrackableLinkDetail } from '@/types/dal';
-import type { DailyTrackableRow, ChartType, MetricRole, IconRow } from '@/types/schema';
+import type { ChartDefinitionDetail, ChartCategoryRow, ChartTrackableLinkDetail, TrackableDetail } from '@/types/dal';
+import type { ChartType, MetricRole, IconRow } from '@/types/schema';
 
 // ── Chart type metadata ───────────────────────────────────────────────────────
 
@@ -76,7 +76,7 @@ function ChartMetricsEditor({
   chartId:       number;
   chartType:     ChartType;
   initialLinks:  ChartTrackableLinkDetail[];
-  trackables:    DailyTrackableRow[];
+  trackables:    TrackableDetail[];
   icons:         IconRow[];
   onLinksChange: (links: ChartTrackableLinkDetail[]) => void;
 }>) {
@@ -189,7 +189,7 @@ function toChild(c: ChartDefinitionDetail): NormalizedChild {
 
 interface Props {
   chartDefinitions: ChartDefinitionDetail[];
-  trackables:       DailyTrackableRow[];
+  trackables:       TrackableDetail[];
   categories:       ChartCategoryRow[];
   icons:            IconRow[];
 }

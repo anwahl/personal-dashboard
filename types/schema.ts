@@ -40,19 +40,29 @@ export interface DiagnosisRow {
   created_at: string;
 }
 
-// ── Daily trackables ──────────────────────────────────────────────────────────
-// Replaces the former `habits` table.
-// track_type: 'boolean' = habit-style done/not-done
-//             'numeric' = severity/quality slider (0-10)
-//             'aggregate' = computed from another source (e.g. ESS survey total)
+// ── Trackables ────────────────────────────────────────────────────────────────
+// What is tracked each day is data: a trackable's type decides how it is
+// entered, which entries table holds its values, and how it charts.
 
-export type TrackType = "boolean" | "numeric" | "aggregate";
+/** track_type_enum. Each type maps to an input (see TrackableInput). */
+export const TRACK_TYPES = [
+  "boolean", "numeric", "combo", "time", "choice",
+  "short_text", "long_text", "icon", "tags", "aggregate", "prescription",
+] as const;
+export type TrackType = typeof TRACK_TYPES[number];
 
 export interface TrackableCategoryRow {
   id:            number;
   category_name: string;
-  sort_order?:   number;
   is_active:     boolean;
+}
+
+/** trackable_to_category: a trackable's place in a category (many-to-many). */
+export interface TrackableToCategoryRow {
+  id:           number;
+  trackable_id: number;
+  category_id:  number;
+  sort_order:   number;
 }
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
@@ -68,21 +78,188 @@ export interface IconRow {
 }
 
 export interface DailyTrackableRow {
+  id:                  number;
+  track_type:          TrackType;
+  name:                string;
+  icon_id:             number | null;
+  color_hex:           string | null;
+  /** One level only (database-checked). */
+  parent_trackable_id: number | null;
+  is_active:           boolean;
+}
+
+/** Slider range for numeric and combo trackables (1:1). */
+export interface TrackableRangeRow {
+  id:           number;
+  trackable_id: number;
+  range_min:    number;
+  range_max:    number;
+  range_step:   number;
+}
+
+/** Choice option pool: the values only. */
+export interface TrackableOptionRow {
+  id:    number;
+  value: string;
+}
+
+/** Which pool options a choice trackable offers, in order. */
+export interface TrackableChoiceOptionRow {
+  id:           number;
+  trackable_id: number;
+  option_id:    number;
+  sort_order:   number;
+  is_active:    boolean;
+}
+
+export interface TrackableAggregateQuestionRow {
+  id:           number;
+  trackable_id: number;
+  question:     string;
+  sort_order:   number;
+  is_active:    boolean;
+}
+
+/** Aggregate answer pool (label + value unique together). */
+export interface TrackableAggregateOptionRow {
+  id:    number;
+  value: number;
+  label: string;
+}
+
+/** Which answers a question offers, in order. */
+export interface TrackableAggregateQuestionOptionRow {
   id:          number;
-  track_type:  TrackType;
-  name:        string;
-  icon_id:     number | null;
-  color_hex:   string | null;
-  category_id: number | null;
-  sort_order?: number;
+  question_id: number;
+  option_id:   number;
+  sort_order:  number;
   is_active:   boolean;
 }
 
-export interface DailyNumericEntryRow {
-  id: number;
-  entry_id: number;
+/** Which prescription a `prescription` trackable is (taken = a boolean entry). */
+export interface TrackablePrescriptionRow {
+  id:              number;
+  trackable_id:    number;
+  prescription_id: number;
+}
+
+// ── Trackable entries (one table per kind of value) ───────────────────────────
+
+/** A row = "yes" that day. */
+export interface TrackableBooleanEntryRow {
+  id:           number;
+  entry_id:     number;
   trackable_id: number;
-  metric_value: number;
+}
+
+export interface TrackableNumericEntryRow {
+  id:           number;
+  entry_id:     number;
+  trackable_id: number;
+  value:        number;
+}
+
+/** A row = "yes" that day; value is optional (e.g. severity). */
+export interface TrackableComboEntryRow {
+  id:           number;
+  entry_id:     number;
+  trackable_id: number;
+  value:        number | null;
+}
+
+/** A local timestamp (no time zone), "YYYY-MM-DDTHH:MM:SS". */
+export interface TrackableTimeEntryRow {
+  id:           number;
+  entry_id:     number;
+  trackable_id: number;
+  value:        string;
+}
+
+/** short_text and long_text. */
+export interface TrackableTextEntryRow {
+  id:           number;
+  entry_id:     number;
+  trackable_id: number;
+  value:        string;
+}
+
+export interface TrackableIconEntryRow {
+  id:           number;
+  entry_id:     number;
+  trackable_id: number;
+  icon_id:      number;
+}
+
+export interface TrackableTagEntryRow {
+  id:           number;
+  entry_id:     number;
+  trackable_id: number;
+  tag_id:       number;
+}
+
+export interface TrackableChoiceEntryRow {
+  id:           number;
+  entry_id:     number;
+  trackable_id: number;
+  option_id:    number;
+}
+
+export interface TrackableAggregateEntryRow {
+  id:          number;
+  entry_id:    number;
+  question_id: number;
+  option_id:   number;
+}
+
+// ── Placement: area → section → card → categories / components ───────────────
+
+export const AREAS = ["HOME", "QUICKADD", "DAILY"] as const;
+export type Area = typeof AREAS[number];
+
+/** module_enum: components that can be placed in a card. */
+export const MODULES = [
+  "TASK_LIST", "TASK_QUICKADD", "TASK_ADD",
+  "APPOINTMENT_QUICKLIST", "APPOINTMENT_ADD", "APPOINTMENT_LIST",
+  "LAST_TIME",
+  "NOW_PLAYING_LIST", "MEDIA_ADD", "MEDIA_LIST",
+  "BRAIN_DUMP_ADD", "BRAIN_DUMP_LIST",
+  "DAILY_JOURNAL", "WEEKLY_JOURNAL",
+  "QUICK_LOG",
+  "PRESCRIPTION_LIST", "PRESCRIPTION_ADD",
+  "PEOPLE_LIST",
+  "ANALYTICS_LIST",
+] as const;
+export type Module = typeof MODULES[number];
+
+export interface SectionRow {
+  id:         number;
+  name:       string;
+  area:       Area;
+  sort_order: number;
+  is_active:  boolean;
+}
+
+export interface SectionCardRow {
+  id:         number;
+  section_id: number;
+  /** null = no card title (only category labels show). */
+  title:      string | null;
+  sort_order: number;
+  is_active:  boolean;
+}
+
+export interface TrackableCategoryCardRow {
+  id:                    number;
+  trackable_category_id: number;
+  card_id:               number;
+  sort_order:            number;
+}
+
+export interface ComponentCardRow {
+  id:         number;
+  module:     Module;
+  card_id:    number;
+  sort_order: number;
 }
 
 // ── Reference / Type tables ───────────────────────────────────────────────────
@@ -92,65 +269,6 @@ export interface TagRow {
   tag_value: string;
   is_active: boolean;
   created_at: string;
-}
-
-export interface SymptomCategoryRow {
-  id: number;
-  category_name: string;
-  sort_order?: number;
-  is_active: boolean;
-}
-
-export interface SymptomTypeRow {
-  id: number;
-  category_id: number;
-  symptom_name: string;
-  sort_order?: number;
-  is_active: boolean;
-}
-
-export interface EssQuestionTypeRow {
-  id: number;
-  question_label: string;
-  sort_order?: number;
-  is_active: boolean;
-  trackable_id: number | null; // FK → daily_trackables (the aggregate trackable)
-}
-
-export interface EssAnswerTypeRow {
-  id: number;
-  answer_label: string;
-  answer_value: number;
-  sort_order?: number;
-  is_active: boolean;
-}
-
-export interface TimingOptionRow {
-  id: number;
-  option_name: string;
-  sort_order?: number;
-  is_active: boolean;
-}
-
-export interface TimingCategoryRow {
-  id: number;
-  category_name: string;
-  sort_order?: number;
-  is_active: boolean;
-}
-
-export interface PreBedConsumptionTypeRow {
-  id: number;
-  type_name: string;
-  sort_order?: number;
-  is_active: boolean;
-}
-
-export interface SleepEventTypeRow {
-  id: number;
-  type_name: string;
-  sort_order?: number;
-  is_active: boolean;
 }
 
 export interface ProviderTypeRow {
@@ -329,31 +447,9 @@ export interface PrescriptionRefillRow {
 export interface DailyEntryRow {
   id: number;
   entry_date: string;
-  icon_id: number | null;
-  word: string | null;
   intention_id: number | null;
-  summary: string | null;
-  body_md: string | null;
   created_at: string;
   updated_at: string;
-}
-
-export interface HabitEntryRow {
-  id: number;
-  entry_id: number;
-  trackable_id: number; // FK → daily_trackables (track_type = 'boolean')
-}
-
-export interface TagEntryRow {
-  id: number;
-  entry_id: number;
-  tag_id: number;
-}
-
-export interface PrescriptionEntryRow {
-  id: number;
-  entry_id: number;
-  prescription_id: number;
 }
 
 export interface BrainDumpRow {
@@ -372,100 +468,6 @@ export interface JournalPromptResponseRow {
   response_text: string | null;
   created_at: string;
   updated_at: string;
-}
-
-// ── Sleep ─────────────────────────────────────────────────────────────────────
-
-export interface SleepEntryRow {
-  id: number;
-  entry_id: number;
-  sleep_quality: number | null;
-  hours_slept: number | null;
-  bedtime: string | null;
-  sleep_latency_min: number | null;
-  wake_time: string | null;
-  sleep_inertia_min: number | null;
-  osa_event_count: number | null;
-  sleep_notes: string | null;
-  today_pre_bed_activity: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface NapRow {
-  id: number;
-  sleep_entry_id: number;
-  nap_count: number;
-  duration_min: number | null;
-  was_refreshing: boolean;
-}
-
-export interface WakeEventRow {
-  id: number;
-  sleep_entry_id: number;
-  event_count: number;
-  duration_min: number;
-  detail: string | null;
-}
-
-export interface SleepEventRow {
-  id: number;
-  sleep_entry_id: number;
-  event_type_id: number;
-}
-
-export interface SleepTimingEntryRow {
-  id: number;
-  sleep_entry_id: number;
-  timing_category_id: number;
-  timing_option_id: number;
-}
-
-export interface SleepConsumptionEntryRow {
-  id: number;
-  sleep_entry_id: number;
-  consumption_type_id: number;
-}
-
-// ── ESS ───────────────────────────────────────────────────────────────────────
-
-export interface EssEntryRow {
-  id: number;
-  entry_id: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface EssQuestionResponseRow {
-  id: number;
-  ess_entry_id: number;
-  question_type_id: number;
-  answer_type_id: number;
-}
-
-// ── Symptoms ──────────────────────────────────────────────────────────────────
-// symptom_entries table is removed. Crash and anxiety remain on entry_id directly.
-
-export interface CrashRow {
-  id: number;
-  entry_id: number;
-  timing: string | null;
-  severity: number | null;
-}
-
-/** Past "notable anxiety" logs. No longer read or written by the app. */
-export interface AnxietyEntryRow {
-  id: number;
-  entry_id: number;
-  severity: number | null;
-  detail: string | null;
-}
-
-export interface DailySymptomEntryRow {
-  id: number;
-  entry_id: number; // FK → daily_entries (direct, no longer via symptom_entries)
-  symptom_type_id: number;
-  severity: number | null;
 }
 
 // ── Chart definitions ─────────────────────────────────────────────────────────
@@ -691,34 +693,6 @@ export interface MediaNoteRow {
   body_md: string;
   created_at: string;
   updated_at: string;
-}
-
-// ── Last time ─────────────────────────────────────────────────────────────────
-
-export interface LastTimeActivityRow {
-  id: number;
-  activity_name: string;
-  icon_id: number | null;
-  sort_order?: number;
-  is_active: boolean;
-  created_at: string;
-}
-
-export interface LastTimeLogRow {
-  id: number;
-  activity_id: number;
-  logged_date: string;
-  notes: string | null;
-  created_at: string;
-}
-
-export interface LastTimeLatestRow {
-  id: number;
-  activity_name: string;
-  icon_id: number | null;
-  sort_order?: number;
-  is_active: boolean;
-  last_logged_date: string | null;
 }
 
 // ── Generic structured content ────────────────────────────────────────────────

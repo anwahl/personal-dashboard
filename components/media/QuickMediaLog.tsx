@@ -13,7 +13,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { addMediaStatusEntry } from '@/lib/dal/media';
-import { localTodayISO } from '@/lib/utils/dates';
+import { useContextDate } from '@/components/sections/DayContext';
 import { capitalize } from '@/lib/utils/strings';
 import {
   AddButton, CardSection, CardSectionLabel, ExpandCard, EmptyState, ListItem, RowMenu,
@@ -78,6 +78,8 @@ export function QuickMediaLog({
   initialEntries, mediaTypes, mediaStatuses, statusTypeLinks, open = false,
 }: Readonly<Props>) {
   const supabase = createClient();
+  // Finished/dropped are dated today, or a daily page's date when placed on one.
+  const today    = useContextDate();
   const [entries, setEntries] = useState<MediaEntryDetail[]>(initialEntries);
   // Pick up entries added elsewhere (e.g. the dialog below) after a refresh.
   useEffect(() => { setEntries(initialEntries); }, [initialEntries]);
@@ -95,10 +97,10 @@ export function QuickMediaLog({
   }, {});
 
   const handleStatusChange = useCallback(async (entryId: number, newStatusId: number) => {
-    await addMediaStatusEntry(supabase, entryId, newStatusId, localTodayISO());
+    await addMediaStatusEntry(supabase, entryId, newStatusId, today);
     // Finished or dropped: it's no longer in progress.
     setEntries(prev => prev.filter(e => e.id !== entryId));
-  }, [supabase]);
+  }, [supabase, today]);
 
   return (
     <>

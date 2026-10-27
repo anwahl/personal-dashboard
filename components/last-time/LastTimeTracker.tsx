@@ -18,10 +18,10 @@ import {
 } from '@/components/ui';
 import type { LastTimeEntry }      from '@/types/dal';
 import type { IconRow }            from '@/types/schema';
-import { formatDaysAgo, formatMediumDate, localTodayISO } from '@/lib/utils/dates';
+import { formatDaysAgo, formatMediumDate } from '@/lib/utils/dates';
+import { useContextDate } from '@/components/sections/DayContext';
 
-function daysAgoFromDate(dateStr: string): number {
-  const today = localTodayISO();
+function daysAgoFromDate(dateStr: string, today: string): number {
   const [ty, tm, td] = today.split('-').map(Number);
   const [dy, dm, dd] = dateStr.split('-').map(Number);
   return Math.round(
@@ -44,6 +44,9 @@ function daysAgoColorClass(days: number | null): string {
 }
 
 export function LastTimeTracker({ entries, icons, compact = false }: Readonly<Props>) {
+  // The ✓ button logs this day and days count to it (a daily page's date
+  // when placed on one, otherwise today).
+  const contextDate = useContextDate();
   const supabase = createClient();
   const router   = useRouter();
   const [items,          setItems]          = useState<LastTimeEntry[]>(entries);
@@ -68,7 +71,7 @@ export function LastTimeTracker({ entries, icons, compact = false }: Readonly<Pr
     if (!item.custom_id || logging.has(item.id)) return;
     setLogging(prev => new Set(prev).add(item.id));
     try {
-      const today = localTodayISO();
+      const today = contextDate;
       await logCustomLastTime(supabase, item.custom_id, today);
       setItems(prev => prev.map(i =>
         // IDs can collide across source tables — match category too
@@ -78,23 +81,23 @@ export function LastTimeTracker({ entries, icons, compact = false }: Readonly<Pr
     } finally {
       setLogging(prev => { const n = new Set(prev); n.delete(item.id); return n; });
     }
-  }, [supabase, logging]);
+  }, [supabase, logging, contextDate]);
 
   const openDatePicker = useCallback((item: LastTimeEntry) => {
     setDatePickerItem(item);
-    setPickedDate(item.last_date ?? localTodayISO());
+    setPickedDate(item.last_date ?? contextDate);
     setDatePickerOpen(true);
-  }, []);
+  }, [contextDate]);
 
   const saveCustomDate = useCallback(async () => {
     if (!datePickerItem?.custom_id || !pickedDate) return;
     await logCustomLastTime(supabase, datePickerItem.custom_id, pickedDate);
     setItems(prev => prev.map(i =>
       i.id === datePickerItem.id && i.category === datePickerItem.category
-        ? { ...i, last_date: pickedDate, days_ago: daysAgoFromDate(pickedDate) } : i
+        ? { ...i, last_date: pickedDate, days_ago: daysAgoFromDate(pickedDate, contextDate) } : i
     ));
     setDatePickerOpen(false);
-  }, [supabase, datePickerItem, pickedDate]);
+  }, [supabase, datePickerItem, pickedDate, contextDate]);
 
   return (
     <>
@@ -181,7 +184,7 @@ export function LastTimeTracker({ entries, icons, compact = false }: Readonly<Pr
         </>
       }
     >
-      <DateField label="Date" value={pickedDate} max={localTodayISO()} onChange={setPickedDate} />
+      <DateField label="Date" value={pickedDate} max={contextDate} onChange={setPickedDate} />
     </Dialog>
     </>
   );

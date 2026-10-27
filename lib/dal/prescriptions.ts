@@ -123,6 +123,18 @@ export async function getAllPrescriptions(
   return enrichPrescriptions(client, (data ?? []) as PrescriptionRow[]);
 }
 
+/** Every prescription, for everyone (e.g. what prescription trackables point at). */
+export async function getEveryPrescription(client: Client): Promise<PrescriptionDetail[]> {
+  const { data, error } = await client
+    .from("prescriptions")
+    .select("*")
+    .order("person_id")
+    .order("sort_order");
+
+  if (error) throw new Error(`getEveryPrescription: ${error.message}`);
+  return enrichPrescriptions(client, (data ?? []) as PrescriptionRow[]);
+}
+
 // ── Writes ────────────────────────────────────────────────────────────────────
 
 export async function createPrescription(

@@ -3,8 +3,8 @@
 /**
  * HierarchicalList — the grouped settings list (category → items).
  *
- * The one pattern for any setting whose items belong to a category: symptom
- * types, journal prompts (daily + weekly), metrics, …
+ * The one pattern for any setting whose items belong to a category: trackables
+ * in categories, journal prompts (daily + weekly), aggregate answers, …
  *
  *   - Category headings: rename / activate via ⋯, drag to reorder.
  *   - Items: fields described by `childFields` (rendered by FieldInputs, the
@@ -22,6 +22,12 @@
  *     and display (e.g. an "Assignable" toggle and badge).
  *   - The "categories" don't have to be categories: any parent → items
  *     structure works (info group → fields); see `categoryNoun`.
+ *   - With `categoriesSortable={false}`: headings aren't draggable (parents
+ *     with no order of their own, listed by name).
+ *   - With `dal.removeChild`: items can also be removed (e.g. a trackable
+ *     taken out of a category; `removeLabel` names it). `childToggleable={false}`
+ *     drops Deactivate/Activate for items with no active state, and
+ *     `childEditable={false}` drops "Edit" when an item has nothing to edit.
  *
  * The caller normalises its data into NormalizedCat[] and provides a `dal`
  * of pre-bound async functions. No Supabase client or table names live here.
@@ -69,6 +75,8 @@ interface AddResult {
   id:          number;
   is_active:   boolean;
   sort_order?: number | null;
+  /** The item's name when it doesn't come from the name field (e.g. picked from a list). */
+  name?:       string;
 }
 
 type SortUpdate = { id: number; sort_order: number };
@@ -87,6 +95,8 @@ export interface HierarchicalListDal {
   /** Moves a child to another category (null = Uncategorized). Enables drag
    *  between categories and the ⋯ → Move to menu. */
   moveChild?:        (id: number, catId: number | null)                             => Promise<void>;
+  /** For items with no active state: deletes the item ("Remove" in its ⋯). */
+  removeChild?:      (id: number)                                                   => Promise<void>;
 }
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -115,6 +125,14 @@ interface Props {
   /** Whether items can be dragged to reorder (default true). Off for items
    *  whose order doesn't matter, e.g. journal prompts, which are picked at random. */
   childrenSortable?: boolean;
+  /** Whether category headings can be dragged to reorder (default true). */
+  categoriesSortable?: boolean;
+  /** Whether items have an "Edit" item (default true). */
+  childEditable?:    boolean;
+  /** Whether items have Deactivate/Activate (default true). */
+  childToggleable?:  boolean;
+  /** The ⋯ label for dal.removeChild (default "Remove"). */
+  removeLabel?:      string;
   /** Custom display for an item (default: its name). */
   renderChildName?:  (child: NormalizedChild) => ReactNode;
   /** An extra ⋯ item that opens a dialog for editing more than fits in a row.
@@ -171,6 +189,10 @@ export function HierarchicalList({
   childItalic      = false,
   childPlaceholder = 'Add item…',
   childrenSortable = true,
+  categoriesSortable = true,
+  childEditable    = true,
+  childToggleable  = true,
+  removeLabel      = 'Remove',
   renderChildName,
   childDialog,
   renderCategoryName,
@@ -285,7 +307,7 @@ export function HierarchicalList({
         ...values,
         ...data,
         id:         data.id,
-        name:       String(values[NAME_KEY] ?? ''),
+        name:       String(values[NAME_KEY] || data.name || ''),
         is_active:  data.is_active,
         sort_order: data.sort_order ?? siblings.length,
       };
@@ -307,7 +329,7 @@ export function HierarchicalList({
     await dal.updateChild(editChild.id, payload);
     const old = childrenOf(group).find(ch => ch.id === editChild.id);
     if (old) {
-      const updated = { ...old, ...payload, name: payload[NAME_KEY] != null ? String(payload[NAME_KEY]) : old.name };
+      const updated = { ...old, ...payload, name: NAME_KEY in payload ? String(payload[NAME_KEY] ?? '') : old.name };
       setChildrenOf(group, children => children.map(ch => ch.id === updated.id ? updated : ch));
       onChildChange?.(updated);
     }
@@ -320,6 +342,11 @@ export function HierarchicalList({
     const old = childrenOf(group).find(ch => ch.id === childId);
     if (old) onChildChange?.({ ...old, is_active: active });
   }, [dal, childrenOf, setChildrenOf, onChildChange]);
+
+  const removeChild = useCallback(async (group: string, childId: number) => {
+    await dal.removeChild?.(childId);
+    setChildrenOf(group, children => children.filter(ch => ch.id !== childId));
+  }, [dal, setChildrenOf]);
 
   /** Moves a child to another group at `toIndex` among its active children. */
   const moveChildToGroup = useCallback(async (childId: number, fromGroup: string, toGroup: string, toIndex?: number) => {
@@ -411,9 +438,10 @@ export function HierarchicalList({
             label={child.name}
             items={[
               // Editing actions first, then Deactivate, then Move to.
-              { label: 'Edit', onSelect: () => startEditChild(child, fields) },
+              ...(childEditable ? [{ label: 'Edit', onSelect: () => startEditChild(child, fields) }] : []),
               ...(childDialog ? [{ label: childDialog.label, onSelect: () => { setDialogFor({ id: child.id, group }); setDialogOpen(true); } }] : []),
-              { label: child.is_active ? 'Deactivate' : 'Activate', onSelect: () => toggleChild(group, child.id, !child.is_active) },
+              ...(childToggleable ? [{ label: child.is_active ? 'Deactivate' : 'Activate', onSelect: () => toggleChild(group, child.id, !child.is_active) }] : []),
+              ...(dal.removeChild ? [{ label: removeLabel, onSelect: () => removeChild(group, child.id), destructive: true }] : []),
               ...moveToMenu(child, group),
             ]}
           />
@@ -546,7 +574,12 @@ export function HierarchicalList({
     <SectionCard title={title} description={description}>
 
       <SortableList onMove={handleMove}>
-        {activeCats.map((cat, idx) => (
+        {activeCats.map((cat, idx) => !categoriesSortable ? (
+          <div key={cat.id} className="category-block">
+            {renderHeading(cat)}
+            {renderGroupBody(catGroup(cat.id), cat.name, true)}
+          </div>
+        ) : (
           <SortableItem key={cat.id} id={`category:${cat.id}`} index={idx} type="category">
             {({ ref, handleRef, isDragging }) => (
               <div ref={ref} className={`category-block${isDragging ? ' category-block--dragging' : ''}`}>

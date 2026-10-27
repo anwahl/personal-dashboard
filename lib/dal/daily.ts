@@ -7,18 +7,16 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   DailyEntryRow,
-  HabitEntryRow,
-  TagEntryRow,
   TagRow,
-  PrescriptionEntryRow,
   BrainDumpRow,
-  DailyNumericEntryRow,
 } from "@/types/schema";
 import type {
   DailyEntryDetail,
   DailyEntryUpdate,
   WeekDayData,
 } from "@/types/dal";
+import { getDayValues } from "./trackables";
+import { getRandomIntention } from "./reference";
 import { getWeekDates } from "@/lib/utils/dates";
 
 type Client = SupabaseClient;
@@ -29,47 +27,8 @@ async function assembleDailyEntryDetail(
   client: Client,
   row: DailyEntryRow,
 ): Promise<DailyEntryDetail> {
-  const [
-    booleanEntries,
-    tagEntries,
-    prescriptionEntries,
-    numericEntries,
-    brainDump,
-    intention,
-  ] = await Promise.all([
-    client
-      .from("habit_entries")
-      .select("trackable_id")
-      .eq("entry_id", row.id)
-      .then((r) => (r.data ?? []) as Pick<HabitEntryRow, "trackable_id">[]),
-
-    client
-      .from("tag_entries")
-      .select("tag_id")
-      .eq("entry_id", row.id)
-      .then((r) => (r.data ?? []) as Pick<TagEntryRow, "tag_id">[]),
-
-    client
-      .from("prescription_entries")
-      .select("prescription_id")
-      .eq("entry_id", row.id)
-      .then(
-        (r) =>
-          (r.data ?? []) as Pick<PrescriptionEntryRow, "prescription_id">[],
-      ),
-
-    client
-      .from("daily_numeric_entries")
-      .select("*")
-      .eq("entry_id", row.id)
-      .then((r) => (r.data ?? []) as DailyNumericEntryRow[]),
-
-    client
-      .from("brain_dumps")
-      .select("id, body_md")
-      .eq("entry_id", row.id)
-      .maybeSingle()
-      .then((r) => r.data as { id: number; body_md: string | null } | null),
+  const [values, intention] = await Promise.all([
+    getDayValues(client, row.id),
 
     row.intention_id
       ? client
@@ -84,11 +43,7 @@ async function assembleDailyEntryDetail(
   return {
     ...row,
     intention,
-    checked_trackable_ids: booleanEntries.map((h) => h.trackable_id),
-    tag_ids: tagEntries.map((t) => t.tag_id),
-    prescription_ids: prescriptionEntries.map((p) => p.prescription_id),
-    numeric_entries: numericEntries,
-    brain_dump: brainDump,
+    values,
   };
 }
 
@@ -145,11 +100,11 @@ export async function getWeekData(
   const rowsByDate = new Map(rows.map((r) => [r.entry_date, r]));
 
   const entryIds = rows.map((r) => r.id);
-  let booleanEntries: Pick<HabitEntryRow, "entry_id" | "trackable_id">[] = [];
+  let booleanEntries: { entry_id: number; trackable_id: number }[] = [];
 
   if (entryIds.length > 0) {
     const { data } = await client
-      .from("habit_entries")
+      .from("trackable_boolean_entries")
       .select("entry_id, trackable_id")
       .in("entry_id", entryIds);
     booleanEntries = (data ?? []) as typeof booleanEntries;
@@ -201,6 +156,18 @@ export async function createDailyEntry(
   return (data as { id: number }).id;
 }
 
+/**
+ * The entry for a date, created if it doesn't exist yet (with a randomly
+ * picked intention, as the daily page does on its first save). For saving
+ * from outside the daily page, e.g. a daily journal placed on Home.
+ */
+export async function ensureDailyEntry(client: Client, date: string): Promise<number> {
+  const existing = await getDailyEntryRow(client, date);
+  if (existing) return existing.id;
+  const intention = await getRandomIntention(client);
+  return createDailyEntry(client, date, intention?.id ?? null);
+}
+
 export async function updateDailyEntry(
   client: Client,
   entryId: number,
@@ -211,58 +178,6 @@ export async function updateDailyEntry(
     .update(fields)
     .eq("id", entryId);
   if (error) throw new Error(`updateDailyEntry(${entryId}): ${error.message}`);
-}
-
-// ── Tag entries ───────────────────────────────────────────────────────────────
-
-export async function toggleTagEntry(
-  client: Client,
-  entryId: number,
-  tagId: number,
-  active: boolean,
-): Promise<void> {
-  if (active) {
-    await client
-      .from("tag_entries")
-      .upsert(
-        { entry_id: entryId, tag_id: tagId },
-        { onConflict: "entry_id,tag_id" },
-      )
-      .throwOnError();
-  } else {
-    await client
-      .from("tag_entries")
-      .delete()
-      .eq("entry_id", entryId)
-      .eq("tag_id", tagId)
-      .throwOnError();
-  }
-}
-
-// ── Prescription entries ──────────────────────────────────────────────────────
-
-export async function togglePrescriptionEntry(
-  client: Client,
-  entryId: number,
-  prescriptionId: number,
-  taken: boolean,
-): Promise<void> {
-  if (taken) {
-    await client
-      .from("prescription_entries")
-      .upsert(
-        { entry_id: entryId, prescription_id: prescriptionId },
-        { onConflict: "entry_id,prescription_id" },
-      )
-      .throwOnError();
-  } else {
-    await client
-      .from("prescription_entries")
-      .delete()
-      .eq("entry_id", entryId)
-      .eq("prescription_id", prescriptionId)
-      .throwOnError();
-  }
 }
 
 // ── Brain dumps ───────────────────────────────────────────────────────────────

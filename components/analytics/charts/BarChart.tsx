@@ -11,17 +11,16 @@ import { useState }          from 'react';
 import { ChartEmptyState }   from './ChartEmptyState';
 import { ChartLegend }       from './ChartLegend';
 import type { ChartDefinitionDetail, TrackingDataPoint } from '@/types/dal';
+import { trackableColors, niceAxis, trackableMax } from '@/lib/utils/charts';
 
 interface Props {
   chart: ChartDefinitionDetail;
   data:  TrackingDataPoint[];
 }
 
-const TICK_MAX = 10;
-const Y_TICKS  = [0, 2, 4, 6, 8, 10];
-
 export function BarChart({ chart, data }: Readonly<Props>) {
   const seriesLinks = chart.links.filter(l => l.metric_role === 'series');
+  const colors      = trackableColors(chart.links);
   const [hovered, setHovered] = useState<{ date: string; trackableId: number; value: number } | null>(null);
 
   if (!seriesLinks.length) {
@@ -39,6 +38,13 @@ export function BarChart({ chart, data }: Readonly<Props>) {
   const CHART_H  = 220;
   const INNER_H  = CHART_H - PAD.top - PAD.bottom;
   const SVG_W    = PAD.left + data.length * GROUP_W + PAD.right;
+  // Fits the trackables' ranges (and any value past them).
+  const axis     = niceAxis(
+    Math.max(...seriesLinks.map(l => trackableMax(l.trackable))),
+    data.flatMap(dp => seriesLinks.map(l => dp.values[l.trackable_id] ?? 0)),
+  );
+  const TICK_MAX = axis.max;
+  const Y_TICKS  = axis.ticks;
 
   const toY    = (v: number) => PAD.top + INNER_H - (v / TICK_MAX) * INNER_H;
   const barH   = (v: number) => (v / TICK_MAX) * INNER_H;
@@ -49,7 +55,7 @@ export function BarChart({ chart, data }: Readonly<Props>) {
   const legendItems = seriesLinks.map(l => ({
     id:    l.trackable_id,
     name:  l.trackable.name,
-    color: l.trackable.color_hex,
+    color: colors[l.trackable_id],
   }));
 
   return (
@@ -77,7 +83,7 @@ export function BarChart({ chart, data }: Readonly<Props>) {
                 {seriesLinks.map((link, si) => {
                   const v = dp.values[link.trackable_id];
                   if (v == null) return null;
-                  const color = link.trackable.color_hex ?? 'var(--accent)';
+                  const color = colors[link.trackable_id];
                   const bx    = gx - (seriesLinks.length * (BAR_W + BAR_GAP)) / 2 + si * (BAR_W + BAR_GAP);
                   const isHov = hovered?.date === dp.date && hovered?.trackableId === link.trackable_id;
                   return (

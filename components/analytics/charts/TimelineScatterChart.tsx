@@ -11,6 +11,7 @@ import { useState }          from 'react';
 import { ChartEmptyState }   from './ChartEmptyState';
 import { ChartLegend }       from './ChartLegend';
 import type { ChartDefinitionDetail, TrackingDataPoint } from '@/types/dal';
+import { trackableColors, niceAxis, trackableMax } from '@/lib/utils/charts';
 
 interface Props {
   chart: ChartDefinitionDetail;
@@ -19,6 +20,7 @@ interface Props {
 
 export function TimelineScatterChart({ chart, data }: Readonly<Props>) {
   const seriesLinks = chart.links.filter(l => l.metric_role === 'series');
+  const colors      = trackableColors(chart.links);
   const [hovered, setHovered] = useState<{ date: string; trackableId: number; value: number } | null>(null);
 
   if (!seriesLinks.length) {
@@ -32,8 +34,13 @@ export function TimelineScatterChart({ chart, data }: Readonly<Props>) {
   const PAD = { top: 20, right: 16, bottom: 36, left: 36 };
   const INNER_W = W - PAD.left - PAD.right;
   const INNER_H = H - PAD.top  - PAD.bottom;
-  const TICK_MAX = 10;
-  const Y_TICKS  = [0, 2, 4, 6, 8, 10];
+  // Fits the trackables' ranges (and any value past them).
+  const axis     = niceAxis(
+    Math.max(...seriesLinks.map(l => trackableMax(l.trackable))),
+    data.flatMap(dp => seriesLinks.map(l => dp.values[l.trackable_id] ?? 0)),
+  );
+  const TICK_MAX = axis.max;
+  const Y_TICKS  = axis.ticks;
 
   const toX = (idx: number) => PAD.left + (idx / Math.max(data.length - 1, 1)) * INNER_W;
   const toY = (v: number)   => PAD.top  + INNER_H - (v / TICK_MAX) * INNER_H;
@@ -46,7 +53,7 @@ export function TimelineScatterChart({ chart, data }: Readonly<Props>) {
   const legendItems = seriesLinks.map(l => ({
     id:    l.trackable_id,
     name:  l.trackable.name,
-    color: l.trackable.color_hex,
+    color: colors[l.trackable_id],
   }));
 
   return (
@@ -78,7 +85,7 @@ export function TimelineScatterChart({ chart, data }: Readonly<Props>) {
           {/* Dots per series */}
           {seriesLinks.map(link => {
             const id    = link.trackable_id;
-            const color = link.trackable.color_hex ?? 'var(--accent)';
+            const color = colors[link.trackable_id];
             return data.map((dp, i) => {
               const v = dp.values[id];
               if (v == null) return null;

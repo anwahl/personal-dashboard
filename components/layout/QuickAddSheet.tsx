@@ -3,102 +3,91 @@
 /**
  * QuickAddSheet — opened from the ＋ on the mobile tab bar.
  *
- *   Quick task    — QuickAddTaskForm (minimal), the same form as the Tasks page
- *   Brain dump    — BrainDumpForm (bare), the same form as the Brain Dump page
- *   Log something — shortcuts into Today's tabs (?tab=…, read by DailyCard)
+ *   QUICKADD sections — from Settings → Layout: each section a group, its
+ *                       cards' components (quick task, brain dump, …)
+ *   Log something     — fixed: shortcuts into today's daily tabs (QuickLog)
  *
- * Each form saves on its own; the sheet then toasts and closes.
+ * The layout loads each time the sheet opens. Forms save on their own; the
+ * sheet then toasts and closes.
  */
 
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Activity, MoonStar, NotebookPen, Pill, type LucideIcon } from 'lucide-react';
-import {
-  Button, CardGridRow, CardSection, CardSectionLabel, Dialog, useToast,
-} from '@/components/ui';
-import { QuickAddTaskForm } from '@/components/tasks/TaskForm';
-import { BrainDumpForm }    from '@/components/brain-dump/BrainDumpForm';
+import { CardSection, CardSectionLabel, Dialog, EmptyState, useToast } from '@/components/ui';
+import { LayoutCard }       from '@/components/sections/LayoutCard';
+import { QuickLog }         from '@/components/sections/QuickLog';
+import { TodayProvider }    from '@/components/sections/DayContext';
+import { createClient }     from '@/lib/supabase/client';
+import { getSections, modulesIn, hasCategories } from '@/lib/dal/placement';
+import { getModuleData, type ModuleData } from '@/lib/dal/modules';
 import { useLocalToday }    from '@/lib/hooks/useLocalToday';
-import type { DailyTabId }  from '@/lib/constants/nav';
-
-interface LogShortcut {
-  label: string;
-  icon:  LucideIcon;
-  tab:   DailyTabId;
-}
-
-/** Laid out two per row. */
-const LOG_SHORTCUT_ROWS: LogShortcut[][] = [
-  [
-    { label: 'Symptom',   icon: Activity, tab: 'symptoms' },
-    { label: 'Took meds', icon: Pill,     tab: 'meds' },
-  ],
-  [
-    { label: 'Sleep',     icon: MoonStar,    tab: 'sleep' },
-    { label: 'Journal',   icon: NotebookPen, tab: 'journal' },
-  ],
-];
+import type { SectionDetail } from '@/types/dal';
 
 interface Props {
   open:         boolean;
   onOpenChange: (open: boolean) => void;
 }
 
+interface Loaded {
+  quickAdd:   SectionDetail[];
+  daily:      SectionDetail[];
+  moduleData: ModuleData;
+}
+
 export function QuickAddSheet({ open, onOpenChange }: Readonly<Props>) {
   const router       = useRouter();
   const today        = useLocalToday();
   const { addToast } = useToast();
+  const [loaded, setLoaded] = useState<Loaded | null>(null);
+
+  // Load the layout each time the sheet opens (it may have changed in Settings).
+  useEffect(() => {
+    if (!open || !today) return;
+    let cancelled = false;
+    const supabase = createClient();
+    (async () => {
+      const [quickAdd, daily] = await Promise.all([
+        getSections(supabase, 'QUICKADD'),
+        getSections(supabase, 'DAILY'),
+      ]);
+      const moduleData = await getModuleData(supabase, modulesIn(quickAdd), today, hasCategories(quickAdd));
+      if (!cancelled) setLoaded({ quickAdd, daily, moduleData });
+    })().catch(err => console.error('Quick add: loading the layout failed', err));
+    return () => { cancelled = true; };
+  }, [open, today]);
 
   const close = () => onOpenChange(false);
 
-  const savedAndClose = (message: string) => {
-    addToast(message, 'success');
+  /** After a form saves: toast (if there's a message), refresh, close. */
+  const done = (message: string) => {
+    if (message) addToast(message, 'success');
+    router.refresh();
     close();
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} title="Quick add" placement="bottom">
-      <CardSection>
-        <CardSectionLabel>Quick task</CardSectionLabel>
-        <QuickAddTaskForm
-          minimal
-          contextDate={today ?? undefined}
-          onAdded={() => savedAndClose('Task added')}
-        />
-      </CardSection>
+      {today && loaded && (
+        <TodayProvider date={today}>
+          {loaded.quickAdd.length === 0 && (
+            <EmptyState>Nothing placed in Quick add yet. Add sections in Settings → Layout.</EmptyState>
+          )}
+          {loaded.quickAdd.map(section => (
+            <CardSection key={section.id}>
+              <CardSectionLabel>{section.name}</CardSectionLabel>
+              {section.cards.map(card => (
+                <LayoutCard key={card.id} card={card} moduleData={loaded.moduleData}
+                  refs={loaded.moduleData.trackables} onDone={done} inSheet />
+              ))}
+            </CardSection>
+          ))}
 
-      <CardSection>
-        <CardSectionLabel>Brain dump</CardSectionLabel>
-        <BrainDumpForm
-          bare
-          compact
-          onSaved={() => {
-            savedAndClose('Brain dump saved');
-            router.refresh();
-          }}
-        />
-      </CardSection>
-
-      <CardSection>
-        <CardSectionLabel>Log something</CardSectionLabel>
-        {LOG_SHORTCUT_ROWS.map((row, i) => (
-          <CardGridRow key={i}>
-            {row.map(s => {
-              const Icon = s.icon;
-              return (
-                <Button
-                  key={s.label}
-                  href={`/daily/${today ?? ''}?tab=${s.tab}`}
-                  variant="tile-row"
-                  onClick={close}
-                >
-                  <Icon size={22} strokeWidth={1.8} aria-hidden="true" />
-                  {s.label}
-                </Button>
-              );
-            })}
-          </CardGridRow>
-        ))}
-      </CardSection>
+          <CardSection>
+            <CardSectionLabel>Log something</CardSectionLabel>
+            <QuickLog date={today} sections={loaded.daily} onNavigate={close} />
+          </CardSection>
+        </TodayProvider>
+      )}
     </Dialog>
   );
 }

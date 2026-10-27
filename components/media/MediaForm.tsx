@@ -15,6 +15,7 @@ import { Button, FormDialog, SliderField, TextField, DateField, TextAreaField, S
 import { createClient } from '@/lib/supabase/client';
 import { createMediaEntry, updateMediaEntry, addMediaStatusEntry, createMediaNote } from '@/lib/dal/media';
 import { localTodayISO } from '@/lib/utils/dates';
+import { useContextDate } from '@/components/sections/DayContext';
 import type { MediaEntryDetail } from '@/types/dal';
 import type {
   MediaTypeRow, MediaStatusRow, MediaStatusTypeLinkRow,
@@ -156,6 +157,8 @@ export function MediaDialog({
 }>) {
   const supabase = createClient();
   const router   = useRouter();
+  // New statuses are dated today, or a daily page's date when placed on one.
+  const today    = useContextDate();
   const isNew    = !entry;
   const showTypeSelector = isNew;
   const enableSearch     = isNew;
@@ -166,7 +169,7 @@ export function MediaDialog({
   const startType = defaultTypeId ?? '';
   const initialValues = entry
     ? entryToMediaFormValues(entry)
-    : { ...emptyMediaFormValues, status_date: localTodayISO(), media_type_id: startType, status_id: startStatusFor(startType) };
+    : { ...emptyMediaFormValues, status_date: today, media_type_id: startType, status_id: startStatusFor(startType) };
 
   const [form, setForm] = useState<MediaFormValues>(initialValues);
   const [showSearch, setShowSearch] = useState(false);
@@ -201,7 +204,7 @@ export function MediaDialog({
   const pickStatus = (id: string) => setForm(p => ({
     ...p,
     status_id:   id,
-    status_date: id === initialValues.status_id ? initialValues.status_date : localTodayISO(),
+    status_date: id === initialValues.status_id ? initialValues.status_date : today,
   }));
 
   const save = async () => {
@@ -224,7 +227,7 @@ export function MediaDialog({
     const statusChanged = String(entry?.current_status?.id ?? '') !== form.status_id;
     if (form.status_id && statusChanged) {
       await addMediaStatusEntry(supabase,
-        entryId, Number.parseInt(form.status_id), form.status_date || localTodayISO());
+        entryId, Number.parseInt(form.status_id), form.status_date || today);
     }
     router.refresh();
   };
@@ -314,13 +317,14 @@ export function MediaNoteDialog({
   entry:        MediaEntryDetail | null;
 }>) {
   const supabase = createClient();
-  const [date, setDate] = useState(localTodayISO());
+  const today    = useContextDate();
+  const [date, setDate] = useState(today);
   const [note, setNote] = useState('');
   useEffect(() => {
     if (!open) return;
-    setDate(localTodayISO());
+    setDate(today);
     setNote('');
-  }, [open]);
+  }, [open, today]);
 
   return (
     <FormDialog

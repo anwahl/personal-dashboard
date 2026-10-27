@@ -11,6 +11,7 @@
 import { ChartEmptyState } from './ChartEmptyState';
 import { IconDisplay }      from '@/components/ui';
 import type { ChartDefinitionDetail, TrackingDataPoint } from '@/types/dal';
+import { trackableColors } from '@/lib/utils/charts';
 import type { IconRow } from '@/types/schema';
 
 interface Props {
@@ -23,6 +24,7 @@ interface Props {
 
 export function HabitHeatmap({ chart, data, fromDate, toDate, icons }: Readonly<Props>) {
   const seriesLinks = chart.links.filter(l => l.metric_role === 'series');
+  const colors      = trackableColors(chart.links);
 
   if (!seriesLinks.length) {
     return <ChartEmptyState title={chart.title} message="No habits configured for this heatmap. Add them in Settings → Charts." />;
@@ -67,7 +69,7 @@ export function HabitHeatmap({ chart, data, fromDate, toDate, icons }: Readonly<
           {/* One row per habit */}
           {seriesLinks.map((link, rowIdx) => {
             const id    = link.trackable_id;
-            const color = link.trackable.color_hex ?? 'var(--accent)';
+            const color = colors[link.trackable_id];
             const y     = 18 + rowIdx * ROW_H;
 
             return (

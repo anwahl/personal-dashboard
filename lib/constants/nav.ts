@@ -100,31 +100,20 @@ export function isMoreActive(pathname: string): boolean {
     || MORE_SECTIONS.some(section => section.items.some(item => pathname.startsWith(item.href)));
 }
 
-export const DAILY_TABS = [
-  { id: 'overview',  label: '📋 Overview'  },
-  { id: 'trackables', label: '📊 Trackables' },
-  { id: 'symptoms',  label: '🩺 Symptoms'  },
-  { id: 'sleep',     label: '💤 Sleep'     },
-  { id: 'meds',      label: '💊 Meds'      },
-  { id: 'ess',       label: '😴 ESS'       },
-  { id: 'journal',   label: '📓 Journal'  },
-] as const satisfies { id: string; label: string }[];
+/** A daily tab: a DAILY section's ?tab= id (see sectionTabId). */
+export type DailyTabId = string;
 
-export type DailyTabId = typeof DAILY_TABS[number]['id'];
-
-/** Narrows a string (e.g. a ?tab= query value) to a daily tab id, or null. */
-export function toDailyTabId(value: string | null | undefined): DailyTabId | null {
-  return DAILY_TABS.find(t => t.id === value)?.id ?? null;
-}
+/** The ?tab= id of a DAILY section's tab. */
+export const sectionTabId = (sectionId: number): DailyTabId => `section-${sectionId}`;
 
 // ── Settings Tabs ──────────────────────────────────────────────────────────────────────
 
 export type SettingsTabId =
   | 'daily'
   | 'tracking'
+  | 'layout'
   | 'charts'
   | 'lasttime'
-  | 'health'
   | 'journal'
   | 'providers'
   | 'people'
@@ -134,9 +123,9 @@ export type SettingsTabId =
 export const SETTINGS_TABS = [
   { id: 'daily',     label: '📅 Daily'     },
   { id: 'tracking',  label: '📊 Tracking'  },
+  { id: 'layout',    label: '🧩 Layout'    },
   { id: 'charts',    label: '📈 Charts'    },
   { id: 'lasttime',  label: '⏱ Last Time'  },
-  { id: 'health',    label: '🩺 Health'    },
   { id: 'journal',   label: '📔 Journal'   },
   { id: 'providers', label: '🏥 Providers' },
   { id: 'people',    label: '👤 People'    },

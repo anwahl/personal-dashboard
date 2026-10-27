@@ -91,11 +91,12 @@ export async function getUpcomingAppointments(
   return enrich(client, (data ?? []) as AppointmentRow[]);
 }
 
-export async function getAllAppointments(client: Client): Promise<{
+/** Upcoming (on or after `asOf`, default today) and past appointments. */
+export async function getAllAppointments(client: Client, asOf?: string): Promise<{
   upcoming: AppointmentDetail[];
   past: AppointmentDetail[];
 }> {
-  const today = localTodayISO();
+  const today = asOf ?? localTodayISO();
 
   const [{ data: upcoming, error: ue }, { data: past, error: pe }] =
     await Promise.all([

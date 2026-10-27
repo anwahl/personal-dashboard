@@ -5,7 +5,8 @@ import { useState, useCallback } from 'react';
 import { ManageableList, type ManageableListDal } from '@/components/settings/ManageableList';
 import type { AddField } from '@/components/settings/FieldInputs';
 import { createClient }          from '@/lib/supabase/client';
-import { formatMediumDate, localTodayISO } from '@/lib/utils/dates';
+import { formatMediumDate } from '@/lib/utils/dates';
+import { useContextDate } from '@/components/sections/DayContext';
 import {
   saveInfoFieldValue, toggleChecklistItemChecked,
   addItemListEntry, deleteItemListEntry,
@@ -237,7 +238,9 @@ function ItemListSection({ list, mode, personId }: Readonly<{
   const supabase  = createClient();
   const [entries, setEntries] = useState(list.entries);
   const [newText, setNewText] = useState('');
-  const [newDate, setNewDate] = useState(localTodayISO());
+  // New entries are dated today, or a daily page's date when placed on one.
+  const today = useContextDate();
+  const [newDate, setNewDate] = useState(today);
   const [adding,  setAdding]  = useState(false);
 
   const add = useCallback(async () => {
@@ -305,7 +308,8 @@ function LogSection({ log, mode, personId }: Readonly<{
   const supabase = createClient();
   const [entries,    setEntries]    = useState(log.entries);
   const [showForm,   setShowForm]   = useState(false);
-  const [formDate,   setFormDate]   = useState(localTodayISO());
+  const today = useContextDate();
+  const [formDate,   setFormDate]   = useState(today);
   const [formValues, setFormValues] = useState<Record<number, string>>(
     Object.fromEntries(log.fields.map(f => [f.id, '']))
   );

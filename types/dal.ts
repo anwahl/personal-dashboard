@@ -8,19 +8,19 @@
 
 import type {
   DailyTrackableRow,
+  TrackableCategoryRow,
+  TrackableToCategoryRow,
+  TrackableRangeRow,
+  TrackableChoiceOptionRow,
+  TrackableAggregateQuestionRow,
+  TrackableAggregateQuestionOptionRow,
+  SectionRow,
+  SectionCardRow,
+  Module,
   LastTimeMediaRow,
   LastTimeBooleanRow,
   LastTimeCustomRow,
-  DailyNumericEntryRow,
   TagRow,
-  SymptomCategoryRow,
-  SymptomTypeRow,
-  EssQuestionTypeRow,
-  EssAnswerTypeRow,
-  TimingOptionRow,
-  TimingCategoryRow,
-  PreBedConsumptionTypeRow,
-  SleepEventTypeRow,
   AppointmentTypeRow,
   ProviderTypeRow,
   MedicationTimingTypeRow,
@@ -39,14 +39,6 @@ import type {
   PrescriptionRow,
   PrescriptionRefillRow,
   DailyEntryRow,
-  SleepEntryRow,
-  NapRow,
-  WakeEventRow,
-  SleepTimingEntryRow,
-  CrashRow,
-  DailySymptomEntryRow,
-  EssEntryRow,
-  EssQuestionResponseRow,
   AppointmentRow,
   TaskRow,
   MediaEntryRow,
@@ -56,7 +48,6 @@ import type {
   ChartDefinitionRow,
   ChartTrackableLinkRow,
   IconRow,
-  
 } from "./schema";
 
 // Re-export raw rows that components may need directly
@@ -65,14 +56,8 @@ export type {
   PeopleCategoryRow,
   ChartCategoryRow,
   DailyTrackableRow,
-  DailyNumericEntryRow,
+  TrackableCategoryRow,
   TagRow,
-  EssQuestionTypeRow,
-  EssAnswerTypeRow,
-  TimingOptionRow,
-  TimingCategoryRow,
-  PreBedConsumptionTypeRow,
-  SleepEventTypeRow,
   IntentionRow,
   PersonRow,
   ProviderRow,
@@ -84,20 +69,86 @@ export type {
   ChartTrackableLinkRow,
 };
 
+// ── Trackables (enriched) ─────────────────────────────────────────────────────
+
+/** A choice trackable's option: the bridge row plus the pool value. */
+export interface ChoiceOptionDetail extends TrackableChoiceOptionRow {
+  value: string;
+}
+
+/** An aggregate question's answer: the bridge row plus the pool label/value. */
+export interface AggregateOptionDetail extends TrackableAggregateQuestionOptionRow {
+  value: number;
+  label: string;
+}
+
+export interface AggregateQuestionDetail extends TrackableAggregateQuestionRow {
+  options: AggregateOptionDetail[];   // by sort_order
+}
+
+/** A trackable with its type-specific settings. */
+export interface TrackableDetail extends DailyTrackableRow {
+  /** numeric / combo only. */
+  range:          TrackableRangeRow | null;
+  /** choice only; by sort_order, inactive included. */
+  choice_options: ChoiceOptionDetail[];
+  /** aggregate only; by sort_order, inactive included. */
+  questions:      AggregateQuestionDetail[];
+  /** prescription only: the linked prescription's id, or null if unset. */
+  prescription_id: number | null;
+}
+
+/** Everything entered on one day, keyed by trackable id. A key that is
+ *  missing = nothing entered. */
+export interface DayValues {
+  boolean:   number[];                       // trackable ids marked yes (boolean and prescription)
+  numeric:   Record<number, number>;
+  combo:     Record<number, number | null>;  // key present = yes; value optional
+  time:      Record<number, string>;         // "YYYY-MM-DDTHH:MM"
+  text:      Record<number, string>;         // short_text and long_text
+  icon:      Record<number, number>;         // icon id
+  tags:      Record<number, number[]>;       // tag ids
+  choice:    Record<number, number>;         // pool option id
+  aggregate: Record<number, number>;         // question id → pool option id
+}
+
+/** What drawing trackable categories needs (the daily page has it all in
+ *  ReferenceData; Home and Quick add load just this). */
+export interface TrackableRefs {
+  trackables:    TrackableDetail[];
+  /** Named like ReferenceData's, so ReferenceData can be passed as is. */
+  trackableLinks:      TrackableToCategoryRow[];
+  trackableCategories: TrackableCategoryRow[];
+  icons:         IconRow[];
+  tags:          TagRow[];
+  prescriptions: PrescriptionDetail[];
+}
+
+// ── Placement (enriched) ──────────────────────────────────────────────────────
+
+/** One thing in a card: a trackable category or a component. `placement_id`
+ *  is the row in trackable_category_cards / component_cards. */
+export type CardItem =
+  | { kind: "category"; placement_id: number; sort_order: number; category_id: number }
+  | { kind: "module";   placement_id: number; sort_order: number; module: Module };
+
+export interface CardDetail extends SectionCardRow {
+  items: CardItem[];   // by sort_order
+}
+
+export interface SectionDetail extends SectionRow {
+  cards: CardDetail[]; // by sort_order
+}
+
 // ── Reference data bundle ─────────────────────────────────────────────────────
 
 export interface ReferenceData {
   icons: IconRow[];
-  trackableCategories: import('./schema').TrackableCategoryRow[];
-  trackables: DailyTrackableRow[]; // replaces habits
+  trackableCategories: TrackableCategoryRow[];
+  /** Which categories each trackable is in, with its order there. */
+  trackableLinks: TrackableToCategoryRow[];
+  trackables: TrackableDetail[];
   tags: TagRow[];
-  symptomCategories: SymptomCategoryWithTypes[];
-  essQuestionTypes: EssQuestionTypeRow[];
-  essAnswerTypes: EssAnswerTypeRow[];
-  timingOptions: TimingOptionRow[];
-  timingCategories: TimingCategoryRow[];
-  consumptionTypes: PreBedConsumptionTypeRow[];
-  sleepEventTypes: SleepEventTypeRow[];
   appointmentTypes: AppointmentTypeRow[];
   providerTypes: ProviderTypeRow[];
   medicationTimings: MedicationTimingTypeRow[];
@@ -109,10 +160,8 @@ export interface ReferenceData {
   journalCategories: JournalCategoryWithPrompts[];
   people: PersonRow[];
   peopleCategories: PeopleCategoryRow[];
-}
-
-export interface SymptomCategoryWithTypes extends SymptomCategoryRow {
-  types: SymptomTypeRow[];
+  /** Every prescription (prescription trackables show theirs). */
+  prescriptions: PrescriptionDetail[];
 }
 
 export interface JournalCategoryWithPrompts extends JournalCategoryRow {
@@ -132,54 +181,7 @@ export interface PrescriptionDetail extends PrescriptionRow {
 
 export interface DailyEntryDetail extends DailyEntryRow {
   intention: IntentionRow | null;
-  checked_trackable_ids: number[]; // boolean trackables done today (was habit_ids)
-  tag_ids: number[];
-  prescription_ids: number[];
-  numeric_entries: DailyNumericEntryRow[]; // replaces mood/energy columns
-  brain_dump: { id: number; body_md: string | null } | null;
-}
-
-// ── Sleep entry (enriched) ────────────────────────────────────────────────────
-
-export interface SleepEntryDetail extends SleepEntryRow {
-  nap: NapRow | null;
-  wake_events: WakeEventRow | null;
-  sleep_event_ids: number[];
-  timing_entries: SleepTimingEntryRow[];
-  consumption_ids: number[];
-}
-
-export interface PriorSleepContext {
-  today_pre_bed_activity: string | null;
-  timing_entries: SleepTimingEntryRow[];
-  consumption_ids: number[];
-}
-
-// ── Symptom data (enriched) ───────────────────────────────────────────────────
-// symptom_entries is removed; crash/symptom_types are fetched directly.
-
-export interface DailySymptomData {
-  crash: CrashRow | null;
-  symptom_entries: DailySymptomEntryRow[]; // direct FK to daily_entries now
-}
-
-// ── ESS entry (enriched) ─────────────────────────────────────────────────────
-
-export interface EssEntryDetail extends EssEntryRow {
-  responses: EssQuestionResponseRow[];
-  total: number;
-}
-
-// ── Daily page data bundle ────────────────────────────────────────────────────
-
-export interface DailyPageData {
-  entry: DailyEntryDetail;
-  sleep: SleepEntryDetail | null;
-  priorSleep: PriorSleepContext | null;
-  symptoms: DailySymptomData | null;
-  ess: EssEntryDetail | null;
-  prescriptions: PrescriptionDetail[];
-  reference: ReferenceData;
+  values: DayValues;
 }
 
 // ── Appointment (enriched) ────────────────────────────────────────────────────
@@ -313,7 +315,7 @@ export interface WeekDayData {
 // ── Chart definitions (enriched) ──────────────────────────────────────────────
 
 export interface ChartTrackableLinkDetail extends ChartTrackableLinkRow {
-  trackable: DailyTrackableRow;
+  trackable: TrackableDetail;
 }
 
 export interface ChartDefinitionDetail extends ChartDefinitionRow {
@@ -326,7 +328,7 @@ export interface ChartDefinitionDetail extends ChartDefinitionRow {
 /** One data point for a trend/scatter chart: date + values keyed by trackable_id. */
 export interface TrackingDataPoint {
   date: string;
-  values: Record<number, number>; // trackable_id → metric_value
+  values: Record<number, number>; // trackable_id → value (yes = 1)
 }
 
 // ── Last Time Tracker (enriched) ─────────────────────────────────────────────
@@ -361,15 +363,6 @@ export type DailyEntryInsert = Omit<
 >;
 export type DailyEntryUpdate = Partial<DailyEntryInsert>;
 
-export type SleepEntryInsert = Omit<
-  SleepEntryRow,
-  "id" | "created_at" | "updated_at"
->;
-export type SleepEntryUpdate = Partial<SleepEntryInsert>;
-
-export type CrashInsert = Omit<CrashRow, "id">;
-export type CrashUpdate = Partial<Pick<CrashRow, "timing" | "severity">>;
-
 export type PrescriptionInsert = Omit<
   PrescriptionRow,
   "id" | "created_at" | "updated_at"
@@ -402,7 +395,6 @@ export {
   type LastTimeBooleanRow,
   type LastTimeMediaRow,
   type LastTimeCustomRow,
-  type LastTimeLatestRow,
   type CalendarTokenRow,
 } from "./schema";
 

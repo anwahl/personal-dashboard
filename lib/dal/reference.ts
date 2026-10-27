@@ -8,16 +8,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   TrackableCategoryRow,
-  DailyTrackableRow,
   TagRow,
-  SymptomCategoryRow,
-  SymptomTypeRow,
-  EssQuestionTypeRow,
-  EssAnswerTypeRow,
-  TimingOptionRow,
-  TimingCategoryRow,
-  PreBedConsumptionTypeRow,
-  SleepEventTypeRow,
   ProviderTypeRow,
   AppointmentTypeRow,
   MedicationTimingTypeRow,
@@ -49,10 +40,11 @@ import type {
 } from "@/types/schema";
 import type {
   ReferenceData,
-  SymptomCategoryWithTypes,
   JournalCategoryWithPrompts,
   ChartDefinitionDetail,
 } from "@/types/dal";
+import { getTrackableDetails, getTrackableLinks } from "./trackables";
+import { getEveryPrescription } from "./prescriptions";
 
 type Client = SupabaseClient;
 
@@ -74,63 +66,19 @@ async function fetchRef<T>(
 export const getIconsRef = (c: Client, includeInactive = false) =>
   fetchRef<IconRow>(c, 'icons', includeInactive);
 
-// ── Trackables (replaces getHabits) ──────────────────────────────────────────
+// ── Trackables ────────────────────────────────────────────────────────────────
 
+/** Categories have no order of their own (order lives where they're placed). */
 export const getTrackableCategories = (c: Client, includeInactive = false) =>
-  fetchRef<TrackableCategoryRow>(c, "trackable_categories", includeInactive);
+  fetchRef<TrackableCategoryRow>(c, "trackable_categories", includeInactive, "category_name");
 
-/** 
- * Fetches daily_trackables with an explicit column list.
- * Tries including icon_id first; if the column isn't in PostgREST's schema
- * cache, falls back without it so the page doesn't crash.
- */
-export async function getTrackables(client: Client, includeInactive = false): Promise<DailyTrackableRow[]> {
-  const base = 'id, name, track_type, color_hex, category_id, sort_order, is_active';
-  const withIcon = `${base}, icon_id`;
-
-  // Try with icon_id first
-  let q = client.from('daily_trackables').select(withIcon).order('sort_order');
-  if (!includeInactive) q = q.eq('is_active', true);
-  const { data, error } = await q;
-
-  if (!error) return (data ?? []) as DailyTrackableRow[];
-
-  // Fallback: icon_id column not yet in PostgREST schema — fetch without it
-  // (icons won't show on the daily card until the migration is applied)
-  console.warn('[getTrackables] icon_id not available, falling back:', error.message);
-  let q2 = client.from('daily_trackables').select(base).order('sort_order');
-  if (!includeInactive) q2 = q2.eq('is_active', true);
-  const { data: d2, error: e2 } = await q2;
-  if (e2) throw new Error(`daily_trackables: ${e2.message}`);
-  return (d2 ?? []) as DailyTrackableRow[];
-}
+/** Every trackable with its range, choice options and aggregate questions. */
+export const getTrackables = getTrackableDetails;
 
 // ── Other reference tables ────────────────────────────────────────────────────
 
 export const getTags = (c: Client, includeInactive = false) =>
   fetchRef<TagRow>(c, "tags", includeInactive, "tag_value");
-
-export const getEssQuestionTypes = (c: Client, includeInactive = false) =>
-  fetchRef<EssQuestionTypeRow>(c, "ess_question_types", includeInactive);
-
-export const getEssAnswerTypes = (c: Client, includeInactive = false) =>
-  fetchRef<EssAnswerTypeRow>(c, "ess_answer_types", includeInactive);
-
-export const getTimingOptions = (c: Client, includeInactive = false) =>
-  fetchRef<TimingOptionRow>(c, "timing_options", includeInactive);
-
-export const getTimingCategories = (c: Client, includeInactive = false) =>
-  fetchRef<TimingCategoryRow>(c, "timing_categories", includeInactive);
-
-export const getPreBedConsumptionTypes = (c: Client, includeInactive = false) =>
-  fetchRef<PreBedConsumptionTypeRow>(
-    c,
-    "pre_bed_consumption_types",
-    includeInactive,
-  );
-
-export const getSleepEventTypes = (c: Client, includeInactive = false) =>
-  fetchRef<SleepEventTypeRow>(c, "sleep_event_types", includeInactive);
 
 export const getProviderTypes = (c: Client, includeInactive = false) =>
   fetchRef<ProviderTypeRow>(c, "provider_types", includeInactive);
@@ -180,22 +128,6 @@ export async function getAssignablePeople(client: Client): Promise<PersonRow[]> 
   );
   // Include people with no category as assignable (safe default)
   return people.filter(p => p.category_id == null || assignableIds.has(p.category_id));
-}
-
-// ── Symptom categories with their types ──────────────────────────────────────
-
-export async function getSymptomCategoriesWithTypes(
-  client: Client,
-  includeInactive = false,
-): Promise<SymptomCategoryWithTypes[]> {
-  const [categories, types] = await Promise.all([
-    fetchRef<SymptomCategoryRow>(client, "symptom_categories", includeInactive),
-    fetchRef<SymptomTypeRow>(client, "symptom_types", includeInactive),
-  ]);
-  return categories.map((cat) => ({
-    ...cat,
-    types: types.filter((t) => t.category_id === cat.id),
-  }));
 }
 
 // ── Intentions ────────────────────────────────────────────────────────────────
@@ -299,7 +231,7 @@ export async function getChartDefinitions(
 
   const [
     { data: links, error: lErr },
-    { data: trackables, error: tErr },
+    trackables,
     { data: categories, error: catErr },
   ] = await Promise.all([
     client
@@ -307,16 +239,15 @@ export async function getChartDefinitions(
       .select("*")
       .in("chart_id", chartIds)
       .order("sort_order"),
-    client.from("daily_trackables").select("*").order("sort_order"),
+    getTrackableDetails(client, true),
     client.from("chart_categories").select("*").order("sort_order"),
   ]);
 
   if (lErr) throw new Error(`chart_trackable_links: ${lErr.message}`);
-  if (tErr) throw new Error(`daily_trackables: ${tErr.message}`);
   if (catErr) throw new Error(`chart_categories: ${catErr.message}`);
 
   const trackableById = new Map(
-    ((trackables ?? []) as DailyTrackableRow[]).map((t) => [t.id, t]),
+    trackables.map((t) => [t.id, t]),
   );
   const categoryById = new Map(
     ((categories ?? []) as ChartCategoryRow[]).map((c) => [c.id, c]),
@@ -355,15 +286,9 @@ export async function getReferenceData(client: Client): Promise<ReferenceData> {
   const [
     icons,
     trackableCategories,
+    trackableLinks,
     trackables,
     tags,
-    symptomCategories,
-    essQuestionTypes,
-    essAnswerTypes,
-    timingOptions,
-    timingCategories,
-    consumptionTypes,
-    sleepEventTypes,
     appointmentTypes,
     providerTypes,
     medicationTimings,
@@ -375,18 +300,13 @@ export async function getReferenceData(client: Client): Promise<ReferenceData> {
     journalCategories,
     people,
     peopleCategories,
+    prescriptions,
   ] = await Promise.all([
     getIconsRef(client),
     getTrackableCategories(client),
+    getTrackableLinks(client),
     getTrackables(client),
     getTags(client),
-    getSymptomCategoriesWithTypes(client),
-    getEssQuestionTypes(client),
-    getEssAnswerTypes(client),
-    getTimingOptions(client),
-    getTimingCategories(client),
-    getPreBedConsumptionTypes(client),
-    getSleepEventTypes(client),
     getAppointmentTypes(client),
     getProviderTypes(client),
     getMedicationTimingTypes(client),
@@ -398,20 +318,15 @@ export async function getReferenceData(client: Client): Promise<ReferenceData> {
     getJournalCategoriesWithPrompts(client),
     getPeople(client),
     getPeopleCategories(client),
+    getEveryPrescription(client),
   ]);
 
   return {
     icons,
     trackableCategories,
+    trackableLinks,
     trackables,
     tags,
-    symptomCategories,
-    essQuestionTypes,
-    essAnswerTypes,
-    timingOptions,
-    timingCategories,
-    consumptionTypes,
-    sleepEventTypes,
     appointmentTypes,
     providerTypes,
     medicationTimings,
@@ -423,6 +338,7 @@ export async function getReferenceData(client: Client): Promise<ReferenceData> {
     journalCategories,
     people,
     peopleCategories,
+    prescriptions,
   };
 }
 

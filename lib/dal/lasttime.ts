@@ -5,7 +5,7 @@
  *
  * Sources:
  *   last_time_media   → filters media_status_entries by type/genre/status (any combo)
- *   last_time_boolean → derives date from habit_entries → daily_entries
+ *   last_time_boolean → derives date from trackable_boolean_entries → daily_entries
  *   last_time_custom  → reads last_date directly
  */
 
@@ -20,11 +20,13 @@ import type { LastTimeEntry, LastTimeSettingsItems } from "@/types/dal";
 
 type Client = SupabaseClient;
 
-function daysAgo(dateStr: string | null): number | null {
+/** Whole days from dateStr to asOf (both YYYY-MM-DD). */
+function daysAgo(dateStr: string | null, asOf: string): number | null {
   if (!dateStr) return null;
   const [y, m, d] = dateStr.split("-").map(Number);
-  return Math.floor(
-    (Date.now() - new Date(y, m - 1, d).getTime()) / 86_400_000,
+  const [ay, am, ad] = asOf.split("-").map(Number);
+  return Math.round(
+    (new Date(ay, am - 1, ad).getTime() - new Date(y, m - 1, d).getTime()) / 86_400_000,
   );
 }
 
@@ -37,6 +39,7 @@ function daysAgo(dateStr: string | null): number | null {
 async function computeMediaLastDate(
   client: Client,
   item: LastTimeMediaRow,
+  asOf: string,
 ): Promise<string | null> {
   // Step 1: narrow down entry IDs by type and/or genre
   let entryIds: number[] | null = null;
@@ -69,6 +72,7 @@ async function computeMediaLastDate(
   let sq = client
     .from("media_status_entries")
     .select("status_date")
+    .lte("status_date", asOf)
     .order("status_date", { ascending: false })
     .limit(1);
 
@@ -83,9 +87,14 @@ async function computeMediaLastDate(
 
 // ── Main fetch ────────────────────────────────────────────────────────────────
 
+/**
+ * Every Last Time item with its last date as of `asOf` (default today):
+ * media and yes/no items look back from that date; days are counted to it.
+ */
 export async function getLastTimeEntries(
   client: Client,
   includeInactive = false,
+  asOf: string = localTodayISO(),
 ): Promise<LastTimeEntry[]> {
   let mq = client.from("last_time_media").select("*").order("sort_order");
   let bq = client.from("last_time_boolean").select("*").order("sort_order");
@@ -108,14 +117,14 @@ export async function getLastTimeEntries(
 
   // ── Media — compute date per item ──
   for (const item of mediaItems) {
-    const last_date = await computeMediaLastDate(client, item);
+    const last_date = await computeMediaLastDate(client, item, asOf);
     results.push({
       id: item.id,
       category: "media",
       icon_id: item.icon_id,
       label: item.label,
       last_date,
-      days_ago: daysAgo(last_date),
+      days_ago: daysAgo(last_date, asOf),
       sort_order: item.sort_order,
       is_active: item.is_active,
     });
@@ -127,7 +136,7 @@ export async function getLastTimeEntries(
 
     const [{ data: habitRows }, { data: trackables }] = await Promise.all([
       client
-        .from("habit_entries")
+        .from("trackable_boolean_entries")
         .select("trackable_id, daily_entries(entry_date)")
         .in("trackable_id", trackableIds),
       client
@@ -151,7 +160,7 @@ export async function getLastTimeEntries(
       const date = row.daily_entries?.entry_date;
       const tid = row.trackable_id;
       if (
-        date &&
+        date && date <= asOf &&
         (!latestByTrackable.has(tid) || date > latestByTrackable.get(tid)!)
       ) {
         latestByTrackable.set(tid, date);
@@ -167,7 +176,7 @@ export async function getLastTimeEntries(
         icon_id: item.icon_id ?? t?.icon_id ?? null,
         label: t?.name ?? `Trackable ${item.trackable_id}`,
         last_date,
-        days_ago: daysAgo(last_date),
+        days_ago: daysAgo(last_date, asOf),
         sort_order: item.sort_order,
         is_active: item.is_active,
       });
@@ -182,7 +191,7 @@ export async function getLastTimeEntries(
       icon_id: item.icon_id,
       label: item.custom_value,
       last_date: item.last_date,
-      days_ago: daysAgo(item.last_date),
+      days_ago: daysAgo(item.last_date, asOf),
       sort_order: item.sort_order,
       is_active: item.is_active,
       custom_id: item.id,

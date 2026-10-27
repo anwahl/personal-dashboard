@@ -12,6 +12,7 @@ import { useState }          from 'react';
 import { ChartEmptyState }   from './ChartEmptyState';
 import { ChartLegend }       from './ChartLegend';
 import type { ChartDefinitionDetail, TrackingDataPoint } from '@/types/dal';
+import { trackableColors, niceAxis, trackableMax } from '@/lib/utils/charts';
 
 interface Props {
   chart: ChartDefinitionDetail;
@@ -32,8 +33,9 @@ function pearson(xs: number[], ys: number[]): number | null {
 }
 
 export function ScatterChart({ chart, data }: Readonly<Props>) {
-  const xLink = chart.links.find(l => l.metric_role === 'x_axis');
-  const yLink = chart.links.find(l => l.metric_role === 'y_axis');
+  const xLink  = chart.links.find(l => l.metric_role === 'x_axis');
+  const yLink  = chart.links.find(l => l.metric_role === 'y_axis');
+  const colors = trackableColors(chart.links);
   const [hovered, setHovered] = useState<{ date: string; x: number; y: number } | null>(null);
 
   if (!xLink || !yLink) {
@@ -42,8 +44,8 @@ export function ScatterChart({ chart, data }: Readonly<Props>) {
 
   const xId    = xLink.trackable_id;
   const yId    = yLink.trackable_id;
-  const xColor = xLink.trackable.color_hex ?? 'var(--accent)';
-  const yColor = yLink.trackable.color_hex ?? 'var(--text-muted)';
+  const xColor = colors[xLink.trackable_id];
+  const yColor = colors[yLink.trackable_id];
 
   const points: { date: string; x: number; y: number }[] = [];
   for (const dp of data) {
@@ -60,9 +62,12 @@ export function ScatterChart({ chart, data }: Readonly<Props>) {
   const ys = points.map(p => p.y);
   const r  = pearson(xs, ys);
 
-  const W = 500, H = 320, PAD = 40, TICK_MAX = 10;
-  const toSvgX = (v: number) => PAD + (v / TICK_MAX) * (W - PAD * 2);
-  const toSvgY = (v: number) => H - PAD - (v / TICK_MAX) * (H - PAD * 2);
+  const W = 500, H = 320, PAD = 40;
+  // Each axis fits its own trackable's range (and any value past it).
+  const xAxis  = niceAxis(trackableMax(xLink.trackable), xs);
+  const yAxis  = niceAxis(trackableMax(yLink.trackable), ys);
+  const toSvgX = (v: number) => PAD + (v / xAxis.max) * (W - PAD * 2);
+  const toSvgY = (v: number) => H - PAD - (v / yAxis.max) * (H - PAD * 2);
 
   let lineEl: React.ReactNode = null;
   if (r != null) {
@@ -74,13 +79,11 @@ export function ScatterChart({ chart, data }: Readonly<Props>) {
     lineEl = (
       <line
         x1={toSvgX(0)} y1={toSvgY(intercept)}
-        x2={toSvgX(TICK_MAX)} y2={toSvgY(slope * TICK_MAX + intercept)}
+        x2={toSvgX(xAxis.max)} y2={toSvgY(slope * xAxis.max + intercept)}
         stroke="var(--text-faint)" strokeWidth={1} strokeDasharray="4,3"
       />
     );
   }
-
-  const ticks = [0, 2, 4, 6, 8, 10];
 
   const legendItems = [
     { id: xId, name: xLink.trackable.name, color: xColor, suffix: '(x)' },
@@ -103,13 +106,17 @@ export function ScatterChart({ chart, data }: Readonly<Props>) {
       <div className="chart-scroll">
         <svg viewBox={`0 0 ${W} ${H}`} className="chart-svg">
           {/* Grid lines */}
-          {ticks.map(t => (
-            <g key={t}>
-              <line x1={toSvgX(0)} y1={toSvgY(t)} x2={toSvgX(TICK_MAX)} y2={toSvgY(t)}
-                stroke="var(--border)" strokeWidth={0.5} />
-              <line x1={toSvgX(t)} y1={toSvgY(0)} x2={toSvgX(t)} y2={toSvgY(TICK_MAX)}
+          {yAxis.ticks.map(t => (
+            <g key={`y${t}`}>
+              <line x1={toSvgX(0)} y1={toSvgY(t)} x2={toSvgX(xAxis.max)} y2={toSvgY(t)}
                 stroke="var(--border)" strokeWidth={0.5} />
               <text x={toSvgX(0) - 6} y={toSvgY(t) + 4} className="chart-tick" textAnchor="end">{t}</text>
+            </g>
+          ))}
+          {xAxis.ticks.map(t => (
+            <g key={`x${t}`}>
+              <line x1={toSvgX(t)} y1={toSvgY(0)} x2={toSvgX(t)} y2={toSvgY(yAxis.max)}
+                stroke="var(--border)" strokeWidth={0.5} />
               <text x={toSvgX(t)} y={toSvgY(0) + 14} className="chart-tick" textAnchor="middle">{t}</text>
             </g>
           ))}
