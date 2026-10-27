@@ -14,7 +14,7 @@ import { createClient } from '@/lib/supabase/client';
 import { ensureDailyEntry } from '@/lib/dal/daily';
 import { localTodayISO } from '@/lib/utils/dates';
 
-export interface Day {
+interface Day {
   /** YYYY-MM-DD. */
   date:       string;
   mode:       'view' | 'input';

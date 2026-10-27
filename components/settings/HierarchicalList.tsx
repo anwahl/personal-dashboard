@@ -58,7 +58,7 @@ export interface NormalizedChild {
   [key: string]: unknown;
 }
 
-export interface NormalizedCat {
+interface NormalizedCat {
   id:         number;
   name:       string;
   is_active:  boolean;
@@ -82,7 +82,7 @@ interface AddResult {
 type SortUpdate = { id: number; sort_order: number };
 type ChildValues = Record<string, unknown>;
 
-export interface HierarchicalListDal {
+interface HierarchicalListDal {
   addCategory:       (name: string, sortOrder: number)                              => Promise<AddResult>;
   updateCategory:    (id: number, name: string)                                     => Promise<void>;
   toggleCategory:    (id: number, active: boolean)                                  => Promise<void>;

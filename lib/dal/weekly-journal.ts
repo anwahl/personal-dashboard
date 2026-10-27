@@ -51,26 +51,6 @@ export async function createWeeklyEntry(
   return data as WeeklyEntryRow;
 }
 
-/** Returns the dates (week_start_date) of all entries in a given month. */
-export async function getWeeklyEntryDatesForMonth(
-  client: Client,
-  year:   number,
-  month:  number,   // 0-indexed
-): Promise<string[]> {
-  const pad = (n: number) => String(n).padStart(2, '0');
-  const from = `${year}-${pad(month + 1)}-01`;
-  // Include any Sunday that could fall in the previous month but whose week overlaps
-  const fromPad = addDays(from, -6);
-  const to      = `${year}-${pad(month + 1)}-${new Date(year, month + 1, 0).getDate()}`;
-  const { data, error } = await client
-    .from('weekly_entries')
-    .select('week_start_date')
-    .gte('week_start_date', fromPad)
-    .lte('week_start_date', to);
-  if (error) throw new Error(`getWeeklyEntryDatesForMonth: ${error.message}`);
-  return ((data ?? []) as { week_start_date: string }[]).map(r => r.week_start_date);
-}
-
 // ── Categories and prompts ────────────────────────────────────────────────────
 
 export async function getWeeklyJournalCategories(

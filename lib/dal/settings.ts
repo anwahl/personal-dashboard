@@ -27,7 +27,7 @@ export type ManageableTable =
  * All tables with a sort_order column — superset of ManageableTable.
  * Used by reorderSettingsItem which is shared across DAL files.
  */
-export type ReorderableTable =
+type ReorderableTable =
   | ManageableTable
   | "icons"
   | "journal_categories"
@@ -91,29 +91,6 @@ export async function updateSettingsItem<T>(
 // ── Generic sort-order swap (any table with sort_order column) ────────────────
 
 /**
- * Swaps the sort_order of two items. Both updates run in parallel.
- * Works on any table in ReorderableTable — used by ManageableList and
- * the category/child settings components (journal, last-time).
- */
-export async function reorderSettingsItem(
-  client: Client,
-  table: ReorderableTable,
-  idA: number,
-  orderA: number,
-  idB: number,
-  orderB: number,
-): Promise<void> {
-  const [resA, resB] = await Promise.all([
-    client.from(table).update({ sort_order: orderB }).eq("id", idA),
-    client.from(table).update({ sort_order: orderA }).eq("id", idB),
-  ]);
-  if (resA.error)
-    throw new Error(`reorderSettingsItem(${table}) A: ${resA.error.message}`);
-  if (resB.error)
-    throw new Error(`reorderSettingsItem(${table}) B: ${resB.error.message}`);
-}
-
-/**
  * Batch-sets sort_order for multiple items at once.
  * Used when normalizing all-zero sort_orders on first move.
  */
@@ -136,7 +113,7 @@ export async function batchSetSortOrder(
 // ── Category assignment ───────────────────────────────────────────────────────
 
 /** Item tables that belong to a category via `category_id`. */
-export type CategorizedTable =
+type CategorizedTable =
   | "journal_prompts"
   | "weekly_journal_prompts"
   | "people";

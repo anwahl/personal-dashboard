@@ -100,7 +100,7 @@ export const ITEM_TYPES = {
   ITALIC: 'italic'
 } as const;
 
-export type ItemType = typeof ITEM_TYPES[keyof typeof ITEM_TYPES];
+type ItemType = typeof ITEM_TYPES[keyof typeof ITEM_TYPES];
 
 
 export function Item({ itemType = ITEM_TYPES.DEFAULT, itemModifier, value, className }:
@@ -211,7 +211,7 @@ export function EmptyState({ children, className }: Readonly<{ children: ReactNo
 
 // ── Badge ─────────────────────────────────────────────────────────────────────
 
-export type BadgeVariant = 'default' | 'highlight' | 'selected' | 'success' | 'warn' | 'danger' | 'muted';
+type BadgeVariant = 'default' | 'highlight' | 'selected' | 'success' | 'warn' | 'danger' | 'muted';
 
 /** Small inline label pill (a type, status, or count). */
 export function Badge({

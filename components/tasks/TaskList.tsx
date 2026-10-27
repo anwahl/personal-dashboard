@@ -56,7 +56,7 @@ const PRIORITY_COLOR: Record<string, string> = {
 
 // ── TaskItem ──────────────────────────────────────────────────────────────────
 
-export function TaskItem({
+function TaskItem({
   task,
   contextDate = localTodayISO(),
   onUpdate,

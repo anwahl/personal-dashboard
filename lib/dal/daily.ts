@@ -12,12 +12,9 @@ import type {
 } from "@/types/schema";
 import type {
   DailyEntryDetail,
-  DailyEntryUpdate,
-  WeekDayData,
 } from "@/types/dal";
 import { getDayValues } from "./trackables";
 import { getRandomIntention } from "./reference";
-import { getWeekDates } from "@/lib/utils/dates";
 
 type Client = SupabaseClient;
 
@@ -75,57 +72,6 @@ export async function getDailyEntryRow(
   return data as DailyEntryRow | null;
 }
 
-export async function getDailyEntryRows(
-  client: Client,
-  fromDate: string,
-  toDate: string,
-): Promise<DailyEntryRow[]> {
-  const { data, error } = await client
-    .from("daily_entries")
-    .select("*")
-    .gte("entry_date", fromDate)
-    .lte("entry_date", toDate)
-    .order("entry_date", { ascending: true });
-
-  if (error) throw new Error(`getDailyEntryRows: ${error.message}`);
-  return (data ?? []) as DailyEntryRow[];
-}
-
-export async function getWeekData(
-  client: Client,
-  anchorDate: string,
-): Promise<WeekDayData[]> {
-  const dates = getWeekDates(anchorDate);
-  const rows = await getDailyEntryRows(client, dates[0], dates[6]);
-  const rowsByDate = new Map(rows.map((r) => [r.entry_date, r]));
-
-  const entryIds = rows.map((r) => r.id);
-  let booleanEntries: { entry_id: number; trackable_id: number }[] = [];
-
-  if (entryIds.length > 0) {
-    const { data } = await client
-      .from("trackable_boolean_entries")
-      .select("entry_id, trackable_id")
-      .in("entry_id", entryIds);
-    booleanEntries = (data ?? []) as typeof booleanEntries;
-  }
-
-  const byEntry = booleanEntries.reduce<Record<number, number[]>>((acc, h) => {
-    const trackables = (acc[h.entry_id] ??= []);
-    trackables.push(h.trackable_id);
-    return acc;
-  }, {});
-
-  return dates.map((date) => {
-    const entry = rowsByDate.get(date) ?? null;
-    return {
-      date,
-      entry,
-      checked_trackable_ids: entry ? (byEntry[entry.id] ?? []) : [],
-    };
-  });
-}
-
 // ── Create / Update ───────────────────────────────────────────────────────────
 
 /**
@@ -166,18 +112,6 @@ export async function ensureDailyEntry(client: Client, date: string): Promise<nu
   if (existing) return existing.id;
   const intention = await getRandomIntention(client);
   return createDailyEntry(client, date, intention?.id ?? null);
-}
-
-export async function updateDailyEntry(
-  client: Client,
-  entryId: number,
-  fields: DailyEntryUpdate,
-): Promise<void> {
-  const { error } = await client
-    .from("daily_entries")
-    .update(fields)
-    .eq("id", entryId);
-  if (error) throw new Error(`updateDailyEntry(${entryId}): ${error.message}`);
 }
 
 // ── Brain dumps ───────────────────────────────────────────────────────────────
@@ -310,18 +244,6 @@ export async function getBrainDumps(
     })),
     hasMore,
   };
-}
-
-export async function updateBrainDump(
-  client: SupabaseClient,
-  id: number,
-  bodyMd: string,
-): Promise<void> {
-  await client
-    .from("brain_dumps")
-    .update({ body_md: bodyMd })
-    .eq("id", id)
-    .throwOnError();
 }
 
 export async function deleteBrainDump(

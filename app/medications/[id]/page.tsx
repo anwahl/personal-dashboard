@@ -1,7 +1,6 @@
 import { notFound }                      from 'next/navigation';
 import { createClient }                  from '@/lib/supabase/server';
-import { getPrescriptionById,
-  getPrescriptionChangesByRx }           from '@/lib/dal/prescriptions';
+import { getPrescriptionById }           from '@/lib/dal/prescriptions';
 import { PrescriptionDetailClient }      from '@/components/medications/PrescriptionDetailClient';
 import { Header, PageBody }              from '@/components/layout';
 

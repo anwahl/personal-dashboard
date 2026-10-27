@@ -18,7 +18,7 @@
 import type { ReactNode } from 'react';
 import { ToggleGroup } from 'radix-ui';
 
-export interface SegmentOption<T extends string> {
+interface SegmentOption<T extends string> {
   value:     T;
   label:     ReactNode;
   disabled?: boolean;

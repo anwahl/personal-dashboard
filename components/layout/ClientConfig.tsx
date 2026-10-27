@@ -17,7 +17,7 @@
 
 import type { ReactNode } from 'react';
 import { SWRConfig }      from 'swr';
-import { ToastProvider }  from '@/components/ui/Toast';
+import { ToastProvider }  from '@/components/ui';
 
 const SWR_CONFIG = {
   /** Don't refetch when the user tabs back to the window. */

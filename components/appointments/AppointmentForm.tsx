@@ -18,7 +18,7 @@ import type { AppointmentTypeRow, PersonRow, ProviderRow } from '@/types/schema'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export interface AppointmentFormValues {
+interface AppointmentFormValues {
   appointment_date:    string;
   appointment_time:    string;
   person_id:           string;
@@ -29,14 +29,14 @@ export interface AppointmentFormValues {
   notes:               string;
 }
 
-export const emptyAppointmentFormValues: AppointmentFormValues = {
+const emptyAppointmentFormValues: AppointmentFormValues = {
   appointment_date: '', appointment_time: '', person_id: '',
   provider_id: '', appointment_type_id: '',
   location: '', questions: '', notes: '',
 };
 
 /** Convert a full AppointmentDetail into form values. */
-export function apptToFormValues(a: AppointmentDetail): AppointmentFormValues {
+function apptToFormValues(a: AppointmentDetail): AppointmentFormValues {
   return {
     appointment_date:    a.appointment_date,
     appointment_time:    a.appointment_time         ?? '',

@@ -39,7 +39,7 @@ import type { PersonRow } from '@/types/schema';
 
 // ── Labels and fields ─────────────────────────────────────────────────────────
 
-export const TRACK_TYPE_LABEL: Record<TrackType, string> = {
+const TRACK_TYPE_LABEL: Record<TrackType, string> = {
   boolean:    'Yes/No',
   numeric:    'Slider',
   combo:      'Yes/No + slider',

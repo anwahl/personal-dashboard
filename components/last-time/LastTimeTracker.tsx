@@ -32,7 +32,6 @@ function daysAgoFromDate(dateStr: string, today: string): number {
 interface Props {
   entries:  LastTimeEntry[];
   icons:    IconRow[];
-  compact?: boolean;
 }
 
 function daysAgoColorClass(days: number | null): string {
@@ -43,7 +42,7 @@ function daysAgoColorClass(days: number | null): string {
   return 'color--danger';
 }
 
-export function LastTimeTracker({ entries, icons, compact = false }: Readonly<Props>) {
+export function LastTimeTracker({ entries, icons }: Readonly<Props>) {
   // The ✓ button logs this day and days count to it (a daily page's date
   // when placed on one, otherwise today).
   const contextDate = useContextDate();

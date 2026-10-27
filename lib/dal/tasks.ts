@@ -67,33 +67,6 @@ async function enrich(client: Client, rows: TaskRow[]): Promise<TaskDetail[]> {
 
 // ── Reads ─────────────────────────────────────────────────────────────────────
 
-export async function getActiveTasks(client: Client): Promise<TaskDetail[]> {
-  const { data, error } = await client
-    .from("tasks")
-    .select("*")
-    .not("status_id", "in", `(${await getTerminalStatusIds(client)})`)
-    .order("due_date", { ascending: true, nullsFirst: false })
-    .order("created_at", { ascending: false });
-
-  if (error) throw new Error(`getActiveTasks: ${error.message}`);
-  return enrich(client, (data ?? []) as TaskRow[]);
-}
-
-export async function getCompletedTasks(
-  client: Client,
-  limit = 50,
-): Promise<TaskDetail[]> {
-  const { data, error } = await client
-    .from("tasks")
-    .select("*")
-    .in("status_id", await getTerminalStatusIds(client))
-    .order("completed_at", { ascending: false })
-    .limit(limit);
-
-  if (error) throw new Error(`getCompletedTasks: ${error.message}`);
-  return enrich(client, (data ?? []) as TaskRow[]);
-}
-
 async function getTerminalStatusIds(client: Client): Promise<number[]> {
   const { data } = await client
     .from("task_statuses")
@@ -218,53 +191,6 @@ export async function getTasksByDateContext(
 }
 
 // ── Reminder helpers ──────────────────────────────────────────────────────────
-
-/**
- * Sets (or clears) the reminder_at and all recurrence fields on a task.
- * Pass null for reminderAt to remove the reminder entirely.
- */
-export async function setTaskReminder(
-  client: Client,
-  taskId: number,
-  payload: {
-    reminder_at:          string | null;
-    recurrence_frequency: TaskRow['recurrence_frequency'];
-    recurrence_interval:  number | null;
-    recurrence_days:      string | null;
-    recurrence_end_date:  string | null;
-  },
-): Promise<void> {
-  // Clearing reminder also clears recurrence and snooze state
-  const patch = payload.reminder_at === null
-    ? {
-        reminder_at:          null,
-        recurrence_frequency: null,
-        recurrence_interval:  null,
-        recurrence_days:      null,
-        recurrence_end_date:  null,
-        snoozed_until:        null,
-        reminder_last_sent:   null,
-      }
-    : payload;
-
-  const { error } = await client.from('tasks').update(patch).eq('id', taskId);
-  if (error) throw new Error(`setTaskReminder: ${error.message}`);
-}
-
-/**
- * Snoozes the reminder on a task until the given ISO timestamptz string.
- */
-export async function snoozeTaskReminder(
-  client: Client,
-  taskId: number,
-  until: string,
-): Promise<void> {
-  const { error } = await client
-    .from('tasks')
-    .update({ snoozed_until: until })
-    .eq('id', taskId);
-  if (error) throw new Error(`snoozeTaskReminder: ${error.message}`);
-}
 
 /**
  * Returns tasks with a reminder_at set that haven't been completed.

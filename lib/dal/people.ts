@@ -447,7 +447,7 @@ export async function deleteChecklistItem(
 
 // ── People structure creation ─────────────────────────────────────────────────
 
-export interface NewInfoGroupPayload {
+interface NewInfoGroupPayload {
   group_title: string;
   fields: Array<{ label: string; type: string }>;
   sort_order?: number;
@@ -480,7 +480,7 @@ export async function createInfoGroup(
   return group as InfoGroupRow;
 }
 
-export interface NewLogSchemaPayload {
+interface NewLogSchemaPayload {
   log_title: string;
   sort_order?: number;
   fields: Array<{

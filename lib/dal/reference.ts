@@ -14,7 +14,6 @@ import type {
   MedicationTimingTypeRow,
   TaskStatusRow,
   TaskPriorityRow,
-  TimelineEventTypeRow,
   MediaTypeRow,
   MediaStatusRow,
   MediaGenreRow,
@@ -99,9 +98,6 @@ export const getTaskStatuses = (c: Client, includeInactive = false) =>
 export const getTaskPriorities = (c: Client, includeInactive = false) =>
   fetchRef<TaskPriorityRow>(c, "task_priorities", includeInactive);
 
-export const getTimelineEventTypes = (c: Client, includeInactive = false) =>
-  fetchRef<TimelineEventTypeRow>(c, "timeline_event_types", includeInactive);
-
 export const getMediaTypes = (c: Client, includeInactive = false) =>
   fetchRef<MediaTypeRow>(c, "media_types", includeInactive);
 
@@ -131,17 +127,6 @@ export async function getAssignablePeople(client: Client): Promise<PersonRow[]> 
 }
 
 // ── Intentions ────────────────────────────────────────────────────────────────
-
-export async function getActiveIntentions(
-  client: Client,
-): Promise<IntentionRow[]> {
-  const { data, error } = await client
-    .from("intentions")
-    .select("*")
-    .eq("is_active", true);
-  if (error) throw new Error(`getActiveIntentions: ${error.message}`);
-  return (data ?? []) as IntentionRow[];
-}
 
 export async function getRandomIntention(
   client: Client,
@@ -186,20 +171,6 @@ export async function getJournalCategoriesWithPrompts(
       (p) => p.category_id === cat.id,
     ),
   }));
-}
-
-export async function getRandomJournalPrompt(
-  client: Client,
-  categoryId?: number,
-): Promise<JournalPromptRow | null> {
-  let q = client.from("journal_prompts").select("*").eq("is_active", true);
-  if (categoryId != null) q = q.eq("category_id", categoryId);
-  const { data, error } = await q;
-  if (error) throw new Error(`getRandomJournalPrompt: ${error.message}`);
-  if (!data?.length) return null;
-  const randomIndex =
-    crypto.getRandomValues(new Uint32Array(1))[0] % data.length;
-  return data[randomIndex] as JournalPromptRow;
 }
 
 // ── Chart categories ─────────────────────────────────────────────────────────
@@ -344,7 +315,7 @@ export async function getReferenceData(client: Client): Promise<ReferenceData> {
 
 // ── Settings page bulk fetch ───────────────────────────────────────────────────
 
-export interface SettingsPageData {
+interface SettingsPageData {
   tags: TagRow[];
   intentions: IntentionRow[];
   providers: ProviderRow[];

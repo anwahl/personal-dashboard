@@ -36,8 +36,8 @@ import { Button }                                  from './Button';
 import { useSwipeToDismiss }                       from '@/lib/hooks/useSwipeToDismiss';
 import { useMediaQuery, PHONE_QUERY }             from '@/lib/hooks/useMediaQuery';
 
-export type DialogSize      = 'sm' | 'md' | 'lg';
-export type DialogPlacement = 'center' | 'bottom' | 'auto';
+type DialogSize      = 'sm' | 'md' | 'lg';
+type DialogPlacement = 'center' | 'bottom' | 'auto';
 
 interface DialogProps {
   open:          boolean;

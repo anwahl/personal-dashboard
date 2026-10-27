@@ -19,7 +19,7 @@
 import type { ReactNode } from 'react';
 import { Chip, ChipGroup } from './Chip';
 
-export interface ChipOption<T extends string | number> {
+interface ChipOption<T extends string | number> {
   value:     T;
   label:     ReactNode;
   disabled?: boolean;

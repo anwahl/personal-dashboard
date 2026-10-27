@@ -127,17 +127,6 @@ export async function saveJournalResponses(
   }
 }
 
-export async function deleteJournalResponse(
-  client: Client,
-  id: number,
-): Promise<void> {
-  const { error } = await client
-    .from("journal_prompt_responses")
-    .delete()
-    .eq("id", id);
-  if (error) throw new Error(`deleteJournalResponse: ${error.message}`);
-}
-
 // ── Settings operations ───────────────────────────────────────────────────────
 
 export async function addJournalCategory(

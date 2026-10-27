@@ -40,8 +40,6 @@ import {
 } from './FieldInputs';
 import type { IconRow } from '@/types/schema';
 
-export type { AddField } from './FieldInputs';
-
 interface Item {
   id:          number;
   is_active:   boolean;

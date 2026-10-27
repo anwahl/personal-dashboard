@@ -308,14 +308,6 @@ export interface TaskPriorityRow {
   is_active: boolean;
 }
 
-export interface TimelineEventTypeRow {
-  id: number;
-  type_name: string;
-  color_hex: string | null;
-  sort_order?: number;
-  is_active: boolean;
-}
-
 export interface MediaTypeRow {
   id: number;
   type_name: string;
@@ -648,20 +640,6 @@ export interface TaskTagEntryRow {
   id: number;
   task_id: number;
   tag_id: number;
-}
-
-// ── Timeline ──────────────────────────────────────────────────────────────────
-
-export interface TimelineEventRow {
-  id: number;
-  entry_id: number;
-  event_type_id: number | null;
-  event_title: string;
-  started_at: string;
-  ended_at: string | null;
-  group_name: string | null;
-  description: string | null;
-  created_at: string;
 }
 
 // ── Media ─────────────────────────────────────────────────────────────────────

@@ -104,7 +104,7 @@ export function TextAreaField({
 
 // ── Select ────────────────────────────────────────────────────────────────────
 
-export interface SelectOption {
+interface SelectOption {
   value:     string | number;
   label:     string;
   disabled?: boolean;

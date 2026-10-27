@@ -17,7 +17,7 @@ import { localTodayISO, localISODate, localISODateFromDateString } from '@/lib/u
 // ── Low-level formatting ──────────────────────────────────────────────────────
 
 /** RFC 5545 §3.1 — fold lines at 75 octets using CRLF + SPACE. */
-export function foldLine(line: string): string {
+function foldLine(line: string): string {
   if (line.length <= 75) return line;
   const chunks: string[] = [];
   let i = 0;
@@ -47,20 +47,12 @@ function escapeText(value: string): string {
  * Formats an ISO 8601 date-time string to iCal UTC format: YYYYMMDDTHHMMSSz
  * Milliseconds are stripped; Z suffix is preserved.
  */
-export function toICalDateTime(iso: string): string {
+function toICalDateTime(iso: string): string {
   return iso
     .replace(/-/g, '')
     .replace(/:/g, '')
     .replace(/\.\d+/, '')   // strip ms
     .toUpperCase();          // ensure Z is uppercase
-}
-
-/**
- * Formats an ISO date string (YYYY-MM-DD) to iCal DATE format: YYYYMMDD.
- * Used for UNTIL when the end is a whole day.
- */
-function toICalDateOnly(isoDate: string): string {
-  return isoDate.replace(/-/g, '');
 }
 
 // ── RRULE builder ─────────────────────────────────────────────────────────────
@@ -73,7 +65,7 @@ function toICalDateOnly(isoDate: string): string {
  *   "Every 2 weeks on Mon/Wed" → "RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,WE"
  *   "Yearly until 2027-12-31"  → "RRULE:FREQ=YEARLY;UNTIL=20271231T235959Z"
  */
-export function buildRRule(task: TaskRow): string | null {
+function buildRRule(task: TaskRow): string | null {
   if (!task.recurrence_frequency) return null;
 
   const parts: string[] = [

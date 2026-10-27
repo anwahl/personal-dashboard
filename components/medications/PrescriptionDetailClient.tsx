@@ -24,11 +24,6 @@ import Link from 'next/link';
 import { PrescriptionChangeDisplayRow } from './PrescriptionChangeDisplayRow';
 
 
-interface Props {
-  prescription:   PrescriptionDetail;
-  //initialHistory: PrescriptionChangeRow[];
-}
-
 export function PrescriptionDetailClient({ prescription }: Readonly<{prescription:   PrescriptionDetail;}>) {
   const { data: timings = [], error: timingsError } = useMedicationTimingTypes();
   const { data: loadedHistory, error: changesError } = getRxChangesByRx(prescription.id);

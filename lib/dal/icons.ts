@@ -3,17 +3,6 @@ import type { IconRow } from '@/types/schema';
 
 type Client = SupabaseClient;
 
-export async function getIcons(
-  client: Client,
-  includeInactive = false,
-): Promise<IconRow[]> {
-  let q = client.from('icons').select('*').order('sort_order').order('id');
-  if (!includeInactive) q = q.eq('is_active', true);
-  const { data, error } = await q;
-  if (error) throw new Error(`getIcons: ${error.message}`);
-  return data ?? [];
-}
-
 export async function createIcon(
   client: Client,
   payload: { name: string; tags: string | null; svg_data: string; sort_order: number },

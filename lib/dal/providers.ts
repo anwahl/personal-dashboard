@@ -18,7 +18,7 @@ export async function getProviders(
 
 // ── Write ─────────────────────────────────────────────────────────────────────
 
-export interface ProviderPayload {
+interface ProviderPayload {
   provider_type_id: number;
   provider_name: string | null;
   practice_name: string | null;

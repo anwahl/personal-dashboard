@@ -42,8 +42,6 @@ import type {
   AppointmentRow,
   TaskRow,
   MediaEntryRow,
-  WeeklyEntryRow,
-  WeeklyIntentionRow,
   ChartCategoryRow,
   ChartDefinitionRow,
   ChartTrackableLinkRow,
@@ -55,7 +53,6 @@ export type {
   IconRow,
   PeopleCategoryRow,
   ChartCategoryRow,
-  DailyTrackableRow,
   TrackableCategoryRow,
   TagRow,
   IntentionRow,
@@ -65,8 +62,6 @@ export type {
   PrescriptionRow,
   TaskStatusRow,
   TaskPriorityRow,
-  ChartDefinitionRow,
-  ChartTrackableLinkRow,
 };
 
 // ── Trackables (enriched) ─────────────────────────────────────────────────────
@@ -77,7 +72,7 @@ export interface ChoiceOptionDetail extends TrackableChoiceOptionRow {
 }
 
 /** An aggregate question's answer: the bridge row plus the pool label/value. */
-export interface AggregateOptionDetail extends TrackableAggregateQuestionOptionRow {
+interface AggregateOptionDetail extends TrackableAggregateQuestionOptionRow {
   value: number;
   label: string;
 }
@@ -298,20 +293,6 @@ export interface PersonLinks {
   checklistIds: number[];
 }
 
-// ── Weekly entry (enriched) ───────────────────────────────────────────────────
-
-export interface WeeklyEntryDetail extends WeeklyEntryRow {
-  intentions: WeeklyIntentionRow[];
-}
-
-// ── Week strip (hub page) ─────────────────────────────────────────────────────
-
-export interface WeekDayData {
-  date: string;
-  entry: DailyEntryRow | null;
-  checked_trackable_ids: number[]; // was habit_ids
-}
-
 // ── Chart definitions (enriched) ──────────────────────────────────────────────
 
 export interface ChartTrackableLinkDetail extends ChartTrackableLinkRow {
@@ -357,12 +338,6 @@ export interface LastTimeSettingsItems {
 
 // ── Inserts / Updates ─────────────────────────────────────────────────────────
 
-export type DailyEntryInsert = Omit<
-  DailyEntryRow,
-  "id" | "created_at" | "updated_at"
->;
-export type DailyEntryUpdate = Partial<DailyEntryInsert>;
-
 export type PrescriptionInsert = Omit<
   PrescriptionRow,
   "id" | "created_at" | "updated_at"
@@ -384,18 +359,10 @@ export type MediaEntryInsert = Omit<
 >;
 export type MediaEntryUpdate = Partial<MediaEntryInsert>;
 
-export type BrainDumpInsert = {
-  entry_id?: number | null;
-  dump_date: string;
-  body_md?: string;
-};
-export type BrainDumpUpdate = Partial<BrainDumpInsert>;
-
 export {
   type LastTimeBooleanRow,
   type LastTimeMediaRow,
   type LastTimeCustomRow,
-  type CalendarTokenRow,
 } from "./schema";
 
 // ── Weekly journal ─────────────────────────────────────────────────────────────

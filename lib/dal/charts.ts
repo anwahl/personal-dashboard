@@ -72,7 +72,7 @@ export async function removeChartLink(
 
 // ── Create / rename ───────────────────────────────────────────────────────────
 
-export interface CreateChartPayload {
+interface CreateChartPayload {
   title: string;
   chart_type: ChartType;
   sort_order?: number;

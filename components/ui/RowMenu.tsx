@@ -36,7 +36,7 @@ export interface RowMenuAction {
   disabled?:    boolean;
 }
 
-export interface RowMenuSubmenu {
+interface RowMenuSubmenu {
   label:   string;
   submenu: RowMenuAction[];
 }

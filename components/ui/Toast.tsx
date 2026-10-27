@@ -20,14 +20,14 @@ import {
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export const NOTIFICATION_TYPES = {
+const NOTIFICATION_TYPES = {
   ALERT: 'alert',
   ERROR: 'error',
   SUCCESS: 'success',
   INFO: 'info'
 } as const;
 
-export type NotificationVariantType = typeof NOTIFICATION_TYPES[keyof typeof NOTIFICATION_TYPES];
+type NotificationVariantType = typeof NOTIFICATION_TYPES[keyof typeof NOTIFICATION_TYPES];
 
 interface ToastItem {
   id:      string;
@@ -83,7 +83,7 @@ export function useToast(): ToastContextValue {
 }
 
 
-export function Notification({ message, variant = NOTIFICATION_TYPES.INFO, className, onDismiss: doDismiss }:
+function Notification({ message, variant = NOTIFICATION_TYPES.INFO, className, onDismiss: doDismiss }:
     Readonly<{ message: string; variant?: NotificationVariantType; className?: string; onDismiss: () => void; }>) {
   const classes = [`notification notification__${variant}`, className].filter(Boolean).join(' ');
   return (

@@ -156,7 +156,7 @@ const MODULE_VIEWS: Record<Module, (p: ViewProps) => ReactNode> = {
     : missing,
 
   LAST_TIME: ({ data }) => data.lastTime
-    ? <LastTimeTracker entries={data.lastTime} icons={data.icons ?? []} compact />
+    ? <LastTimeTracker entries={data.lastTime} icons={data.icons ?? []} />
     : missing,
 
   NOW_PLAYING_LIST: ({ data }) => data.inProgressMedia && data.media

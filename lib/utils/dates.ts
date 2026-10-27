@@ -49,11 +49,6 @@ export function localISODateFromDateString(dateStr: string): string {
     return `${newDate.getFullYear()}-${p(newDate.getMonth()+1)}-${p(newDate.getDate())}`;
 }
 
-export function localISODateTimeFromDateString(dateStr: string): string {
-    const newDate = dateWithOffset(new Date(dateStr));
-    return `${newDate.getFullYear()}-${p(newDate.getMonth()+1)}-${p(newDate.getDate())}T${String(newDate.getHours())}:${String(newDate.getMinutes())}`;
-}
-
 export function localISODate(date: Date): string {
     const newDate = dateWithOffset(date);
     return `${newDate.getFullYear()}-${p(newDate.getMonth()+1)}-${p(newDate.getDate())}`;
@@ -269,14 +264,4 @@ export function formatWeekRange(sundayStr: string): string {
     ? String(sat.getDate())
     : sat.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   return `${startLabel}–${endLabel}`;
-}
-
-export function getWeekDates(anchorDate: string): string[] {
-  const d = new Date(anchorDate + "T12:00:00");
-  const dow = d.getDay();
-  return Array.from({ length: 7 }, (_, i) => {
-    const wd = new Date(d);
-    wd.setDate(d.getDate() - dow + i);
-    return localISODate(wd).slice(0, 10);
-  });
 }

@@ -31,20 +31,12 @@ import {
   getAssignablePeople,
   getMedications,
   getMedicationTimingTypes,
-  getAppointmentTypes,
   getTaskStatuses,
   getTaskPriorities,
-  getTrackables,
-  getTrackableCategories,
-  getPeopleCategories,
-  getMediaTypes,
-  getMediaStatuses,
-  getMediaGenres,
 } from '@/lib/dal/reference';
 import { getProviders } from '@/lib/dal/providers';
 import { getLastTimeSettingsItems } from '@/lib/dal/lasttime';
-import { getPrescriptionById, getPrescriptionChangesByRx } from '../dal/prescriptions';
-import { PrescriptionDetail } from '@/types/dal';
+import { getPrescriptionChangesByRx } from '../dal/prescriptions';
 
 const supabase = createClient();
 
@@ -53,10 +45,6 @@ const supabase = createClient();
 /** People in assignable categories — used for task/appointment/Rx dropdowns. */
 export const usePeople = () =>
   useSWR('ref/people/assignable', () => getAssignablePeople(supabase));
-
-/** All people categories (for settings and person-page nav). */
-export const usePeopleCategories = () =>
-  useSWR('ref/people-categories', () => getPeopleCategories(supabase));
 
 // ── Medications & Prescriptions ───────────────────────────────────────────────
 
@@ -68,9 +56,6 @@ export const useMedications = () =>
 export const useMedicationTimingTypes = () =>
   useSWR('ref/medication-timing-types', () => getMedicationTimingTypes(supabase));
 
-export const getRxById = (id: number) =>
-  useSWR('ref/prescription', () => getPrescriptionById(supabase, id));
-
 export const getRxChangesByRx = (rxId: number) =>
   useSWR('ref/prescription-changes', () => getPrescriptionChangesByRx(supabase, rxId));
 
@@ -80,12 +65,6 @@ export const getRxChangesByRx = (rxId: number) =>
 /** All active healthcare providers. */
 export const useProviders = () =>
   useSWR('ref/providers', () => getProviders(supabase));
-
-// ── Appointments ──────────────────────────────────────────────────────────────
-
-/** Appointment type lookup (GP visit, specialist, etc.). */
-export const useAppointmentTypes = () =>
-  useSWR('ref/appointment-types', () => getAppointmentTypes(supabase));
 
 // ── Tasks ─────────────────────────────────────────────────────────────────────
 
@@ -119,22 +98,6 @@ export function useTaskDefaults() {
     error:      statuses.error ?? priorities.error,
   };
 }
-
-// ── Trackables ────────────────────────────────────────────────────────────────
-
-/** Active daily trackables (boolean + numeric habits/metrics). */
-export const useTrackables = () =>
-  useSWR('ref/trackables', () => getTrackables(supabase));
-
-/** Trackable category groupings. */
-export const useTrackableCategories = () =>
-  useSWR('ref/trackable-categories', () => getTrackableCategories(supabase));
-
-// ── Media ─────────────────────────────────────────────────────────────────────
-
-export const useMediaTypes    = () => useSWR('ref/media-types',    () => getMediaTypes(supabase));
-export const useMediaStatuses = () => useSWR('ref/media-statuses', () => getMediaStatuses(supabase));
-export const useMediaGenres   = () => useSWR('ref/media-genres',   () => getMediaGenres(supabase));
 
 // ── Last Time ─────────────────────────────────────────────────────────────────
 

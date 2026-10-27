@@ -216,7 +216,7 @@ export async function logCustomLastTime(
     .throwOnError();
 }
 
-export async function getLastTimeMedia(
+async function getLastTimeMedia(
   client: Client,
 ): Promise<LastTimeMediaRow[]> {
   const { data, error } = await client
@@ -227,7 +227,7 @@ export async function getLastTimeMedia(
   return (data ?? []) as LastTimeMediaRow[];
 }
 
-export interface LastTimeMediaPayload {
+interface LastTimeMediaPayload {
   label: string;
   icon_id?: number | null;
   type_id: number | null;
@@ -251,7 +251,7 @@ export async function createLastTimeMedia(
 
 // ── Boolean last-time ─────────────────────────────────────────────────────────
 
-export async function getLastTimeBoolean(
+async function getLastTimeBoolean(
   client: Client,
 ): Promise<LastTimeBooleanRow[]> {
   const { data, error } = await client
@@ -262,7 +262,7 @@ export async function getLastTimeBoolean(
   return (data ?? []) as LastTimeBooleanRow[];
 }
 
-export interface LastTimeBooleanPayload {
+interface LastTimeBooleanPayload {
   trackable_id: number;
   icon_id?: number | null;
   sort_order: number;
@@ -283,7 +283,7 @@ export async function createLastTimeBoolean(
 
 // ── Custom last-time ──────────────────────────────────────────────────────────
 
-export async function getLastTimeCustom(
+async function getLastTimeCustom(
   client: Client,
 ): Promise<LastTimeCustomRow[]> {
   const { data, error } = await client
@@ -294,7 +294,7 @@ export async function getLastTimeCustom(
   return (data ?? []) as LastTimeCustomRow[];
 }
 
-export interface LastTimeCustomPayload {
+interface LastTimeCustomPayload {
   custom_value: string;
   icon_id?: number | null;
   sort_order?: number;

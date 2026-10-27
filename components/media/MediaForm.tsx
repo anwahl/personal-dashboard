@@ -48,7 +48,7 @@ export function validStatusesForType(
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export interface MediaFormValues {
+interface MediaFormValues {
   media_type_id: string;
   title:         string;
   status_id:     string;
@@ -60,13 +60,13 @@ export interface MediaFormValues {
   review:        string;
 }
 
-export const emptyMediaFormValues: MediaFormValues = {
+const emptyMediaFormValues: MediaFormValues = {
   media_type_id: '', title: '', status_id: '',
   status_date: localTodayISO(),
   rating: null, platform: '', creator: '', notes: '', review: '',
 };
 
-export function entryToMediaFormValues(e: MediaEntryDetail): MediaFormValues {
+function entryToMediaFormValues(e: MediaEntryDetail): MediaFormValues {
   return {
     media_type_id: String(e.media_type_id),
     title:         e.title,

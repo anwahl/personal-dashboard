@@ -64,8 +64,6 @@ interface Item {
   values:     Record<string, unknown>;
 }
 
-const sameItem = (a: Item, b: Item) => a.kind === b.kind && a.id === b.id;
-
 export function LastTimeSettings({ trackables, mediaTypes, mediaGenres, mediaStatuses, icons }: Readonly<Props>) {
   const supabase = createClient();
   const router   = useRouter();

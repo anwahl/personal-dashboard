@@ -46,11 +46,9 @@ function pickRandom<T>(arr: T[], excluding?: T[]): T | null {
 // ── PromptCard ────────────────────────────────────────────────────────────────
 
 function PromptCard({
-  card, category, allCards, onUpdate, onShuffle, onRemove,
+  card, onUpdate, onShuffle, onRemove,
 }: Readonly<{
   card:      JournalCard;
-  category:  JournalCategoryWithPrompts;
-  allCards:  JournalState;
   onUpdate:  (id: string, text: string) => void;
   onShuffle: (id: string) => void;
   onRemove:  (id: string) => void;
@@ -82,11 +80,10 @@ function PromptCard({
 // ── Category section (input mode) ─────────────────────────────────────────────
 
 function CategorySection({
-  category, cards, allCards, onUpdate, onShuffle, onRemove, onAddAnother,
+  category, cards, onUpdate, onShuffle, onRemove, onAddAnother,
 }: Readonly<{
   category:    JournalCategoryWithPrompts;
   cards:       JournalCard[];
-  allCards:    JournalState;
   onUpdate:    (id: string, text: string) => void;
   onShuffle:   (id: string) => void;
   onRemove:    (id: string) => void;
@@ -107,8 +104,6 @@ function CategorySection({
         <PromptCard
           key={card.clientId}
           card={card}
-          category={category}
-          allCards={allCards}
           onUpdate={onUpdate}
           onShuffle={onShuffle}
           onRemove={onRemove}
@@ -252,7 +247,6 @@ export function JournalTab({ mode, categories, state, setState, onSave, saveStat
             key={cat.id}
             category={cat}
             cards={state.filter(c => c.categoryId === cat.id)}
-            allCards={state}
             onUpdate={updateCard}
             onShuffle={shuffleCard}
             onRemove={removeCard}

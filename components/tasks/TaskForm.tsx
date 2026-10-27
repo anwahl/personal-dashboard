@@ -37,7 +37,7 @@ import { usePeople, useTaskDefaults, useTaskPriorities, useTaskStatuses } from "
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export interface TaskFormValues {
+interface TaskFormValues {
   title: string;
   status_id: string;
   priority_id: string;
@@ -53,7 +53,7 @@ export interface TaskFormValues {
 }
 
 /** Convenience helper — start from empty values with optional overrides. */
-export function emptyTaskFormValues(
+function emptyTaskFormValues(
   overrides: Partial<TaskFormValues> = {},
 ): TaskFormValues {
   return {
@@ -83,7 +83,7 @@ const FREQUENCY_UNIT: Record<string, string> = {
 // ── Payload helpers ───────────────────────────────────────────────────────────
 
 /** Form values for an existing task. */
-export function taskToFormValues(task: TaskDetail): TaskFormValues {
+function taskToFormValues(task: TaskDetail): TaskFormValues {
   return {
     title:                task.title,
     status_id:            String(task.status_id),

@@ -360,7 +360,7 @@ function Run({ items, a }: Readonly<{ items: TrackableDetail[]; a: TrackableActi
  * prescriptions ticked, a combo chip on, a slider above 0, text / a time /
  * an icon / a choice entered, a tag picked, a question answered.
  */
-export function parentIsOn(t: TrackableDetail, v: DayValues): boolean {
+function parentIsOn(t: TrackableDetail, v: DayValues): boolean {
   switch (t.track_type) {
     case 'boolean':
     case 'prescription': return v.boolean.includes(t.id);

@@ -18,6 +18,7 @@ import type { IconRow }               from '@/types/schema';
 import { createIcon, updateIcon } from '@/lib/dal/icons';
 import { batchSetSortOrder }          from '@/lib/dal/settings';
 import { bySortOrder, reorderUpdates } from '@/lib/utils/sort';
+import { cleanSvg }                   from '@/lib/utils/svg';
 import {
   Button, DragHandle, IconDisplay, ManageItem, RowMenu, SortableItem, SortableList, SectionCard, InactiveGroup, EmptyState, TextField, TextAreaField
 } from '@/components/ui';
@@ -26,14 +27,6 @@ import { FieldInputs, type AddField, type FieldValues } from './FieldInputs';
 
 interface Props {
   icons: IconRow[];
-}
-
-/** Strip XML declaration and DOCTYPE — not needed for inline SVG. */
-function cleanSvg(raw: string): string {
-  return raw
-    .replace(/<\?xml[^?]*\?>/gi, '')
-    .replace(/<!DOCTYPE[^>]*>/gi, '')
-    .trim();
 }
 
 export function IconSettings({ icons: initialIcons }: Readonly<Props>) {

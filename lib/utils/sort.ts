@@ -16,27 +16,6 @@ export function bySortOrder<T extends { id: number; sort_order?: number }>(
 }
 
 /**
- * Given a sorted array of items and two indices to swap, returns a flat
- * list of `{ id, sort_order }` updates that reassigns clean sequential
- * sort_orders (0, 1, 2, …) after the swap.
- *
- * This fixes the "all items at sort_order = 0" problem — swapping two
- * zeros would change nothing, so we normalize the whole active list
- * as part of every move operation.
- */
-export function normalizedReorderUpdates<
-  T extends { id: number; sort_order?: number },
->(
-  sorted: T[],
-  idx: number,
-  swapIdx: number,
-): Array<{ id: number; sort_order: number }> {
-  const reordered = [...sorted];
-  [reordered[idx], reordered[swapIdx]] = [reordered[swapIdx], reordered[idx]];
-  return reordered.map((item, i) => ({ id: item.id, sort_order: i }));
-}
-
-/**
  * Moves the item at `from` to `to` (as drag-and-drop does) and returns
  * clean sequential sort_orders (0, 1, 2, …) for the whole list.
  */

@@ -28,7 +28,7 @@ import type { PrescriptionDetail } from '@/types/dal';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export interface PrescriptionFormValues {
+interface PrescriptionFormValues {
   person_id:           string;
   medication_id:       string;
   new_medication_name: string;
@@ -41,13 +41,13 @@ export interface PrescriptionFormValues {
   discontinued_date:   string;
 }
 
-export const emptyPrescriptionFormValues: PrescriptionFormValues = {
+const emptyPrescriptionFormValues: PrescriptionFormValues = {
   person_id: '', medication_id: '', new_medication_name: '',
   alias: '', dose: '', timing_type_id: '', purpose: '',
   prescriber_id: '', start_date: '', discontinued_date: '',
 };
 
-export function rxToFormValues(rx: PrescriptionDetail): PrescriptionFormValues {
+function rxToFormValues(rx: PrescriptionDetail): PrescriptionFormValues {
   return {
     person_id:           String(rx.person_id),
     medication_id:       String(rx.medication_id),
