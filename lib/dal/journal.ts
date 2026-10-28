@@ -64,20 +64,23 @@ export async function getJournalResponsesForEntry(
 // ── Writes ────────────────────────────────────────────────────────────────────
 
 /**
- * Full sync of journal cards for a daily entry:
- * - Upserts cards with text (insert if new, update if existing)
- * - Deletes existing DB rows whose cards were removed
- * - Ignores cards with empty text (won't create empty rows)
+ * Full sync of journal prompt responses for a daily entry:
+ * - Upserts responses with text (insert if new, update if existing)
+ * - Deletes existing DB rows whose responses were removed
+ * - Ignores responses with empty text (won't create empty rows)
+ *
+ * Returns each response's row id after the save, in input order
+ * (null where nothing is stored).
  */
 export async function saveJournalResponses(
   client: Client,
   entryId: number,
-  cards: Array<{
+  responses: Array<{
     promptId: number;
     responseText: string;
     dbId: number | null;
   }>,
-): Promise<void> {
+): Promise<(number | null)[]> {
   // Get all currently-saved response IDs for this entry
   const { data: existing } = await client
     .from("journal_prompt_responses")
@@ -88,43 +91,55 @@ export async function saveJournalResponses(
     ((existing ?? []) as { id: number }[]).map((r) => r.id),
   );
   const activeDbIds = new Set(
-    cards.filter((c) => c.dbId != null).map((c) => c.dbId!),
+    responses.filter((r) => r.dbId != null).map((r) => r.dbId!),
   );
 
-  // Delete rows that are no longer in our card list
+  // Delete rows that are no longer in our response list
   const toDelete = [...existingIds].filter((id) => !activeDbIds.has(id));
   if (toDelete.length) {
     await client.from("journal_prompt_responses").delete().in("id", toDelete);
   }
 
-  // Upsert each card
-  for (const card of cards) {
-    const text = card.responseText.trim();
+  // Upsert each response
+  const savedIds: (number | null)[] = [];
+  for (const response of responses) {
+    const text = response.responseText.trim();
 
-    if (card.dbId) {
+    if (response.dbId) {
       if (text) {
         // Update existing row
         await client
           .from("journal_prompt_responses")
           .update({ response_text: text })
-          .eq("id", card.dbId);
+          .eq("id", response.dbId);
+        savedIds.push(response.dbId);
       } else {
         // Text cleared → delete the row
         await client
           .from("journal_prompt_responses")
           .delete()
-          .eq("id", card.dbId);
+          .eq("id", response.dbId);
+        savedIds.push(null);
       }
     } else if (text) {
-      // New card with text → insert
-      await client.from("journal_prompt_responses").insert({
-        prompt_id: card.promptId,
-        entry_id: entryId,
-        response_text: text,
-      });
+      // New response with text → insert
+      const { data, error } = await client
+        .from("journal_prompt_responses")
+        .insert({
+          prompt_id: response.promptId,
+          entry_id: entryId,
+          response_text: text,
+        })
+        .select("id")
+        .single();
+      if (error) throw error;
+      savedIds.push((data as { id: number }).id);
+    } else {
+      // No dbId and no text: skip (don't create empty rows)
+      savedIds.push(null);
     }
-    // Cards without dbId and without text: skip (don't create empty rows)
   }
+  return savedIds;
 }
 
 // ── Settings operations ───────────────────────────────────────────────────────

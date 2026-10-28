@@ -38,7 +38,7 @@ import { createClient }          from '@/lib/supabase/client';
 import { saveJournalResponses }  from '@/lib/dal/journal';
 import type { Module }           from '@/types/schema';
 import type { ModuleData }       from '@/lib/dal/modules';
-import type { JournalState }     from '@/components/daily-log/DailyPageClient';
+import type { JournalPromptResponse } from '@/components/daily-log/JournalTab';
 
 /** Names for the placement settings. */
 export const MODULE_LABELS: Record<Module, string> = {
@@ -82,7 +82,7 @@ function DialogButton({ label, children }: Readonly<{
 
 function DailyJournal({ data }: Readonly<{ data: NonNullable<ModuleData['dailyJournal']> }>) {
   const day = useDay();
-  const [state, setState] = useState<JournalState>(() => data.responses.map((r, i) => ({
+  const [responses, setResponses] = useState<JournalPromptResponse[]>(() => data.responses.map((r, i) => ({
     clientId: `loaded-${i}`, categoryId: r.category_id, promptId: r.prompt_id,
     promptText: r.prompt_text, responseText: r.response_text ?? '', dbId: r.id,
   })));
@@ -91,9 +91,18 @@ function DailyJournal({ data }: Readonly<{ data: NonNullable<ModuleData['dailyJo
   const save = async () => {
     setSaveState('saving');
     try {
-      await saveJournalResponses(createClient(), await day.getEntryId(), state.map(c => ({
-        promptId: c.promptId, responseText: c.responseText, dbId: c.dbId,
+      const sent = responses;
+      const savedIds = await saveJournalResponses(createClient(), await day.getEntryId(), sent.map(r => ({
+        promptId: r.promptId, responseText: r.responseText, dbId: r.dbId,
       })));
+      // Record what's now stored, so later saves update (not re-insert) and
+      // the ⋯ menu knows which responses need confirming. Skip any whose
+      // prompt was changed while saving: that one is a new response.
+      const savedFor = new Map(sent.map((r, i) => [r.clientId, { promptId: r.promptId, dbId: savedIds[i] }]));
+      setResponses(prev => prev.map(r => {
+        const saved = savedFor.get(r.clientId);
+        return saved && saved.promptId === r.promptId ? { ...r, dbId: saved.dbId } : r;
+      }));
       setSaveState('ok');
       setTimeout(() => setSaveState('idle'), 2500);
     } catch {
@@ -101,7 +110,7 @@ function DailyJournal({ data }: Readonly<{ data: NonNullable<ModuleData['dailyJo
     }
   };
 
-  return <JournalTab mode={day.mode} categories={data.categories} state={state} setState={setState}
+  return <JournalTab mode={day.mode} categories={data.categories} responses={responses} setResponses={setResponses}
     onSave={save} saveState={saveState} />;
 }
 
@@ -111,7 +120,7 @@ interface ViewProps {
   data:    ModuleData;
   /** Called after a form saves (e.g. so the Quick add sheet can close). */
   onDone?: (message: string) => void;
-  /** In the Quick add sheet: forms that can drop their card do. */
+  /** In the Quick add sheet (e.g. a shorter brain dump box). */
   inSheet?: boolean;
 }
 
@@ -119,7 +128,7 @@ const missing = <EmptyState>Couldn&apos;t load this.</EmptyState>;
 
 const MODULE_VIEWS: Record<Module, (p: ViewProps) => ReactNode> = {
   TASK_LIST: ({ data }) => data.tasks
-    ? <TaskList contextDate={data.date} initialData={data.tasks} />
+    ? <TaskList bare contextDate={data.date} initialData={data.tasks} />
     : missing,
 
   TASK_QUICKADD: ({ data, onDone }) =>
@@ -150,17 +159,17 @@ const MODULE_VIEWS: Record<Module, (p: ViewProps) => ReactNode> = {
   ) : missing,
 
   APPOINTMENT_LIST: ({ data }) => data.appointments && data.appointmentRefs
-    ? <AppointmentsClient upcoming={data.appointments.upcoming} past={data.appointments.past}
+    ? <AppointmentsClient bare upcoming={data.appointments.upcoming} past={data.appointments.past}
         appointmentTypes={data.appointmentRefs.types} people={data.appointmentRefs.people}
         providers={data.appointmentRefs.providers} />
     : missing,
 
   LAST_TIME: ({ data }) => data.lastTime
-    ? <LastTimeTracker entries={data.lastTime} icons={data.icons ?? []} />
+    ? <LastTimeTracker bare entries={data.lastTime} icons={data.icons ?? []} />
     : missing,
 
   NOW_PLAYING_LIST: ({ data }) => data.inProgressMedia && data.media
-    ? <QuickMediaLog initialEntries={data.inProgressMedia} mediaTypes={data.media.types}
+    ? <QuickMediaLog bare initialEntries={data.inProgressMedia} mediaTypes={data.media.types}
         mediaStatuses={data.media.statuses} statusTypeLinks={data.media.statusTypeLinks} open />
     : missing,
 
@@ -176,15 +185,15 @@ const MODULE_VIEWS: Record<Module, (p: ViewProps) => ReactNode> = {
   ) : missing,
 
   MEDIA_LIST: ({ data }) => data.mediaEntries && data.media
-    ? <MediaClient entries={data.mediaEntries} mediaTypes={data.media.types}
+    ? <MediaClient bare entries={data.mediaEntries} mediaTypes={data.media.types}
         mediaStatuses={data.media.statuses} statusTypeLinks={data.media.statusTypeLinks} />
     : missing,
 
   BRAIN_DUMP_ADD: ({ data, onDone, inSheet }) =>
-    <BrainDumpForm dumpDate={data.date} bare={inSheet} compact={inSheet}
+    <BrainDumpForm bare dumpDate={data.date} compact={inSheet}
       onSaved={onDone && (() => onDone('Brain dump saved'))} />,
 
-  BRAIN_DUMP_LIST: () => <BrainDumpList />,
+  BRAIN_DUMP_LIST: () => <BrainDumpList bare />,
 
   DAILY_JOURNAL: ({ data }) => data.dailyJournal ? <DailyJournal data={data.dailyJournal} /> : missing,
 
@@ -199,7 +208,7 @@ const MODULE_VIEWS: Record<Module, (p: ViewProps) => ReactNode> = {
     : missing,
 
   PRESCRIPTION_LIST: ({ data }) => data.prescriptionsByPerson
-    ? <PrescriptionsClient prescriptionsByPerson={data.prescriptionsByPerson} />
+    ? <PrescriptionsClient bare prescriptionsByPerson={data.prescriptionsByPerson} />
     : missing,
 
   PRESCRIPTION_ADD: () => (
@@ -214,7 +223,7 @@ const MODULE_VIEWS: Record<Module, (p: ViewProps) => ReactNode> = {
       <PeopleNavTabs people={data.people.people} categories={data.people.categories}
         currentSlug={data.people.self ? toSlug(data.people.self.person.person_name) : ''}
         initialCategory={data.people.self?.person.category_id ?? null} />
-      {data.people.self && <PeoplePageClient data={data.people.self} peopleCategories={data.people.categories} />}
+      {data.people.self && <PeoplePageClient bare data={data.people.self} peopleCategories={data.people.categories} />}
     </>
   ) : missing,
 

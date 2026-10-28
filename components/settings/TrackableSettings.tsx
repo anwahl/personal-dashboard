@@ -29,7 +29,7 @@ import { ManageableList }  from './ManageableList';
 import { HierarchicalList, type NormalizedChild } from './HierarchicalList';
 import type { AddField }   from './FieldInputs';
 import { IconDisplay }     from '@/components/ui/IconDisplay';
-import { Badge, CardSection, CardSectionLabel, SelectField, useToast } from '@/components/ui';
+import { Badge, Hint, CardSection, CardSectionLabel, SelectField, useToast } from '@/components/ui';
 import {
   TRACK_TYPES, type TrackType, type TrackableCategoryRow, type TrackableToCategoryRow, type IconRow,
   type TrackableOptionRow, type TrackableAggregateOptionRow,
@@ -348,7 +348,7 @@ function TrackableDetails({ trackable, all, prescriptions, people, pools, onPool
           options={TRACK_TYPES.map(t => ({ value: t, label: TRACK_TYPE_LABEL[t] }))}
           onChange={v => save({ track_type: v as TrackType })}
         />
-        {typeHint && <p className="manage-add-row__hint">{typeHint}</p>}
+        {typeHint && <Hint>{typeHint}</Hint>}
         <SelectField
           label="Under (parent)"
           value={trackable.parent_trackable_id ?? ''}
@@ -357,7 +357,7 @@ function TrackableDetails({ trackable, all, prescriptions, people, pools, onPool
           options={parents.map(t => ({ value: t.id, label: t.name }))}
           onChange={v => save({ parent_trackable_id: v ? Number(v) : null })}
         />
-        {hasChildren && <p className="manage-add-row__hint">It has trackables under it, so it can’t go under another.</p>}
+        {hasChildren && <Hint>It has trackables under it, so it can’t go under another.</Hint>}
       </CardSection>
 
       {trackable.track_type === 'prescription' && (
@@ -386,14 +386,14 @@ function TrackableDetails({ trackable, all, prescriptions, people, pools, onPool
               }
             }}
           />
-          <p className="manage-add-row__hint">Taking it is logged on the daily page like a Yes/No.</p>
+          <Hint>Taking it is logged on the daily page like a Yes/No.</Hint>
         </CardSection>
       )}
 
       {trackable.track_type === 'choice' && (
         <CardSection>
           <CardSectionLabel>Options</CardSectionLabel>
-          <p className="manage-add-row__hint">Renaming an option renames it on every trackable that offers it.</p>
+          <Hint tone="warn">Renaming an option renames it on every trackable that offers it.</Hint>
           <ChoiceOptionsEditor trackable={trackable} pool={pools.choice}
             onPoolAdd={o => onPoolAdd({ choice: [...pools.choice, o] })}
             onChange={choice_options => onChange({ choice_options })} />

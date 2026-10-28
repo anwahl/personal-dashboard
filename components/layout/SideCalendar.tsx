@@ -4,6 +4,9 @@ import { useState, useEffect, Fragment } from 'react';
 import Link                    from 'next/link';
 import { usePathname }         from 'next/navigation';
 import { createClient }        from '@/lib/supabase/client';
+import { PrevNextNav }         from '@/components/ui';
+import { getDailyEntryDatesInRange }   from '@/lib/dal/daily';
+import { getWeeklyEntryStartsInRange } from '@/lib/dal/weekly-journal';
 import { localTodayISO, getSundayOfWeek, getSundayWeekNumber } from '@/lib/utils/dates';
 import { DAY_LABELS } from '@/lib/constants/dates';
 
@@ -49,16 +52,15 @@ export function SideCalendar() {
     const from = `${year}-${pad(month+1)}-01`;
     const to   = `${year}-${pad(month+1)}-${new Date(year, month+1, 0).getDate()}`;
 
-    supabase.from('daily_entries').select('entry_date')
-      .gte('entry_date', from).lte('entry_date', to)
-      .then(({ data }) => setEntryDates(new Set((data ?? []).map((r: { entry_date: string }) => r.entry_date))));
+    getDailyEntryDatesInRange(supabase, from, to)
+      .then(dates => setEntryDates(new Set(dates)))
+      .catch(() => setEntryDates(new Set()));
 
-    // Fetch weekly entries whose Sunday falls in or just before this month
-    const fromSun = getSundayOfWeek(from);
-    supabase.from('weekly_entries').select('week_start_date')
-      .gte('week_start_date', fromSun).lte('week_start_date', to)
-      .then(({ data }) => setWeeklyDates(new Set((data ?? []).map((r: { week_start_date: string }) => r.week_start_date))));
-  }, [year, month]);//FIXME Move the queries outta here
+    // Weekly entries whose Sunday falls in or just before this month
+    getWeeklyEntryStartsInRange(supabase, getSundayOfWeek(from), to)
+      .then(dates => setWeeklyDates(new Set(dates)))
+      .catch(() => setWeeklyDates(new Set()));
+  }, [year, month]);
 
   const days = buildCalendarDays(year, month);
   const weeks: { date: string; thisMonth: boolean }[][] = [];
@@ -70,11 +72,9 @@ export function SideCalendar() {
 
   return (
     <div className="side-calendar">
-      <div className="side-calendar__nav">
-        <button className="side-calendar__nav-btn" onClick={prevMonth} aria-label="Previous month">‹</button>
-        <span className="side-calendar__month">{monthLabel}</span>
-        <button className="side-calendar__nav-btn" onClick={nextMonth} aria-label="Next month">›</button>
-      </div>
+      <PrevNextNav compact className="side-calendar__nav" navLabel="Month navigation" label={monthLabel}
+        prev={{ onClick: prevMonth, label: 'Previous month' }}
+        next={{ onClick: nextMonth, label: 'Next month' }} />
 
       <div className="side-calendar__grid--with-weeks">
         {/* Header */}

@@ -10,6 +10,7 @@
  * Adding: the ＋ in the header (cards on the Hub / Daily page), or a
  * "+ New Task" bottom bar (addPlacement="page", the Tasks page). Both open
  * TaskDialog, due on the open tab's day (none on No Date).
+ * `bare` drops the card and title, for placing inside a LayoutCard.
  */
 import { updateTaskStatus, TaskContextData,
          spawnNextRecurrence, getTaskById, 
@@ -17,9 +18,9 @@ import { updateTaskStatus, TaskContextData,
 import { useState, useCallback, useEffect }                        from 'react';
 import { useRouter }                                    from 'next/navigation';
 import { createClient }                                 from '@/lib/supabase/client';
-import { Card, CardHeader, CardTitle, CardBody,
+import { Card, CardBody, SectionCard,
          TabBar, Button, Chip, 
-         useToast, EmptyState, ListItem, AddButton, CardActions, FieldActions
+         useToast, EmptyState, ListItem, AddButton, FieldActions
 }                                      from '@/components/ui';
 import type { TaskDetail }                              from '@/types/dal';
 import type { TaskRow }                                 from '@/types/schema';
@@ -128,12 +129,15 @@ interface Props {
   initialData: TaskContextData;
   /** Where the add button goes: the card header (default) or the page's bottom bar. */
   addPlacement?: 'card' | 'page';
+  /** No card or title of its own (inside a LayoutCard). */
+  bare?: boolean;
 }
 
 export function TaskList({
   contextDate,
   initialData,
   addPlacement = 'card',
+  bare = false,
 }: Readonly<Props>) {
   const supabase = createClient();
   const router = useRouter();
@@ -205,16 +209,8 @@ export function TaskList({
       </FieldActions>
     )}
     {addDialog}
-    <Card>
-      <CardHeader>
-        <CardTitle>Tasks</CardTitle>
-        {addPlacement === 'card' && (
-          <CardActions>
-            <AddButton label="Add task" onClick={() => setAddOpen(true)} />
-          </CardActions>
-        )}
-      </CardHeader>
-      <CardBody>
+    <SectionCard title="Tasks" bare={bare}
+      actions={addPlacement === 'card' && <AddButton label="Add task" onClick={() => setAddOpen(true)} />}>
         <TabBar label="Task lists" tabs={TABS} active={tab} onChange={id => setTab(id as TasksTabId)} />
         <div className="task-list">
           {bucket.length === 0 ? (
@@ -237,8 +233,7 @@ export function TaskList({
             ))
           )}
         </div>
-      </CardBody>
-    </Card>
+    </SectionCard>
     </>
   );
 }

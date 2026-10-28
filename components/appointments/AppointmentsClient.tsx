@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Button, Card, CardBody, CardHeader, CardTitle, Chip, ExpandPanel, FieldActions, Markdown, SubCard, SubCardBody, EmptyState, ListItem, CardSection, CardSectionLabel, RowMenu } from '@/components/ui';
+import { Button, CardTitle, Chip, ExpandPanel, Field, FieldActions, Markdown, SubCard, SubCardBody, EmptyState, ListItem, CardSection, CardSectionLabel, RowMenu, SectionCard } from '@/components/ui';
 import { daysUntil, formatMediumDate, formatTime } from '@/lib/utils/dates';
 import { useContextDate } from '@/components/sections/DayContext';
 import type { AppointmentDetail }    from '@/types/dal';
@@ -14,6 +14,8 @@ interface Props {
   appointmentTypes: AppointmentTypeRow[];
   people:           PersonRow[];
   providers:        ProviderRow[];
+  /** No card or title of its own (inside a LayoutCard). */
+  bare?:            boolean;
 }
 
 // ── Appointment row (collapsible) ─────────────────────────────────────────────
@@ -64,20 +66,10 @@ function ApptRow({ appt, onEdit }: Readonly<{ appt: AppointmentDetail; onEdit: (
               hiddenChildren = {
                 <>
                   {appt.questions && (
-                    <>
-                      <p className="expand-panel__label">Questions to ask</p>
-                      <div className="detail-page__body-markdown">
-                        <Markdown>{appt.questions}</Markdown>
-                      </div>
-                    </>
-                    )}
-                    {appt.notes && (
-                    <>
-                      <p className="expand-panel__label">Notes</p>
-                      <div className="detail-page__body-markdown">
-                        <Markdown>{appt.notes}</Markdown>
-                      </div>
-                    </>
+                    <Field label="Questions to ask"><Markdown>{appt.questions}</Markdown></Field>
+                  )}
+                  {appt.notes && (
+                    <Field label="Notes"><Markdown>{appt.notes}</Markdown></Field>
                   )}
                 </>
               } 
@@ -93,7 +85,7 @@ function ApptRow({ appt, onEdit }: Readonly<{ appt: AppointmentDetail; onEdit: (
 
 export function AppointmentsClient({ 
     upcoming, past, appointmentTypes,
-    people, providers }:
+    people, providers, bare = false }:
     Readonly<Props>) {
   const [localUpcoming, setLocalUpcoming] = useState(upcoming);
   const [localPast,     setLocalPast]     = useState(past);
@@ -122,11 +114,7 @@ export function AppointmentsClient({
         onDeleted={() => setEditTarget(null)}
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Appointments</CardTitle>
-        </CardHeader>
-        <CardBody>  
+      <SectionCard title="Appointments" bare={bare}>
           <CardSection>
             <CardSectionLabel>Upcoming ({localUpcoming.length})</CardSectionLabel>
             {localUpcoming.length === 0
@@ -141,8 +129,7 @@ export function AppointmentsClient({
               ? <EmptyState>No past appointments on record.</EmptyState>
               : localPast.map(a => <ApptRow key={a.id} appt={a} onEdit={() => openEdit(a)} />)}
           />
-        </CardBody>
-      </Card>
+      </SectionCard>
     </div>
   );
 }

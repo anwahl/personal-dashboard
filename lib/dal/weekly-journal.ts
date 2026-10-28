@@ -36,6 +36,21 @@ export async function getWeeklyEntry(
   return data as WeeklyEntryRow | null;
 }
 
+/** Sundays (YYYY-MM-DD) between `from` and `to`, inclusive, that have a weekly entry. */
+export async function getWeeklyEntryStartsInRange(
+  client: Client,
+  from:   string,
+  to:     string,
+): Promise<string[]> {
+  const { data, error } = await client
+    .from('weekly_entries')
+    .select('week_start_date')
+    .gte('week_start_date', from)
+    .lte('week_start_date', to);
+  if (error) throw new Error(`getWeeklyEntryStartsInRange: ${error.message}`);
+  return (data ?? []).map((r: { week_start_date: string }) => r.week_start_date);
+}
+
 /** Create a weekly entry for the given Sunday if it doesn't exist. */
 export async function createWeeklyEntry(
   client:    Client,

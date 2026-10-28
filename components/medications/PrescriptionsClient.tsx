@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Button, Card, CardHeader, CardTitle,
   CardBody, CardActions, ExpandPanel, Info, Meta, FieldActions,
   CardGrid, CardGridColumn, Item,
-  ITEM_TYPES, CardSection, EmptyState, AddButton, RowMenu
+  ITEM_TYPES, CardSection, CardSectionHeader, CardSectionLabel, EmptyState, AddButton, RowMenu
 } from '@/components/ui';
 import type { PersonRow } from '@/types/schema';
 import type { PrescriptionDetail } from '@/types/dal';
@@ -18,6 +18,34 @@ interface PrescriptionsByPerson {
 
 interface Props {
   prescriptionsByPerson: PrescriptionsByPerson[];
+  /** Inside a LayoutCard: each person is a section instead of its own card. */
+  bare?:                 boolean;
+}
+
+/** One person's prescriptions: a card, or a section when bare. */
+function PersonGroup({ name, actions, bare, children }: Readonly<{
+  name: string; actions: ReactNode; bare: boolean; children: ReactNode;
+}>) {
+  if (bare) {
+    return (
+      <CardSection>
+        <CardSectionHeader>
+          <CardSectionLabel>{name}</CardSectionLabel>
+          <CardActions>{actions}</CardActions>
+        </CardSectionHeader>
+        {children}
+      </CardSection>
+    );
+  }
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{name}</CardTitle>
+        <CardActions>{actions}</CardActions>
+      </CardHeader>
+      <CardBody>{children}</CardBody>
+    </Card>
+  );
 }
 
 function RxItem({
@@ -64,7 +92,7 @@ Readonly<{
   );
 }
 
-export function PrescriptionsClient({ prescriptionsByPerson }: Readonly<Props>) {
+export function PrescriptionsClient({ prescriptionsByPerson, bare = false }: Readonly<Props>) {
   //TODO Actually, should just pass person in as param, then get prescriptions here.
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<PrescriptionDetail | null>(null);
@@ -101,16 +129,8 @@ export function PrescriptionsClient({ prescriptionsByPerson }: Readonly<Props>) 
         const disc   = prescriptions.filter(rx => !rx.is_active);
         if (prescriptions.length === 0) return null;
         return (
-          <Card key={person.id}>
-            <CardHeader>
-              <CardTitle>
-                {person.person_name}
-              </CardTitle>
-              <CardActions>
-                <AddButton label={`Add a prescription for ${person.person_name}`} onClick={() => openNew(person.id)} />
-              </CardActions>
-            </CardHeader>
-            <CardBody>
+          <PersonGroup key={person.id} name={person.person_name} bare={bare}
+            actions={<AddButton label={`Add a prescription for ${person.person_name}`} onClick={() => openNew(person.id)} />}>
                 {active.map(rx => 
                   <CardSection key={rx.id}>
                     <RxItem 
@@ -131,8 +151,7 @@ export function PrescriptionsClient({ prescriptionsByPerson }: Readonly<Props>) 
                     }
                   />
                 )}
-            </CardBody>
-          </Card>
+          </PersonGroup>
         );
       })}
 

@@ -56,7 +56,7 @@ export function DailyCard({ sections, moduleData, actions, reference }: Readonly
   }
 
   return (
-    <div className="daily-tabs">
+    <div>
       {tab && <TabBar label="Daily page sections" tabs={tabs} active={tab} onChange={selectTab} />}
       {section && section.cards.length === 0 && (
         <EmptyState>Nothing placed here yet. Add cards in Settings → Layout.</EmptyState>

@@ -18,6 +18,29 @@
 
 import type { ReactNode, Ref } from 'react';
 
+/** The rows of a settings list (ManageItems), spaced from what follows. */
+export function ManageList({ children }: Readonly<{ children: ReactNode }>) {
+  return <div className="manage-list">{children}</div>;
+}
+
+/**
+ * The add row under a settings list: inputs and an Add button on one
+ * wrapping line, with any Hint on its own line below.
+ */
+export function ManageAddRow({ children }: Readonly<{ children: ReactNode }>) {
+  return <div className="manage-add-row">{children}</div>;
+}
+
+/**
+ * Faint secondary text after a row's name (a date, a practice, tags).
+ * `truncate` cuts long text (notes, tags) to one line.
+ *
+ *   <ManageItem …>{name}<ManageItemMeta truncate>{notes}</ManageItemMeta></ManageItem>
+ */
+export function ManageItemMeta({ truncate = false, children }: Readonly<{ truncate?: boolean; children: ReactNode }>) {
+  return <span className={truncate ? 'manage-item__meta manage-item__meta--truncate' : 'manage-item__meta'}>{children}</span>;
+}
+
 interface ManageItemProps {
   children:   ReactNode;
   /** Drag handle (DragHandle) — present when the list is sortable. */

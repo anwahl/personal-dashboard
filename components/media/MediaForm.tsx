@@ -11,7 +11,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, FormDialog, SliderField, TextField, DateField, TextAreaField, SelectField, FieldGrid } from '@/components/ui';
+import { Button, FormDialog, SliderField, TextField, DateField, TextAreaField, SelectField, FieldGrid, ListItem, EmptyState } from '@/components/ui';
 import { createClient } from '@/lib/supabase/client';
 import { createMediaEntry, updateMediaEntry, addMediaStatusEntry, createMediaNote } from '@/lib/dal/media';
 import { localTodayISO } from '@/lib/utils/dates';
@@ -115,18 +115,16 @@ function SearchPanel({ mediaTypeSlug, onSelect }: Readonly<{
         {loading && <span className="search-panel__loading">Searching…</span>}
       </div>
       {results.map(r => (
-        <button type="button" key={r.external_id} className="search-result"
-          onClick={() => onSelect(r)} onTouchEnd={() => onSelect(r)}>
-          <span className="search-result__title">{r.title}</span>
-          <span className="search-result__meta">
-            {r.creator  && <span>{r.creator} · </span>}
-            {r.year     && <span>{r.year} · </span>}
+        <ListItem key={r.external_id} className="search-result" onClick={() => onSelect(r)}
+          title={r.title}
+          meta={(r.creator || r.year || r.platform) && <>
+            {r.creator  && <span>{r.creator}</span>}
+            {r.year     && <span>{r.year}</span>}
             {r.platform && <span>{r.platform}</span>}
-          </span>
-        </button>
+          </>} />
       ))}
       {query.trim() && !loading && results.length === 0 && (
-        <div className="search-panel__empty">No results found.</div>
+        <EmptyState className="search-panel__empty">No results found.</EmptyState>
       )}
     </div>
   );

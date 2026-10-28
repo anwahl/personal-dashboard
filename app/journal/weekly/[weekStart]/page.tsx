@@ -7,6 +7,7 @@ import {
 } from '@/lib/dal/weekly-journal';
 import { getSundayOfWeek, getSundayWeekNumber, formatWeekRange } from '@/lib/utils/dates';
 import { WeeklyJournalClient } from '@/components/weekly-journal/WeeklyJournalClient';
+import { Header, PageBody }    from '@/components/layout';
 
 interface Props {
   params: Promise<{ weekStart: string }>;
@@ -34,11 +35,8 @@ export default async function WeeklyJournalPage({ params }: Readonly<Props>) {
   const weekRange = formatWeekRange(weekStart);
 
   return (
-    <div className="page-content">
-      <div className="page-header">
-        <h1 className="page-header__title">Weekly Journal</h1>
-        <p className="page-header__subtitle">Week {weekNum} · {weekRange}</p>
-      </div>
+    <PageBody>
+      <Header title="Weekly Journal" subtitle={`Week ${weekNum} · ${weekRange}`} />
       <WeeklyJournalClient
         weekStart={weekStart}
         weekNum={weekNum}
@@ -47,6 +45,6 @@ export default async function WeeklyJournalPage({ params }: Readonly<Props>) {
         categories={categories}
         responses={responses}
       />
-    </div>
+    </PageBody>
   );
 }

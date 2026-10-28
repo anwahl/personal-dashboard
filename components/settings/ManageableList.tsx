@@ -31,7 +31,7 @@ import type { ManageableTable }      from '@/lib/dal/settings';
 import { bySortOrder, reorderUpdates } from '@/lib/utils/sort';
 import {
   Button, DragHandle, ManageItem, RowMenu, SortableItem, SortableList, EmptyState, SectionCard, InactiveGroup,
-  Dialog,
+  Dialog, ManageList, ManageAddRow,
 } from '@/components/ui';
 import type { RowMenuItem, SortMove } from '@/components/ui';
 import {
@@ -240,7 +240,7 @@ export function ManageableList({
   const content = (
     <>
 
-      <div className="manage-list">
+      <ManageList>
         {active.length === 0 && <EmptyState>None active.</EmptyState>}
         {hasSortOrder ? (
           <SortableList onMove={handleMove}>
@@ -253,18 +253,18 @@ export function ManageableList({
         ) : (
           active.map(item => <div key={item.id}>{renderRow(item)}</div>)
         )}
-      </div>
+      </ManageList>
 
       <InactiveGroup count={inactive.length}>
         {inactive.map(item => <div key={item.id}>{renderRow(item)}</div>)}
       </InactiveGroup>
 
       {!addExpanded ? (
-        <div className="manage-add-row">
+        <ManageAddRow>
           <Button variant="ghost" size="sm" onClick={() => setAddExpanded(true)}>+ Add</Button>
-        </div>
+        </ManageAddRow>
       ) : (
-        <div className="manage-add-row">
+        <ManageAddRow>
           <FieldInputs
             fields={addFields}
             mode="add"
@@ -286,7 +286,7 @@ export function ManageableList({
           {collapsibleAdd && (
             <Button size="sm" variant="ghost" onClick={() => setAddExpanded(false)}>Cancel</Button>
           )}
-        </div>
+        </ManageAddRow>
       )}
     </>
   );

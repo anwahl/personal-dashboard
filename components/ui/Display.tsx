@@ -126,19 +126,23 @@ export function Item({ itemType = ITEM_TYPES.DEFAULT, itemModifier, value, class
 export function InputField({
   label,
   id,
+  actions,
   children,
 }: Readonly<{
   label:    string;
   id?:      string;
+  /** Buttons at the right of the label (e.g. a RowMenu). */
+  actions?: ReactNode;
   children: ReactNode;
 }>) {
+  const labelEl = id
+    ? <label htmlFor={id} className="field__label">{label}</label>
+    : <span className="field__label">{label}</span>;
   return (
     <div className="field">
-      {id ? (
-        <label htmlFor={id} className="field__label">{label}</label>
-      ) : (
-        <span className="field__label">{label}</span>
-      )}
+      {actions
+        ? <div className="field__label-row">{labelEl}<div className="field__label-actions">{actions}</div></div>
+        : labelEl}
       {children}
     </div>
   );
@@ -207,6 +211,28 @@ export function FieldActions({
 /** The "nothing here" line for an empty list or section. */
 export function EmptyState({ children, className }: Readonly<{ children: ReactNode; className?: string }>) {
   return <p className={['empty-state', className].filter(Boolean).join(' ')}>{children}</p>;
+}
+
+// ── Hint ──────────────────────────────────────────────────────────────────────
+
+type HintTone = 'info' | 'warn' | 'error';
+
+/**
+ * A short note under a field or add row. `info` explains (why something is
+ * locked, what an option does), `warn` flags something to fix before adding,
+ * `error` reports a failure.
+ */
+export function Hint({
+  tone = 'info',
+  className,
+  children,
+}: Readonly<{ tone?: HintTone; className?: string; children: ReactNode }>) {
+  const classes = ['hint', tone !== 'info' && `hint--${tone}`, className].filter(Boolean).join(' ');
+  return (
+    <p className={classes} role={tone === 'error' ? 'alert' : undefined}>
+      {children}
+    </p>
+  );
 }
 
 // ── Badge ─────────────────────────────────────────────────────────────────────

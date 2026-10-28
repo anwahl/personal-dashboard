@@ -6,6 +6,7 @@
  * Shows each item as: [emoji] [label] [days ago] [date]
  * Custom items have a "Log today" button.
  * Sort options: sort_order (default) or days_ago ascending.
+ * `bare` drops the card and title, for placing inside a LayoutCard.
  */
 
 import { useState, useCallback, useEffect } from 'react';
@@ -13,7 +14,7 @@ import { useRouter }              from 'next/navigation';
 import { createClient }           from '@/lib/supabase/client';
 import { logCustomLastTime }      from '@/lib/dal/lasttime';
 import {
-  Button, Card, CardActions, CardBody, CardHeader, CardSection, CardTitle,
+  Button, CardSection, SectionCard,
   Dialog, IconDisplay, EmptyState, DateField, ListItem, RowMenu,
 } from '@/components/ui';
 import type { LastTimeEntry }      from '@/types/dal';
@@ -32,6 +33,8 @@ function daysAgoFromDate(dateStr: string, today: string): number {
 interface Props {
   entries:  LastTimeEntry[];
   icons:    IconRow[];
+  /** No card or title of its own (inside a LayoutCard). */
+  bare?:    boolean;
 }
 
 function daysAgoColorClass(days: number | null): string {
@@ -42,7 +45,7 @@ function daysAgoColorClass(days: number | null): string {
   return 'color--danger';
 }
 
-export function LastTimeTracker({ entries, icons }: Readonly<Props>) {
+export function LastTimeTracker({ entries, icons, bare = false }: Readonly<Props>) {
   // The ✓ button logs this day and days count to it (a daily page's date
   // when placed on one, otherwise today).
   const contextDate = useContextDate();
@@ -100,24 +103,18 @@ export function LastTimeTracker({ entries, icons }: Readonly<Props>) {
 
   return (
     <>
-    <Card>
-        <CardHeader>
-          <CardTitle>
-            Last Time...
-          </CardTitle>
-          <CardActions>
-            <RowMenu
-              label="Last Time"
-              items={[
-                { label: 'Custom order',      checked: sortBy === 'order',  onSelect: () => setSortBy('order') },
-                { label: 'Most recent first', checked: sortBy === 'recent', onSelect: () => setSortBy('recent') },
-                'separator',
-                { label: 'Manage items…', onSelect: () => router.push('/settings?tab=lasttime') },
-              ]}
-            />
-          </CardActions>
-        </CardHeader>
-      <CardBody>
+    <SectionCard title="Last Time..." bare={bare}
+      actions={
+        <RowMenu
+          label="Last Time"
+          items={[
+            { label: 'Custom order',      checked: sortBy === 'order',  onSelect: () => setSortBy('order') },
+            { label: 'Most recent first', checked: sortBy === 'recent', onSelect: () => setSortBy('recent') },
+            'separator',
+            { label: 'Manage items…', onSelect: () => router.push('/settings?tab=lasttime') },
+          ]}
+        />
+      }>
         <CardSection>
           {sorted.length === 0 && (
             <EmptyState>No items configured. Add them in Settings → Last Time.</EmptyState>
@@ -168,8 +165,7 @@ export function LastTimeTracker({ entries, icons }: Readonly<Props>) {
             ))}
           </div>
         </CardSection>
-      </CardBody>
-    </Card>
+    </SectionCard>
 
     <Dialog
       open={datePickerOpen}

@@ -7,7 +7,8 @@
  * dropped (the type's completed/abandoned statuses) or opens it in
  * MediaDialog. The ＋ in the header adds one, starting in progress.
  *
- * Used on the Hub and the Media page.
+ * Used on the Hub and the Media page. `bare` drops the card and title (and
+ * so the collapsing), for placing inside a LayoutCard.
  */
 
 import { useState, useCallback, useEffect } from 'react';
@@ -16,7 +17,7 @@ import { addMediaStatusEntry } from '@/lib/dal/media';
 import { useContextDate } from '@/components/sections/DayContext';
 import { capitalize } from '@/lib/utils/strings';
 import {
-  AddButton, CardSection, CardSectionLabel, ExpandCard, EmptyState, ListItem, RowMenu,
+  AddButton, CardSection, CardSectionLabel, ExpandCard, EmptyState, ListItem, RowMenu, SectionCard,
 } from '@/components/ui';
 import type { MediaEntryDetail } from '@/types/dal';
 import type { MediaTypeRow, MediaStatusRow, MediaStatusTypeLinkRow } from '@/types/schema';
@@ -72,10 +73,12 @@ interface Props {
   mediaStatuses:   MediaStatusRow[];
   statusTypeLinks: MediaStatusTypeLinkRow[];
   open?:           boolean;
+  /** No card or title of its own (inside a LayoutCard). */
+  bare?:           boolean;
 }
 
 export function QuickMediaLog({
-  initialEntries, mediaTypes, mediaStatuses, statusTypeLinks, open = false,
+  initialEntries, mediaTypes, mediaStatuses, statusTypeLinks, open = false, bare = false,
 }: Readonly<Props>) {
   const supabase = createClient();
   // Finished/dropped are dated today, or a daily page's date when placed on one.
@@ -102,28 +105,32 @@ export function QuickMediaLog({
     setEntries(prev => prev.filter(e => e.id !== entryId));
   }, [supabase, today]);
 
+  const addButton = <AddButton label="Add media" onClick={openAdd} />;
+  const content = (
+    <>
+      {inProgress.length === 0 && <EmptyState>Nothing in progress.</EmptyState>}
+
+      {Object.entries(grouped).map(([typeName, items]) => (
+        <CardSection key={typeName}>
+          <CardSectionLabel>{capitalize(typeName)} ({items.length})</CardSectionLabel>
+          {items.map(e => (
+            <NowPlayingItem key={e.id} entry={e}
+              allStatuses={mediaStatuses} statusTypeLinks={statusTypeLinks}
+              onStatusChange={handleStatusChange}
+              onEdit={openEdit}
+            />
+          ))}
+        </CardSection>
+      ))}
+    </>
+  );
+
   return (
     <>
-      <ExpandCard open={open} title={`🎬 Now Playing (${inProgress.length})`}
-        actions={<AddButton label="Add media" onClick={openAdd} />}
-        hiddenChildren={
-          <>
-              {inProgress.length === 0 && <EmptyState>Nothing in progress.</EmptyState>}
-
-              {Object.entries(grouped).map(([typeName, items]) => (
-                <CardSection key={typeName}>
-                  <CardSectionLabel>{capitalize(typeName)} ({items.length})</CardSectionLabel>
-                  {items.map(e => (
-                    <NowPlayingItem key={e.id} entry={e}
-                      allStatuses={mediaStatuses} statusTypeLinks={statusTypeLinks}
-                      onStatusChange={handleStatusChange}
-                      onEdit={openEdit}
-                    />
-                  ))}
-                </CardSection>
-              ))}
-          </>
-        } />
+      {bare
+        ? <SectionCard title="Now Playing" bare actions={addButton}>{content}</SectionCard>
+        : <ExpandCard open={open} title={`🎬 Now Playing (${inProgress.length})`}
+            actions={addButton} hiddenChildren={content} />}
 
       <MediaDialog
         open={dialogOpen}

@@ -13,7 +13,7 @@ import {
   addLogSchemaField, updateLogSchemaField, setLogSchemaFieldOptions, toggleLogSchemaField,
 } from '@/lib/dal/people';
 import { batchSetSortOrder } from '@/lib/dal/settings';
-import { Badge } from '@/components/ui';
+import { Badge, ManageItemMeta } from '@/components/ui';
 import { HierarchicalList, type NormalizedChild } from '../HierarchicalList';
 import type { AddField } from '../FieldInputs';
 import type { LogSchemaRow, LogSchemaFieldRow, LogSchemaFieldOptionRow } from '@/types/schema';
@@ -83,7 +83,7 @@ export function LogSettings({
           {child.name}
           <Badge variant="muted">{String(child.field_type)}</Badge>
           {child.field_type === 'select' && Boolean(child.options) && (
-            <span className="manage-item__meta manage-item__meta--truncate">{String(child.options)}</span>
+            <ManageItemMeta truncate>{String(child.options)}</ManageItemMeta>
           )}
         </>
       )}

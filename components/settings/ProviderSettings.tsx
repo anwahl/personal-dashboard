@@ -15,6 +15,7 @@ import { createClient } from '@/lib/supabase/client';
 import { createProvider, updateProvider, toggleProviderActive } from '@/lib/dal/providers';
 import { addSettingsItem, updateSettingsItem, toggleSettingsItem, batchSetSortOrder } from '@/lib/dal/settings';
 import { HierarchicalList, type NormalizedChild } from './HierarchicalList';
+import { ManageItemMeta } from '@/components/ui';
 import type { AddField } from './FieldInputs';
 import type { ProviderRow, ProviderTypeRow } from '@/types/schema';
 
@@ -69,9 +70,9 @@ export function ProviderSettings({ providers, providerTypes }: Readonly<Props>) 
         return (
           <>
             {child.name || practice || 'Unnamed'}
-            {child.name && practice && <span className="manage-item__meta">{practice}</span>}
+            {child.name && practice && <ManageItemMeta>{practice}</ManageItemMeta>}
             {child.portal_url ? (
-              <a className="manage-item__meta text-link" href={String(child.portal_url)} target="_blank" rel="noreferrer">Portal ↗</a>
+              <ManageItemMeta><a className="text-link" href={String(child.portal_url)} target="_blank" rel="noreferrer">Portal ↗</a></ManageItemMeta>
             ) : null}
           </>
         );

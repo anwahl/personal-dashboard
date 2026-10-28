@@ -16,6 +16,7 @@
 
 import { useState, useCallback } from 'react';
 import { ManageableList } from '../ManageableList';
+import { ManageItemMeta } from '@/components/ui';
 import type { NormalizedChild } from '../HierarchicalList';
 import { PeopleList, personFromChild } from './PeopleList';
 import { InfoGroupSettings } from './InfoGroupSettings';
@@ -91,7 +92,7 @@ export function PeopleSettings({
           { key: 'list_label', label: 'Label', type: 'text', placeholder: 'Label (optional)', required: false },
         ]}
         renderName={(l: ItemListRow) => (
-          <>{l.list_title}{l.list_label && <span className="manage-item__meta">{l.list_label}</span>}</>
+          <>{l.list_title}{l.list_label && <ManageItemMeta>{l.list_label}</ManageItemMeta>}</>
         )}
         onItemAdded={(l: ItemListRow) => addStructure('list')({ id: l.id, name: l.list_title })}
       />
@@ -107,7 +108,7 @@ export function PeopleSettings({
           { key: 'checklist_label', label: 'Label', type: 'text', placeholder: 'Label (optional)', required: false },
         ]}
         renderName={(c: ChecklistRow) => (
-          <>{c.checklist_title}{c.checklist_label && <span className="manage-item__meta">{c.checklist_label}</span>}</>
+          <>{c.checklist_title}{c.checklist_label && <ManageItemMeta>{c.checklist_label}</ManageItemMeta>}</>
         )}
         onItemAdded={(c: ChecklistRow) => addStructure('checklist')({ id: c.id, name: c.checklist_title })}
       />

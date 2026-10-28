@@ -16,7 +16,7 @@ import {
   saveWeeklyResponses,
 } from '@/lib/dal/weekly-journal';
 import { addDays, getSundayOfWeek }  from '@/lib/utils/dates';
-import { Button, FieldActions, SaveStatus, EmptyState, TextAreaField, ModeToggle, CardSectionLabel } from '@/components/ui';
+import { Button, FieldActions, PrevNextNav, SaveStatus, EmptyState, TextAreaField, ModeToggle, CardSectionLabel, SubCard, SubCardBody } from '@/components/ui';
 import type { SaveState }            from '@/components/ui';
 import type { WeeklyEntryRow }       from '@/types/schema';
 import type {
@@ -158,10 +158,12 @@ export function WeeklyJournalClient({
           <div key={catName} className="journal-category-section">
             <CardSectionLabel>{catName}</CardSectionLabel>
             {catCards.map(card => (
-              <div key={card.key} className="journal-prompt-card">
-                <p className="journal-prompt-card__prompt">{card.promptText}</p>
-                <p>{card.responseText}</p>
-              </div>
+              <SubCard key={card.key} className="journal-prompt-card">
+                <SubCardBody>
+                  <p className="journal-prompt-card__prompt">{card.promptText}</p>
+                  <p>{card.responseText}</p>
+                </SubCardBody>
+              </SubCard>
             ))}
           </div>
         ))}
@@ -189,18 +191,20 @@ export function WeeklyJournalClient({
         <div key={catName} className="journal-category-section">
           <CardSectionLabel>{catName}</CardSectionLabel>
           {catCards.map(card => (
-            <div key={card.key} className="journal-prompt-card">
-              <p className="journal-prompt-card__prompt">{card.promptText}</p>
-              <TextAreaField
-                hideLabel
-                label={card.promptText}
-                className="journal-prompt-card__textarea"
-                value={card.responseText}
-                onChange={v => updateCard(card.key, v)}
-                placeholder="Write your response…"
-                rows={3}
-              />
-            </div>
+            <SubCard key={card.key} className="journal-prompt-card">
+              <SubCardBody>
+                <p className="journal-prompt-card__prompt">{card.promptText}</p>
+                <TextAreaField
+                  hideLabel
+                  label={card.promptText}
+                  className="journal-prompt-card__textarea"
+                  value={card.responseText}
+                  onChange={v => updateCard(card.key, v)}
+                  placeholder="Write your response…"
+                  rows={3}
+                />
+              </SubCardBody>
+            </SubCard>
           ))}
         </div>
       ))}
@@ -227,10 +231,8 @@ function WeekNav({ weekStart, weekNum, weekRange }: Readonly<{
   const next = nextSunday(weekStart);
 
   return (
-    <div className="week-nav">
-      <Button variant="ghost" size="icon" href={`/journal/weekly/${prev}`} aria-label="Previous week">‹</Button>
-      <span className="week-nav__label">Week {weekNum} · {weekRange}</span>
-      <Button variant="ghost" size="icon" href={`/journal/weekly/${next}`} aria-label="Next week">›</Button>
-    </div>
+    <PrevNextNav className="week-nav" navLabel="Week navigation" label={`Week ${weekNum} · ${weekRange}`}
+      prev={{ href: `/journal/weekly/${prev}`, label: 'Previous week' }}
+      next={{ href: `/journal/weekly/${next}`, label: 'Next week' }} />
   );
 }

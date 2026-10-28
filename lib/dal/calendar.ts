@@ -23,6 +23,17 @@ export async function getCalendarToken(client: Client): Promise<CalendarTokenRow
   return data ?? null;
 }
 
+/** True when `token` matches the stored calendar token. */
+export async function isValidCalendarToken(client: Client, token: string): Promise<boolean> {
+  const { data, error } = await client
+    .from('calendar_tokens')
+    .select('id')
+    .eq('token', token)
+    .maybeSingle();
+  if (error) throw new Error(`isValidCalendarToken: ${error.message}`);
+  return data !== null;
+}
+
 /**
  * Deletes the existing token and inserts a fresh one.
  * All existing iCal subscriptions using the old URL will stop working.

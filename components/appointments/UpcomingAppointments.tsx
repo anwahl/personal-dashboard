@@ -4,9 +4,10 @@
  * UpcomingAppointments — reusable component for Hub and Daily Entry page.
  * Shows the next appointment as a primary countdown card, then a short
  * secondary list. contextDate is the anchor "today" for countdown math.
+ * Only placed inside a LayoutCard, so it draws no card or title of its own.
  */
 
-import { Card, CardHeader, CardTitle, CardBody,
+import { CardHeader, CardTitle,
   CardSection, SubCard, SubCardBody, Field, Chip,
   Info, CardSectionLabel, ChipGroup, EmptyState
 }                   from '@/components/ui';
@@ -26,24 +27,11 @@ export function UpcomingAppointments({ appointments, contextDate }: Readonly<Pro
   const countdown = daysUntil(primary?.appointment_date ?? contextDate, contextDate);
 
   if (appointments.length === 0) {
-    return (
-      <Card>
-        <CardHeader><CardTitle>📅 Appointments</CardTitle></CardHeader>
-        <CardBody>
-          <EmptyState>
-            No upcoming appointments.
-          </EmptyState>
-        </CardBody>
-      </Card>
-    );
+    return <EmptyState>No upcoming appointments.</EmptyState>;
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>📅 Appointments</CardTitle>
-      </CardHeader>
-      <CardBody>
+    <>
         {/* Primary card */}
         <SubCard>
           <CardHeader>
@@ -76,7 +64,6 @@ export function UpcomingAppointments({ appointments, contextDate }: Readonly<Pro
             ))}
           </CardSection>
         )}
-      </CardBody>
-    </Card>
+    </>
   );
 }

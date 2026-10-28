@@ -4,7 +4,7 @@ import { type ComponentPropsWithRef, type AnchorHTMLAttributes, type ReactNode, 
 import Link from 'next/link';
 
 type Variant =
-  | 'default' | 'primary' | 'ghost' | 'action' | 'action-alt' | 'action-del' | 'danger'
+  | 'default' | 'primary' | 'ghost' | 'action' | 'action-alt' | 'danger'
   /** Secondary action: inline save / add / apply. `primary` is a page's main action. */
   | 'secondary'
   /** Square-ish tile, icon above label (menu grids). */
@@ -13,7 +13,10 @@ type Variant =
   | 'tile-row'
   /** Bottom tab-bar item, icon above label. Active via aria-current="page" or data-active. */
   | 'nav';
-type Size    = 'default' | 'sm' | 'icon' | 'check';
+type Size    =
+  | 'default' | 'sm' | 'icon' | 'check'
+  /** Small square icon button (e.g. ‹ › month nav): 28px with a mouse, 44px on touch. */
+  | 'compact';
 
 interface BaseProps {
   variant?: Variant;

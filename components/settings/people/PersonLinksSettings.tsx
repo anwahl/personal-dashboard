@@ -8,7 +8,9 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { togglePersonStructureLink } from '@/lib/dal/people';
-import { Badge, ChipSelect, EmptyState, SectionCard } from '@/components/ui';
+import {
+  CardSection, CardSectionLabel, CardSectionMeta, ChipSelect, EmptyState, InputField, SectionCard,
+} from '@/components/ui';
 import type { PersonLinks } from '@/types/dal';
 import type { PersonRow, PeopleCategoryRow } from '@/types/schema';
 
@@ -65,27 +67,26 @@ export function PersonLinksSettings({
         const pl  = links.find(l => l.person.id === person.id);
         const cat = categories.find(c => c.id === person.category_id);
         return (
-          <div key={person.id} className="person-links">
-            <div className="person-links__name">
+          <CardSection key={person.id}>
+            <CardSectionLabel>
               {person.person_name}
-              {cat && <Badge variant="muted">{cat.category_name}</Badge>}
-            </div>
+              {cat && <CardSectionMeta>· {cat.category_name}</CardSectionMeta>}
+            </CardSectionLabel>
             {groups.map(({ type, label }) => {
               const options = structures[type].filter(s => s.is_active);
               if (options.length === 0) return null;
               return (
-                <div key={type} className="person-links__group">
-                  <span className="person-links__label">{label}</span>
+                <InputField key={type} label={label}>
                   <ChipSelect
                     label={`${label} for ${person.person_name}`}
                     options={options.map(s => ({ value: s.id, label: s.name }))}
                     selected={pl?.[LINK_KEY[type]] ?? []}
                     onToggle={(id, on) => toggle(person, type, id, on)}
                   />
-                </div>
+                </InputField>
               );
             })}
-          </div>
+          </CardSection>
         );
       })}
     </SectionCard>

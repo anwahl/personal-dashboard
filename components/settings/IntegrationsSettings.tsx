@@ -10,7 +10,7 @@
 import { useState }                from 'react';
 import { createClient }            from '@/lib/supabase/client';
 import { regenerateCalendarToken } from '@/lib/dal/calendar';
-import { Button, ConfirmButton, SectionCard, CardSectionLabel, CardDescription } from '@/components/ui';
+import { Button, ConfirmButton, SectionCard, CardSectionLabel, CardDescription, TextField, Hint } from '@/components/ui';
 import type { CalendarTokenRow }   from '@/types/schema';
 
 interface Props {
@@ -55,13 +55,8 @@ export function IntegrationsSettings({ token: initialToken }: Readonly<Props>) {
       {token ? (
         <>
           <div className="ical-url-row">
-            <input
-              type="text"
-              readOnly
-              className="ical-url-input"
-              value={feedUrl}
-              onFocus={e => e.target.select()}
-            />
+            <TextField hideLabel label="Calendar feed URL" readOnly className="ical-url-input"
+              value={feedUrl} onChange={() => {}} onFocus={e => e.target.select()} />
             <Button variant="secondary" size="sm" onClick={copy}>
               {copied ? '✓ Copied' : 'Copy'}
             </Button>
@@ -81,13 +76,13 @@ export function IntegrationsSettings({ token: initialToken }: Readonly<Props>) {
             >
               {loading ? 'Regenerating…' : '⟳ Regenerate token'}
             </ConfirmButton>
-            <p className="manage-item__meta margin-top-sm">
+            <Hint tone="warn" className="margin-top-sm">
               Regenerating invalidates the current URL — you&apos;ll need to re-subscribe in your calendar app.
-            </p>
+            </Hint>
           </div>
         </>
       ) : (
-        <p className="manage-item__meta">No calendar token found. Run the reminders migration SQL.</p>
+        <Hint tone="error">No calendar token found. Run the reminders migration SQL.</Hint>
       )}
     </SectionCard>
   );

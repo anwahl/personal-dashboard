@@ -26,16 +26,18 @@ interface FieldBase {
   label:      string;
   /** Render just the control, with the label as its aria-label. */
   hideLabel?: boolean;
+  /** Buttons at the right of the label (e.g. a RowMenu). Not shown with hideLabel. */
+  actions?:   ReactNode;
   value:      string | number;
   onChange:   (value: string) => void;
 }
 
 /** Wraps a control in the labelled .field container unless hideLabel is set. */
 function FieldShell({
-  label, hideLabel, id, children,
-}: Readonly<{ label: string; hideLabel?: boolean; id: string; children: ReactNode }>) {
+  label, hideLabel, actions, id, children,
+}: Readonly<{ label: string; hideLabel?: boolean; actions?: ReactNode; id: string; children: ReactNode }>) {
   if (hideLabel) return <>{children}</>;
-  return <InputField label={label} id={id}>{children}</InputField>;
+  return <InputField label={label} id={id} actions={actions}>{children}</InputField>;
 }
 
 // ── Inputs ────────────────────────────────────────────────────────────────────
@@ -49,11 +51,11 @@ type InputProps = FieldBase & Omit<InputHTMLAttributes<HTMLInputElement>, 'value
  * config-driven forms; otherwise use the presets below.
  */
 export function TextField({
-  label, hideLabel, value, onChange, type = 'text', ...rest
+  label, hideLabel, actions, value, onChange, type = 'text', ...rest
 }: Readonly<InputProps & { type?: InputType }>) {
   const id = useId();
   return (
-    <FieldShell label={label} hideLabel={hideLabel} id={id}>
+    <FieldShell label={label} hideLabel={hideLabel} actions={actions} id={id}>
       <input
         {...rest}
         id={id}
@@ -84,12 +86,12 @@ type TextAreaProps = FieldBase & Omit<TextareaHTMLAttributes<HTMLTextAreaElement
 
 /** A labelled textarea. */
 export function TextAreaField({
-  label, hideLabel, value, onChange, size, className, ...rest
+  label, hideLabel, actions, value, onChange, size, className, ...rest
 }: Readonly<TextAreaProps>) {
   const id  = useId();
   const cls = [size && `textarea--${size}`, className].filter(Boolean).join(' ') || undefined;
   return (
-    <FieldShell label={label} hideLabel={hideLabel} id={id}>
+    <FieldShell label={label} hideLabel={hideLabel} actions={actions} id={id}>
       <textarea
         {...rest}
         id={id}
@@ -118,11 +120,11 @@ type SelectProps = FieldBase & Omit<SelectHTMLAttributes<HTMLSelectElement>, 'va
 
 /** A labelled native select. */
 export function SelectField({
-  label, hideLabel, value, onChange, options, placeholder, ...rest
+  label, hideLabel, actions, value, onChange, options, placeholder, ...rest
 }: Readonly<SelectProps>) {
   const id = useId();
   return (
-    <FieldShell label={label} hideLabel={hideLabel} id={id}>
+    <FieldShell label={label} hideLabel={hideLabel} actions={actions} id={id}>
       <select
         {...rest}
         id={id}

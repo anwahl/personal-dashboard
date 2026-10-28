@@ -15,6 +15,7 @@
 import { NextRequest, NextResponse }   from 'next/server';
 import { createClient }                from '@supabase/supabase-js';
 import { getTasksWithReminders }       from '@/lib/dal/tasks';
+import { isValidCalendarToken }        from '@/lib/dal/calendar';
 import { buildVCalendar }              from '@/lib/utils/ical';
 
 // A bare Supabase client — no cookies, no session required.
@@ -36,15 +37,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   try {
     const supabase = makeSupabase();
 
-    // Validate the token
-    const { data: tokenRow, error: tokenErr } = await supabase
-      .from('calendar_tokens')
-      .select('id')
-      .eq('token', token)
-      .maybeSingle();
-
-    if (tokenErr) throw tokenErr;
-    if (!tokenRow) {
+    if (!(await isValidCalendarToken(supabase, token))) {
       return new NextResponse('Invalid token', { status: 401 });
     }
 

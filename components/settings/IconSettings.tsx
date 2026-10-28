@@ -20,7 +20,8 @@ import { batchSetSortOrder }          from '@/lib/dal/settings';
 import { bySortOrder, reorderUpdates } from '@/lib/utils/sort';
 import { cleanSvg }                   from '@/lib/utils/svg';
 import {
-  Button, DragHandle, IconDisplay, ManageItem, RowMenu, SortableItem, SortableList, SectionCard, InactiveGroup, EmptyState, TextField, TextAreaField
+  Button, DragHandle, IconDisplay, ManageItem, RowMenu, SortableItem, SortableList, SectionCard, InactiveGroup, EmptyState, TextField, TextAreaField,
+  Hint, ManageItemMeta, ManageList,
 } from '@/components/ui';
 import type { SortMove } from '@/components/ui';
 import { FieldInputs, type AddField, type FieldValues } from './FieldInputs';
@@ -109,7 +110,7 @@ export function IconSettings({ icons: initialIcons }: Readonly<Props>) {
       {/* ── Icon list ──────────────────────────────────────────────────────── */}
       {items.length === 0 && <EmptyState>No icons yet — add one below.</EmptyState>}
 
-      <div className="manage-list">
+      <ManageList>
         <SortableList onMove={handleMove}>
           {active.map((icon, idx) => (
             <SortableItem key={icon.id} id={`icon:${icon.id}`} index={idx}>
@@ -117,7 +118,7 @@ export function IconSettings({ icons: initialIcons }: Readonly<Props>) {
             </SortableItem>
           ))}
         </SortableList>
-      </div>
+      </ManageList>
 
       <InactiveGroup count={inactive.length}>
         {inactive.map(icon => (
@@ -161,7 +162,7 @@ export function IconSettings({ icons: initialIcons }: Readonly<Props>) {
         <TextAreaField hideLabel label="SVG markup" size="tall" placeholder="Paste SVG markup here…"
           value={addSvg} onChange={setAddSvg} spellCheck={false} />
 
-        {addError && <p className="form-error">{addError}</p>}
+        {addError && <Hint tone="error">{addError}</Hint>}
 
         <Button
           variant="secondary"
@@ -238,7 +239,7 @@ function IconSettingsRow({ icon, sortable, onSave }: Readonly<RowProps>) {
     >
       <IconDisplay icon={icon} size="lg" className="trackable-emoji" />
       {icon.name}
-      {icon.tags && <span className="manage-item__meta manage-item__meta--truncate">{icon.tags}</span>}
+      {icon.tags && <ManageItemMeta truncate>{icon.tags}</ManageItemMeta>}
     </ManageItem>
   );
 }

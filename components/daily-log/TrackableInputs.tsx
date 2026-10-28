@@ -22,8 +22,8 @@
 
 import type { ReactNode } from 'react';
 import {
-  CardSection, CardSectionLabel, Chip, ChipGroup, ChipSelect, DateTimeField, EmptyState, IconDisplay, IconPicker,
-  InputField, Markdown, SelectField, SliderField, TagSelector, TextAreaField, TextField,
+  CardSection, CardSectionLabel, Chip, ChipGroup, ChipSelect, DateTimeField, EmptyState, Field, IconDisplay, IconPicker,
+  InputField, Markdown, SelectField, SliderField, TagSelector, TextAreaField, TextField, ToggleButton, ToggleGroup,
 } from '@/components/ui';
 import { formatShortDate } from '@/lib/utils/dates';
 import type { DayValues, PrescriptionDetail, TrackableDetail } from '@/types/dal';
@@ -135,12 +135,9 @@ const TRACKABLE_VIEWS: Record<TrackType, View> = {
     const value = a.values.text[t.id];
     return a.mode === 'view'
       ? (
-        <div key={t.id} className="trackable-long-text">
-          <CardSectionLabel>{t.name}</CardSectionLabel>
-          {value
-            ? <div className="detail-page__body-markdown"><Markdown>{value}</Markdown></div>
-            : textValue(null)}
-        </div>
+        <Field key={t.id} label={t.name}>
+          {value ? <Markdown>{value}</Markdown> : textValue(null)}
+        </Field>
       )
       : <TextAreaField key={t.id} label={t.name} value={value ?? ''}
           onChange={v => a.setValue('text', t.id, v)} />;
@@ -198,9 +195,9 @@ function Aggregate({ t, a }: Readonly<{ t: TrackableDetail; a: TrackableActions 
     .reduce((sum, q) => sum + Math.max(0, ...q.options.filter(o => o.is_active).map(o => o.value)), 0);
 
   const score = (
-    <div className="ess-score">
-      <div className="ess-score__number">{answered.length ? total : DASH}</div>
-      <div className="ess-score__label">{t.name} · {answered.length}/{shown.length} answered · max {max}</div>
+    <div className="aggregate-score">
+      <div className="aggregate-score__number">{answered.length ? total : DASH}</div>
+      <div className="aggregate-score__label">{t.name} · {answered.length}/{shown.length} answered · max {max}</div>
     </div>
   );
 
@@ -213,24 +210,22 @@ function Aggregate({ t, a }: Readonly<{ t: TrackableDetail; a: TrackableActions 
         const selected = a.values.aggregate[q.id];
         const options  = q.options.filter(o => o.is_active || o.option_id === selected);
         return (
-          <div key={q.id} className={`ess-question${selected != null ? ' ess-question--answered' : ''}`}>
-            <p className="ess-question__text">{q.question}</p>
-            <div className="ess-answer-grid">
-              {options.map(o => (
-                <button key={o.id} type="button"
-                  className={`ess-answer${selected === o.option_id ? ' ess-answer--selected' : ''}`}
-                  aria-pressed={selected === o.option_id}
-                  // Tapping the chosen answer again clears it.
-                  onClick={() => a.answer(q.id, selected === o.option_id ? null : o.option_id)}>
-                  <span className="ess-answer__value">{o.value}</span>
-                  <span className="ess-answer__label">{o.label}</span>
-                </button>
-              ))}
-            </div>
+          <div key={q.id} className={`aggregate-question${selected != null ? ' aggregate-question--answered' : ''}`}>
+            <p className="aggregate-question__text">{q.question}</p>
+            {/* Tapping the chosen answer again clears it. */}
+            <ToggleGroup appearance="answer" label={q.question}
+              value={selected} onValueChange={v => a.answer(q.id, v)}
+              options={options.map(o => ({
+                value: o.option_id,
+                label: <>
+                  <span className="toggle-btn__value">{o.value}</span>
+                  <span className="toggle-btn__label">{o.label}</span>
+                </>,
+              }))} />
           </div>
         );
       })}
-      <p className="daily-card__ess-footnote">Answers save automatically.</p>
+      <p className="daily-card__aggregate-footnote">Answers save automatically.</p>
     </div>
   );
 }
@@ -241,22 +236,13 @@ function BooleanTiles({ items, a }: Readonly<{ items: TrackableDetail[]; a: Trac
   return (
     <div className="habit-grid">
       {items.map(t => {
-        const done = a.values.boolean.includes(t.id);
-        const content = (
-          <>
-            <IconDisplay icon={iconOf(a, t.icon_id)} size="sm" className="habit-btn__emoji" />
-            <span className="habit-btn__label">{t.name}</span>
-          </>
+        return (
+          <ToggleButton key={t.id} appearance="tile" pressed={a.values.boolean.includes(t.id)}
+            onPressedChange={() => a.toggleBoolean(t.id)} readOnly={a.mode === 'view'}>
+            <IconDisplay icon={iconOf(a, t.icon_id)} size="sm" className="toggle-btn__icon" />
+            <span className="toggle-btn__label">{t.name}</span>
+          </ToggleButton>
         );
-        return a.mode === 'view'
-          ? <div key={t.id} className={`habit-btn${done ? ' habit-btn--done' : ''}`}>{content}</div>
-          : (
-            <button key={t.id} type="button" aria-pressed={done}
-              className={`habit-btn${done ? ' habit-btn--done' : ''}`}
-              onClick={() => a.toggleBoolean(t.id)}>
-              {content}
-            </button>
-          );
       })}
     </div>
   );
@@ -305,24 +291,14 @@ function PrescriptionItems({ items, a }: Readonly<{ items: TrackableDetail[]; a:
         const taken = a.values.boolean.includes(t.id);
         const rx    = a.prescriptions.find(p => p.id === t.prescription_id);
         const meta  = rx ? `${rx.dose ? `${rx.dose} · ` : ''}${rx.timing_type?.timing_name ?? ''}` : '';
-        const body  = (
-          <>
-            <div className="prescription-item__check">{taken && '✓'}</div>
-            <div>
-              <div className="prescription-item__name">{t.name}</div>
-              {meta && <div className="prescription-item__timing">{meta}</div>}
-            </div>
-          </>
+        const view  = a.mode === 'view';
+        return (
+          <ToggleButton key={t.id} appearance="row" pressed={taken}
+            onPressedChange={() => a.toggleBoolean(t.id)} readOnly={view} muted={view && !taken}>
+            <span className="toggle-btn__title">{t.name}</span>
+            {meta && <span className="toggle-btn__meta">{meta}</span>}
+          </ToggleButton>
         );
-        return a.mode === 'view'
-          ? <div key={t.id} className={`prescription-item ${taken ? 'prescription-item--taken' : 'prescription-item--dim'}`}>{body}</div>
-          : (
-            <button key={t.id} type="button" aria-pressed={taken}
-              className={`prescription-item${taken ? ' prescription-item--taken' : ''}`}
-              onClick={() => a.toggleBoolean(t.id)}>
-              {body}
-            </button>
-          );
       })}
     </div>
   );

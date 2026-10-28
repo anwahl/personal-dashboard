@@ -19,7 +19,7 @@ import { addSettingsItem, updateSettingsItem, toggleSettingsItem, batchSetSortOr
 import { HierarchicalList, type NormalizedChild } from './HierarchicalList';
 import type { AddField } from './FieldInputs';
 import { TrackablePicker } from './TrackablePicker';
-import { Badge, Button, EmptyState, IconDisplay, ManageItem, RowMenu, SelectField } from '@/components/ui';
+import { Badge, Button, Hint, EmptyState, IconDisplay, ManageItem, ManageList, ManageAddRow, RowMenu, SelectField } from '@/components/ui';
 import type { ChartDefinitionDetail, ChartCategoryRow, ChartTrackableLinkDetail, TrackableDetail } from '@/types/dal';
 import type { ChartType, MetricRole, IconRow } from '@/types/schema';
 
@@ -125,7 +125,7 @@ function ChartMetricsEditor({
         </div>
       )}
 
-      <div className="manage-list">
+      <ManageList>
         {links.length === 0 && <EmptyState>No metrics linked yet.</EmptyState>}
         {links.map(link => (
           <ManageItem
@@ -142,9 +142,9 @@ function ChartMetricsEditor({
             <Badge>{ROLE_LABELS[link.metric_role]}</Badge>
           </ManageItem>
         ))}
-      </div>
+      </ManageList>
 
-      <div className="manage-add-row">
+      <ManageAddRow>
         <TrackablePicker
           trackables={trackables.filter(t => !linkedIds.has(t.id))}
           icons={icons}
@@ -160,8 +160,8 @@ function ChartMetricsEditor({
         <Button variant="secondary" size="sm" onClick={add} busy={saving} disabled={!selT || full}>
           + Add
         </Button>
-        {full && <p className="manage-add-row__hint">This chart already has its {ROLE_LABELS[selRole]} metric.</p>}
-      </div>
+        {full && <Hint tone="warn">This chart already has its {ROLE_LABELS[selRole]} metric.</Hint>}
+      </ManageAddRow>
     </div>
   );
 }

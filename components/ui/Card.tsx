@@ -24,7 +24,7 @@ export function Card({ children, className, style }: Readonly<CardProps>) {
 }
 
 export function CardGridColumn({ children, className }: Readonly<CardProps>) {
-  return <div className={['card__grid--column', className].filter(Boolean).join(' ')}>{children}</div>;
+  return <div className={className}>{children}</div>;
 }
 
 export function CardGridRow({ children, className }: Readonly<CardProps>) {
@@ -141,7 +141,7 @@ export function ExpandCard({ shownChildren, hiddenChildren, className, style, ti
               <ExpandToggle expanded={expanded} onToggle={() => setExpanded(e => !e)} className='card__expand-toggle'>
                 <CardTitle>{title}</CardTitle>
               </ExpandToggle>
-              {actions && <div className="card__header-actions">{actions}</div>}
+              {actions && <CardActions>{actions}</CardActions>}
             </CardHeader>
           )}
           {/* No empty body (and its padding) under a collapsed header. */}
@@ -173,6 +173,24 @@ export function CardSectionLabel({
   return <p className={spaced ? 'card__section-label card__section-label--spaced' : 'card__section-label'}>{children}</p>;
 }
 
+/** Faint secondary text after a section label (e.g. "· Medications", "2/5"). */
+export function CardSectionMeta({ children }: Readonly<{ children: ReactNode }>) {
+  return <span className="card__section-meta">{children}</span>;
+}
+
+/**
+ * A section's heading row: its label with actions at the right, the same way
+ * CardHeader holds CardTitle and CardActions.
+ *
+ *   <CardSectionHeader>
+ *     <CardSectionLabel>Gratitude</CardSectionLabel>
+ *     <CardActions><Button …>+ Another</Button></CardActions>
+ *   </CardSectionHeader>
+ */
+export function CardSectionHeader({ children }: Readonly<{ children: ReactNode }>) {
+  return <div className="card__section-header">{children}</div>;
+}
+
 export function CardActions({
   children,
 }: Readonly<{
@@ -200,12 +218,17 @@ export function CardDescription({ children }: Readonly<{ children: ReactNode }>)
  *   <SectionCard title="Tags" meta="3 active" description="Used on…">
  *     …
  *   </SectionCard>
+ *
+ * `bare` drops the frame and the title, for a module placed inside a
+ * LayoutCard (whose own title stands in): meta and actions become a section
+ * header row, and the content follows.
  */
 export function SectionCard({
   title,
   meta,
   actions,
   description,
+  bare = false,
   className,
   children,
 }: Readonly<{
@@ -216,18 +239,37 @@ export function SectionCard({
   actions?:     ReactNode;
   /** Muted text under the title. */
   description?: ReactNode;
+  /** No card and no title: just the header actions and content (see above). */
+  bare?:        boolean;
+  /** On the card; not used when bare. */
   className?:   string;
   children:     ReactNode;
 }>) {
+  if (bare) {
+    return (
+      <>
+        {(meta || actions) && (
+          <CardSectionHeader>
+            <CardActions>
+              {meta && <span className="card__meta">{meta}</span>}
+              {actions}
+            </CardActions>
+          </CardSectionHeader>
+        )}
+        {description && <CardDescription>{description}</CardDescription>}
+        {children}
+      </>
+    );
+  }
   return (
     <Card className={className}>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         {(meta || actions) && (
-          <div className="card__header-actions">
+          <CardActions>
             {meta && <span className="card__meta">{meta}</span>}
             {actions}
-          </div>
+          </CardActions>
         )}
       </CardHeader>
       <CardBody>

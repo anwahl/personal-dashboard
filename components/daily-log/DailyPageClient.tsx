@@ -30,19 +30,6 @@ import type { DailyEntryDetail, ReferenceData, SectionDetail } from '@/types/dal
 import type { ModuleData } from '@/lib/dal/modules';
 import type { IntentionRow } from '@/types/schema';
 
-// ── Journal card state ───────────────────────────────────────────────────────
-
-export interface JournalCard {
-  clientId:     string;    // browser-side key
-  categoryId:   number;
-  promptId:     number;
-  promptText:   string;
-  responseText: string;
-  dbId:         number | null;  // null = not yet saved to DB
-}
-
-export type JournalState = JournalCard[];
-
 // ── Component ─────────────────────────────────────────────────────────────────
 
 interface Props {

@@ -41,7 +41,7 @@ function Items({ card, moduleData, refs, actions, onDone, inSheet }: Readonly<{
       {card.items.map(item => {
         if (item.kind === 'module') {
           return (
-            <div key={`m${item.placement_id}`} className="layout-card__module">
+            <div key={`m${item.placement_id}`}>
               <ModuleView module={item.module} data={moduleData} onDone={onDone} inSheet={inSheet} />
             </div>
           );
@@ -91,12 +91,12 @@ export function LayoutCard({ card, moduleData, refs, pageActions, onDone, inShee
   const hasCategories = card.items.some(i => i.kind === 'category');
 
   const frame = (body: ReactNode, footer?: ReactNode) => inSheet ? (
-    <SubCard className="layout-card">
+    <SubCard>
       {card.title && <CardHeader><CardTitle>{card.title}</CardTitle></CardHeader>}
       <SubCardBody>{body}{footer && <CardFooter>{footer}</CardFooter>}</SubCardBody>
     </SubCard>
   ) : (
-    <Card className="layout-card">
+    <Card>
       {card.title && <CardHeader><CardTitle>{card.title}</CardTitle></CardHeader>}
       <CardBody>{body}</CardBody>
       {footer && <CardFooter>{footer}</CardFooter>}

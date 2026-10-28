@@ -72,6 +72,21 @@ export async function getDailyEntryRow(
   return data as DailyEntryRow | null;
 }
 
+/** Dates (YYYY-MM-DD) between `from` and `to`, inclusive, that have a daily entry. */
+export async function getDailyEntryDatesInRange(
+  client: Client,
+  from: string,
+  to: string,
+): Promise<string[]> {
+  const { data, error } = await client
+    .from("daily_entries")
+    .select("entry_date")
+    .gte("entry_date", from)
+    .lte("entry_date", to);
+  if (error) throw new Error(`getDailyEntryDatesInRange(${from}, ${to}): ${error.message}`);
+  return (data ?? []).map((r: { entry_date: string }) => r.entry_date);
+}
+
 // ── Create / Update ───────────────────────────────────────────────────────────
 
 /**

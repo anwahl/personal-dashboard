@@ -7,27 +7,39 @@
  *
  * Input mode:
  *   - Category chips toggle categories on/off
- *   - Each active category shows one or more prompt cards (random prompt from that category)
- *   - "+ Another" adds a new card from the same category (avoids repeats when possible)
- *   - "🔀 Different" swaps the current card's prompt
- *   - "✕" removes a card
- *   - Save button saves all cards (also wired to global daily Save All)
+ *   - Each active category is a section with one or more prompts (random prompt from that category)
+ *   - "+ Another" adds a prompt from the same category (avoids repeats when possible)
+ *   - Each prompt's ⋯ menu: "Change prompt" swaps it, "Remove" removes it.
+ *     Both throw away the response, so a saved one needs a second tap.
+ *   - Save button saves all responses (also wired to global daily Save All)
  *
  * View mode:
  *   - Responses grouped by category, read-only
  */
 
-import { SaveStatus, SaveState, Button, EmptyState, ChipSelect, TextAreaField, CardSectionLabel } from '@/components/ui';
+import {
+  SaveStatus, SaveState, Button, EmptyState, ChipSelect, TextAreaField, Field, InputField, RowMenu,
+  CardActions, CardSection, CardSectionHeader, CardSectionLabel,
+} from '@/components/ui';
 import type { JournalCategoryWithPrompts } from '@/types/dal';
-import type { JournalCard, JournalState } from './DailyPageClient';
+
+/** One prompt on the page and the response typed for it. */
+export interface JournalPromptResponse {
+  clientId:     string;    // browser-side key
+  categoryId:   number;
+  promptId:     number;
+  promptText:   string;
+  responseText: string;
+  dbId:         number | null;  // null = not yet saved to DB
+}
 
 type Mode = 'view' | 'input';
 
 interface Props {
   mode:          Mode;
   categories:    JournalCategoryWithPrompts[];
-  state:         JournalState;
-  setState:      React.Dispatch<React.SetStateAction<JournalState>>;
+  responses:     JournalPromptResponse[];
+  setResponses:  React.Dispatch<React.SetStateAction<JournalPromptResponse[]>>;
   onSave:        () => Promise<void>;
   saveState:     SaveState;
 }
@@ -43,95 +55,90 @@ function pickRandom<T>(arr: T[], excluding?: T[]): T | null {
   return pool[crypto.getRandomValues(new Uint32Array(1))[0] % pool.length];
 }
 
-// ── PromptCard ────────────────────────────────────────────────────────────────
+// ── PromptField ───────────────────────────────────────────────────────────────
 
-function PromptCard({
-  card, onUpdate, onShuffle, onRemove,
+function PromptField({
+  response, onUpdate, onChangePrompt, onRemove,
 }: Readonly<{
-  card:      JournalCard;
-  onUpdate:  (id: string, text: string) => void;
-  onShuffle: (id: string) => void;
-  onRemove:  (id: string) => void;
+  response:       JournalPromptResponse;
+  onUpdate:       (id: string, text: string) => void;
+  onChangePrompt: (id: string) => void;
+  onRemove:       (id: string) => void;
 }>) {
+  // Unsaved responses can go without asking; saved ones need a second tap.
+  const saved = response.dbId != null;
   return (
-    <div className="journal-prompt-card">
-      <p className="journal-prompt-card__prompt">{card.promptText}</p>
-      <TextAreaField
-        hideLabel
-        label={card.promptText}
-        className="journal-prompt-card__textarea"
-        value={card.responseText}
-        placeholder="Your response…"
-        onChange={v => onUpdate(card.clientId, v)}
-        rows={3}
-      />
-      <div className="journal-prompt-card__actions">
-        <Button variant="ghost" size="sm" onClick={() => onShuffle(card.clientId)}>
-          🔀 Different prompt
-        </Button>
-        <Button variant="ghost" size="sm" onClick={() => onRemove(card.clientId)}>
-          ✕ Remove
-        </Button>
-      </div>
-    </div>
+    <TextAreaField
+      label={response.promptText}
+      actions={
+        <RowMenu label={response.promptText} items={[
+          { label: 'Change prompt', onSelect: () => onChangePrompt(response.clientId), destructive: saved },
+          { label: 'Remove',        onSelect: () => onRemove(response.clientId),       destructive: saved },
+        ]} />
+      }
+      value={response.responseText}
+      placeholder="Your response…"
+      onChange={v => onUpdate(response.clientId, v)}
+      rows={3}
+    />
   );
 }
 
 // ── Category section (input mode) ─────────────────────────────────────────────
 
 function CategorySection({
-  category, cards, onUpdate, onShuffle, onRemove, onAddAnother,
+  category, responses, onUpdate, onChangePrompt, onRemove, onAddAnother,
 }: Readonly<{
-  category:    JournalCategoryWithPrompts;
-  cards:       JournalCard[];
-  onUpdate:    (id: string, text: string) => void;
-  onShuffle:   (id: string) => void;
-  onRemove:    (id: string) => void;
-  onAddAnother:(categoryId: number) => void;
+  category:       JournalCategoryWithPrompts;
+  responses:      JournalPromptResponse[];
+  onUpdate:       (id: string, text: string) => void;
+  onChangePrompt: (id: string) => void;
+  onRemove:       (id: string) => void;
+  onAddAnother:   (categoryId: number) => void;
 }>) {
-  if (cards.length === 0) return null;
+  if (responses.length === 0) return null;
   return (
-    <div className="journal-category-section">
-      <div className="journal-category-section__header">
-        <span className="journal-category-section__title">
-          {category.category_name}
-        </span>
-        <Button variant="ghost" size="sm" onClick={() => onAddAnother(category.id)}>
-          + Another
-        </Button>
-      </div>
-      {cards.map(card => (
-        <PromptCard
-          key={card.clientId}
-          card={card}
+    <CardSection>
+      <CardSectionHeader>
+        <CardSectionLabel>{category.category_name}</CardSectionLabel>
+        <CardActions>
+          <Button variant="ghost" size="sm" onClick={() => onAddAnother(category.id)}>
+            + Another
+          </Button>
+        </CardActions>
+      </CardSectionHeader>
+      {responses.map(response => (
+        <PromptField
+          key={response.clientId}
+          response={response}
           onUpdate={onUpdate}
-          onShuffle={onShuffle}
+          onChangePrompt={onChangePrompt}
           onRemove={onRemove}
         />
       ))}
-    </div>
+    </CardSection>
   );
 }
 
 // ── JournalTab ────────────────────────────────────────────────────────────────
 
-export function JournalTab({ mode, categories, state, setState, onSave, saveState }: Readonly<Props>) {
+export function JournalTab({ mode, categories, responses, setResponses, onSave, saveState }: Readonly<Props>) {
 
-  // Which category IDs are currently active (have cards)
-  const activeCategoryIds = new Set(state.map(c => c.categoryId));
+  // Which category IDs are currently active (have prompts)
+  const activeCategoryIds = new Set(responses.map(r => r.categoryId));
 
   const toggleCategory = (cat: JournalCategoryWithPrompts) => {
     if (activeCategoryIds.has(cat.id)) {
-      // Deactivate — remove all cards for this category
-      setState(prev => prev.filter(c => c.categoryId !== cat.id));
+      // Deactivate — remove all prompts for this category
+      setResponses(prev => prev.filter(r => r.categoryId !== cat.id));
     } else {
-      // Activate — add one random prompt card
-      const existingPromptIds = new Set(state
-        .filter(c => c.categoryId === cat.id)
-        .map(c => c.promptId));
+      // Activate — add one random prompt
+      const existingPromptIds = new Set(responses
+        .filter(r => r.categoryId === cat.id)
+        .map(r => r.promptId));
       const prompt = pickRandom(cat.prompts, cat.prompts.filter(p => existingPromptIds.has(p.id)));
       if (!prompt) return;
-      setState(prev => [...prev, {
+      setResponses(prev => [...prev, {
         clientId:    nextId(),
         categoryId:  cat.id,
         promptId:    prompt.id,
@@ -145,13 +152,13 @@ export function JournalTab({ mode, categories, state, setState, onSave, saveStat
   const addAnother = (categoryId: number) => {
     const cat = categories.find(c => c.id === categoryId);
     if (!cat) return;
-    const usedPromptIds = new Set(state.filter(c => c.categoryId === categoryId).map(c => c.promptId));
+    const usedPromptIds = new Set(responses.filter(r => r.categoryId === categoryId).map(r => r.promptId));
     const unusedPrompts = cat.prompts.filter(p => !usedPromptIds.has(p.id));
     const pool          = unusedPrompts.length ? unusedPrompts : cat.prompts;
     if (!pool.length) return;
     const prompt = pickRandom(pool);
     if (!prompt) return;
-    setState(prev => [...prev, {
+    setResponses(prev => [...prev, {
       clientId:    nextId(),
       categoryId,
       promptId:    prompt.id,
@@ -161,60 +168,59 @@ export function JournalTab({ mode, categories, state, setState, onSave, saveStat
     }]);
   };
 
-  const updateCard = (clientId: string, text: string) => {
-    setState(prev => prev.map(c => c.clientId === clientId ? { ...c, responseText: text } : c));
+  const updateResponse = (clientId: string, text: string) => {
+    setResponses(prev => prev.map(r => r.clientId === clientId ? { ...r, responseText: text } : r));
   };
 
-  const shuffleCard = (clientId: string) => {
-    const card = state.find(c => c.clientId === clientId);
-    if (!card) return;
-    const cat = categories.find(c => c.id === card.categoryId);
+  const changePrompt = (clientId: string) => {
+    const response = responses.find(r => r.clientId === clientId);
+    if (!response) return;
+    const cat = categories.find(c => c.id === response.categoryId);
     if (!cat) return;
-    const usedIds = new Set(state
-      .filter(c => c.categoryId === card.categoryId && c.clientId !== clientId)
-      .map(c => c.promptId));
+    const usedIds = new Set(responses
+      .filter(r => r.categoryId === response.categoryId && r.clientId !== clientId)
+      .map(r => r.promptId));
     const pool = cat.prompts.filter(p => !usedIds.has(p.id));
     const next = pickRandom(pool.length ? pool : cat.prompts);
     if (!next) return;
-    setState(prev => prev.map(c =>
-      c.clientId !== clientId ? c : { ...c, promptId: next.id, promptText: next.prompt_text, responseText: '' }
+    // A new prompt is a new response: dropping dbId lets the next save delete
+    // the old row and insert one for this prompt.
+    setResponses(prev => prev.map(r =>
+      r.clientId !== clientId ? r : { ...r, promptId: next.id, promptText: next.prompt_text, responseText: '', dbId: null }
     ));
   };
 
-  const removeCard = (clientId: string) => {
-    setState(prev => prev.filter(c => c.clientId !== clientId));
+  const removePrompt = (clientId: string) => {
+    setResponses(prev => prev.filter(r => r.clientId !== clientId));
   };
 
   // ── View mode ───────────────────────────────────────────────────────────────
 
   if (mode === 'view') {
-    if (state.length === 0) {
+    if (responses.length === 0) {
       return <EmptyState>No journal entries for this day.</EmptyState>;
     }
 
     // Group by category
-    const grouped = new Map<string, JournalCard[]>();
-    for (const card of state) {
-      const cat = categories.find(c => c.id === card.categoryId);
+    const grouped = new Map<string, JournalPromptResponse[]>();
+    for (const response of responses) {
+      const cat = categories.find(c => c.id === response.categoryId);
       const key = cat?.category_name ?? 'Other';
       if (!grouped.has(key)) grouped.set(key, []);
-      grouped.get(key)!.push(card);
+      grouped.get(key)!.push(response);
     }
 
     return (
-      <div>
-        {[...grouped.entries()].map(([catName, cards]) => (
-          <div key={catName} className="journal-view-category">
+      <>
+        {[...grouped.entries()].map(([catName, catResponses]) => (
+          <CardSection key={catName}>
             <CardSectionLabel>{catName}</CardSectionLabel>
-            {cards.filter(c => c.responseText.trim()).map(card => (
-              <div key={card.clientId} className="journal-view-entry">
-                <p className="journal-view-entry__prompt">{card.promptText}</p>
-                <p className="journal-view-entry__response">{card.responseText}</p>
-              </div>
+            {catResponses.filter(r => r.responseText.trim()).map(r => (
+              <Field key={r.clientId} label={r.promptText} value={r.responseText} />
             ))}
-          </div>
+          </CardSection>
         ))}
-      </div>
+      </>
     );
   }
 
@@ -223,18 +229,17 @@ export function JournalTab({ mode, categories, state, setState, onSave, saveStat
   return (
     <div>
       {/* Category chips */}
-      <div className="journal-category-chips">
-        <p className="journal-category-chips__label">What do you feel like exploring today?</p>
+      <InputField label="What do you feel like exploring today?">
         <ChipSelect
           label="Journal categories"
           options={categories.map(cat => ({ value: cat.id, label: cat.category_name, disabled: cat.prompts.length === 0 }))}
           selected={[...activeCategoryIds]}
           onToggle={id => { const cat = categories.find(c => c.id === id); if (cat) toggleCategory(cat); }}
         />
-      </div>
+      </InputField>
 
       {/* Prompt sections */}
-      {state.length === 0 && (
+      {responses.length === 0 && (
         <EmptyState className="journal-category-chips__empty">
           Toggle some categories above to get started.
         </EmptyState>
@@ -246,10 +251,10 @@ export function JournalTab({ mode, categories, state, setState, onSave, saveStat
           <CategorySection
             key={cat.id}
             category={cat}
-            cards={state.filter(c => c.categoryId === cat.id)}
-            onUpdate={updateCard}
-            onShuffle={shuffleCard}
-            onRemove={removeCard}
+            responses={responses.filter(r => r.categoryId === cat.id)}
+            onUpdate={updateResponse}
+            onChangePrompt={changePrompt}
+            onRemove={removePrompt}
             onAddAnother={addAnother}
           />
         ))}

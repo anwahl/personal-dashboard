@@ -3,10 +3,12 @@
 /**
  * MediaClient — the Media page: a tab per type, entries grouped by status.
  * Each entry is one row (title links to its page; ⋯ → Edit… / Add note…).
+ * `bare` (inside a LayoutCard): each status is a collapsible panel instead
+ * of its own card.
  */
 
 import { useState, useEffect } from 'react';
-import { Button, TabBar, ExpandCard, EmptyState, ListItem, RowMenu } from '@/components/ui';
+import { Button, TabBar, ExpandCard, ExpandPanel, EmptyState, ListItem, RowMenu } from '@/components/ui';
 import type { MediaEntryDetail }  from '@/types/dal';
 import { formatShortDate } from '@/lib/utils/dates';
 import type { MediaTypeRow, MediaStatusRow, MediaStatusTypeLinkRow } from '@/types/schema';
@@ -19,6 +21,8 @@ interface Props {
   mediaTypes:      MediaTypeRow[];
   mediaStatuses:   MediaStatusRow[];
   statusTypeLinks: MediaStatusTypeLinkRow[];
+  /** No cards of its own (inside a LayoutCard). */
+  bare?:           boolean;
 }
 
 /** One entry: title (links to its page), status · date · rating · creator
@@ -55,7 +59,8 @@ function MediaItem({ entry, onEdit, onAddNote }: Readonly<{
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
-export function MediaClient({ entries, mediaTypes, mediaStatuses, statusTypeLinks }: Readonly<Props>) {
+export function MediaClient({ entries, mediaTypes, mediaStatuses, statusTypeLinks, bare = false }: Readonly<Props>) {
+  const StatusGroup = bare ? ExpandPanel : ExpandCard;
   const [localEntries, setLocalEntries] = useState(entries);
   useEffect(() => { setLocalEntries(entries); }, [entries]);
 
@@ -104,13 +109,13 @@ export function MediaClient({ entries, mediaTypes, mediaStatuses, statusTypeLink
       {filtered.length === 0 && <EmptyState>Nothing here yet.</EmptyState>}
 
       {Object.entries(grouped).map(([statusName, items]) => (
-          <ExpandCard key={statusName} title={`${STATUS_EMOJI[statusName] ?? ''} ${capitalize(statusName)} (${items.length})`}
+          <StatusGroup key={statusName} title={`${STATUS_EMOJI[statusName] ?? ''} ${capitalize(statusName)} (${items.length})`}
             hiddenChildren={rows(items)}
           />
       ))}
 
       {ungrouped.length > 0 && (
-        <ExpandCard title='No status'
+        <StatusGroup title='No status'
             hiddenChildren={rows(ungrouped)} />
       )}
     </>

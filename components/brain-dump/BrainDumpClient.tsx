@@ -5,8 +5,8 @@ import {
     getBrainDumps }                             from "@/lib/dal/daily";
 import { createClient }                         from "@/lib/supabase/client";
 import { useCallback, useEffect, useState }     from "react";
-import { Button, Card, CardActions,
-    CardBody, CardHeader,CardTitle,
+import { Button, CardActions,
+    CardBody, CardHeader,CardTitle, SectionCard,
     ExpandPreview, FieldActions, Item,
     Markdown, SubCard }                         from "../ui";
 import { formatMediumDate }                     from "@/lib/utils/dates";
@@ -69,8 +69,9 @@ function BrainDumpCard({ dump, onDelete }: Readonly<{
   );
 }
 
+/** `bare` drops the card and title, for placing inside a LayoutCard. */
 export default function BrainDumpList({
-  withForm = false }: Readonly<{ withForm?: boolean; }>) {
+  withForm = false, bare = false }: Readonly<{ withForm?: boolean; bare?: boolean }>) {
   const supabase = createClient();
   const [dumps,     setDumps]     = useState<BrainDumpWithEntry[]>([]);
   const [hasMore,   setHasMore]   = useState(false);
@@ -119,11 +120,7 @@ export default function BrainDumpList({
     {withForm && (
       <BrainDumpForm onSaved={handleSaved} />
     )}
-    <Card>
-        <CardHeader>
-            <CardTitle>Past Brain Dumps</CardTitle>
-        </CardHeader>
-        <CardBody>
+    <SectionCard title="Past Brain Dumps" bare={bare}>
             <FieldActions>
                 <TextField hideLabel label="Search dumps" placeholder="Search dumps…"
                     value={search} onChange={setSearch} />
@@ -150,8 +147,7 @@ export default function BrainDumpList({
                     </Button>
                 </FieldActions>
             )}
-        </CardBody>
-    </Card>
+    </SectionCard>
     </>
   );
 }

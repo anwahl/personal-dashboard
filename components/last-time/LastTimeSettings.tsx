@@ -17,7 +17,8 @@ import { toggleSettingsItem, updateSettingsItem, batchSetSortOrder } from '@/lib
 import type { ManageableTable } from '@/lib/dal/settings';
 import { useLastTimeSettingsItems } from '@/lib/hooks/reference';
 import {
-  Button, DragHandle, IconDisplay, ManageItem, RowMenu, SortableItem, SortableList, EmptyState, Badge, SectionCard, InactiveGroup
+  Button, DragHandle, IconDisplay, ManageItem, RowMenu, SortableItem, SortableList, EmptyState, Badge, SectionCard, InactiveGroup,
+  Hint, ManageItemMeta, ManageList, ManageAddRow,
 } from '@/components/ui';
 import type { SortMove } from '@/components/ui';
 import { TrackablePicker } from '@/components/settings/TrackablePicker';
@@ -293,7 +294,7 @@ export function LastTimeSettings({ trackables, mediaTypes, mediaGenres, mediaSta
       <IconDisplay icon={icons.find(i => i.id === item.icon_id) ?? null} size="sm" className="trackable-emoji" />
       {item.name}
       <Badge>{KIND_LABEL[item.kind]}</Badge>
-      {item.detail && <span className="manage-item__meta manage-item__meta--truncate">{item.detail}</span>}
+      {item.detail && <ManageItemMeta truncate>{item.detail}</ManageItemMeta>}
     </ManageItem>
   );
 
@@ -304,7 +305,7 @@ export function LastTimeSettings({ trackables, mediaTypes, mediaGenres, mediaSta
       description="Media items match any combination of type, genre and status. Metric items use the last day a Yes/No metric was checked."
     >
 
-      <div className="manage-list">
+      <ManageList>
         {!data && <EmptyState>Loading…</EmptyState>}
         {data && active.length === 0 && <EmptyState>None active.</EmptyState>}
         <SortableList onMove={handleMove}>
@@ -314,13 +315,13 @@ export function LastTimeSettings({ trackables, mediaTypes, mediaGenres, mediaSta
             </SortableItem>
           ))}
         </SortableList>
-      </div>
+      </ManageList>
 
       <InactiveGroup count={inactive.length}>
         {inactive.map(item => <div key={item.key}>{renderRow(item)}</div>)}
       </InactiveGroup>
 
-      <div className="manage-add-row">
+      <ManageAddRow>
         <FieldInputs
           fields={fields}
           mode="add"
@@ -344,9 +345,9 @@ export function LastTimeSettings({ trackables, mediaTypes, mediaGenres, mediaSta
           + Add
         </Button>
         {kind === 'media' && add.name.trim() && !hasFilter && (
-          <p className="manage-add-row__hint">Pick at least one of type, genre or status.</p>
+          <Hint tone="warn">Pick at least one of type, genre or status.</Hint>
         )}
-      </div>
+      </ManageAddRow>
     </SectionCard>
   );
 }

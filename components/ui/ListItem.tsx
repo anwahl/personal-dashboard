@@ -13,8 +13,9 @@
  *     muted={done}
  *   />
  *
- * With `href`, the title and meta link to the record (leading/trailing stay
- * separately clickable). `meta` items are spaced by the row, so pass them as
+ * With `href`, the title and meta link to the record; with `onClick`, they
+ * are a button instead (e.g. picking a search result). Leading/trailing stay
+ * separately clickable. `meta` items are spaced by the row, so pass them as
  * separate elements.
  */
 
@@ -22,7 +23,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 export function ListItem({
-  title, meta, leading, trailing, href, muted, strike, className,
+  title, meta, leading, trailing, href, onClick, muted, strike, className,
 }: Readonly<{
   title:      ReactNode;
   meta?:      ReactNode;
@@ -30,6 +31,8 @@ export function ListItem({
   trailing?:  ReactNode;
   /** Links the title and meta to this page. */
   href?:      string;
+  /** Makes the title and meta a button. */
+  onClick?:   () => void;
   /** Dimmed (done, past). */
   muted?:     boolean;
   /** Strike through the title (done). */
@@ -46,9 +49,11 @@ export function ListItem({
   return (
     <div className={cls}>
       {leading}
-      {href
-        ? <Link href={href} className="list-item__body list-item__body--link">{body}</Link>
-        : <div className="list-item__body">{body}</div>}
+      {href && <Link href={href} className="list-item__body list-item__body--link">{body}</Link>}
+      {!href && onClick && (
+        <button type="button" className="list-item__body list-item__body--button" onClick={onClick}>{body}</button>
+      )}
+      {!href && !onClick && <div className="list-item__body">{body}</div>}
       {trailing && <div className="list-item__actions">{trailing}</div>}
     </div>
   );

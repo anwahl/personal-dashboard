@@ -591,7 +591,7 @@ export function HierarchicalList({
         ))}
 
         {uncat && (
-          <div className="category-block category-block--uncategorized">
+          <div className="category-block">
             <ManageItem heading inline={<span className="category-block__count">{uncat.filter(ch => ch.is_active).length}</span>}>
               {uncategorizedLabel}
             </ManageItem>

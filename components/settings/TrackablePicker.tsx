@@ -14,7 +14,7 @@
 import { useState } from 'react';
 import { Select } from 'radix-ui';
 import { ChevronDown } from 'lucide-react';
-import { IconDisplay } from '@/components/ui';
+import { EmptyState, IconDisplay } from '@/components/ui';
 import type { DailyTrackableRow, IconRow } from '@/types/schema';
 
 interface Props {
@@ -78,7 +78,7 @@ export function TrackablePicker({
               </Select.Item>
             ))}
             {trackables.length === 0 && (
-              <p className="trackable-picker__empty">No options available.</p>
+              <EmptyState className="trackable-picker__empty">No options available.</EmptyState>
             )}
           </Select.Viewport>
         </Select.Content>

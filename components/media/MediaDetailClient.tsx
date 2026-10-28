@@ -180,9 +180,7 @@ export function MediaDetailClient({
                       <Button variant="ghost" size="icon" onClick={() => deleteNote(n.id)}
                         title="Delete note" aria-label="Delete note">✕</Button>
                     </div>
-                    <div className="detail-page__body-markdown">
-                      <Markdown>{n.body_md}</Markdown>
-                    </div>
+                    <Markdown>{n.body_md}</Markdown>
                   </div>
                 ))}
               </CardSection>

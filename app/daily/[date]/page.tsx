@@ -1,4 +1,3 @@
-import Link                              from 'next/link';
 import { notFound }                      from 'next/navigation';
 import { createClient }                  from '@/lib/supabase/server';
 import { getDailyEntry }        from '@/lib/dal/daily';
@@ -7,6 +6,7 @@ import { DailyPageClient }               from '@/components/daily-log/DailyPageC
 import { getReferenceData, getRandomIntention } from '@/lib/dal/reference';
 import { getSections, modulesIn }        from '@/lib/dal/placement';
 import { getModuleData }                 from '@/lib/dal/modules';
+import { Header, PageBody }              from '@/components/layout';
 
 interface Props {
   params: Promise<{ date: string }>;
@@ -47,21 +47,10 @@ export default async function DailyPage({ params }: Readonly<Props>) {
   const nextDate = addDays(date, 1);
 
   return (
-    <div className="page-content">
-      <nav className="date-nav" aria-label="Day navigation">
-        <Link href={`/daily/${prevDate}`} className="date-nav__link">
-          ← {formatShort(prevDate)}
-        </Link>
-        <Link href={`/daily/${nextDate}`} className="date-nav__link">
-          {formatShort(nextDate)} →
-        </Link>
-      </nav>
-
-      <div className="page-header">
-        <h1 className="page-header__title">
-          {formatDate(date)}
-        </h1>
-      </div>
+    <PageBody>
+      <Header title={formatDate(date)} navLabel="Day navigation"
+        prev={{ href: `/daily/${prevDate}`, label: `Previous day, ${formatShort(prevDate)}` }}
+        next={{ href: `/daily/${nextDate}`, label: `Next day, ${formatShort(nextDate)}` }} />
 
       <DailyPageClient
         entry={entry}
@@ -71,7 +60,6 @@ export default async function DailyPage({ params }: Readonly<Props>) {
         moduleData={moduleData}
         reference={reference}
       />
-
-    </div>
+    </PageBody>
   );
 }

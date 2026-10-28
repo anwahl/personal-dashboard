@@ -1,7 +1,7 @@
 'use client';
 
-import { TextField, DateField, TextAreaField, SelectField, SaveStatus, SaveState, Card, CardHeader, CardBody, CardSection, CardSectionLabel, Button, EmptyState, Badge, ModeToggle, SubCard, SubCardBody, FieldActions, ChipGroup } from '@/components/ui';
-import { useState, useCallback } from 'react';
+import { TextField, DateField, TextAreaField, SelectField, SaveStatus, SaveState, Card, CardHeader, CardBody, CardSection, CardSectionLabel, CardSectionHeader, Button, EmptyState, Badge, ModeToggle, SubCard, SubCardBody, FieldActions, ChipGroup, Checkbox, CardSectionMeta, Field, FieldGrid, ListItem, ExpandPanel, ManageItemMeta, ManageList, ManageAddRow } from '@/components/ui';
+import { useState, useCallback, type ReactNode } from 'react';
 import { ManageableList, type ManageableListDal } from '@/components/settings/ManageableList';
 import type { AddField } from '@/components/settings/FieldInputs';
 import { createClient }          from '@/lib/supabase/client';
@@ -69,11 +69,11 @@ function DiagnosisSection({ diagnoses: initial, mode, personId }: Readonly<{
       <CardSection>
         <CardSectionLabel>Diagnoses</CardSectionLabel>
         {active.map(d => (
-          <div key={d.id} className="list-entry-row">
-            <span className="list-entry-text">{d.diagnosis_name}</span>
-            {d.diagnosed_date && <span className="list-entry-date">{formatMediumDate(d.diagnosed_date)}</span>}
-            {d.notes && <span className="manage-item__meta">{d.notes}</span>}
-          </div>
+          <ListItem key={d.id} title={d.diagnosis_name}
+            meta={(d.diagnosed_date || d.notes) && <>
+              {d.diagnosed_date && <span>{formatMediumDate(d.diagnosed_date)}</span>}
+              {d.notes && <span>{d.notes}</span>}
+            </>} />
         ))}
       </CardSection>
     );
@@ -91,8 +91,8 @@ function DiagnosisSection({ diagnoses: initial, mode, personId }: Readonly<{
         renderName={(d: DiagnosisRow) => (
           <>
             {d.diagnosis_name}
-            {d.diagnosed_date && <span className="manage-item__meta">{formatMediumDate(d.diagnosed_date)}</span>}
-            {d.notes && <span className="manage-item__meta manage-item__meta--truncate">{d.notes}</span>}
+            {d.diagnosed_date && <ManageItemMeta>{formatMediumDate(d.diagnosed_date)}</ManageItemMeta>}
+            {d.notes && <ManageItemMeta truncate>{d.notes}</ManageItemMeta>}
           </>
         )}
       />
@@ -110,25 +110,21 @@ function InfoGroupSection({ group, mode, onValueChange }: Readonly<{
   return (
     <CardSection>
       <CardSectionLabel>{group.group_title}</CardSectionLabel>
-      <div className="info-field-grid">
-        {group.fields.map(f => (
-          <div key={f.id} className="info-field-row">
-            <span className="info-field-label">{f.field_label}</span>
-            {mode === 'view' ? (
-              <span className={`info-field-value${f.value ? '' : ' info-field-value--empty'}`}>
-                {(f.field_type === 'date' && f.value) ? formatMediumDate(f.value) : (f.value || '—')}
-              </span>
-            ) : f.field_type === 'textarea' ? (
-              <TextAreaField hideLabel label={f.field_label} value={f.value ?? ''}
-                onChange={v => onValueChange(f.id, v)} size="short" />
-            ) : f.field_type === 'date' ? (
-              <DateField hideLabel label={f.field_label} value={f.value ?? ''} onChange={v => onValueChange(f.id, v)} />
-            ) : (
-              <TextField hideLabel label={f.field_label} value={f.value ?? ''} onChange={v => onValueChange(f.id, v)} />
-            )}
-          </div>
-        ))}
-      </div>
+      <FieldGrid>
+        {group.fields.map(f =>
+          mode === 'view' ? (
+            <Field key={f.id} label={f.field_label}
+              value={f.value ? (f.field_type === 'date' ? formatMediumDate(f.value) : f.value) : undefined} />
+          ) : f.field_type === 'textarea' ? (
+            <TextAreaField key={f.id} label={f.field_label} value={f.value ?? ''}
+              onChange={v => onValueChange(f.id, v)} size="short" />
+          ) : f.field_type === 'date' ? (
+            <DateField key={f.id} label={f.field_label} value={f.value ?? ''} onChange={v => onValueChange(f.id, v)} />
+          ) : (
+            <TextField key={f.id} label={f.field_label} value={f.value ?? ''} onChange={v => onValueChange(f.id, v)} />
+          )
+        )}
+      </FieldGrid>
     </CardSection>
   );
 }
@@ -173,21 +169,17 @@ function ChecklistSection({ checklist, mode, personId }: Readonly<{
       <CardSectionLabel>
         {checklist.checklist_title}
         {checklist.checklist_label && (
-          <span className="section-label-sub">· {checklist.checklist_label}</span>
+          <CardSectionMeta>· {checklist.checklist_label}</CardSectionMeta>
         )}
-        <span className="section-label-sub">{done.length}/{items.length}</span>
+        <CardSectionMeta>{done.length}/{items.length}</CardSectionMeta>
       </CardSectionLabel>
 
       <div className="checklist-list">
         {undone.map(item => (
           <div key={item.id} className="checklist-item">
-            <input
-              type="checkbox"
-              checked={false}
-              onChange={() => toggle(item.id, true)}
-              className="checklist-item__checkbox"
-            />
-            <span className="checklist-item__text">{item.item_text}</span>
+            <Checkbox checked={false} onCheckedChange={() => toggle(item.id, true)}>
+              {item.item_text}
+            </Checkbox>
             {mode === 'edit' && (
               <Button variant="ghost" size="icon" onClick={() => removeItem(item.id)}
                 title="Remove item">✕</Button>
@@ -196,34 +188,26 @@ function ChecklistSection({ checklist, mode, personId }: Readonly<{
         ))}
 
         {done.length > 0 && (
-          <details className="checklist-done">
-            <summary className="checklist-done__summary">{done.length} completed</summary>
-            {done.map(item => (
+          <ExpandPanel title={`${done.length} completed`}
+            hiddenChildren={done.map(item => (
               <div key={item.id} className="checklist-item checklist-item--done">
-                <input
-                  type="checkbox"
-                  checked={true}
-                  onChange={() => toggle(item.id, false)}
-                  className="checklist-item__checkbox"
-                />
-                <span className="checklist-item__text checklist-item__text--done">
-                  {item.item_text}
-                </span>
+                <Checkbox checked={true} onCheckedChange={() => toggle(item.id, false)}>
+                  <span className="checklist-item__text--done">{item.item_text}</span>
+                </Checkbox>
               </div>
-            ))}
-          </details>
+            ))} />
         )}
       </div>
 
       {/* Add item always available — immediate save, no edit mode needed */}
-      <div className="manage-add-row">
+      <ManageAddRow>
         <TextField hideLabel label="New item" value={newText} onChange={setNewText}
           onKeyDown={e => e.key === 'Enter' && addItem()}
           placeholder="New item…" className="input--flex" />
         <Button size="sm" variant="secondary" onClick={addItem} busy={adding} disabled={!newText.trim()}>
           Add
         </Button>
-      </div>
+      </ManageAddRow>
     </CardSection>
   );
 }
@@ -263,28 +247,22 @@ function ItemListSection({ list, mode, personId }: Readonly<{
       <CardSectionLabel>
         {list.list_title}
         {list.list_label && (
-          <span className="section-label-sub">· {list.list_label}</span>
+          <CardSectionMeta>· {list.list_label}</CardSectionMeta>
         )}
       </CardSectionLabel>
 
-      <div className="list-entry-list">
-        {entries.length === 0 && <EmptyState>No entries yet.</EmptyState>}
-        {entries.map(e => (
-          <div key={e.id} className="list-entry-row">
-            {e.entry_date && (
-              <span className="list-entry-date">{formatMediumDate(e.entry_date)}</span>
-            )}
-            <span className="list-entry-text">{e.entry_text}</span>
-            {mode === 'edit' && (
-              <Button variant="ghost" size="icon" onClick={() => remove(e.id)}
-                title="Remove entry">✕</Button>
-            )}
-          </div>
-        ))}
-      </div>
+      {entries.length === 0 && <EmptyState>No entries yet.</EmptyState>}
+      {entries.map(e => (
+        <ListItem key={e.id} title={e.entry_text}
+          meta={e.entry_date && <span>{formatMediumDate(e.entry_date)}</span>}
+          trailing={mode === 'edit' && (
+            <Button variant="ghost" size="icon" onClick={() => remove(e.id)}
+              title="Remove entry" aria-label="Remove entry">✕</Button>
+          )} />
+      ))}
 
       {mode === 'edit' && (
-        <div className="manage-add-row">
+        <ManageAddRow>
           <DateField hideLabel label="Entry date" value={newDate} onChange={setNewDate} className="input--date" />
           <TextField hideLabel label="New entry" value={newText} onChange={setNewText}
             onKeyDown={e => e.key === 'Enter' && add()}
@@ -292,7 +270,7 @@ function ItemListSection({ list, mode, personId }: Readonly<{
           <Button size="sm" variant="secondary" onClick={add} busy={adding} disabled={!newText.trim()}>
             Add
           </Button>
-        </div>
+        </ManageAddRow>
       )}
     </CardSection>
   );
@@ -361,9 +339,9 @@ function LogSection({ log, mode, personId }: Readonly<{
             </SubCardBody>
           </SubCard>
         ) : (
-          <div className="manage-list">
+          <ManageList>
             <Button size="sm" variant="ghost" onClick={() => setShowForm(true)}>+ Add Entry</Button>
-          </div>
+          </ManageList>
         )
       )}
 
@@ -403,9 +381,34 @@ function LogSection({ log, mode, personId }: Readonly<{
   );
 }
 
+// ── Frames ────────────────────────────────────────────────────────────────────
+
+/** A block of the page: a card, or just its content when bare (inside a LayoutCard). */
+function PersonBlock({ bare, header, children }: Readonly<{ bare: boolean; header?: ReactNode; children: ReactNode }>) {
+  if (bare) {
+    return (
+      <>
+        {header && <CardSectionHeader>{header}</CardSectionHeader>}
+        {children}
+      </>
+    );
+  }
+  return (
+    <Card>
+      {header && <CardHeader>{header}</CardHeader>}
+      <CardBody>{children}</CardBody>
+    </Card>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function PeoplePageClient({ data, peopleCategories }: Readonly<{ data: PersonPageData; peopleCategories: PeopleCategoryRow[] }>) {
+export function PeoplePageClient({ data, peopleCategories, bare = false }: Readonly<{
+  data:             PersonPageData;
+  peopleCategories: PeopleCategoryRow[];
+  /** No cards of its own (inside a LayoutCard). */
+  bare?:            boolean;
+}>) {
   const { person, diagnoses, infoGroups, itemLists, logs, checklists, prescriptions } = data;
   const supabase = createClient();
 
@@ -454,8 +457,7 @@ export function PeoplePageClient({ data, peopleCategories }: Readonly<{ data: Pe
   return (
     <div>
       {/* Header */}
-      <Card>
-        <CardHeader>
+      <PersonBlock bare={bare} header={<>
           <div>
             <h2 className="person-header__name">{person.person_name}</h2>
             {mode === 'view' && categoryId && (() => {
@@ -482,11 +484,8 @@ export function PeoplePageClient({ data, peopleCategories }: Readonly<{ data: Pe
             )}
             <ModeToggle editing={mode === 'edit'} onChange={e => setMode(e ? 'edit' : 'view')} />
           </div>
-        </CardHeader>
-
-        <CardBody>
+        </>}>
           <DiagnosisSection diagnoses={diagnoses} mode={mode} personId={person.id} />
-          <hr />
           {prescriptions.length > 0 && (
             <CardSection>
               <CardSectionLabel>Active Prescriptions</CardSectionLabel>
@@ -506,13 +505,11 @@ export function PeoplePageClient({ data, peopleCategories }: Readonly<{ data: Pe
               No data yet. Add info groups, lists, logs, or checklists in Settings to structure this page.
             </EmptyState>
           )}
-        </CardBody>
-      </Card>
+      </PersonBlock>
 
       {/* Info groups */}
       {localGroups.length > 0 && (
-        <Card>
-          <CardBody>
+        <PersonBlock bare={bare}>
             {localGroups.map((group, gi) => (
               <InfoGroupSection
                 key={group.id}
@@ -521,41 +518,34 @@ export function PeoplePageClient({ data, peopleCategories }: Readonly<{ data: Pe
                 onValueChange={(fieldTypeId, value) => handleFieldChange(gi, fieldTypeId, value)}
               />
             ))}
-          </CardBody>
-        </Card>
+        </PersonBlock>
       )}
 
       {/* Checklists */}
       {checklists.length > 0 && (
-        <Card>
-          <CardBody>
+        <PersonBlock bare={bare}>
             {checklists.map(cl => (
               <ChecklistSection key={cl.id} checklist={cl} mode={mode} personId={person.id} />
             ))}
-          </CardBody>
-        </Card>
+        </PersonBlock>
       )}
 
       {/* Item lists */}
       {itemLists.length > 0 && (
-        <Card>
-          <CardBody>
+        <PersonBlock bare={bare}>
             {itemLists.map(list => (
               <ItemListSection key={list.id} list={list} mode={mode} personId={person.id} />
             ))}
-          </CardBody>
-        </Card>
+        </PersonBlock>
       )}
 
       {/* Logs */}
       {logs.length > 0 && (
-        <Card>
-          <CardBody>
+        <PersonBlock bare={bare}>
             {logs.map(log => (
               <LogSection key={log.id} log={log} mode={mode} personId={person.id} />
             ))}
-          </CardBody>
-        </Card>
+        </PersonBlock>
       )}
     </div>
   );

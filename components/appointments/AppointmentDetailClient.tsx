@@ -222,16 +222,10 @@ export function AppointmentDetailClient({
           </FieldGrid>
 
           {appt.questions && (
-            <Field label='Questions'
-              value={
-                <Markdown>{appt.questions}</Markdown>
-              } />
+            <Field label='Questions'><Markdown>{appt.questions}</Markdown></Field>
           )}
           {appt.notes && (
-            <Field label='Notes'
-              value={
-                <Markdown>{appt.notes}</Markdown>
-              } />
+            <Field label='Notes'><Markdown>{appt.notes}</Markdown></Field>
           )}
           <MedChangesSection
             appointmentId={appt.id}
