@@ -1,0 +1,197 @@
+.form {
+	display: flex;
+	flex-direction: column;
+	gap: var(--moduix-spacing-3);
+	padding-bottom: var(--moduix-spacing-4);
+}
+
+/*
+ * L2 floating labels (standard): underline only, no box. The label sits where
+ * the text would be while the field is empty; with a value or focus
+ * ([data-float]) it shrinks to the top of the field.
+ */
+.f {
+	position: relative;
+	padding-top: 18px; /* room for the floated label */
+}
+
+.label {
+	position: absolute;
+	inset-inline-start: 0;
+	z-index: 1;
+	color: var(--moduix-muted-foreground);
+	line-height: 18px;
+	pointer-events: none;
+	transform-origin: left top;
+	transition:
+		top var(--moduix-transition-fast),
+		font-size var(--moduix-transition-fast),
+		color var(--moduix-transition-fast);
+}
+
+/* Not floated: on the text line, full size. */
+.f:not([data-float]) .label {
+	top: 29px;
+	font-size: var(--moduix-text-md);
+}
+
+/* Floated: small, at the top. */
+.f[data-float] .label {
+	top: 0;
+	font-size: var(--moduix-text-xs);
+}
+
+.f:focus-within .label {
+	color: var(--moduix-foreground);
+}
+
+.row {
+	display: flex;
+	align-items: center;
+	gap: var(--moduix-spacing-1);
+	min-width: 0;
+}
+
+.top {
+	align-items: flex-start;
+}
+
+.muted {
+	color: var(--moduix-muted-foreground);
+	font-size: var(--moduix-text-sm);
+}
+
+/*
+ * The controls themselves: no box, just an underline. Hover brightens the
+ * underline (says "editable"); focus makes it a 2px line.
+ */
+.field {
+	--_line: var(--moduix-input);
+	flex: 1;
+	min-width: 0;
+
+	:global(:is([data-slot='editable-area'], [data-slot='date-input-control'], [data-slot='select-trigger'])) {
+		min-height: 40px;
+		padding-inline: 0;
+		border: 0;
+		border-bottom: var(--moduix-border-width-sm) solid var(--_line);
+		border-radius: 0;
+		background-color: transparent;
+		outline: 0;
+		box-shadow: none;
+		transition: border-color var(--moduix-transition-fast);
+	}
+
+	@media (hover: hover) {
+		&:hover {
+			--_line: var(--moduix-muted-foreground);
+		}
+	}
+
+	&:focus-within :global(:is([data-slot='editable-area'], [data-slot='date-input-control'], [data-slot='select-trigger'])) {
+		border-bottom: var(--moduix-border-width-md) solid var(--moduix-foreground);
+		margin-bottom: -1px;
+	}
+
+	/* Line the select's text up with the label; keep room for its chevron on the right. */
+	:global([data-slot='select-trigger']) {
+		padding-inline: 0 calc(var(--moduix-spacing-2) * 2 + var(--moduix-size-xs));
+	}
+}
+
+.area {
+	cursor: text;
+
+	/* The display version fills the field, so an empty field is still a full-size tap target. */
+	:global([data-slot='editable-preview']) {
+		display: block;
+		width: 100%;
+		min-height: 24px;
+	}
+}
+
+.details {
+	align-items: flex-start;
+	min-height: 3rem;
+	padding-block: var(--moduix-spacing-2);
+
+	textarea {
+		min-height: 10rem;
+		resize: vertical;
+		line-height: 1.5;
+	}
+}
+
+.preview {
+	min-height: 1.5rem;
+	max-height: 18rem;
+	overflow-y: auto;
+	white-space: normal;
+}
+
+.repeats {
+	min-height: 40px;
+	gap: var(--moduix-spacing-3);
+}
+
+.toggles {
+	margin-top: var(--moduix-spacing-1);
+}
+
+/* M2: put a changed field back. */
+.revert {
+	display: grid;
+	flex: none;
+	place-items: center;
+	width: 36px;
+	height: 36px;
+	border-radius: var(--moduix-radius-md);
+	background: none;
+	color: var(--moduix-muted-foreground);
+	cursor: pointer;
+
+	:global(svg) {
+		width: 18px;
+		height: 18px;
+	}
+
+	@media (hover: hover) {
+		&:hover {
+			background-color: var(--moduix-accent);
+			color: var(--moduix-foreground);
+		}
+	}
+
+	&:active {
+		background-color: var(--moduix-accent);
+	}
+}
+
+@media (max-width: 767px) {
+	.revert {
+		width: 44px;
+		height: 44px;
+	}
+}
+
+.footer {
+	display: flex;
+	align-items: center;
+	gap: var(--moduix-spacing-2);
+	width: 100%;
+}
+
+.delete {
+	flex: none;
+}
+
+.save {
+	margin-inline-start: auto;
+	padding-inline: var(--moduix-spacing-6);
+}
+
+@media (max-width: 767px) {
+	.save {
+		flex: 1;
+	}
+}

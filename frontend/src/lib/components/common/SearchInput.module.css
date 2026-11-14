@@ -1,0 +1,89 @@
+.box {
+	display: flex;
+	align-items: center;
+	gap: var(--moduix-spacing-1-5);
+	min-width: 0;
+	height: var(--moduix-size-md);
+	padding-inline: var(--moduix-spacing-3);
+	border: var(--moduix-border-width-sm) solid var(--moduix-input);
+	border-radius: var(--moduix-radius-md);
+	background-color: var(--moduix-background);
+	cursor: text;
+	transition: border-color var(--moduix-transition-default);
+
+	&:focus-within {
+		border-color: var(--moduix-ring);
+		outline: var(--moduix-focus-ring-halo-width) solid color-mix(in oklab, var(--moduix-ring) 40%, transparent);
+	}
+}
+
+.icon {
+	flex: none;
+	width: 16px;
+	height: 16px;
+	color: var(--moduix-muted-foreground);
+}
+
+.input {
+	flex: 1;
+	min-width: 3rem;
+	height: 100%;
+	background: transparent;
+	color: var(--moduix-foreground);
+	font: inherit;
+	font-size: var(--moduix-text-sm);
+	outline: 0;
+
+	&::placeholder {
+		color: var(--moduix-muted-foreground);
+	}
+
+	&::-webkit-search-cancel-button {
+		display: none;
+	}
+}
+
+.chip {
+	display: inline-flex;
+	flex: none;
+	align-items: center;
+	gap: var(--moduix-spacing-1);
+	height: 26px;
+	padding-inline: var(--moduix-spacing-2) 2px;
+	border-radius: var(--moduix-radius-full);
+	background-color: var(--moduix-foreground);
+	color: var(--moduix-background);
+	font-size: var(--moduix-text-xs);
+	font-weight: var(--moduix-weight-medium);
+	white-space: nowrap;
+
+	:global(svg) {
+		width: 13px;
+		height: 13px;
+	}
+}
+
+/* Small visible ✕, with a larger invisible hit area. */
+.chipRemove {
+	position: relative;
+	display: grid;
+	place-items: center;
+	width: 22px;
+	height: 22px;
+	border-radius: var(--moduix-radius-full);
+	background: none;
+	color: inherit;
+	cursor: pointer;
+
+	&::after {
+		content: '';
+		position: absolute;
+		inset: -9px;
+	}
+
+	@media (hover: hover) {
+		&:hover {
+			background-color: color-mix(in srgb, var(--moduix-background) 15%, transparent);
+		}
+	}
+}

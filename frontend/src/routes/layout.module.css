@@ -1,0 +1,14 @@
+.main {
+	width: 100%;
+	max-width: 64rem;
+	margin-inline: auto;
+	padding: var(--moduix-spacing-6);
+}
+
+/* Phones: keep content clear of the fixed tab bar and the home indicator. */
+@media (max-width: 767px) {
+	.main {
+		padding: var(--moduix-spacing-4);
+		padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+	}
+}

@@ -1,0 +1,49 @@
+.bar {
+	position: fixed;
+	inset-inline: 0;
+	bottom: 0;
+	z-index: var(--moduix-z-backdrop);
+	display: flex;
+	align-items: center;
+	padding: 0 var(--moduix-spacing-2) env(safe-area-inset-bottom);
+	border-top: var(--moduix-border-width-sm) solid var(--moduix-border);
+	background-color: color-mix(in srgb, var(--moduix-background) 92%, transparent);
+	backdrop-filter: blur(12px);
+}
+
+.tab {
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 2px;
+	min-height: 56px;
+	background: none;
+	color: var(--moduix-muted-foreground);
+	font: inherit;
+	font-size: var(--moduix-text-xs);
+	transition: color var(--moduix-transition-fast);
+
+	:global(svg) {
+		width: 24px;
+		height: 24px;
+	}
+
+	&[aria-current='page'],
+	&[data-active] {
+		color: var(--moduix-foreground);
+	}
+}
+
+.add {
+	display: flex;
+	flex: 1;
+	justify-content: center;
+}
+
+.addButton {
+	width: 48px;
+	height: 48px;
+	border-radius: var(--moduix-radius-full);
+}

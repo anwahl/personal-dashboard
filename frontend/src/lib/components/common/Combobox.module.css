@@ -1,0 +1,14 @@
+.root {
+	--moduix-combobox-width: 100%;
+	min-width: 0;
+}
+
+.control {
+	cursor: pointer;
+}
+
+/* Not typeable: looks and acts like a select (no text caret). */
+.readonly {
+	cursor: pointer;
+	caret-color: transparent;
+}

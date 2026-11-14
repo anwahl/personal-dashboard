@@ -1,0 +1,54 @@
+/* ── Phones (T3) ─────────────────────────────────────────── */
+.stacked {
+	display: flex;
+	flex-direction: column;
+	gap: var(--moduix-spacing-2);
+}
+
+.pair {
+	display: flex;
+	gap: var(--moduix-spacing-2);
+}
+
+.full > *,
+.half > * {
+	width: 100%;
+}
+
+.half {
+	flex: 1 1 0;
+	min-width: 0;
+}
+
+/* ── md and up (W4) ──────────────────────────────────────── */
+.row {
+	display: flex;
+	align-items: center;
+	gap: var(--moduix-spacing-2);
+}
+
+/* Equal thirds; the one in use takes 4 parts of 6 (2/3), the others 1 each. */
+.grow {
+	flex: 1 1 0;
+	min-width: 0;
+	transition: flex-grow var(--moduix-duration-normal, 200ms) ease;
+
+	& > * {
+		width: 100%;
+	}
+
+	&:focus-within,
+	&:has([data-state='open']) {
+		flex-grow: 4;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		transition: none;
+	}
+}
+
+.reset {
+	flex: none;
+	width: var(--moduix-size-md);
+	padding: 0;
+}
