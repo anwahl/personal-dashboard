@@ -1,0 +1,94 @@
+.row {
+	display: flex;
+	align-items: center;
+	gap: var(--moduix-spacing-1);
+	padding-inline: var(--moduix-spacing-1) var(--moduix-spacing-3);
+}
+
+/* 44px tap cell around the checkbox. */
+.check {
+	display: grid;
+	flex: none;
+	place-items: center;
+	width: 44px;
+	height: 44px;
+}
+
+/* K2: 22px rounded square with a 2px border. */
+.box {
+	--moduix-checkbox-size: 22px;
+	--moduix-checkbox-radius: 6px;
+	--moduix-checkbox-border-color: var(--moduix-muted-foreground);
+	--moduix-checkbox-icon-size: 14px;
+	border-width: var(--moduix-border-width-md);
+}
+
+.open {
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	justify-content: center;
+	gap: 2px;
+	min-width: 0;
+	min-height: 60px;
+	padding-block: var(--moduix-spacing-2);
+	background: none;
+	color: inherit;
+	font: inherit;
+	text-align: start;
+	cursor: pointer;
+}
+
+.title {
+	display: flex;
+	align-items: center;
+	gap: var(--moduix-spacing-1-5);
+	min-width: 0;
+	font-size: var(--moduix-text-md);
+	font-weight: var(--moduix-weight-medium);
+}
+
+.titleText {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.finished {
+	color: var(--moduix-muted-foreground);
+	text-decoration: line-through;
+}
+
+/* V5 priority marks: danger (High) and warning (Medium) families. */
+.marks {
+	flex: none;
+	font-weight: var(--moduix-weight-bold);
+	letter-spacing: -1px;
+
+	&[data-priority='high'] {
+		color: var(--moduix-destructive);
+	}
+
+	&[data-priority='medium'] {
+		color: var(--moduix-warning);
+	}
+}
+
+.meta {
+	display: flex;
+	align-items: center;
+	gap: var(--moduix-spacing-1);
+	color: var(--moduix-muted-foreground);
+	font-size: var(--moduix-text-sm);
+}
+
+.overdue {
+	color: var(--moduix-destructive);
+}
+
+.alert {
+	flex: none;
+	width: 14px;
+	height: 14px;
+}

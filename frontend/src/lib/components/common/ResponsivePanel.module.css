@@ -1,0 +1,16 @@
+/* Phones: taller than moduix's 80dvh default, so long forms need less scrolling. */
+@media (max-width: 767px) {
+	.content {
+		max-height: 92dvh;
+	}
+}
+
+/* Body takes the free height and scrolls; the footer stays pinned. */
+.body {
+	flex: 1 1 auto;
+}
+
+.footer {
+	flex: none;
+	margin-block-start: var(--moduix-spacing-4);
+}

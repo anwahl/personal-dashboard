@@ -1,34 +1,16 @@
 {
-  "name": "dashboard",
-  "version": "0.1.0",
+  "name": "homeport",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
-  },
-  "dependencies": {
-    "@dnd-kit/react": "^0.5.1",
-    "@supabase/ssr": "^0.12.3",
-    "@supabase/supabase-js": "^2.110.7",
-    "lucide-react": "^1.61.0",
-    "next": "^16.3.0",
-    "next-auth": "^4.24.14",
-    "radix-ui": "^1.8.1",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
-    "react-markdown": "^9.1.0",
-    "remark-gfm": "^4.0.1",
-    "swr": "^2.2.5"
+    "install:all": "npm --prefix backend install && npm --prefix frontend install",
+    "dev": "concurrently -k -n backend,frontend -c blue,magenta \"npm --prefix backend run dev\" \"npm --prefix frontend run dev --host\"",
+    "build": "npm --prefix frontend run build && npm --prefix backend run build",
+    "check": "npm --prefix backend run typecheck && npm --prefix frontend run check",
+    "test": "npm --prefix backend test",
+    "gen:api": "npm --prefix frontend run gen:api",
+    "gen:types": "npm --prefix backend run gen:types"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "gray-matter": "^4.0.3",
-    "tailwindcss": "^4",
-    "tsx": "^4.23.1",
-    "typescript": "^5.9.3"
+    "concurrently": "^10.0.6"
   }
 }

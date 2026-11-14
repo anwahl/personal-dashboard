@@ -1,0 +1,101 @@
+/*
+ * homeport theme: Annie's palette families mapped onto moduix's tokens.
+ * Dark only. Loaded after moduix's style.css, in the same tokens layer, so these win.
+ *
+ * Families (Annie, 2026-11-12):
+ *   background #160f1a · surface #332e36 · text #eeedf3 · primary #d16e45
+ *   secondary #a38ec4 · info #2e53c4 · success #5fa923 · warning #fec26d · danger #f21265
+ *
+ * Where a family color is swapped for a tint, the comment says why (contrast is
+ * measured against the background, #160f1a; 4.5:1 is the bar for text).
+ */
+@layer moduix.tokens {
+	:root {
+		color-scheme: dark;
+
+		/* Raw families, for one-off use (e.g. charts, badges). */
+		--hp-background: #160f1a;
+		--hp-surface: #332e36;
+		--hp-text: #eeedf3;
+		--hp-primary: #d16e45;
+		--hp-secondary: #a38ec4;
+		--hp-info: #2e53c4;
+		--hp-success: #5fa923;
+		--hp-warning: #fec26d;
+		--hp-danger: #f21265;
+
+		/* Layers: background → card → popover → surface, each a step lighter. */
+		--moduix-background: #160f1a;
+		--moduix-foreground: #eeedf3;
+		--moduix-card: #1f1825; /* between background and surface */
+		--moduix-card-foreground: #eeedf3;
+		--moduix-popover: #261f2b; /* one step above cards so menus lift off them */
+		--moduix-popover-foreground: #eeedf3;
+
+		/* Primary: the orange family. Dark text on it (5.4:1); white text would only be 3.0:1. */
+		--moduix-primary: #d16e45;
+		--moduix-primary-foreground: #160f1a;
+
+		/* Secondary buttons/surfaces: the surface family; lavender is used for focus and accents. */
+		--moduix-secondary: #332e36;
+		--moduix-secondary-foreground: #eeedf3;
+		--moduix-muted: #2a242e;
+		--moduix-muted-foreground: #a59fab; /* 7.3:1 */
+		--moduix-accent: #3a3340; /* hover/highlight in lists and menus */
+		--moduix-accent-foreground: #eeedf3;
+
+		/* Danger: #f21265 is 4.5:1 as text, right at the line; text uses a lighter tint (6.0:1). */
+		--moduix-destructive: #f7558f;
+		--moduix-destructive-foreground: #160f1a;
+
+		--moduix-success: #5fa923; /* 6.4:1 as is */
+		--moduix-warning: #fec26d; /* 11.8:1 as is */
+		/* Info: #2e53c4 is only 2.8:1 on the background, so text uses a lighter blue (6.6:1). */
+		--moduix-info: #7b96ec;
+
+		/* Lines and focus. The ring is the lavender secondary family (6.5:1). */
+		--moduix-border: rgb(238 237 243 / 0.11);
+		--moduix-input: rgb(238 237 243 / 0.26);
+		--moduix-ring: #a38ec4;
+		--moduix-overlay: rgb(10 6 12 / 0.72);
+
+		--moduix-sidebar: #1b1420;
+		--moduix-sidebar-foreground: #eeedf3;
+		--moduix-sidebar-accent: #2e2734;
+		--moduix-sidebar-accent-foreground: #eeedf3;
+		--moduix-sidebar-border: rgb(238 237 243 / 0.08);
+		--moduix-sidebar-ring: #a38ec4;
+
+		/* Shadows need to be darker than moduix's light-mode defaults to show on a dark page. */
+		--moduix-shadow-sm: 0 2px 4px 0 rgb(0 0 0 / 0.35), 0 1px 2px -1px rgb(0 0 0 / 0.35);
+		--moduix-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+		--moduix-shadow-lg: 0 10px 24px -3px rgb(0 0 0 / 0.55), 0 4px 6px -4px rgb(0 0 0 / 0.45);
+
+		--moduix-font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+	}
+
+	/* Phones: 44px touch targets. */
+	@media (max-width: 767px) {
+		:root {
+			--moduix-size-md: 44px;
+			--moduix-size-lg: 48px;
+			--moduix-popup-item-min-height: 44px;
+		}
+	}
+}
+
+/*
+ * Phones: at least 16px text in anything typeable, so iOS doesn't zoom in when
+ * it's focused (the cause of the screen jumping while editing). In the highest
+ * layer so it beats component styles such as Combobox's 14px input.
+ */
+@layer utilities {
+	@media (max-width: 767px) {
+		input,
+		textarea,
+		select,
+		[contenteditable] {
+			font-size: max(16px, 1em);
+		}
+	}
+}

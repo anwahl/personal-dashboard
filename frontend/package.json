@@ -1,0 +1,41 @@
+{
+	"name": "homeport-frontend",
+	"private": true,
+	"version": "0.0.1",
+	"type": "module",
+	"scripts": {
+		"dev": "vite dev --host",
+		"build": "vite build",
+		"preview": "vite preview",
+		"prepare": "svelte-kit sync || echo ''",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"gen:api": "npx -y openapi-typescript@7.13.0 http://localhost:3000/openapi.json -o src/lib/api/schema.d.ts"
+	},
+	"devDependencies": {
+		"@fontsource-variable/inter": "^5.3.0",
+		"@internationalized/date": "^3.12.4",
+		"@lucide/svelte": "^1.72.0",
+		"@sveltejs/adapter-static": "^4.0.0",
+		"@sveltejs/kit": "^3.0.0",
+		"@sveltejs/vite-plugin-svelte": "^7.2.0",
+		"svelte": "^5.57.1",
+		"svelte-check": "^4.6.0",
+		"typescript": "^6.0.3",
+		"vite": "^8.3.0"
+	},
+	"imports": {
+		"#lib": "./src/lib/index.js",
+		"#lib/*": "./src/lib/*"
+	},
+	"dependencies": {
+		"@ark-ui/svelte": "^5.25.1",
+		"@tanstack/svelte-query": "^6.3.6",
+		"chrono-node": "^2.10.3",
+		"clsx": "^2.1.1",
+		"openapi-fetch": "^0.17.0",
+		"remark-gfm": "^4.0.1",
+		"svelte-exmarkdown": "^5.0.2",
+		"timepicker-ui": "^4.7.0"
+	}
+}

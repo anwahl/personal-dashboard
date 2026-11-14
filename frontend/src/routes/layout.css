@@ -1,0 +1,47 @@
+/*
+ * Global styles. Order matters: moduix's reset, then its tokens and base
+ * styles, then our theme (which overrides the tokens).
+ * Layer order (declared first, so it wins; moduix's style.css repeats it):
+ *   theme, base, moduix.reset, moduix.tokens, moduix.base, components, moduix.components, utilities
+ */
+@layer theme, base, moduix.reset, moduix.tokens, moduix.base, components, moduix.components, utilities;
+
+@import '@fontsource-variable/inter';
+@import '../lib/moduix/styles/reset.css';
+@import '../lib/moduix/styles/style.css';
+@import '../lib/styles/theme.css';
+
+@layer base {
+	html,
+	body {
+		background-color: var(--moduix-background);
+		color: var(--moduix-foreground);
+		font-family: var(--moduix-font-sans);
+		-webkit-font-smoothing: antialiased;
+	}
+
+	:focus-visible {
+		outline: var(--moduix-focus-ring-width) solid var(--moduix-ring);
+		outline-offset: var(--moduix-focus-ring-offset);
+	}
+
+	a {
+		color: inherit;
+		text-decoration: inherit;
+	}
+}
+
+@layer utilities {
+	/* Visually hidden, still read by screen readers. */
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border-width: 0;
+	}
+}

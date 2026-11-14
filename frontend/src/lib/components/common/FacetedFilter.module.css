@@ -1,0 +1,117 @@
+.trigger {
+	justify-content: space-between;
+	min-width: 0;
+	font-weight: var(--moduix-weight-regular);
+}
+
+.icon {
+	flex: none;
+	width: 16px;
+	height: 16px;
+	color: var(--moduix-muted-foreground);
+}
+
+.summary {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-align: start;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.placeholder {
+	color: var(--moduix-muted-foreground);
+}
+
+.content {
+	width: 16rem;
+	max-width: calc(100vw - 2rem);
+	/* Room for every group: as tall as the screen allows, scrolling past that. */
+	max-height: var(--available-height, 80dvh);
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	padding: var(--moduix-spacing-1);
+}
+
+.group {
+	display: flex;
+	flex-direction: column;
+	padding-bottom: var(--moduix-spacing-1);
+
+	& + & {
+		border-top: var(--moduix-border-width-sm) solid var(--moduix-border);
+		padding-top: var(--moduix-spacing-1);
+	}
+}
+
+.legend {
+	padding: var(--moduix-spacing-2) var(--moduix-spacing-2) var(--moduix-spacing-1);
+	color: var(--moduix-muted-foreground);
+	font-size: var(--moduix-text-xs);
+	font-weight: var(--moduix-weight-medium);
+}
+
+/* Each choice is a full-width row, 44px tall on phones. */
+.option {
+	display: flex;
+	align-items: center;
+	gap: var(--moduix-spacing-2-5);
+	width: 100%;
+	min-height: var(--moduix-popup-item-min-height, var(--moduix-size-sm));
+	padding-inline: var(--moduix-spacing-2);
+	border-radius: var(--moduix-radius-sm);
+	background: none;
+	color: var(--moduix-foreground);
+	font: inherit;
+	font-size: var(--moduix-text-sm);
+	text-align: start;
+	cursor: pointer;
+
+	:global([data-slot='checkbox-label']) {
+		font-weight: var(--moduix-weight-regular);
+	}
+
+	@media (hover: hover) {
+		&:hover {
+			background-color: var(--moduix-accent);
+		}
+	}
+}
+
+/* Matches moduix's checkbox control, for the "Custom date" row (which opens a calendar instead of toggling). */
+.fakeBox {
+	display: inline-flex;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	width: var(--moduix-spacing-5);
+	height: var(--moduix-spacing-5);
+	border: var(--moduix-border-width-sm) solid var(--moduix-input);
+	border-radius: var(--moduix-radius-xs);
+	background-color: var(--moduix-background);
+	color: var(--moduix-primary-foreground);
+
+	&[data-checked] {
+		border-color: var(--moduix-primary);
+		background-color: var(--moduix-primary);
+	}
+
+	:global(svg) {
+		width: var(--moduix-spacing-3);
+		height: var(--moduix-spacing-3);
+	}
+}
+
+.custom {
+	border: 0;
+}
+
+.customValue {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--moduix-spacing-1);
+	margin-inline-start: auto;
+	color: var(--moduix-muted-foreground);
+	font-size: var(--moduix-text-xs);
+}

@@ -1,0 +1,111 @@
+/* Readable defaults for rendered Markdown (replaces Tailwind Typography's `prose`). */
+.prose {
+	font-size: var(--moduix-text-sm);
+	line-height: 1.6;
+	overflow-wrap: anywhere;
+
+	:global(:where(p, ul, ol, pre, blockquote, table)) {
+		margin-block: 0.75em;
+	}
+
+	:global(:where(:first-child)) {
+		margin-block-start: 0;
+	}
+
+	:global(:where(:last-child)) {
+		margin-block-end: 0;
+	}
+
+	:global(:where(h1, h2, h3, h4)) {
+		margin-block: 1em 0.5em;
+		font-weight: var(--moduix-weight-semibold);
+		line-height: 1.3;
+	}
+
+	:global(h1) {
+		font-size: 1.4em;
+	}
+
+	:global(h2) {
+		font-size: 1.2em;
+	}
+
+	:global(:where(h3, h4)) {
+		font-size: 1.05em;
+	}
+
+	:global(:where(ul, ol)) {
+		padding-inline-start: 1.4em;
+	}
+
+	:global(ul) {
+		list-style: disc;
+	}
+
+	:global(ol) {
+		list-style: decimal;
+	}
+
+	:global(li + li) {
+		margin-top: 0.25em;
+	}
+
+	/* GFM task lists */
+	:global(li:has(> input[type='checkbox'])) {
+		list-style: none;
+		margin-inline-start: -1.4em;
+	}
+
+	:global(a) {
+		color: var(--moduix-secondary-foreground);
+		text-decoration: underline;
+		text-decoration-color: var(--hp-secondary);
+		text-underline-offset: 2px;
+	}
+
+	:global(strong) {
+		font-weight: var(--moduix-weight-semibold);
+	}
+
+	:global(code) {
+		padding: 0.1em 0.35em;
+		border-radius: var(--moduix-radius-xs);
+		background-color: var(--moduix-muted);
+		font-family: var(--moduix-font-mono);
+		font-size: 0.9em;
+	}
+
+	:global(pre) {
+		padding: var(--moduix-spacing-3);
+		overflow-x: auto;
+		border-radius: var(--moduix-radius-md);
+		background-color: var(--moduix-muted);
+
+		:global(code) {
+			padding: 0;
+			background: none;
+		}
+	}
+
+	:global(blockquote) {
+		padding-inline-start: var(--moduix-spacing-3);
+		border-inline-start: 3px solid var(--moduix-border);
+		color: var(--moduix-muted-foreground);
+	}
+
+	:global(hr) {
+		margin-block: 1.25em;
+		border-top: var(--moduix-border-width-sm) solid var(--moduix-border);
+	}
+
+	:global(table) {
+		width: 100%;
+		border-collapse: collapse;
+	}
+
+	:global(:where(th, td)) {
+		padding: 0.35em 0.6em;
+		border: var(--moduix-border-width-sm) solid var(--moduix-border);
+		text-align: start;
+	}
+}

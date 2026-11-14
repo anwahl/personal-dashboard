@@ -1,0 +1,83 @@
+.root {
+	--moduix-date-input-width: 100%;
+	width: 100%;
+}
+
+.control {
+	flex-wrap: nowrap;
+	min-width: 0;
+}
+
+/* 📅 at the end of the field; a 44px tap target on phones. */
+.pickerButton {
+	display: grid;
+	place-items: center;
+	width: 32px;
+	height: 32px;
+	margin-inline-start: auto;
+	border-radius: var(--moduix-radius-sm);
+	background: none;
+	color: var(--moduix-muted-foreground);
+	cursor: pointer;
+
+	:global(svg) {
+		width: 16px;
+		height: 16px;
+	}
+
+	@media (hover: hover) {
+		&:hover {
+			background-color: var(--moduix-accent);
+			color: var(--moduix-foreground);
+		}
+	}
+}
+
+@media (max-width: 767px) {
+	.pickerButton {
+		width: 44px;
+		height: 44px;
+		margin-block: -6px;
+	}
+}
+
+.popover {
+	display: flex;
+	flex-direction: column;
+	gap: var(--moduix-spacing-3);
+	width: 19rem;
+	max-width: calc(100vw - 2rem);
+	/* moduix caps popovers at 24rem; calendar + time + buttons need a little more. */
+	max-height: var(--available-height, 90dvh);
+	overflow-y: auto;
+	padding: var(--moduix-spacing-3);
+}
+
+.timeRow {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding-top: var(--moduix-spacing-3);
+	border-top: var(--moduix-border-width-sm) solid var(--moduix-border);
+}
+
+.timeLabel {
+	color: var(--moduix-muted-foreground);
+	font-size: var(--moduix-text-sm);
+}
+
+.footer,
+.dialFooter {
+	display: flex;
+	justify-content: space-between;
+	gap: var(--moduix-spacing-2);
+}
+
+.dialPopover {
+	display: flex;
+	flex-direction: column;
+	gap: var(--moduix-spacing-2);
+	max-width: calc(100vw - 1rem);
+	max-height: none;
+	padding: var(--moduix-spacing-2);
+}

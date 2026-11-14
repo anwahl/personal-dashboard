@@ -1,0 +1,21 @@
+.root {
+	display: flex;
+	gap: var(--moduix-spacing-1);
+	min-width: 0;
+}
+
+.select {
+	flex: 1;
+	min-width: 0;
+	--moduix-select-width: 100%;
+	/* Same text size as the Filter button and search box beside it. */
+	font-size: var(--moduix-text-sm);
+}
+
+/* Square, same height as the select. */
+.dir {
+	flex: none;
+	width: var(--moduix-size-md);
+	height: var(--moduix-size-md);
+	padding: 0;
+}

@@ -1,0 +1,43 @@
+.button {
+	position: fixed;
+	right: var(--moduix-spacing-6);
+	bottom: var(--moduix-spacing-6);
+	z-index: var(--moduix-z-backdrop);
+	display: grid;
+	place-items: center;
+	width: 44px;
+	height: 44px;
+	border: var(--moduix-border-width-sm) solid var(--moduix-border);
+	border-radius: var(--moduix-radius-full);
+	background-color: var(--moduix-popover);
+	color: var(--moduix-foreground);
+	box-shadow: var(--moduix-shadow-lg);
+	cursor: pointer;
+	animation: appear var(--moduix-duration-normal) ease-out;
+
+	:global(svg) {
+		width: 20px;
+		height: 20px;
+	}
+
+	@media (hover: hover) {
+		&:hover {
+			background-color: var(--moduix-accent);
+		}
+	}
+}
+
+/* Phones: above the tab bar. */
+@media (max-width: 767px) {
+	.button {
+		right: var(--moduix-spacing-4);
+		bottom: calc(72px + env(safe-area-inset-bottom));
+	}
+}
+
+@keyframes appear {
+	from {
+		opacity: 0;
+		transform: translateY(8px);
+	}
+}

@@ -1,0 +1,30 @@
+.root {
+	border: 0;
+}
+
+/* The layout is one viewport tall; only .scroll scrolls. Nothing may spill out of the inset. */
+.inset {
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+	overflow: hidden;
+}
+
+/* position: relative so absolutely positioned bits (screen-reader labels, hidden
+   inputs) are placed inside the scroll box and scroll with it, not past the page edge. */
+.scroll {
+	position: relative;
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+}
+
+.brand {
+	display: flex;
+	align-items: center;
+	min-width: 0;
+	min-height: var(--moduix-size-sm);
+	padding-inline: var(--moduix-spacing-2);
+	font-weight: var(--moduix-weight-semibold);
+}

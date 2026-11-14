@@ -1,0 +1,46 @@
+.card {
+	overflow: hidden;
+	border: var(--moduix-border-width-sm) solid var(--moduix-border);
+	border-radius: var(--moduix-radius-xl);
+	background-color: var(--moduix-card);
+}
+
+.header {
+	padding: var(--moduix-spacing-2);
+	border-bottom: var(--moduix-border-width-sm) solid var(--moduix-border);
+}
+
+.list > * + * {
+	border-top: var(--moduix-border-width-sm) solid var(--moduix-border);
+}
+
+.skeletonRow {
+	display: flex;
+	align-items: center;
+	gap: var(--moduix-spacing-4);
+	padding: var(--moduix-spacing-4);
+}
+
+.grow {
+	flex: 1;
+}
+
+.message {
+	padding: var(--moduix-spacing-6);
+	font-size: var(--moduix-text-sm);
+	text-align: center;
+}
+
+.muted {
+	color: var(--moduix-muted-foreground);
+}
+
+.retry {
+	margin-top: var(--moduix-spacing-3);
+}
+
+.more {
+	display: flex;
+	justify-content: flex-end;
+	margin-top: var(--moduix-spacing-4);
+}

@@ -1,0 +1,4 @@
+.root {
+	--moduix-select-width: 100%;
+	min-width: 0;
+}
